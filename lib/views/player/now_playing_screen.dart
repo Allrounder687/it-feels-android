@@ -4,7 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
+import '../../providers/download_provider.dart';
 import '../lyrics/lyrics_screen.dart';
+import '../widgets/song_options_sheet.dart';
 import '../widgets/wavy_seek_bar.dart';
 import 'queue_bottom_sheet.dart';
 
@@ -20,10 +22,10 @@ class NowPlayingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final artSize = (screenWidth * 0.82).clamp(240.0, 350.0);
+    final artSize = (screenWidth * 0.84).clamp(250.0, 360.0);
 
-    return Consumer<AudioPlayerProvider>(
-      builder: (context, playerProvider, child) {
+    return Consumer2<AudioPlayerProvider, DownloadProvider>(
+      builder: (context, playerProvider, downloadProvider, child) {
         final currentSong = playerProvider.currentSong;
         final bgColor = playerProvider.themeBackgroundColor;
         final surfaceColor = playerProvider.themeSurfaceColor;
@@ -40,6 +42,10 @@ class NowPlayingScreen extends StatelessWidget {
             ),
           );
         }
+
+        final isFav = playerProvider.isFavorite(currentSong.id);
+        final isDown = downloadProvider.isDownloaded(currentSong.id);
+        final isDownloading = downloadProvider.isDownloading(currentSong.id);
 
         return Scaffold(
           backgroundColor: bgColor,
@@ -68,7 +74,7 @@ class NowPlayingScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // Action Buttons (Lyrics Badge + Queue Menu)
+                      // Action Buttons (Download + Lyrics + Queue Menu)
                       Row(
                         children: [
                           IconButton(
@@ -78,13 +84,37 @@ class NowPlayingScreen extends StatelessWidget {
                                 color: surfaceColor,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(Icons.lyrics_outlined, color: Colors.white, size: 20),
+                              child: isDownloading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : Icon(
+                                      isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
+                                      color: isDown ? accentColor : Colors.white,
+                                      size: 20,
+                                    ),
                             ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const LyricsScreen()),
-                              );
+                            onPressed: () async {
+                              if (isDown) {
+                                await downloadProvider.removeDownload(currentSong);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text("Removed ${currentSong.title} from downloads")),
+                                  );
+                                }
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("Downloading ${currentSong.title}...")),
+                                );
+                                final ok = await downloadProvider.downloadSong(currentSong);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(ok ? "Downloaded ${currentSong.title}" : "Download failed")),
+                                  );
+                                }
+                              }
                             },
                           ),
                           IconButton(
@@ -94,15 +124,10 @@ class NowPlayingScreen extends StatelessWidget {
                                 color: surfaceColor,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(Icons.queue_music_rounded, color: Colors.white, size: 20),
+                              child: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 20),
                             ),
                             onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => const QueueBottomSheet(),
-                              );
+                              SongOptionsSheet.show(context, currentSong);
                             },
                           ),
                         ],
@@ -112,24 +137,24 @@ class NowPlayingScreen extends StatelessWidget {
 
                   const Spacer(),
 
-                  // Center Album Artwork with Hero Animation & Responsive Fitting
+                  // Center Album Artwork with Hero Animation
                   Hero(
                     tag: 'cover_${currentSong.id}',
                     child: Container(
                       width: artSize,
                       height: artSize,
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(32),
+                        borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.45),
+                            color: Colors.black.withValues(alpha: 0.5),
                             blurRadius: 30,
                             offset: const Offset(0, 15),
                           ),
                         ],
                       ),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(32),
+                        borderRadius: BorderRadius.circular(28),
                         child: currentSong.coverArt.isNotEmpty
                             ? CachedNetworkImage(
                                 imageUrl: currentSong.coverArt,
@@ -144,34 +169,168 @@ class NowPlayingScreen extends StatelessWidget {
 
                   const Spacer(),
 
-                  // Song Title & Artist Name
-                  Text(
-                    currentSong.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.outfit(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    currentSong.artist,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.burgundyTextMuted,
+                  // Song Title & Artist
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          currentSong.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          currentSong.artist,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.burgundyTextMuted,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-                  // Wavy / Squiggly Seekbar Progress Slider
+                  // Spacious Action Pills Row (Like, Download, Lyrics)
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        // Favorite / Like Pill
+                        GestureDetector(
+                          onTap: () => playerProvider.toggleFavorite(currentSong),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: surfaceColor.withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                                  color: isFav ? Colors.pinkAccent : Colors.white70,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isFav ? "Liked" : "Like",
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // Download Pill
+                        GestureDetector(
+                          onTap: () async {
+                            if (isDown) {
+                              await downloadProvider.removeDownload(currentSong);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("Removed ${currentSong.title} from downloads")),
+                                );
+                              }
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Downloading ${currentSong.title}...")),
+                              );
+                              final ok = await downloadProvider.downloadSong(currentSong);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(ok ? "Downloaded ${currentSong.title}" : "Download failed")),
+                                );
+                              }
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: surfaceColor.withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                isDownloading
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                      )
+                                    : Icon(
+                                        isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
+                                        color: isDown ? accentColor : Colors.white70,
+                                        size: 18,
+                                      ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  isDown ? "Downloaded" : "Download",
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+
+                        // Lyrics Pill
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const LyricsScreen()),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: surfaceColor.withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.lyrics_outlined, color: Colors.white70, size: 18),
+                                const SizedBox(width: 6),
+                                Text(
+                                  "Lyrics",
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  // Signature Wavy Seek Bar Progress Slider
                   WavySeekBar(
                     position: playerProvider.position,
                     duration: playerProvider.duration,
@@ -180,7 +339,7 @@ class NowPlayingScreen extends StatelessWidget {
                     onSeek: (newPos) => playerProvider.seek(newPos),
                   ),
 
-                  // Timestamp Row (Current Time vs Total Duration)
+                  // Timestamps Row
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Row(
@@ -198,19 +357,23 @@ class NowPlayingScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
-                  // Primary Control Bar (Muted Pill Container with Play/Pause, Prev, Next)
+                  // Primary Control Bar (Play/Pause, Prev, Next, Seek -10s/+10s)
                   Container(
-                    height: 84,
+                    height: 80,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
                       color: surfaceColor,
-                      borderRadius: BorderRadius.circular(42),
+                      borderRadius: BorderRadius.circular(40),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
+                        IconButton(
+                          icon: const Icon(Icons.replay_10_rounded, color: Colors.white70, size: 28),
+                          onPressed: () => playerProvider.seekBackward(),
+                        ),
                         IconButton(
                           icon: const Icon(Icons.skip_previous_rounded, color: Colors.white, size: 36),
                           onPressed: () => playerProvider.skipToPrevious(),
@@ -220,8 +383,8 @@ class NowPlayingScreen extends StatelessWidget {
                         GestureDetector(
                           onTap: () => playerProvider.togglePlayPause(),
                           child: Container(
-                            width: 64,
-                            height: 64,
+                            width: 62,
+                            height: 62,
                             decoration: BoxDecoration(
                               color: accentColor,
                               shape: BoxShape.circle,
@@ -240,56 +403,52 @@ class NowPlayingScreen extends StatelessWidget {
                           icon: const Icon(Icons.skip_next_rounded, color: Colors.white, size: 36),
                           onPressed: () => playerProvider.skipToNext(),
                         ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // Secondary Controls Row (Shuffle, Repeat, Favorite)
-                  Container(
-                    height: 54,
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    decoration: BoxDecoration(
-                      color: surfaceColor.withValues(alpha: 0.6),
-                      borderRadius: BorderRadius.circular(27),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
                         IconButton(
-                          icon: Icon(
-                            Icons.shuffle_rounded,
-                            color: playerProvider.isShuffle ? accentColor : Colors.white54,
-                            size: 22,
-                          ),
-                          onPressed: () => playerProvider.toggleShuffle(),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            Icons.repeat_rounded,
-                            color: playerProvider.isRepeat ? accentColor : Colors.white54,
-                            size: 22,
-                          ),
-                          onPressed: () => playerProvider.toggleRepeat(),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            playerProvider.isFavorite(currentSong.id)
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                            color: playerProvider.isFavorite(currentSong.id)
-                                ? Colors.pinkAccent
-                                : Colors.white54,
-                            size: 22,
-                          ),
-                          onPressed: () => playerProvider.toggleFavorite(currentSong),
+                          icon: const Icon(Icons.forward_10_rounded, color: Colors.white70, size: 28),
+                          onPressed: () => playerProvider.seekForward(),
                         ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const Spacer(),
+
+                  // Bottom Drag Handle & "Your queue" Button
+                  GestureDetector(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (_) => const QueueBottomSheet(),
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.white38,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            "Your queue",
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

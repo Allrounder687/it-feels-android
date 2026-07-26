@@ -5,11 +5,12 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/models/song_model.dart';
 import '../../providers/audio_player_provider.dart';
+import '../../providers/download_provider.dart';
 import '../../providers/home_provider.dart';
-import '../../services/storage_service.dart';
 import '../details/artist_detail_screen.dart';
 import '../details/playlist_detail_screen.dart';
 import '../settings/settings_screen.dart';
+import '../widgets/song_options_sheet.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -22,8 +23,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
   int _selectedTabIndex = 0;
   final List<String> _tabs = ["SONGS", "FAVORITES", "DOWNLOADS", "ALBUMS", "ARTIST", "PLAYLISTS"];
 
-  List<Song> _downloadedSongs = [];
-
   final List<Map<String, String>> _topArtists = [
     {'name': 'Atif Aslam', 'image': 'https://c.saavncdn.com/artists/Atif_Aslam_500x500.jpg'},
     {'name': 'Arijit Singh', 'image': 'https://c.saavncdn.com/artists/Arijit_Singh_500x500.jpg'},
@@ -35,24 +34,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _loadDownloads();
-  }
-
-  Future<void> _loadDownloads() async {
-    final downloads = await StorageService.loadDownloads();
-    if (mounted) {
-      setState(() {
-        _downloadedSongs = downloads;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Consumer2<HomeProvider, AudioPlayerProvider>(
-      builder: (context, homeProvider, playerProvider, child) {
+    return Consumer3<HomeProvider, AudioPlayerProvider, DownloadProvider>(
+      builder: (context, homeProvider, playerProvider, downloadProvider, child) {
         final trending = homeProvider.trendingSongs;
         final playlists = homeProvider.topPlaylists;
 
@@ -110,7 +94,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           setState(() {
                             _selectedTabIndex = index;
                           });
-                          if (index == 2) _loadDownloads();
                         },
                         child: Container(
                           margin: const EdgeInsets.only(right: 10),
@@ -137,7 +120,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
                 // Main Content View per selected Tab
                 Expanded(
-                  child: _buildTabContent(homeProvider, playerProvider, trending, playlists),
+                  child: _buildTabContent(homeProvider, playerProvider, downloadProvider, trending, playlists),
                 ),
 
                 const SizedBox(height: 80),
@@ -152,6 +135,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget _buildTabContent(
     HomeProvider homeProvider,
     AudioPlayerProvider playerProvider,
+    DownloadProvider downloadProvider,
     List<Song> trending,
     List<Playlist> playlists,
   ) {
@@ -161,7 +145,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
       return _buildSongListView(favorites, playerProvider, "No favorite songs added yet");
     } else if (_selectedTabIndex == 2) {
       // DOWNLOADS TAB
-      return _buildSongListView(_downloadedSongs, playerProvider, "No downloaded tracks for offline playback");
+      final downloaded = downloadProvider.downloadedSongs;
+      return _buildSongListView(downloaded, playerProvider, "No downloaded tracks for offline playback");
     } else if (_selectedTabIndex == 3) {
       // ALBUMS TAB
       final albums = playlists.where((p) => p.type == 'album').toList();
@@ -349,15 +334,16 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12),
               ),
               trailing: IconButton(
-                icon: Icon(
-                  playerProvider.isFavorite(song.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  color: playerProvider.isFavorite(song.id) ? Colors.pinkAccent : Colors.white54,
-                  size: 20,
-                ),
-                onPressed: () => playerProvider.toggleFavorite(song),
+                icon: const Icon(Icons.more_vert, color: Colors.white54),
+                onPressed: () {
+                  SongOptionsSheet.show(context, song, playlistContext: songs);
+                },
               ),
               onTap: () {
                 playerProvider.playSong(song, queue: songs, index: index);
+              },
+              onLongPress: () {
+                SongOptionsSheet.show(context, song, playlistContext: songs);
               },
             ),
           ),

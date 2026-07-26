@@ -1,4 +1,6 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:palette_generator/palette_generator.dart';
 import '../core/theme/app_colors.dart';
 import '../data/models/song_model.dart';
@@ -30,6 +32,8 @@ class AudioPlayerProvider extends ChangeNotifier {
     required this.audioHandler,
     required this.apiService,
   }) {
+    audioHandler.onSkipNext = () => skipToNext();
+    audioHandler.onSkipPrevious = () => skipToPrevious();
     _listenToAudioState();
     _loadFavorites();
   }
@@ -69,8 +73,16 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   void _listenToAudioState() {
-    audioHandler.player.playerStateStream.listen((state) {
+    audioHandler.player.playerStateStream.listen((state) async {
       _isPlaying = state.playing;
+      if (state.processingState == ProcessingState.completed) {
+        if (_isRepeat) {
+          await seek(Duration.zero);
+          await audioHandler.play();
+        } else if (_queue.isNotEmpty) {
+          await skipToNext();
+        }
+      }
       notifyListeners();
     });
 
@@ -89,12 +101,25 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> playSong(Song song, {List<Song>? queue, int index = 0, BuildContext? context}) async {
     _currentSong = song;
-    if (queue != null) {
+
+    if (queue != null && queue.isNotEmpty) {
       _queue = List.from(queue);
-      _currentIndex = index;
+      _currentIndex = index >= 0 && index < _queue.length ? index : 0;
     } else {
-      _queue = [song];
-      _currentIndex = 0;
+      // If no explicit queue provided, manage existing queue smart
+      final existingIndex = _queue.indexWhere((s) => s.id == song.id || (s.title == song.title && s.artist == song.artist));
+      if (existingIndex != -1) {
+        _currentIndex = existingIndex;
+      } else {
+        if (_queue.isEmpty) {
+          _queue = [song];
+          _currentIndex = 0;
+        } else {
+          final insertPos = _currentIndex >= 0 && _currentIndex < _queue.length ? _currentIndex + 1 : _queue.length;
+          _queue.insert(insertPos, song);
+          _currentIndex = insertPos;
+        }
+      }
     }
 
     _isLoading = true;
@@ -128,21 +153,56 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   Future<void> skipToNext([BuildContext? context]) async {
-    if (_queue.isEmpty || _currentIndex < 0) return;
-    int nextIndex = _currentIndex + 1;
-    if (nextIndex >= _queue.length) {
-      nextIndex = 0;
+    if (_queue.isEmpty) return;
+    int nextIndex;
+    if (_isShuffle && _queue.length > 1) {
+      final rng = Random();
+      nextIndex = rng.nextInt(_queue.length);
+      if (nextIndex == _currentIndex && _queue.length > 1) {
+        nextIndex = (nextIndex + 1) % _queue.length;
+      }
+    } else {
+      nextIndex = _currentIndex + 1;
+      if (nextIndex >= _queue.length) {
+        nextIndex = 0;
+      }
     }
     await playSong(_queue[nextIndex], queue: _queue, index: nextIndex);
   }
 
   Future<void> skipToPrevious([BuildContext? context]) async {
-    if (_queue.isEmpty || _currentIndex < 0) return;
+    if (_queue.isEmpty) return;
     int prevIndex = _currentIndex - 1;
     if (prevIndex < 0) {
       prevIndex = _queue.length - 1;
     }
     await playSong(_queue[prevIndex], queue: _queue, index: prevIndex);
+  }
+
+  void addToQueue(Song song) {
+    _queue.add(song);
+    notifyListeners();
+  }
+
+  void playNext(Song song) {
+    if (_currentIndex >= 0 && _currentIndex < _queue.length) {
+      _queue.insert(_currentIndex + 1, song);
+    } else {
+      _queue.add(song);
+    }
+    notifyListeners();
+  }
+
+  Future<void> seekForward({int seconds = 10}) async {
+    final target = _position + Duration(seconds: seconds);
+    final clamped = target > _duration ? _duration : target;
+    await seek(clamped);
+  }
+
+  Future<void> seekBackward({int seconds = 10}) async {
+    final target = _position - Duration(seconds: seconds);
+    final clamped = target < Duration.zero ? Duration.zero : target;
+    await seek(clamped);
   }
 
   void toggleShuffle() {
@@ -159,8 +219,8 @@ class AudioPlayerProvider extends ChangeNotifier {
     if (imageUrl.isEmpty) return;
     try {
       final palette = await PaletteGenerator.fromImageProvider(
-        NetworkImage(imageUrl),
-        maximumColorCount: 8,
+        ResizeImage(NetworkImage(imageUrl), width: 100, height: 100),
+        maximumColorCount: 6,
       );
 
       final dominant = palette.dominantColor?.color ?? AppColors.burgundyBackground;

@@ -10,7 +10,7 @@ class JioSaavnApiService {
     'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'application/json',
-    'Cookie': 'L=english; hindi;punjabi;',
+    'Cookie': 'L=hindi; telugu; tamil; punjabi; english;',
   };
 
   final Map<String, String> _streamCache = {};
@@ -74,10 +74,80 @@ class JioSaavnApiService {
     }
   }
 
-  /// Search for songs on JioSaavn
-  Future<List<Song>> searchSongs(String query, {Function(String message)? onError}) async {
+  /// Search for songs on JioSaavn (returns 40+ songs per query)
+  Future<List<Song>> searchSongs(String query, {int page = 1, int count = 40, Function(String message)? onError}) async {
+    if (query.trim().isEmpty) return [];
+
+    try {
+      final url = Uri.parse(
+          '$_baseUrl?__call=search.getResults&_format=json&p=$page&n=$count&api_version=4&ctx=web6dot0&q=${Uri.encodeComponent(query)}');
+
+      final response = await http.get(url, headers: _headers);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final rawSongs = data['results'] ?? data['songs'] ?? [];
+        final List<Song> songs = [];
+        if (rawSongs is List) {
+          for (var item in rawSongs) {
+            songs.add(Song.fromJson(item));
+          }
+        }
+        if (songs.isNotEmpty) return songs;
+      }
+    } catch (e) {
+      debugPrint('[JioSaavnApiService] searchSongs error: $e');
+    }
+
     final res = await searchAll(query, onError: onError);
     return res['songs'] as List<Song>;
+  }
+
+  /// Search for playlists on JioSaavn
+  Future<List<Playlist>> searchPlaylists(String query, {int page = 1, int count = 30}) async {
+    try {
+      final url = Uri.parse(
+          '$_baseUrl?__call=search.getPlaylistResults&_format=json&p=$page&n=$count&api_version=4&ctx=web6dot0&q=${Uri.encodeComponent(query)}');
+      final response = await http.get(url, headers: _headers);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final rawResults = data['results'] ?? data['playlists'] ?? [];
+        final List<Playlist> playlists = [];
+        if (rawResults is List) {
+          for (var item in rawResults) {
+            playlists.add(Playlist.fromJson({...item, 'type': 'playlist'}));
+          }
+        }
+        if (playlists.isNotEmpty) return playlists;
+      }
+    } catch (e) {
+      debugPrint('[JioSaavnApiService] searchPlaylists error: $e');
+    }
+    final res = await searchAll(query);
+    return res['playlists'] as List<Playlist>;
+  }
+
+  /// Search for albums on JioSaavn
+  Future<List<Playlist>> searchAlbums(String query, {int page = 1, int count = 30}) async {
+    try {
+      final url = Uri.parse(
+          '$_baseUrl?__call=search.getAlbumResults&_format=json&p=$page&n=$count&api_version=4&ctx=web6dot0&q=${Uri.encodeComponent(query)}');
+      final response = await http.get(url, headers: _headers);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final rawResults = data['results'] ?? data['albums'] ?? [];
+        final List<Playlist> albums = [];
+        if (rawResults is List) {
+          for (var item in rawResults) {
+            albums.add(Playlist.fromJson({...item, 'type': 'album'}));
+          }
+        }
+        if (albums.isNotEmpty) return albums;
+      }
+    } catch (e) {
+      debugPrint('[JioSaavnApiService] searchAlbums error: $e');
+    }
+    final res = await searchAll(query);
+    return res['albums'] as List<Playlist>;
   }
 
   /// Get Homepage Data (Trending songs, charts, playlists)
@@ -88,7 +158,7 @@ class JioSaavnApiService {
 
     try {
       final url = Uri.parse(
-          '$_baseUrl?__call=content.getHomepageData&_format=json&_marker=0&api_version=4&ctx=web6dot0');
+          '$_baseUrl?__call=content.getHomepageData&_format=json&_marker=0&api_version=4&ctx=web6dot0&language=hindi,telugu,tamil,punjabi');
 
       final response = await http.get(url, headers: _headers);
       final List<Song> trendingSongs = [];

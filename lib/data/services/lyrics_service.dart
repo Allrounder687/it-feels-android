@@ -63,8 +63,8 @@ class LyricsService {
               if (!HinglishTransliterator.hasDevanagari(rawSynced)) {
                 bestLrc = rawSynced;
                 break;
-              } else if (bestLrc == null) {
-                bestLrc = rawSynced;
+              } else {
+                bestLrc ??= rawSynced;
               }
             }
           }

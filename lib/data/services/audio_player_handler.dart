@@ -5,6 +5,8 @@ import '../models/song_model.dart';
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   final AudioPlayer _player = AudioPlayer();
+  VoidCallback? onSkipNext;
+  VoidCallback? onSkipPrevious;
 
   AudioPlayerHandler() {
     _init();
@@ -15,6 +17,26 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   void _init() {
     _player.playbackEventStream.listen((PlaybackEvent event) {
       final playing = _player.playing;
+      final pState = _player.processingState;
+      AudioProcessingState audioProcessingState;
+      switch (pState) {
+        case ProcessingState.idle:
+          audioProcessingState = AudioProcessingState.idle;
+          break;
+        case ProcessingState.loading:
+          audioProcessingState = AudioProcessingState.loading;
+          break;
+        case ProcessingState.buffering:
+          audioProcessingState = AudioProcessingState.buffering;
+          break;
+        case ProcessingState.ready:
+          audioProcessingState = AudioProcessingState.ready;
+          break;
+        case ProcessingState.completed:
+          audioProcessingState = AudioProcessingState.completed;
+          break;
+      }
+
       playbackState.add(playbackState.value.copyWith(
         controls: [
           MediaControl.skipToPrevious,
@@ -28,13 +50,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
           MediaAction.seekBackward,
         },
         androidCompactActionIndices: const [0, 1, 2],
-        processingState: const {
-          ProcessingState.idle: AudioProcessingState.idle,
-          ProcessingState.loading: AudioProcessingState.loading,
-          ProcessingState.buffering: AudioProcessingState.buffering,
-          ProcessingState.ready: AudioProcessingState.ready,
-          ProcessingState.completed: AudioProcessingState.completed,
-        }[_player.processingState]!,
+        processingState: audioProcessingState,
         playing: playing,
         updatePosition: _player.position,
         bufferedPosition: _player.bufferedPosition,
@@ -75,8 +91,12 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   Future<void> seek(Duration position) => _player.seek(position);
 
   @override
-  Future<void> skipToNext() async {}
+  Future<void> skipToNext() async {
+    if (onSkipNext != null) onSkipNext!();
+  }
 
   @override
-  Future<void> skipToPrevious() async {}
+  Future<void> skipToPrevious() async {
+    if (onSkipPrevious != null) onSkipPrevious!();
+  }
 }

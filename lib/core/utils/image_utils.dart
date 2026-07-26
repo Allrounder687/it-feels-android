@@ -7,7 +7,7 @@ class ImageUtils {
 
     // Default JioSaavn URLs often have resolution patterns like '150x150' or '50x50'.
     // We attempt to replace these with the requested size.
-    String transformedUrl = url.replaceAll(RegExp(r'\d+x\d+'), '${size}x${size}');
+    String transformedUrl = url.replaceAll(RegExp(r'\d+x\d+'), '${size}x$size');
 
     return transformedUrl;
   }

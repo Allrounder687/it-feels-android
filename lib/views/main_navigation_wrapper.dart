@@ -69,7 +69,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
                 // Mini Player Pill
                 MiniPlayer(onTap: _openFullPlayer),
 
-                // Bottom Navigation Bar Container
+                // Floating Bottom Navigation Bar Pill Container
                 Container(
                   height: 64,
                   margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
@@ -105,38 +105,47 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
     final isSelected = _currentTab == index;
     return Consumer<AudioPlayerProvider>(
       builder: (context, playerProvider, child) {
-        return GestureDetector(
-          onTap: () {
-            setState(() {
-              _currentTab = index;
-            });
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              color: isSelected ? AppColors.midnightPill : Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  icon,
-                  color: isSelected ? AppColors.midnightAccent : Colors.white60,
-                  size: 22,
+        return Expanded(
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _currentTab = index;
+              });
+            },
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.midnightPill : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                if (isSelected) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    label,
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      color: isSelected ? AppColors.midnightAccent : Colors.white60,
+                      size: 22,
                     ),
-                  ),
-                ],
-              ],
+                    if (isSelected) ...[
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
           ),
         );

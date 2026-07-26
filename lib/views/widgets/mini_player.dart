@@ -15,104 +15,125 @@ class MiniPlayer extends StatelessWidget {
         final currentSong = playerProvider.currentSong;
         if (currentSong == null) return const SizedBox.shrink();
 
+        final progress = (playerProvider.duration.inMilliseconds > 0)
+            ? (playerProvider.position.inMilliseconds / playerProvider.duration.inMilliseconds).clamp(0.0, 1.0)
+            : 0.0;
+
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          height: 64,
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          height: 60,
           decoration: BoxDecoration(
-            color: playerProvider.themeSurfaceColor.withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(32),
+            color: playerProvider.themeSurfaceColor.withValues(alpha: 0.96),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 16,
+                color: Colors.black.withValues(alpha: 0.45),
+                blurRadius: 18,
                 offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(32),
-              onTap: onTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  children: [
-                    // Album Cover Thumbnail with Hero Transition
-                    Hero(
-                      tag: 'cover_${currentSong.id}',
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: SizedBox(
-                          width: 46,
-                          height: 46,
-                          child: currentSong.coverArt.isNotEmpty
-                              ? CachedNetworkImage(
-                                  imageUrl: currentSong.coverArt,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (context, url, error) => const Icon(Icons.music_note, color: Colors.white),
-                                )
-                              : const Icon(Icons.music_note, color: Colors.white),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              children: [
+                // Top Progress Indicator Line (YouTube Music style)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 2.5,
+                    backgroundColor: Colors.white12,
+                    valueColor: AlwaysStoppedAnimation<Color>(playerProvider.themeAccentColor),
+                  ),
+                ),
 
-                    // Song Title & Artist
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                // Main Mini Player Tap Area
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onTap,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Row(
                         children: [
-                          Text(
-                            currentSong.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          // Cover Art Thumbnail with Hero
+                          Hero(
+                            tag: 'cover_${currentSong.id}',
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: SizedBox(
+                                width: 44,
+                                height: 44,
+                                child: currentSong.coverArt.isNotEmpty
+                                    ? CachedNetworkImage(
+                                        imageUrl: currentSong.coverArt,
+                                        fit: BoxFit.cover,
+                                        errorWidget: (context, url, error) => const Icon(Icons.music_note, color: Colors.white),
+                                      )
+                                    : const Icon(Icons.music_note, color: Colors.white),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            currentSong.artist,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 12,
+                          const SizedBox(width: 12),
+
+                          // Song Title & Artist
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  currentSong.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  currentSong.artist,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.7),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
+                          ),
+
+                          // Cast Action Button
+                          IconButton(
+                            icon: const Icon(Icons.cast_rounded, color: Colors.white70, size: 20),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Searching for Cast devices...")),
+                              );
+                            },
+                          ),
+
+                          // Play/Pause Action Button
+                          IconButton(
+                            icon: Icon(
+                              playerProvider.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                            onPressed: () => playerProvider.togglePlayPause(),
                           ),
                         ],
                       ),
                     ),
-
-                    // Play/Pause Pill Button
-                    IconButton(
-                      icon: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: playerProvider.themeAccentColor.withValues(alpha: 0.85),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          playerProvider.isPlaying ? Icons.pause : Icons.play_arrow,
-                          color: Colors.black,
-                          size: 20,
-                        ),
-                      ),
-                      onPressed: () => playerProvider.togglePlayPause(),
-                    ),
-
-                    // Skip Next Button
-                    IconButton(
-                      icon: const Icon(Icons.skip_next, color: Colors.white70, size: 24),
-                      onPressed: () => playerProvider.skipToNext(),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         );

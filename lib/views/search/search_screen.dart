@@ -8,6 +8,8 @@ import '../../providers/search_provider.dart';
 import '../details/artist_detail_screen.dart';
 import '../details/playlist_detail_screen.dart';
 
+import '../widgets/song_options_sheet.dart';
+
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -241,9 +243,17 @@ class _SearchScreenState extends State<SearchScreen> {
                                                 fontSize: 12,
                                               ),
                                             ),
-                                            trailing: const Icon(Icons.play_arrow_rounded, color: Colors.white),
+                                            trailing: IconButton(
+                                              icon: const Icon(Icons.more_vert, color: Colors.white54),
+                                              onPressed: () {
+                                                SongOptionsSheet.show(context, song, playlistContext: songs);
+                                              },
+                                            ),
                                             onTap: () {
                                               playerProvider.playSong(song, queue: songs, index: songs.indexOf(song));
+                                            },
+                                            onLongPress: () {
+                                              SongOptionsSheet.show(context, song, playlistContext: songs);
                                             },
                                           ),
                                         ),

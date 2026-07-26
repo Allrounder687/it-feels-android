@@ -8,6 +8,8 @@ import '../../data/services/jiosaavn_api_service.dart';
 import '../../providers/audio_player_provider.dart';
 import 'playlist_detail_screen.dart';
 
+import '../widgets/song_options_sheet.dart';
+
 class ArtistDetailScreen extends StatefulWidget {
   final String artistName;
   final String? artistImage;
@@ -235,9 +237,17 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                   fontSize: 12,
                                 ),
                               ),
-                              trailing: const Icon(Icons.play_arrow_rounded, color: Colors.white),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.more_vert, color: Colors.white54),
+                                onPressed: () {
+                                  SongOptionsSheet.show(context, song, playlistContext: _topSongs);
+                                },
+                              ),
                               onTap: () {
                                 playerProvider.playSong(song, queue: _topSongs, index: index);
+                              },
+                              onLongPress: () {
+                                SongOptionsSheet.show(context, song, playlistContext: _topSongs);
                               },
                             ),
                           ),

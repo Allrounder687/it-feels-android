@@ -6,6 +6,8 @@ import '../../core/theme/app_colors.dart';
 import '../../data/models/song_model.dart';
 import '../../data/services/jiosaavn_api_service.dart';
 import '../../providers/audio_player_provider.dart';
+import '../../providers/download_provider.dart';
+import '../widgets/song_options_sheet.dart';
 
 class PlaylistDetailScreen extends StatefulWidget {
   final Playlist playlist;
@@ -53,6 +55,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final playerProvider = Provider.of<AudioPlayerProvider>(context, listen: false);
+    final downloadProvider = Provider.of<DownloadProvider>(context);
 
     return Scaffold(
       backgroundColor: AppColors.midnightBackground,
@@ -96,7 +99,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                     ),
                   ),
 
-                  // Header Artwork, Title & Play All / Shuffle Buttons
+                  // Header Artwork, Title & Play All / Shuffle / Download Buttons
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.all(24),
@@ -147,16 +150,18 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                           ),
                           const SizedBox(height: 20),
 
-                          // Play All & Shuffle Buttons Row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          // Play All, Shuffle & Download Buttons Row
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 10,
+                            runSpacing: 10,
                             children: [
                               ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.midnightPrimary,
                                   foregroundColor: Colors.black,
                                   elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(24),
                                   ),
@@ -172,13 +177,12 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                   }
                                 },
                               ),
-                              const SizedBox(width: 14),
                               ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.midnightPill,
                                   foregroundColor: Colors.white,
                                   elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(24),
                                   ),
@@ -195,6 +199,26 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                   }
                                 },
                               ),
+                              IconButton(
+                                style: IconButton.styleFrom(
+                                  backgroundColor: AppColors.midnightPill,
+                                  padding: const EdgeInsets.all(12),
+                                ),
+                                icon: const Icon(Icons.file_download_outlined, color: Colors.white),
+                                tooltip: "Download All",
+                                onPressed: () async {
+                                  if (_songs.isEmpty) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text("Downloading ${_songs.length} songs...")),
+                                  );
+                                  await downloadProvider.downloadBatch(_songs);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text("Batch download completed!")),
+                                    );
+                                  }
+                                },
+                              ),
                             ],
                           ),
                         ],
@@ -207,6 +231,8 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final song = _songs[index];
+                        final isDown = downloadProvider.isDownloaded(song.id);
+
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                           child: Material(
@@ -227,15 +253,25 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                       : const Icon(Icons.music_note, color: Colors.white),
                                 ),
                               ),
-                              title: Text(
-                                song.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                ),
+                              title: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      song.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: GoogleFonts.inter(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                  if (isDown) ...[
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.download_done_rounded, color: AppColors.midnightPrimary, size: 16),
+                                  ],
+                                ],
                               ),
                               subtitle: Text(
                                 song.artist,
@@ -246,9 +282,17 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                   fontSize: 12,
                                 ),
                               ),
-                              trailing: const Icon(Icons.play_arrow_rounded, color: Colors.white),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.more_vert, color: Colors.white54),
+                                onPressed: () {
+                                  SongOptionsSheet.show(context, song, playlistContext: _songs);
+                                },
+                              ),
                               onTap: () {
                                 playerProvider.playSong(song, queue: _songs, index: index);
+                              },
+                              onLongPress: () {
+                                SongOptionsSheet.show(context, song, playlistContext: _songs);
                               },
                             ),
                           ),

@@ -7,6 +7,7 @@ import 'data/services/audio_player_handler.dart';
 import 'data/services/jiosaavn_api_service.dart';
 import 'data/services/lyrics_service.dart';
 import 'providers/audio_player_provider.dart';
+import 'providers/download_provider.dart';
 import 'providers/home_provider.dart';
 import 'providers/lyrics_provider.dart';
 import 'providers/search_provider.dart';
@@ -22,8 +23,8 @@ Future<void> main() async {
   _audioHandler = await AudioService.init(
     builder: () => AudioPlayerHandler(),
     config: const AudioServiceConfig(
-      androidNotificationChannelId: 'com.pixelplayer.saavn.channel.audio',
-      androidNotificationChannelName: 'PixelPlayer Playback',
+      androidNotificationChannelId: 'com.itfeels.music.channel.audio',
+      androidNotificationChannelName: 'It Feels Playback',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,
     ),
@@ -33,20 +34,26 @@ Future<void> main() async {
 }
 
 class PixelPlayerSaavnApp extends StatelessWidget {
-  const PixelPlayerSaavnApp({super.key});
+  final AudioPlayerHandler? audioHandler;
+
+  const PixelPlayerSaavnApp({super.key, this.audioHandler});
 
   @override
   Widget build(BuildContext context) {
     final apiService = JioSaavnApiService();
     final lyricsService = LyricsService();
+    final handler = audioHandler ?? _audioHandler;
 
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
           create: (_) => AudioPlayerProvider(
-            audioHandler: _audioHandler,
+            audioHandler: handler,
             apiService: apiService,
           ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DownloadProvider(apiService: apiService),
         ),
         ChangeNotifierProvider(
           create: (_) => HomeProvider(apiService: apiService),
@@ -62,7 +69,7 @@ class PixelPlayerSaavnApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'PixelPlayer JioSaavn',
+        title: 'It Feels',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
