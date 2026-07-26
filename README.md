@@ -3,7 +3,7 @@
 A premium, modern Flutter Android music application built with the design aesthetics of **IT Feels Music** and powered by the **Jio API**.
 
 ![IT Feels Music  Banner](https://img.shields.io/badge/IT Feels Music-%20Edition-FF4081?style=for-the-badge&logo=flutter)
-![Version](https://img.shields.io/badge/Version-2.1.1-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-2.2.0-blue?style=for-the-badge)
 ![Flutter Version](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter)
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
@@ -13,6 +13,8 @@ A premium, modern Flutter Android music application built with the design aesthe
 ## ✨ Highlights & Key Features
 
 - **IT Feels Music UI Aesthetics**: High-contrast dark themes (Burgundy `#220F19` & Midnight Blue `#090D16`), organic artwork bubble collages (`HeroCollage`), display typography (`Outfit` & `Inter`), and custom squiggly progress bars (`WavySeekBar`).
+- **Spotify-like Search Engine**: Typo-tolerant, instantaneous Full-Text Search using a native Isar database and normalized `searchVector` logic.
+- **Smart Filters Foundation**: Dynamic playlists like "On Repeat" and "Forgotten Favorites" powered by rich local behavioral tracking (`playCount`, `lastPlayedAt`).
 - **Curated Moods & Charts**: Dedicated dynamic tabs for curated mood playlists (with English/Hindi toggle) and top global streaming charts.
 - **Hidden Songs Manager**: Full control over your feed with the ability to hide unwanted songs and manage them via a dedicated privacy setting.
 - **Fully Populated Library Tabs**: Real dynamic data for `SONGS`, `FAVORITES`, `DOWNLOADS`, `ALBUMS`, `ARTIST`, and `PLAYLISTS`.
@@ -35,7 +37,7 @@ A premium, modern Flutter Android music application built with the design aesthe
 - **Crypto & Decryption**: `encrypt` & `pointycastle` (DES-ECB deciphering)
 - **State Management**: `provider`
 - **Image Caching & Palette**: `cached_network_image` & `palette_generator`
-- **Local Storage & File System**: `shared_preferences` & `path_provider`
+- **Local Storage & Database**: `isar`, `shared_preferences` & `path_provider`
 - **UI & Fonts**: `google_fonts` (Outfit & Inter)
 
 ---

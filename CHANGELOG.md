@@ -2,6 +2,16 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
+## [2.2.0] - 2026-07-26
+
+### Added
+- **Isar Database Integration**: Migrated to a high-performance local Isar database for rapid object queries.
+- **Rich Metadata Schema**: Upgraded `Song` model to an Isar `@collection` with fields for `playCount`, `lastPlayedAt`, `isExplicit`, `language`, and `offlineStatus`.
+- **Spotify-like Search Engine**: Implemented `generateSearchVector()` to parse and normalize titles/artists for instantaneous, typo-tolerant Full-Text Search.
+- **Smart Filters Foundation**: Added `DatabaseService` queries for dynamic playlists like "On Repeat" and "Forgotten Favorites".
+
+---
+
 ## [2.1.2] - 2026-07-26
 
 ### Added

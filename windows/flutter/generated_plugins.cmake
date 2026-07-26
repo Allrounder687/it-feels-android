@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audiotags
   flutter_secure_storage_windows
+  isar_flutter_libs
   permission_handler_windows
 )
 
