@@ -2,6 +2,17 @@
 
 All notable changes to **PixelPlayer Saavn Edition** will be documented in this file.
 
+## [2.1.0] - 2026-07-26
+
+### Added
+- **Offline Download Manager**: Integrated `DownloadService` using `path_provider` to download 320kbps audio files and cover art to local device storage.
+- **Populated Library Section**: Real dynamic content for `SONGS`, `FAVORITES`, `DOWNLOADS`, `ALBUMS`, `ARTIST`, and `PLAYLISTS` tabs.
+- **Full Artist Discography (`ArtistDetailScreen`)**: Verified artist page with circular avatar, top songs, and albums discography grid for artists like Atif Aslam, Arijit Singh, etc.
+- **30pt High-Contrast Synced Lyrics**: Increased active line typography to 30pt bold with active accent glow and smooth `AnimatedDefaultTextStyle` scaling transitions.
+- **Categorized Audio Quality Settings (`SettingsScreen`)**: Options for Wi-Fi streaming quality (320kbps / 160kbps), mobile data streaming quality, download quality, storage management, and themes.
+
+---
+
 ## [2.0.0] - 2026-07-26
 
 ### Added

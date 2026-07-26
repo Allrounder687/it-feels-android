@@ -1,3 +1,6 @@
+import '../../core/utils/image_utils.dart';
+import '../../core/utils/string_utils.dart';
+
 class Song {
   final String id;
   final String saavnId;
@@ -23,22 +26,18 @@ class Song {
     this.hasLyrics = false,
   });
 
+  static String cleanText(String text) {
+    return StringUtils.cleanText(text);
+  }
+
   factory Song.fromJson(Map<String, dynamic> json) {
     final id = json['id']?.toString() ?? json['saavnId']?.toString() ?? '';
     final saavnId = id.contains(':') ? id.split(':').last : id;
-    
-import '../../core/utils/image_utils.dart'; // Import ImageUtils
-import '../../core/utils/string_utils.dart'; // Import StringUtils
-// ... existing imports
-
-// ...
 
     var rawImage = json['image']?.toString() ?? json['coverArt']?.toString() ?? '';
     if (rawImage.isNotEmpty) {
-      rawImage = ImageUtils.getSizedCoverArt(rawImage, size: 500); // Use ImageUtils
+      rawImage = ImageUtils.getSizedCoverArt(rawImage, size: 500);
     }
-// ...
-
 
     String artistName = 'Unknown Artist';
     if (json['more_info'] != null && json['more_info']['artistMap'] != null) {
@@ -108,12 +107,11 @@ class Playlist {
   factory Playlist.fromJson(Map<String, dynamic> json) {
     var rawImage = json['image']?.toString() ?? '';
     if (rawImage.isNotEmpty) {
-      rawImage = ImageUtils.getSizedCoverArt(rawImage, size: 500); // Use ImageUtils
+      rawImage = ImageUtils.getSizedCoverArt(rawImage, size: 500);
     }
     return Playlist(
       id: json['listid']?.toString() ?? json['id']?.toString() ?? '',
       title: StringUtils.cleanText(json['title']?.toString() ?? json['listname']?.toString() ?? json['name']?.toString() ?? 'Playlist'),
-
       coverArt: rawImage,
       songCount: int.tryParse(json['list_count']?.toString() ?? json['count']?.toString() ?? '0') ?? 0,
       type: json['type']?.toString() ?? 'playlist',

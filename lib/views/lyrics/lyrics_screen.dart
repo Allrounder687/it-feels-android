@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -6,306 +7,244 @@ import '../../providers/audio_player_provider.dart';
 import '../../providers/lyrics_provider.dart';
 import '../widgets/wavy_seek_bar.dart';
 
-class LyricsScreen extends StatefulWidget {
+class LyricsScreen extends StatelessWidget {
   const LyricsScreen({super.key});
 
   @override
-  State<LyricsScreen> createState() => _LyricsScreenState();
-}
-
-class _LyricsScreenState extends State<LyricsScreen> {
-  final ScrollController _scrollController = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final playerProvider = Provider.of<AudioPlayerProvider>(context, listen: false);
-      final lyricsProvider = Provider.of<LyricsProvider>(context, listen: false);
-
-      if (playerProvider.currentSong != null) {
-        lyricsProvider.fetchLyrics(playerProvider.currentSong!);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _scrollToActiveLine(int activeIndex, int totalLines) {
-    if (!_scrollController.hasClients || activeIndex < 0) return;
-    const itemHeight = 44.0;
-    final targetOffset = (activeIndex * itemHeight) - 120.0;
-    _scrollController.animateTo(
-      targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-    );
-  }
-
-  String _formatDuration(Duration d) {
-    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$minutes:$seconds';
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Consumer2<AudioPlayerProvider, LyricsProvider>(
-      builder: (context, playerProvider, lyricsProvider, child) {
-        final mode = lyricsProvider.mode;
-        final lyricsResult = lyricsProvider.lyricsResult;
-        final activeIndex = lyricsProvider.getActiveLineIndex(playerProvider.position);
+    return Consumer2<LyricsProvider, AudioPlayerProvider>(
+      builder: (context, lyricsProvider, playerProvider, child) {
+        final currentSong = playerProvider.currentSong;
+        final position = playerProvider.position;
 
-        // CONCEPTUAL UI NOTE:
-        // With the addition of `lyricsProvider.lyricsNotFound`, this section
-        // should be updated to show a specific "No Lyrics Found" message.
-        // For example:
-        //
-        // if (lyricsProvider.isLoading) {
-        //   return const Center(child: CircularProgressIndicator(color: Colors.white));
-        // } else if (lyricsProvider.lyricsNotFound) {
-        //   return const Center(child: Text("No lyrics available for this song", style: TextStyle(color: Colors.white70)));
-        // } else if (mode == LyricsMode.synced && lyricsResult != null && lyricsResult.hasSynced) {
-        //   // ... existing ListView.builder
-        // } else {
-        //   // ... existing SingleChildScrollView for static lyrics
-        // }
-        //
-        // This ensures the user gets clear feedback when lyrics are not available.
-
-        if (mode == LyricsMode.synced && lyricsResult != null && lyricsResult.hasSynced) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToActiveLine(activeIndex, lyricsResult.syncedLyrics.length);
-          });
+        if (currentSong != null) {
+          lyricsProvider.loadLyricsIfNeeded(currentSong, position);
         }
 
         return Scaffold(
-          backgroundColor: playerProvider.themeBackgroundColor,
+          backgroundColor: AppColors.midnightBackground,
           body: SafeArea(
-            child: Stack(
+            child: Column(
               children: [
-                Column(
-                  children: [
-                    // Header Bar (Back Arrow + "Lyrics" Title)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            icon: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: playerProvider.themeSurfaceColor,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-                            ),
-                            onPressed: () => Navigator.pop(context),
+                // Top Navigation Bar (Back Arrow, Title, Toggle Pill)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: AppColors.midnightPill,
+                            shape: BoxShape.circle,
                           ),
-                          Expanded(
-                            child: Text(
-                              "Lyrics",
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.outfit(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 48), // Spacer for center alignment
-                        ],
+                          child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                        ),
+                        onPressed: () => Navigator.pop(context),
                       ),
-                    ),
+                      Text(
+                        "Lyrics",
+                        style: GoogleFonts.outfit(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
 
-                    // Toggle Switch Pill (Synced vs Static)
-                    Container(
-                      height: 44,
-                      margin: const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: playerProvider.themeSurfaceColor,
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
+                      // Synced vs Static Mode Pill
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppColors.midnightPill,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            GestureDetector(
                               onTap: () => lyricsProvider.setMode(LyricsMode.synced),
                               child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: mode == LyricsMode.synced
-                                      ? playerProvider.themeAccentColor
+                                  color: lyricsProvider.mode == LyricsMode.synced
+                                      ? AppColors.midnightPrimary
                                       : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(18),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    "Synced",
-                                    style: GoogleFonts.inter(
-                                      color: mode == LyricsMode.synced ? Colors.black : Colors.white70,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
-                                    ),
+                                child: Text(
+                                  "Synced",
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: lyricsProvider.mode == LyricsMode.synced
+                                        ? Colors.black
+                                        : Colors.white70,
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                          Expanded(
-                            child: GestureDetector(
+                            GestureDetector(
                               onTap: () => lyricsProvider.setMode(LyricsMode.static),
                               child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: mode == LyricsMode.static
-                                      ? playerProvider.themeAccentColor
+                                  color: lyricsProvider.mode == LyricsMode.static
+                                      ? AppColors.midnightPrimary
                                       : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(18),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    "Static",
-                                    style: GoogleFonts.inter(
-                                      color: mode == LyricsMode.static ? Colors.black : Colors.white70,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
-                                    ),
+                                child: Text(
+                                  "Static",
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: lyricsProvider.mode == LyricsMode.static
+                                        ? Colors.black
+                                        : Colors.white70,
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Lyrics Text View
-                    Expanded(
-                      child: lyricsProvider.isLoading
-                          ? const Center(
-                              child: CircularProgressIndicator(color: Colors.white),
-                            )
-                          : mode == LyricsMode.synced && lyricsResult != null && lyricsResult.hasSynced
-                              ? ListView.builder(
-                                  controller: _scrollController,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                                  itemCount: lyricsResult.syncedLyrics.length,
-                                  itemBuilder: (context, index) {
-                                    final line = lyricsResult.syncedLyrics[index];
-                                    final isActive = index == activeIndex;
-
-                                    return Padding(
-                                      padding: const EdgeInsets.symmetric(vertical: 10),
-                                      child: Text(
-                                        line.text,
-                                        style: GoogleFonts.outfit(
-                                          fontSize: isActive ? 22 : 18,
-                                          fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
-                                          color: isActive
-                                              ? Colors.white
-                                              : AppColors.burgundyTextMuted.withValues(alpha: 0.6),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                )
-                              : SingleChildScrollView(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                                  child: Text(
-                                    lyricsResult?.staticLyrics ?? "No lyrics available for this song",
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 18,
-                                      height: 1.6,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ),
-                    ),
-
-                    const SizedBox(height: 100),
-                  ],
+                    ],
+                  ),
                 ),
 
-                // Floating Mini Control Overlay with Play/Pause & Mini Wavy Seekbar
-                Positioned(
-                  left: 20,
-                  right: 20,
-                  bottom: 20,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                // Main Lyrics View Container
+                Expanded(
+                  child: lyricsProvider.isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(color: AppColors.midnightAccent),
+                        )
+                      : lyricsProvider.mode == LyricsMode.synced &&
+                              lyricsProvider.result.hasSynced
+                          ? ListView.builder(
+                              controller: lyricsProvider.scrollController,
+                              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+                              itemCount: lyricsProvider.result.syncedLyrics.length,
+                              itemBuilder: (context, index) {
+                                final line = lyricsProvider.result.syncedLyrics[index];
+                                final isActive = index == lyricsProvider.activeIndex;
+
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  child: AnimatedDefaultTextStyle(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOutCubic,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: isActive ? 30 : 22,
+                                      fontWeight: isActive ? FontWeight.w900 : FontWeight.w500,
+                                      color: isActive
+                                          ? Colors.white
+                                          : Colors.white.withValues(alpha: 0.4),
+                                      height: 1.3,
+                                      shadows: isActive
+                                          ? [
+                                              BoxShadow(
+                                                color: AppColors.midnightAccent.withValues(alpha: 0.6),
+                                                blurRadius: 16,
+                                                offset: const Offset(0, 4),
+                                              )
+                                            ]
+                                          : null,
+                                    ),
+                                    child: Text(line.text),
+                                  ),
+                                );
+                              },
+                            )
+                          : SingleChildScrollView(
+                              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+                              child: Text(
+                                lyricsProvider.result.staticLyrics ?? "No lyrics available for this track",
+                                style: GoogleFonts.outfit(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white70,
+                                  height: 1.6,
+                                ),
+                              ),
+                            ),
+                ),
+
+                // Bottom Floating Mini Control Bar Overlay
+                if (currentSong != null)
+                  Container(
+                    margin: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: AppColors.burgundySurface.withValues(alpha: 0.95),
-                      borderRadius: BorderRadius.circular(32),
+                      color: AppColors.midnightCard.withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.4),
-                          blurRadius: 16,
+                          blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
                       ],
                     ),
                     child: Row(
                       children: [
-                        // Play/Pause Square Button (Screen 4 style)
-                        GestureDetector(
-                          onTap: () => playerProvider.togglePlayPause(),
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFD4E1B3),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(
-                              playerProvider.isPlaying
-                                  ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded,
-                              color: Colors.black,
-                              size: 28,
-                            ),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: currentSong.coverArt.isNotEmpty
+                                ? CachedNetworkImage(imageUrl: currentSong.coverArt, fit: BoxFit.cover)
+                                : const Icon(Icons.music_note, color: Colors.white),
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        const SizedBox(width: 12),
 
-                        // Mini Wavy Seekbar & Timestamps
                         Expanded(
                           child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text(
+                                currentSong.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
                               WavySeekBar(
                                 position: playerProvider.position,
                                 duration: playerProvider.duration,
-                                activeColor: Colors.white,
+                                activeColor: AppColors.midnightAccent,
                                 inactiveColor: Colors.white24,
-                                onSeek: (newPos) => playerProvider.seek(newPos),
-                              ),
-                              const SizedBox(height: 2),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    _formatDuration(playerProvider.position),
-                                    style: GoogleFonts.inter(color: Colors.white60, fontSize: 11),
-                                  ),
-                                  Text(
-                                    _formatDuration(playerProvider.duration),
-                                    style: GoogleFonts.inter(color: Colors.white60, fontSize: 11),
-                                  ),
-                                ],
+                                onSeek: (pos) => playerProvider.seek(pos),
                               ),
                             ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+
+                        GestureDetector(
+                          onTap: () => playerProvider.togglePlayPause(),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: const BoxDecoration(
+                              color: AppColors.midnightPrimary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              playerProvider.isPlaying ? Icons.pause : Icons.play_arrow,
+                              color: Colors.black,
+                              size: 22,
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
               ],
             ),
           ),

@@ -6,6 +6,10 @@ import '../../core/theme/app_colors.dart';
 import '../../data/models/song_model.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/home_provider.dart';
+import '../../services/storage_service.dart';
+import '../details/artist_detail_screen.dart';
+import '../details/playlist_detail_screen.dart';
+import '../settings/settings_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -16,20 +20,41 @@ class LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<LibraryScreen> {
   int _selectedTabIndex = 0;
-  final List<String> _tabs = ["SONGS", "FAVORITES", "ALBUMS", "ARTIST", "PLAYLISTS"];
+  final List<String> _tabs = ["SONGS", "FAVORITES", "DOWNLOADS", "ALBUMS", "ARTIST", "PLAYLISTS"];
+
+  List<Song> _downloadedSongs = [];
+
+  final List<Map<String, String>> _topArtists = [
+    {'name': 'Atif Aslam', 'image': 'https://c.saavncdn.com/artists/Atif_Aslam_500x500.jpg'},
+    {'name': 'Arijit Singh', 'image': 'https://c.saavncdn.com/artists/Arijit_Singh_500x500.jpg'},
+    {'name': 'Pritam', 'image': 'https://c.saavncdn.com/artists/Pritam_500x500.jpg'},
+    {'name': 'Shreya Ghoshal', 'image': 'https://c.saavncdn.com/artists/Shreya_Ghoshal_500x500.jpg'},
+    {'name': 'Badshah', 'image': 'https://c.saavncdn.com/artists/Badshah_500x500.jpg'},
+    {'name': 'Diljit Dosanjh', 'image': 'https://c.saavncdn.com/artists/Diljit_Dosanjh_500x500.jpg'},
+    {'name': 'Anirudh Ravichander', 'image': 'https://c.saavncdn.com/artists/Anirudh_Ravichander_500x500.jpg'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDownloads();
+  }
+
+  Future<void> _loadDownloads() async {
+    final downloads = await StorageService.loadDownloads();
+    if (mounted) {
+      setState(() {
+        _downloadedSongs = downloads;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer2<HomeProvider, AudioPlayerProvider>(
       builder: (context, homeProvider, playerProvider, child) {
-        List<Song> displaySongs;
-        if (_selectedTabIndex == 1) {
-          // FAVORITES tab
-          displaySongs = playerProvider.favoriteSongs;
-        } else {
-          // SONGS & Default
-          displaySongs = homeProvider.trendingSongs;
-        }
+        final trending = homeProvider.trendingSongs;
+        final playlists = homeProvider.topPlaylists;
 
         return Scaffold(
           backgroundColor: AppColors.midnightBackground,
@@ -37,7 +62,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Header: "Library" + Settings Gear Icon
+                // Header: "Library" + Settings Gear Icon
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   child: Row(
@@ -60,13 +85,18 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           ),
                           child: const Icon(Icons.settings_outlined, color: Colors.white, size: 20),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                          );
+                        },
                       ),
                     ],
                   ),
                 ),
 
-                // Horizontal Filter Pill Tabs (SONGS, FAVORITES, ALBUMS, ARTIST, PLAYLISTS)
+                // Filter Pill Tabs (SONGS, FAVORITES, DOWNLOADS, ALBUMS, ARTIST, PLAYLISTS)
                 SizedBox(
                   height: 42,
                   child: ListView.builder(
@@ -80,10 +110,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           setState(() {
                             _selectedTabIndex = index;
                           });
+                          if (index == 2) _loadDownloads();
                         },
                         child: Container(
                           margin: const EdgeInsets.only(right: 10),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                           decoration: BoxDecoration(
                             color: isSelected ? AppColors.midnightPrimary : AppColors.midnightPill,
                             borderRadius: BorderRadius.circular(21),
@@ -92,7 +123,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             _tabs[index],
                             style: GoogleFonts.inter(
                               color: isSelected ? Colors.black : Colors.white,
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -104,130 +135,230 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
                 const SizedBox(height: 16),
 
-                // Action Bar: "Shuffle" Pill Button + Filter Icon
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.midnightPill,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        icon: const Icon(Icons.shuffle, size: 18),
-                        label: Text(
-                          "Shuffle",
-                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
-                        ),
-                        onPressed: () {
-                          if (displaySongs.isNotEmpty) {
-                            final shuffled = List<Song>.from(displaySongs)..shuffle();
-                            playerProvider.playSong(shuffled[0], queue: shuffled, index: 0);
-                          }
-                        },
-                      ),
-                      IconButton(
-                        icon: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: AppColors.midnightPill,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.sort_rounded, color: Colors.white, size: 18),
-                        ),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // Track List View
+                // Main Content View per selected Tab
                 Expanded(
-                  child: displaySongs.isEmpty
-                      ? Center(
-                          child: Text(
-                            _selectedTabIndex == 1
-                                ? "No favorite songs added yet"
-                                : "No tracks found",
-                            style: GoogleFonts.inter(color: AppColors.midnightTextMuted),
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          itemCount: displaySongs.length,
-                          itemBuilder: (context, index) {
-                            final song = displaySongs[index];
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Material(
-                                color: AppColors.midnightCard.withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(16),
-                                clipBehavior: Clip.antiAlias,
-                                child: ListTile(
-                                  leading: ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: SizedBox(
-                                      width: 48,
-                                      height: 48,
-                                      child: song.coverArt.isNotEmpty
-                                          ? CachedNetworkImage(
-                                              imageUrl: song.coverArt,
-                                              fit: BoxFit.cover,
-                                            )
-                                          : const Icon(Icons.music_note, color: Colors.white),
-                                    ),
-                                  ),
-                                  title: Text(
-                                    song.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    song.artist,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: GoogleFonts.inter(
-                                      color: AppColors.midnightTextMuted,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                  trailing: IconButton(
-                                    icon: Icon(
-                                      playerProvider.isFavorite(song.id)
-                                          ? Icons.favorite_rounded
-                                          : Icons.favorite_border_rounded,
-                                      color: playerProvider.isFavorite(song.id)
-                                          ? Colors.pinkAccent
-                                          : Colors.white54,
-                                      size: 20,
-                                    ),
-                                    onPressed: () => playerProvider.toggleFavorite(song),
-                                  ),
-                                  onTap: () {
-                                    playerProvider.playSong(song, queue: displaySongs, index: index);
-                                  },
-                                ),
-                              ),
-                            );
-                          },
-                        ),
+                  child: _buildTabContent(homeProvider, playerProvider, trending, playlists),
                 ),
 
                 const SizedBox(height: 80),
               ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTabContent(
+    HomeProvider homeProvider,
+    AudioPlayerProvider playerProvider,
+    List<Song> trending,
+    List<Playlist> playlists,
+  ) {
+    if (_selectedTabIndex == 1) {
+      // FAVORITES TAB
+      final favorites = playerProvider.favoriteSongs;
+      return _buildSongListView(favorites, playerProvider, "No favorite songs added yet");
+    } else if (_selectedTabIndex == 2) {
+      // DOWNLOADS TAB
+      return _buildSongListView(_downloadedSongs, playerProvider, "No downloaded tracks for offline playback");
+    } else if (_selectedTabIndex == 3) {
+      // ALBUMS TAB
+      final albums = playlists.where((p) => p.type == 'album').toList();
+      final displayAlbums = albums.isNotEmpty ? albums : playlists;
+
+      return GridView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.85,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+        ),
+        itemCount: displayAlbums.length,
+        itemBuilder: (context, index) {
+          final album = displayAlbums[index];
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => PlaylistDetailScreen(playlist: album)),
+              );
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: album.coverArt.isNotEmpty
+                        ? CachedNetworkImage(imageUrl: album.coverArt, fit: BoxFit.cover, width: double.infinity)
+                        : Container(color: AppColors.midnightCard),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  album.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } else if (_selectedTabIndex == 4) {
+      // ARTIST TAB
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: _topArtists.length,
+        itemBuilder: (context, index) {
+          final artist = _topArtists[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Material(
+              color: AppColors.midnightCard.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+              child: ListTile(
+                leading: ClipOval(
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: CachedNetworkImage(
+                      imageUrl: artist['image']!,
+                      fit: BoxFit.cover,
+                      errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.white),
+                    ),
+                  ),
+                ),
+                title: Text(
+                  artist['name']!,
+                  style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
+                ),
+                subtitle: Text(
+                  "Artist",
+                  style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12),
+                ),
+                trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ArtistDetailScreen(
+                        artistName: artist['name']!,
+                        artistImage: artist['image'],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        },
+      );
+    } else if (_selectedTabIndex == 5) {
+      // PLAYLISTS TAB
+      return ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        itemCount: playlists.length,
+        itemBuilder: (context, index) {
+          final pl = playlists[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Material(
+              color: AppColors.midnightCard.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+              child: ListTile(
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: pl.coverArt.isNotEmpty
+                        ? CachedNetworkImage(imageUrl: pl.coverArt, fit: BoxFit.cover)
+                        : const Icon(Icons.queue_music, color: Colors.white),
+                  ),
+                ),
+                title: Text(
+                  pl.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+                subtitle: Text(
+                  "Featured Playlist",
+                  style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12),
+                ),
+                trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => PlaylistDetailScreen(playlist: pl)),
+                  );
+                },
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      // SONGS TAB (Default)
+      return _buildSongListView(trending, playerProvider, "No tracks available");
+    }
+  }
+
+  Widget _buildSongListView(List<Song> songs, AudioPlayerProvider playerProvider, String emptyMessage) {
+    if (songs.isEmpty) {
+      return Center(
+        child: Text(emptyMessage, style: GoogleFonts.inter(color: AppColors.midnightTextMuted)),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: songs.length,
+      itemBuilder: (context, index) {
+        final song = songs[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Material(
+            color: AppColors.midnightCard.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(16),
+            child: ListTile(
+              leading: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: song.coverArt.isNotEmpty
+                      ? CachedNetworkImage(imageUrl: song.coverArt, fit: BoxFit.cover)
+                      : const Icon(Icons.music_note, color: Colors.white),
+                ),
+              ),
+              title: Text(
+                song.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+              subtitle: Text(
+                song.artist,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12),
+              ),
+              trailing: IconButton(
+                icon: Icon(
+                  playerProvider.isFavorite(song.id) ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  color: playerProvider.isFavorite(song.id) ? Colors.pinkAccent : Colors.white54,
+                  size: 20,
+                ),
+                onPressed: () => playerProvider.toggleFavorite(song),
+              ),
+              onTap: () {
+                playerProvider.playSong(song, queue: songs, index: index);
+              },
             ),
           ),
         );

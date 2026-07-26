@@ -10,6 +10,7 @@ import 'providers/audio_player_provider.dart';
 import 'providers/home_provider.dart';
 import 'providers/lyrics_provider.dart';
 import 'providers/search_provider.dart';
+import 'providers/settings_provider.dart';
 import 'views/main_navigation_wrapper.dart';
 
 late AudioPlayerHandler _audioHandler;
@@ -55,6 +56,9 @@ class PixelPlayerSaavnApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => LyricsProvider(lyricsService: lyricsService),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(),
         ),
       ],
       child: MaterialApp(

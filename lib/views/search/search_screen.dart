@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/search_provider.dart';
+import '../details/artist_detail_screen.dart';
 import '../details/playlist_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -17,7 +18,7 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   int _selectedCategoryIndex = 0;
-  final List<String> _categories = ["ALL", "SONGS", "ALBUMS", "PLAYLISTS"];
+  final List<String> _categories = ["ALL", "SONGS", "ARTISTS", "ALBUMS", "PLAYLISTS"];
 
   @override
   void dispose() {
@@ -65,7 +66,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           controller: _searchController,
                           style: GoogleFonts.inter(color: Colors.white),
                           decoration: InputDecoration(
-                            hintText: "Search songs, albums, playlists...",
+                            hintText: "Search songs, artists, albums, playlists...",
                             hintStyle: GoogleFonts.inter(color: AppColors.midnightTextMuted),
                             prefixIcon: const Icon(Icons.search, color: Colors.white70),
                             suffixIcon: _searchController.text.isNotEmpty
@@ -87,7 +88,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   ),
                 ),
 
-                // Category Filter Pills (ALL, SONGS, ALBUMS, PLAYLISTS)
+                // Category Filter Pills (ALL, SONGS, ARTISTS, ALBUMS, PLAYLISTS)
                 SizedBox(
                   height: 38,
                   child: ListView.builder(
@@ -134,13 +135,63 @@ class _SearchScreenState extends State<SearchScreen> {
                       : _searchController.text.isEmpty
                           ? Center(
                               child: Text(
-                                "Search for tracks, albums, or playlists",
+                                "Search for tracks, artists, albums, or playlists",
                                 style: GoogleFonts.inter(color: AppColors.midnightTextMuted),
                               ),
                             )
                           : ListView(
                               padding: const EdgeInsets.symmetric(horizontal: 20),
                               children: [
+                                // Artists Direct Match Section
+                                if (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 2) ...[
+                                  Text(
+                                    "Artist Match",
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Material(
+                                    color: AppColors.midnightCard.withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: ListTile(
+                                      leading: const CircleAvatar(
+                                        backgroundColor: AppColors.midnightPrimary,
+                                        child: Icon(Icons.person, color: Colors.black),
+                                      ),
+                                      title: Text(
+                                        _searchController.text,
+                                        style: GoogleFonts.inter(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      subtitle: Text(
+                                        "Explore full artist discography",
+                                        style: GoogleFonts.inter(
+                                          color: AppColors.midnightTextMuted,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => ArtistDetailScreen(
+                                              artistName: _searchController.text,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                ],
+
                                 // Songs Section
                                 if ((_selectedCategoryIndex == 0 || _selectedCategoryIndex == 1) && songs.isNotEmpty) ...[
                                   Text(
@@ -201,7 +252,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 ],
 
                                 // Albums Section
-                                if ((_selectedCategoryIndex == 0 || _selectedCategoryIndex == 2) && albums.isNotEmpty) ...[
+                                if ((_selectedCategoryIndex == 0 || _selectedCategoryIndex == 3) && albums.isNotEmpty) ...[
                                   Text(
                                     "Albums",
                                     style: GoogleFonts.outfit(
@@ -263,7 +314,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 ],
 
                                 // Playlists Section
-                                if ((_selectedCategoryIndex == 0 || _selectedCategoryIndex == 3) && playlists.isNotEmpty) ...[
+                                if ((_selectedCategoryIndex == 0 || _selectedCategoryIndex == 4) && playlists.isNotEmpty) ...[
                                   Text(
                                     "Playlists",
                                     style: GoogleFonts.outfit(
