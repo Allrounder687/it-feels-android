@@ -10,6 +10,7 @@ class JioSaavnApiService {
     'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'application/json',
+    'Cookie': 'L=english; hindi;punjabi;',
   };
 
   final Map<String, String> _streamCache = {};
@@ -33,9 +34,6 @@ class JioSaavnApiService {
 
       final response = await http.get(url, headers: _headers);
       if (response.statusCode != 200) {
-        final errorMessage = 'Failed to search. Status code: ${response.statusCode}';
-        onError?.call(errorMessage);
-        debugPrint('[JioSaavnApiService] $errorMessage');
         return {'songs': <Song>[], 'albums': <Playlist>[], 'playlists': <Playlist>[]};
       }
 
@@ -71,9 +69,7 @@ class JioSaavnApiService {
         'playlists': playlists,
       };
     } catch (e) {
-      final errorMessage = 'Search error: $e';
-      onError?.call('Failed to perform search. Please try again.');
-      debugPrint('[JioSaavnApiService] $errorMessage');
+      debugPrint('[JioSaavnApiService] Search error: $e');
       return {'songs': <Song>[], 'albums': <Playlist>[], 'playlists': <Playlist>[]};
     }
   }
@@ -86,7 +82,6 @@ class JioSaavnApiService {
 
   /// Get Homepage Data (Trending songs, charts, playlists)
   Future<Map<String, dynamic>> fetchHomepageData({Function(String message)? onError}) async {
-    // Check cache first
     if (_homepageCache.isNotEmpty && DateTime.now().isBefore(_homepageCacheExpiry)) {
       return _homepageCache;
     }
@@ -96,60 +91,79 @@ class JioSaavnApiService {
           '$_baseUrl?__call=content.getHomepageData&_format=json&_marker=0&api_version=4&ctx=web6dot0');
 
       final response = await http.get(url, headers: _headers);
-      if (response.statusCode != 200) {
-        final errorMessage = 'Failed to fetch homepage data. Status code: ${response.statusCode}';
-        onError?.call(errorMessage);
-        debugPrint('[JioSaavnApiService] $errorMessage');
-        return {'trending': <Song>[], 'playlists': <Playlist>[]};
-      }
-
-      final data = json.decode(response.body);
       final List<Song> trendingSongs = [];
       final List<Playlist> playlists = [];
 
-      if (data['charts'] is List && (data['charts'] as List).isNotEmpty) {
-        final firstChart = data['charts'][0];
-        final chartId = firstChart['id'] ?? firstChart['listid'];
-        if (chartId != null) {
-          final chartPlaylist = await fetchPlaylistDetails(chartId.toString(), onError: onError);
-          trendingSongs.addAll(chartPlaylist['songs'] as List<Song>);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // 1. Direct song items from new_albums or new_trending
+        if (data['new_albums'] is List) {
+          for (var item in data['new_albums']) {
+            if (item['type'] == 'song' || item['song'] != null) {
+              trendingSongs.add(Song.fromJson(item));
+            } else {
+              playlists.add(Playlist.fromJson({...item, 'type': 'album'}));
+            }
+          }
+        }
+
+        // 2. Playlists from charts & featured_playlists
+        final playlistSources = [
+          data['charts'],
+          data['top_playlists'],
+          data['featured_playlists'],
+        ];
+
+        for (var src in playlistSources) {
+          if (src is List) {
+            for (var item in src) {
+              playlists.add(Playlist.fromJson(item));
+            }
+          }
+        }
+
+        // 3. Fetch details for first chart if trendingSongs is still empty
+        if (trendingSongs.isEmpty && data['charts'] is List && (data['charts'] as List).isNotEmpty) {
+          final chartId = data['charts'][0]['id'] ?? data['charts'][0]['listid'];
+          if (chartId != null) {
+            final chartData = await fetchPlaylistDetails(chartId.toString());
+            trendingSongs.addAll(chartData['songs'] as List<Song>);
+          }
         }
       }
 
-      final sources = [
-        {'data': data['charts'], 'type': 'playlist'},
-        {'data': data['top_playlists'] ?? data['featured_playlists'], 'type': 'playlist'},
-        {'data': data['new_albums'], 'type': 'album'},
-      ];
+      // Fallback: If JioSaavn homepage API returned empty trending list, fetch Trending Today playlist (110858205)
+      if (trendingSongs.isEmpty) {
+        final fallbackChart = await fetchPlaylistDetails('110858205');
+        trendingSongs.addAll(fallbackChart['songs'] as List<Song>);
+      }
 
-      for (var src in sources) {
-        if (src['data'] is List) {
-          for (var item in src['data']) {
-            playlists.add(Playlist.fromJson(item));
-          }
-        }
+      // Fallback 2: Search for top songs
+      if (trendingSongs.isEmpty) {
+        final fallbackSongs = await searchSongs('Arijit Singh');
+        trendingSongs.addAll(fallbackSongs);
       }
 
       final result = {
         'trending': trendingSongs,
         'playlists': playlists,
       };
-      // Store in cache with new expiry
+
       _homepageCache.clear();
       _homepageCache.addAll(result);
       _homepageCacheExpiry = DateTime.now().add(_cacheDuration);
       return result;
     } catch (e) {
-      final errorMessage = 'Homepage error: $e';
-      onError?.call('Failed to load homepage content. Please try again.');
-      debugPrint('[JioSaavnApiService] $errorMessage');
-      return {'trending': <Song>[], 'playlists': <Playlist>[]};
+      debugPrint('[JioSaavnApiService] Homepage error: $e');
+      // Emergency fallback
+      final fallbackSongs = await searchSongs('Hindi');
+      return {'trending': fallbackSongs, 'playlists': <Playlist>[]};
     }
   }
 
   /// Fetch playlist tracks
   Future<Map<String, dynamic>> fetchPlaylistDetails(String listId, {Function(String message)? onError}) async {
-    // Check cache first
     if (_playlistCache.containsKey(listId) &&
         _playlistCacheExpiries.containsKey(listId) &&
         DateTime.now().isBefore(_playlistCacheExpiries[listId]!)) {
@@ -162,9 +176,6 @@ class JioSaavnApiService {
 
       final response = await http.get(url, headers: _headers);
       if (response.statusCode != 200) {
-        final errorMessage = 'Failed to fetch playlist details for ID $listId. Status code: ${response.statusCode}';
-        onError?.call(errorMessage);
-        debugPrint('[JioSaavnApiService] $errorMessage');
         return {'name': '', 'songs': <Song>[]};
       }
 
@@ -184,21 +195,17 @@ class JioSaavnApiService {
         'songs': songs,
         'image': (data['image'] ?? '').toString().replaceAll('150x150', '500x500'),
       };
-      // Store in cache with new expiry
       _playlistCache[listId] = result;
       _playlistCacheExpiries[listId] = DateTime.now().add(_cacheDuration);
       return result;
     } catch (e) {
-      final errorMessage = 'Playlist error for ID $listId: $e';
-      onError?.call('Failed to load playlist details. Please try again.');
-      debugPrint('[JioSaavnApiService] $errorMessage');
+      debugPrint('[JioSaavnApiService] Playlist error for ID $listId: $e');
       return {'name': '', 'songs': <Song>[]};
     }
   }
 
   /// Fetch album tracks
   Future<Map<String, dynamic>> fetchAlbumDetails(String albumId, {Function(String message)? onError}) async {
-    // Check cache first
     if (_albumCache.containsKey(albumId) &&
         _albumCacheExpiries.containsKey(albumId) &&
         DateTime.now().isBefore(_albumCacheExpiries[albumId]!)) {
@@ -211,9 +218,6 @@ class JioSaavnApiService {
 
       final response = await http.get(url, headers: _headers);
       if (response.statusCode != 200) {
-        final errorMessage = 'Failed to fetch album details for ID $albumId. Status code: ${response.statusCode}';
-        onError?.call(errorMessage);
-        debugPrint('[JioSaavnApiService] $errorMessage');
         return {'name': '', 'songs': <Song>[]};
       }
 
@@ -233,14 +237,11 @@ class JioSaavnApiService {
         'songs': songs,
         'image': (data['image'] ?? '').toString().replaceAll('150x150', '500x500'),
       };
-      // Store in cache with new expiry
       _albumCache[albumId] = result;
       _albumCacheExpiries[albumId] = DateTime.now().add(_cacheDuration);
       return result;
     } catch (e) {
-      final errorMessage = 'Album error for ID $albumId: $e';
-      onError?.call('Failed to load album details. Please try again.');
-      debugPrint('[JioSaavnApiService] $errorMessage');
+      debugPrint('[JioSaavnApiService] Album error for ID $albumId: $e');
       return {'name': '', 'songs': <Song>[]};
     }
   }
@@ -268,42 +269,27 @@ class JioSaavnApiService {
             encUrl = data[song.saavnId]['more_info']?['encrypted_media_url'] ??
                 data[song.saavnId]['encrypted_media_url'];
           }
-        } else {
-          final errorMessage = 'Failed to fetch encrypted URL for ${song.saavnId}. Status code: ${response.statusCode}';
-          onError?.call(errorMessage);
-          debugPrint('[JioSaavnApiService] $errorMessage');
-          return null;
         }
       }
 
       if (encUrl == null || encUrl.isEmpty) {
-        final errorMessage = 'No encrypted URL found for ${song.saavnId}';
-        onError?.call(errorMessage);
-        debugPrint('[JioSaavnApiService] $errorMessage');
+        debugPrint('[JioSaavnApiService] No encrypted URL found for ${song.saavnId}');
         return null;
       }
 
-      final decrypted = await DesDecryptor.decrypt(encUrl, onError: onError);
-      if (decrypted == null) {
-        onError?.call('Failed to decrypt stream URL for ${song.title}');
-        return null;
-      }
+      final decrypted = await DesDecryptor.decrypt(encUrl);
+      if (decrypted == null) return null;
+
+
 
       final finalUrl = DesDecryptor.get320kbpsUrl(decrypted);
 
       if (finalUrl != null) {
         _streamCache[song.saavnId] = finalUrl;
         return finalUrl;
-      } else {
-        final errorMessage = 'Failed to get 320kbps URL for ${song.saavnId}';
-        onError?.call(errorMessage);
-        debugPrint('[JioSaavnApiService] $errorMessage');
-        return null;
       }
     } catch (e) {
-      final errorMessage = 'Stream resolution error for ${song.saavnId}: $e';
-      onError?.call('Failed to get stream URL for ${song.title}. Please try again.');
-      debugPrint('[JioSaavnApiService] $errorMessage');
+      debugPrint('[JioSaavnApiService] Stream resolution error for ${song.saavnId}: $e');
     }
 
     return null;
