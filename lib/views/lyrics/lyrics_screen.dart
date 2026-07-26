@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/lyrics_provider.dart';
 import '../widgets/wavy_seek_bar.dart';
+import 'lyrics_share_dialog.dart';
 
 class LyricsScreen extends StatelessWidget {
   const LyricsScreen({super.key});
@@ -151,7 +152,23 @@ class LyricsScreen extends StatelessWidget {
                                             ]
                                           : null,
                                     ),
-                                    child: Text(line.text),
+                                    child: GestureDetector(
+                                        onTap: () {
+                                          playerProvider.seek(line.time);
+                                        },
+                                        onLongPress: () {
+                                          if (currentSong != null) {
+                                            showDialog(
+                                              context: context,
+                                              builder: (_) => LyricsShareDialog(
+                                                song: currentSong,
+                                                lyricText: line.text,
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: Text(line.text),
+                                      ),
                                   ),
                                 );
                               },
@@ -159,7 +176,7 @@ class LyricsScreen extends StatelessWidget {
                           : SingleChildScrollView(
                               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
                               child: Text(
-                                lyricsProvider.result.staticLyrics ?? "No lyrics available for this track",
+                                lyricsProvider.result.staticLyrics ?? "Oopsies! 🙈 The lyrics for this track are playing hide and seek.",
                                 style: GoogleFonts.outfit(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w600,

@@ -22,7 +22,7 @@ class MiniPlayer extends StatelessWidget {
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          height: 60,
+          height: 72,
           decoration: BoxDecoration(
             color: playerProvider.themeSurfaceColor.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(16),
@@ -122,10 +122,15 @@ class MiniPlayer extends StatelessWidget {
 
                           // Play/Pause Action Button
                           IconButton(
-                            icon: Icon(
-                              playerProvider.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                              color: Colors.white,
-                              size: 28,
+                            icon: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                              child: Icon(
+                                playerProvider.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                key: ValueKey<bool>(playerProvider.isPlaying),
+                                color: Colors.white,
+                                size: 28,
+                              ),
                             ),
                             onPressed: () => playerProvider.togglePlayPause(),
                           ),

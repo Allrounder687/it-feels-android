@@ -7,9 +7,11 @@ import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
 import '../lyrics/lyrics_screen.dart';
+import '../widgets/bouncy_icon_button.dart';
 import '../widgets/song_options_sheet.dart';
 import '../widgets/wavy_seek_bar.dart';
 import 'queue_bottom_sheet.dart';
+import 'sleep_timer_sheet.dart';
 
 class NowPlayingScreen extends StatelessWidget {
   const NowPlayingScreen({super.key});
@@ -91,9 +93,35 @@ class NowPlayingScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // Action Buttons (Download + Lyrics + Queue Menu)
+                      // Action Buttons (Sleep Timer + Download + Options)
                       Row(
                         children: [
+                          IconButton(
+                            icon: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: surfaceColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                playerProvider.isSleepTimerActive || playerProvider.sleepAfterCurrentTrack
+                                    ? Icons.bedtime_rounded
+                                    : Icons.bedtime_outlined,
+                                color: playerProvider.isSleepTimerActive || playerProvider.sleepAfterCurrentTrack
+                                    ? accentColor
+                                    : Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                            onPressed: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => const SleepTimerSheet(),
+                              );
+                            },
+                          ),
                           IconButton(
                             icon: Container(
                               padding: const EdgeInsets.all(10),
@@ -398,18 +426,19 @@ class NowPlayingScreen extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.replay_10_rounded, color: Colors.white70, size: 28),
+                        BouncyIconButton(
+                          child: const Icon(Icons.replay_10_rounded, color: Colors.white70, size: 28),
                           onPressed: () => playerProvider.seekBackward(),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.skip_previous_rounded, color: Colors.white, size: 36),
+                        BouncyIconButton(
+                          child: const Icon(Icons.skip_previous_rounded, color: Colors.white, size: 36),
                           onPressed: () => playerProvider.skipToPrevious(),
                         ),
 
                         // Center Big Play/Pause Toggle
-                        GestureDetector(
-                          onTap: () => playerProvider.togglePlayPause(),
+                        BouncyIconButton(
+                          onPressed: () => playerProvider.togglePlayPause(),
+                          padding: EdgeInsets.zero,
                           child: Container(
                             width: 62,
                             height: 62,
@@ -417,22 +446,27 @@ class NowPlayingScreen extends StatelessWidget {
                               color: accentColor,
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
-                              playerProvider.isPlaying
-                                  ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded,
-                              color: Colors.black,
-                              size: 38,
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 300),
+                              transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                              child: Icon(
+                                playerProvider.isPlaying
+                                    ? Icons.pause_rounded
+                                    : Icons.play_arrow_rounded,
+                                key: ValueKey<bool>(playerProvider.isPlaying),
+                                color: Colors.black,
+                                size: 38,
+                              ),
                             ),
                           ),
                         ),
 
-                        IconButton(
-                          icon: const Icon(Icons.skip_next_rounded, color: Colors.white, size: 36),
+                        BouncyIconButton(
+                          child: const Icon(Icons.skip_next_rounded, color: Colors.white, size: 36),
                           onPressed: () => playerProvider.skipToNext(),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.forward_10_rounded, color: Colors.white70, size: 28),
+                        BouncyIconButton(
+                          child: const Icon(Icons.forward_10_rounded, color: Colors.white70, size: 28),
                           onPressed: () => playerProvider.seekForward(),
                         ),
                       ],
@@ -447,16 +481,16 @@ class NowPlayingScreen extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        IconButton(
-                          icon: Icon(
+                        BouncyIconButton(
+                          child: Icon(
                             Icons.shuffle_rounded, 
                             color: playerProvider.isShuffle ? accentColor : Colors.white60, 
                             size: 24,
                           ),
                           onPressed: () => playerProvider.toggleShuffle(),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.queue_music_rounded, color: Colors.white60, size: 24),
+                        BouncyIconButton(
+                          child: const Icon(Icons.queue_music_rounded, color: Colors.white60, size: 24),
                           onPressed: () {
                             showModalBottomSheet(
                               context: context,
@@ -466,8 +500,8 @@ class NowPlayingScreen extends StatelessWidget {
                             );
                           },
                         ),
-                        IconButton(
-                          icon: Icon(
+                        BouncyIconButton(
+                          child: Icon(
                             playerProvider.isRepeat ? Icons.repeat_one_rounded : Icons.repeat_rounded, 
                             color: playerProvider.isRepeat ? accentColor : Colors.white60, 
                             size: 24,

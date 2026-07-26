@@ -127,6 +127,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
       builder: (context, playerProvider, child) {
         return Expanded(
           child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onTap: () {
               setState(() {
                 _currentTab = index;
@@ -135,7 +136,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
             child: Center(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.midnightPill : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
@@ -146,7 +147,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
                     Icon(
                       icon,
                       color: isSelected ? AppColors.midnightAccent : Colors.white60,
-                      size: 22,
+                      size: 26,
                     ),
                     if (isSelected) ...[
                       const SizedBox(width: 6),
