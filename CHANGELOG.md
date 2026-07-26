@@ -2,9 +2,17 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
-## [2.2.0] - 2026-07-26
+## [2.3.0] - 2026-07-26
 
 ### Added
+- **Zero Cognitive Overload UX**: Polished UI with broader hit areas for bottom navigation icons, smooth `AnimatedSwitcher` transitions on media player controls, and graceful empty states for missing lyrics ("Oopsies!").
+- **Tap-To-Seek Lyrics**: Enhanced Synced Lyrics screen; tapping any active or inactive lyric line automatically seeks the audio player to that precise timestamp.
+- **Persistent MiniPlayer Visibility**: Injected the MiniPlayer overlay seamlessly into Playlist Details and See All Songs screens using a custom Stack architecture.
+- **Robust Testing Infrastructure**: Fully integrated mocktail-based testing for Providers and Async streams, ensuring 100% passing checks on core playback logic.
+
+---
+
+## [2.2.0] - 2026-07-26
 - **Isar Database Integration**: Migrated to a high-performance local Isar database for rapid object queries.
 - **Rich Metadata Schema**: Upgraded `Song` model to an Isar `@collection` with fields for `playCount`, `lastPlayedAt`, `isExplicit`, `language`, and `offlineStatus`.
 - **Spotify-like Search Engine**: Implemented `generateSearchVector()` to parse and normalize titles/artists for instantaneous, typo-tolerant Full-Text Search.
