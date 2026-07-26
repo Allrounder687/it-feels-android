@@ -54,13 +54,17 @@ class NowPlayingScreen extends StatelessWidget {
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onVerticalDragEnd: (details) {
-                if (details.primaryVelocity != null && details.primaryVelocity! < -100) {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => const QueueBottomSheet(),
-                  );
+                if (details.primaryVelocity != null) {
+                  if (details.primaryVelocity! > 150) {
+                    Navigator.pop(context); // Swipe down to close
+                  } else if (details.primaryVelocity! < -150) {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => const QueueBottomSheet(),
+                    );
+                  }
                 }
               },
               child: Padding(
@@ -92,21 +96,21 @@ class NowPlayingScreen extends StatelessWidget {
                         children: [
                           IconButton(
                             icon: Container(
-                              padding: const EdgeInsets.all(6),
+                              padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: surfaceColor,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               child: isDownloading
                                   ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
+                                      width: 24,
+                                      height: 24,
                                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                     )
                                   : Icon(
                                       isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
                                       color: isDown ? accentColor : Colors.white,
-                                      size: 20,
+                                      size: 24,
                                     ),
                             ),
                             onPressed: () async {
@@ -132,12 +136,12 @@ class NowPlayingScreen extends StatelessWidget {
                           ),
                           IconButton(
                             icon: Container(
-                              padding: const EdgeInsets.all(6),
+                              padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: surfaceColor,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 20),
+                              child: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 24),
                             ),
                             onPressed: () {
                               SongOptionsSheet.show(context, currentSong);
@@ -235,24 +239,24 @@ class NowPlayingScreen extends StatelessWidget {
                         GestureDetector(
                           onTap: () => playerProvider.toggleFavorite(currentSong),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                             decoration: BoxDecoration(
                               color: surfaceColor.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(24),
                             ),
                             child: Row(
                               children: [
                                 Icon(
                                   isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                                   color: isFav ? Colors.pinkAccent : Colors.white70,
-                                  size: 18,
+                                  size: 22,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   isFav ? "Liked" : "Like",
                                   style: GoogleFonts.inter(
                                     color: Colors.white,
-                                    fontSize: 13,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -285,30 +289,30 @@ class NowPlayingScreen extends StatelessWidget {
                             }
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                             decoration: BoxDecoration(
                               color: surfaceColor.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(24),
                             ),
                             child: Row(
                               children: [
                                 isDownloading
                                     ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
+                                        width: 20,
+                                        height: 20,
                                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                       )
                                     : Icon(
                                         isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
                                         color: isDown ? accentColor : Colors.white70,
-                                        size: 18,
+                                        size: 22,
                                       ),
                                 const SizedBox(width: 8),
                                 Text(
                                   isDown ? "Downloaded" : "Download",
                                   style: GoogleFonts.inter(
                                     color: Colors.white,
-                                    fontSize: 13,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -327,20 +331,20 @@ class NowPlayingScreen extends StatelessWidget {
                             );
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                             decoration: BoxDecoration(
                               color: surfaceColor.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(24),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.lyrics_outlined, color: Colors.white70, size: 18),
+                                const Icon(Icons.lyrics_outlined, color: Colors.white70, size: 22),
                                 const SizedBox(width: 6),
                                 Text(
                                   "Lyrics",
                                   style: GoogleFonts.inter(
                                     color: Colors.white,
-                                    fontSize: 13,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),

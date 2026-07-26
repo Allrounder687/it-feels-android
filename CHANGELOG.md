@@ -2,6 +2,21 @@
 
 All notable changes to **PixelPlayer Saavn Edition** will be documented in this file.
 
+## [2.1.2] - 2026-07-26
+
+### Added
+- **Curated Moods & Charts**: Added dynamic homescreen categories for "Moods" (with English/Hindi toggle) and global "Charts".
+- **Hidden Songs Manager**: Added dedicated screen in Settings to unhide songs manually.
+- **Default Startup Category**: Users can now set their preferred default homepage category (e.g., Bollywood, YOU, Trending) in Settings.
+- **Enhanced Now Playing Gestures**: Swipe down anywhere to close the player, and swipe up from the bottom to seamlessly open the Queue drawer.
+
+### Fixed
+- **Ultimate Artist Search Logic**: Prioritized parsing the `topquery` API node in JioSaavn to ensure top-tier verified artists like "Taylor Swift" and "Atif Aslam" appear as direct matches instead of obscure collabs.
+- **UX Polish**: Increased the tap target size and icon scaling for the Like, Lyrics, Download, and Options buttons on the Now Playing screen.
+- **Empty States**: "YOU", Moods, and Charts tabs now gracefully fall back to default trending content if user history or API queries return empty.
+
+---
+
 ## [2.1.1] - 2026-07-26
 
 ### Fixed

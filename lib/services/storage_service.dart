@@ -118,6 +118,17 @@ class StorageService {
     return prefs.getString(_customPlaylistsKey);
   }
 
+  /// Default Category
+  static Future<void> saveDefaultCategory(String category) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('default_category', category);
+  }
+
+  static Future<String> loadDefaultCategory() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('default_category') ?? 'Bollywood';
+  }
+
   /// Save favorites list
   static Future<void> saveFavorites(List<Song> favorites) async {
     final prefs = await SharedPreferences.getInstance();

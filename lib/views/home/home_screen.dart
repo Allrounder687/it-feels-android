@@ -46,8 +46,23 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final homeProvider = Provider.of<HomeProvider>(context, listen: false);
       final historyProvider = Provider.of<ListeningHistoryProvider>(context, listen: false);
+      
+      // Sync selected index with provider's default
+      final idx = _filters.indexOf(homeProvider.selectedCategory);
+      if (idx != -1 && mounted) {
+        setState(() {
+          _selectedFilterIndex = idx;
+        });
+      }
+
       if (homeProvider.selectedCategory == "YOU" && homeProvider.currentCategoryPlaylists.isEmpty) {
         homeProvider.fetchYouSongs(historyProvider.getTopArtists());
+      } else if (homeProvider.selectedCategory == "Moods") {
+        homeProvider.fetchMoods();
+      } else if (homeProvider.selectedCategory == "Charts") {
+        homeProvider.fetchCharts();
+      } else if (["Bollywood", "Telugu", "Tamil", "Punjabi", "Hollywood", "Albums"].contains(homeProvider.selectedCategory)) {
+        homeProvider.selectCategory(homeProvider.selectedCategory);
       }
     });
   }

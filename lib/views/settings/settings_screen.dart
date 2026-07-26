@@ -72,6 +72,15 @@ class SettingsScreen extends StatelessWidget {
               _buildSectionHeader("🛡️ Privacy & Preferences"),
               const SizedBox(height: 8),
 
+              _buildSelectableTile(
+                context: context,
+                title: "Default Startup Category",
+                subtitle: settings.defaultCategory,
+                options: ["YOU", "Moods", "Charts", "Bollywood", "Telugu", "Tamil", "Punjabi", "Hollywood", "Trending", "Playlists", "Albums"],
+                currentValue: settings.defaultCategory,
+                onSelected: (val) => settings.setDefaultCategory(val),
+              ),
+
               _buildActionTile(
                 title: "Manage Hidden Songs",
                 subtitle: "View and unhide songs you've removed from your feed",

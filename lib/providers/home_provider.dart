@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../core/utils/error_reporter.dart';
 import '../data/models/song_model.dart';
 import '../data/services/jiosaavn_api_service.dart';
+import '../services/storage_service.dart';
 
 class HomeProvider extends ChangeNotifier {
   final JioSaavnApiService apiService;
@@ -41,7 +42,13 @@ class HomeProvider extends ChangeNotifier {
   bool _isLoading = true;
 
   HomeProvider({required this.apiService}) {
+    _initCategory();
     loadHomepageData();
+  }
+
+  Future<void> _initCategory() async {
+    _selectedCategory = await StorageService.loadDefaultCategory();
+    notifyListeners();
   }
 
   List<Song> get trendingSongs => _trendingSongs;
@@ -257,30 +264,32 @@ class HomeProvider extends ChangeNotifier {
   }
 
   Future<void> fetchYouSongs(List<String> topArtists) async {
-    _youSongs.clear();
-    _youPlaylists.clear();
-    
-    if (topArtists.isEmpty) {
-      notifyListeners();
-      return;
-    }
+    if (_youSongs.isNotEmpty) return;
 
     try {
-      for (int i = 0; i < topArtists.length; i++) {
-        final artist = topArtists[i];
-        final songs = await apiService.searchSongs(artist, count: 20);
-        
-        if (songs.isNotEmpty) {
+      final queryArtists = topArtists.isNotEmpty 
+          ? topArtists 
+          : ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift']; // Fallback artists
+
+      for (var artist in queryArtists.take(4)) {
+        final res = await apiService.searchSongs(artist, count: 20);
+        if (res.isNotEmpty) {
           _youPlaylists.add(Playlist(
-            id: 'mix_$i',
+            id: 'mix_${artist.replaceAll(' ', '_')}',
             title: 'Daily Mix: $artist',
             type: 'playlist',
-            coverArt: songs.first.coverArt,
-            songCount: songs.length,
+            coverArt: res.first.coverArt,
+            songCount: res.length,
           ));
-          _youSongs.addAll(songs);
+          _youSongs.addAll(res);
         }
       }
+      
+      // If still empty (network failure etc), fallback to trending
+      if (_youSongs.isEmpty) {
+        _youSongs.addAll(_trendingSongs.take(10));
+      }
+      
       _youSongs = _deduplicate(_youSongs);
     } catch (_) {}
     
@@ -298,8 +307,8 @@ class HomeProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final moods = ['Chill', 'Party', 'Lofi', 'Romance', 'Car Ride', 'Workout'];
-      final futures = moods.map((mood) => apiService.searchPlaylists('$_moodLanguage $mood', count: 3));
+      final moods = ['Chill', 'Party', 'Lofi', 'Romance', 'Workout'];
+      final futures = moods.map((mood) => apiService.searchPlaylists('$_moodLanguage $mood', count: 4));
       final results = await Future.wait(futures);
       
       _moodPlaylists.clear();
@@ -312,6 +321,11 @@ class HomeProvider extends ChangeNotifier {
       // Deduplicate playlists by id
       final seen = <String>{};
       _moodPlaylists = _moodPlaylists.where((p) => seen.add(p.id)).toList();
+      
+      // Fallback if empty
+      if (_moodPlaylists.isEmpty) {
+        _moodPlaylists = _topPlaylists.where((p) => p.type == 'playlist').take(5).toList();
+      }
     } catch (_) {}
     
     _isLoadingMoods = false;
@@ -324,8 +338,8 @@ class HomeProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final queries = ['Spotify Top 50 Global', 'Billboard Hot 100', 'Top 50 Hindi', 'Global Top 100', 'Viral 50'];
-      final futures = queries.map((query) => apiService.searchPlaylists(query, count: 2));
+      final queries = ['Top 50', 'Billboard', 'Viral', 'Global 100'];
+      final futures = queries.map((query) => apiService.searchPlaylists(query, count: 4));
       final results = await Future.wait(futures);
       
       _chartPlaylists.clear();
@@ -337,6 +351,10 @@ class HomeProvider extends ChangeNotifier {
       
       final seen = <String>{};
       _chartPlaylists = _chartPlaylists.where((p) => seen.add(p.id)).toList();
+      
+      if (_chartPlaylists.isEmpty) {
+         _chartPlaylists = _topPlaylists.where((p) => p.type == 'playlist').take(5).toList();
+      }
     } catch (_) {}
     
     _isLoadingCharts = false;

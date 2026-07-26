@@ -6,6 +6,7 @@ class SettingsProvider extends ChangeNotifier {
   String _mobileQuality = '160 kbps (High)';
   String _downloadQuality = '320 kbps (Very High)';
   String _theme = 'Dynamic (Album Art)';
+  String _defaultCategory = 'Bollywood';
 
   SettingsProvider() {
     _loadSettings();
@@ -15,6 +16,7 @@ class SettingsProvider extends ChangeNotifier {
   String get mobileQuality => _mobileQuality;
   String get downloadQuality => _downloadQuality;
   String get theme => _theme;
+  String get defaultCategory => _defaultCategory;
 
   Future<void> _loadSettings() async {
     final settings = await StorageService.loadSettings();
@@ -22,6 +24,7 @@ class SettingsProvider extends ChangeNotifier {
     _mobileQuality = settings['mobileQuality']!;
     _downloadQuality = settings['downloadQuality']!;
     _theme = settings['theme']!;
+    _defaultCategory = await StorageService.loadDefaultCategory();
     notifyListeners();
   }
 
@@ -43,6 +46,12 @@ class SettingsProvider extends ChangeNotifier {
   void setTheme(String newTheme) {
     _theme = newTheme;
     _save();
+  }
+
+  void setDefaultCategory(String category) {
+    _defaultCategory = category;
+    StorageService.saveDefaultCategory(category);
+    notifyListeners();
   }
 
   void _save() {
