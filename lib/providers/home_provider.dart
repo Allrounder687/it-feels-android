@@ -26,6 +26,9 @@ class HomeProvider extends ChangeNotifier {
   List<Song> _hollywoodSongs = [];
   List<Playlist> _hollywoodPlaylists = [];
 
+  List<Song> _podcastSongs = [];
+  List<Playlist> _podcastPlaylists = [];
+
   List<Song> _youSongs = [];
   List<Playlist> _youPlaylists = [];
 
@@ -38,7 +41,7 @@ class HomeProvider extends ChangeNotifier {
   List<Playlist> _chartPlaylists = [];
   bool _isLoadingCharts = false;
 
-  String _selectedCategory = "YOU";
+  String _selectedCategory = "For You";
   bool _isLoading = true;
 
   HomeProvider({required this.apiService}) {
@@ -60,60 +63,40 @@ class HomeProvider extends ChangeNotifier {
   bool get isLoadingCharts => _isLoadingCharts;
   String get moodLanguage => _moodLanguage;
 
+  List<Song> get youSongs => _youSongs;
+  List<Playlist> get youPlaylists => _youPlaylists;
+  List<Song> get bollywoodSongs => _bollywoodSongs;
+  List<Song> get teluguSongs => _teluguSongs;
+  List<Song> get tamilSongs => _tamilSongs;
+  List<Song> get punjabiSongs => _punjabiSongs;
+  List<Song> get hollywoodSongs => _hollywoodSongs;
+  List<Song> get podcastSongs => _podcastSongs;
+  List<Playlist> get podcastPlaylists => _podcastPlaylists;
+  List<Playlist> get moodPlaylists => _moodPlaylists;
+  List<Playlist> get chartPlaylists => _chartPlaylists;
+
   List<Song> get currentCategorySongs {
     switch (_selectedCategory) {
-      case "Bollywood":
-        return _bollywoodSongs.isNotEmpty ? _bollywoodSongs : _trendingSongs;
-      case "Telugu":
-        return _teluguSongs.isNotEmpty ? _teluguSongs : _trendingSongs;
-      case "Tamil":
-        return _tamilSongs.isNotEmpty ? _tamilSongs : _trendingSongs;
-      case "Punjabi":
-        return _punjabiSongs.isNotEmpty ? _punjabiSongs : _trendingSongs;
-      case "Hollywood":
-        return _hollywoodSongs.isNotEmpty ? _hollywoodSongs : _trendingSongs;
-      case "YOU":
+      case "For You":
         return _youSongs;
-      case "Moods":
-        return [];
+      case "Podcasts":
+        return _podcastSongs;
+      case "Music":
       case "Charts":
-        return [];
-      case "Trending":
-        return _trendingSongs;
-      case "Playlists":
-        return _trendingSongs;
-      case "Albums":
-        return _trendingSongs;
-      case "All":
       default:
-        return [..._bollywoodSongs, ..._teluguSongs, ..._tamilSongs, ..._trendingSongs];
+        return _trendingSongs;
     }
   }
 
   List<Playlist> get currentCategoryPlaylists {
     switch (_selectedCategory) {
-      case "Bollywood":
-        return _bollywoodPlaylists.isNotEmpty ? _bollywoodPlaylists : _topPlaylists;
-      case "Telugu":
-        return _teluguPlaylists.isNotEmpty ? _teluguPlaylists : _topPlaylists;
-      case "Tamil":
-        return _tamilPlaylists.isNotEmpty ? _tamilPlaylists : _topPlaylists;
-      case "Punjabi":
-        return _punjabiPlaylists.isNotEmpty ? _punjabiPlaylists : _topPlaylists;
-      case "Hollywood":
-        return _hollywoodPlaylists.isNotEmpty ? _hollywoodPlaylists : _topPlaylists;
-      case "YOU":
+      case "For You":
         return _youPlaylists;
-      case "Moods":
-        return _moodPlaylists;
+      case "Podcasts":
+        return _podcastPlaylists;
       case "Charts":
         return _chartPlaylists;
-      case "Playlists":
-        return _topPlaylists.where((p) => p.type == 'playlist').toList();
-      case "Albums":
-        return _topAlbums.isNotEmpty ? _topAlbums : _topPlaylists;
-      case "Trending":
-      case "All":
+      case "Music":
       default:
         return _topPlaylists;
     }
@@ -123,22 +106,14 @@ class HomeProvider extends ChangeNotifier {
     _selectedCategory = category;
     notifyListeners();
 
-    if (category == "Bollywood" && _bollywoodSongs.length < 10) {
-      await fetchBollywoodSongs();
-    } else if (category == "Telugu" && _teluguSongs.length < 10) {
-      await fetchTeluguSongs();
-    } else if (category == "Tamil" && _tamilSongs.length < 10) {
-      await fetchTamilSongs();
-    } else if (category == "Punjabi" && _punjabiSongs.length < 10) {
-      await fetchPunjabiSongs();
-    } else if (category == "Hollywood" && _hollywoodSongs.length < 10) {
-      await fetchHollywoodSongs();
-    } else if (category == "Albums" && _topAlbums.length < 10) {
-      await fetchIndianAlbums();
-    } else if (category == "Moods" && _moodPlaylists.isEmpty) {
+    if (category == "Podcasts" && _podcastPlaylists.isEmpty) {
+      await fetchPodcasts();
+    } else if (category == "For You" && _moodPlaylists.isEmpty) {
       await fetchMoods();
     } else if (category == "Charts" && _chartPlaylists.isEmpty) {
       await fetchCharts();
+    } else if (category == "Music" && _hollywoodSongs.isEmpty) {
+      await fetchHollywoodSongs();
     }
   }
 
@@ -239,6 +214,23 @@ class HomeProvider extends ChangeNotifier {
       if (combined.isNotEmpty) _hollywoodSongs = combined;
       if (playlists.isNotEmpty) _hollywoodPlaylists = playlists;
     } catch (_) {}
+    notifyListeners();
+  }
+
+  Future<void> fetchPodcasts() async {
+    try {
+      final res = await apiService.searchAll('Podcasts');
+      final combinedSongs = _deduplicate(res['songs'] as List<Song>);
+      if (combinedSongs.isNotEmpty) _podcastSongs = combinedSongs;
+      
+      var playlists = res['playlists'] as List<Playlist>;
+      if (playlists.isEmpty) {
+        playlists = await apiService.searchPlaylists("Podcasts");
+      }
+      if (playlists.isNotEmpty) _podcastPlaylists = playlists;
+    } catch (e) {
+      debugPrint('[HomeProvider] fetchPodcasts error: $e');
+    }
     notifyListeners();
   }
 

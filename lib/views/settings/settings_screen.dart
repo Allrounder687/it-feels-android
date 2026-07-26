@@ -6,6 +6,8 @@ import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/settings_provider.dart';
 import 'hidden_songs_screen.dart';
+import 'audio_settings_screen.dart';
+import 'package:file_picker/file_picker.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -66,6 +68,18 @@ class SettingsScreen extends StatelessWidget {
                 onSelected: (val) => settings.setDownloadQuality(val),
               ),
 
+              _buildActionTile(
+                title: "Pro Audio Settings",
+                subtitle: "Crossfade, Equalizer, and Audio Effects",
+                icon: Icons.graphic_eq_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AudioSettingsScreen()),
+                  );
+                },
+              ),
+
               const SizedBox(height: 24),
 
               // Category 2: Privacy & Preferences
@@ -101,12 +115,18 @@ class SettingsScreen extends StatelessWidget {
 
               _buildActionTile(
                 title: "Download Storage Location",
-                subtitle: "Internal App Storage (/downloaded_music)",
+                subtitle: settings.customDownloadPath.isEmpty ? "Internal App Storage" : settings.customDownloadPath,
                 icon: Icons.folder_special_rounded,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Location: Internal Storage (/downloaded_music)")),
-                  );
+                onTap: () async {
+                  String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+                  if (selectedDirectory != null) {
+                    settings.setCustomDownloadPath(selectedDirectory);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Location updated to: $selectedDirectory")),
+                      );
+                    }
+                  }
                 },
               ),
               _buildActionTile(
@@ -172,12 +192,14 @@ class SettingsScreen extends StatelessWidget {
                 context: context,
                 title: "App Primary Theme",
                 subtitle: settings.theme,
-                options: ["Dynamic (Album Art)", "Midnight Dark", "Burgundy Dark", "AMOLED Black"],
+                options: ["System (Material You)", "Dynamic (Album Art)", "Midnight Dark", "Burgundy Dark", "AMOLED Black"],
                 currentValue: settings.theme,
                 onSelected: (val) {
                   settings.setTheme(val);
                   final player = Provider.of<AudioPlayerProvider>(context, listen: false);
-                  if (val == "Midnight Dark") {
+                  if (val == "System (Material You)") {
+                    player.setAppThemeMode(AppThemeMode.materialYou);
+                  } else if (val == "Midnight Dark") {
                     player.setAppThemeMode(AppThemeMode.midnight);
                   } else if (val == "Burgundy Dark") {
                     player.setAppThemeMode(AppThemeMode.burgundy);
@@ -185,6 +207,65 @@ class SettingsScreen extends StatelessWidget {
                     player.setAppThemeMode(AppThemeMode.amoled);
                   } else {
                     player.setAppThemeMode(AppThemeMode.dynamic);
+                  }
+                },
+              ),
+
+              const SizedBox(height: 24),
+
+              // Category 3.5: Advanced Android Integrations
+              _buildSectionHeader("🤖 Advanced Android Integrations"),
+              const SizedBox(height: 8),
+
+              SwitchListTile(
+                title: Text("Android Auto Integration", style: GoogleFonts.outfit(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
+                subtitle: Text("Sync your playlists and history with your car dashboard", style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
+                value: settings.enableAndroidAuto,
+                activeColor: AppColors.midnightPrimary,
+                onChanged: (val) async {
+                  if (val) {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        backgroundColor: AppColors.midnightSurface,
+                        title: Text("Enable Android Auto", style: GoogleFonts.outfit(color: Colors.white)),
+                        content: Text(
+                          "This will expose your playlists and listening history to the car's OS. Are you sure you wish to proceed?",
+                          style: GoogleFonts.inter(color: Colors.white70),
+                        ),
+                        actions: [
+                          TextButton(
+                            child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
+                            onPressed: () => Navigator.pop(ctx, false),
+                          ),
+                          TextButton(
+                            child: const Text("Proceed", style: TextStyle(color: AppColors.midnightPrimary)),
+                            onPressed: () => Navigator.pop(ctx, true),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      settings.setEnableAndroidAuto(true);
+                    }
+                  } else {
+                    settings.setEnableAndroidAuto(false);
+                  }
+                },
+              ),
+
+              _buildSelectableTile(
+                context: context,
+                title: "Haptics & Feedback",
+                subtitle: settings.hapticsMode,
+                options: ["Off", "UI Only", "Audio Sync"],
+                currentValue: settings.hapticsMode,
+                onSelected: (val) {
+                  settings.setHapticsMode(val);
+                  if (val == "Audio Sync") {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Warning: Real-time Audio Sync Haptics may cause battery drain.")),
+                    );
                   }
                 },
               ),
@@ -215,7 +296,7 @@ class SettingsScreen extends StatelessWidget {
 
               _buildActionTile(
                 title: "It Feels Music",
-                subtitle: "Version 2.1.0 • Built with Flutter",
+                subtitle: "Version 2.1.2 • Developer: FaiXal",
                 icon: Icons.info_outline_rounded,
                 onTap: () {},
               ),

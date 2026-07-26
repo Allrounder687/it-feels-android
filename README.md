@@ -74,3 +74,11 @@ A premium, modern Flutter Android music application built with the design aesthe
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+
+## Recent Updates
+- **Gapless Playback:** Seamless transitions between tracks using ConcatenatingAudioSource.
+- **Android Home Widget:** Control your music right from the home screen.
+- **Dynamic Theming (Material You):** The app adapts perfectly to the album art of the currently playing track.
+- **Haptic Feedback:** Subtle, premium haptic responses on player controls.
+- **Android Auto Support:** Preparation for automotive integration.

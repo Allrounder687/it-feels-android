@@ -2,16 +2,20 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/song_model.dart';
+import 'music_api_service.dart';
+import '../../services/storage_service.dart';
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   late final AudioPlayer _player;
   late final AndroidEqualizer _equalizer;
   late final AndroidLoudnessEnhancer _loudnessEnhancer;
+  final MusicApiService apiService;
   
   VoidCallback? onSkipNext;
   VoidCallback? onSkipPrevious;
+  Future<void> Function()? onToggleFavorite;
 
-  AudioPlayerHandler() {
+  AudioPlayerHandler({required this.apiService}) {
     _equalizer = AndroidEqualizer();
     _loudnessEnhancer = AndroidLoudnessEnhancer();
     _player = AudioPlayer(
@@ -94,6 +98,11 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
+  Future<void> skipToQueueItem(int index) async {
+    // Kept to avoid breaking provider skipToQueueItem calls if any, but provider uses playSong
+  }
+
+  @override
   Future<void> play() => _player.play();
 
   @override
@@ -113,5 +122,57 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> skipToPrevious() async {
     if (onSkipPrevious != null) onSkipPrevious!();
+  }
+
+  // --- Android Auto Integration ---
+  @override
+  Future<List<MediaItem>> getChildren(String parentMediaId, [Map<String, dynamic>? options]) async {
+    final settings = await StorageService.loadSettings();
+    if (settings['enableAndroidAuto'] != true) {
+      return []; // Return empty if Android Auto is disabled
+    }
+
+    if (parentMediaId == AudioService.browsableRootId) {
+      return [
+        const MediaItem(
+          id: 'favorites',
+          title: 'Favorites',
+          playable: false,
+        ),
+      ];
+    } else if (parentMediaId == 'favorites') {
+      final state = await StorageService.loadPlaybackState();
+      if (state != null && state['favorites'] != null) {
+        final List<dynamic> rawFavs = state['favorites'];
+        return rawFavs.map((e) {
+          final s = Song.fromJson(Map<String, dynamic>.from(e));
+          return MediaItem(
+            id: s.id,
+            title: s.title,
+            artist: s.artist,
+            album: s.album,
+            duration: Duration(seconds: s.duration),
+            artUri: s.coverArt.isNotEmpty ? Uri.parse(s.coverArt) : null,
+          );
+        }).toList();
+      }
+    }
+    return [];
+  }
+
+  @override
+  Future<MediaItem?> getMediaItem(String mediaId) async {
+    return null; // Fallback
+  }
+
+  // --- Smart Lockscreen Action ---
+  @override
+  Future<dynamic> customAction(String name, [Map<String, dynamic>? extras]) async {
+    if (name == 'like_song') {
+      if (onToggleFavorite != null) {
+        await onToggleFavorite!();
+      }
+    }
+    return super.customAction(name, extras);
   }
 }

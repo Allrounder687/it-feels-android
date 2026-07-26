@@ -8,8 +8,9 @@ import '../../data/models/song_model.dart';
 import '../../data/services/music_api_service.dart';
 import '../../providers/audio_player_provider.dart';
 import 'playlist_detail_screen.dart';
-
 import '../widgets/song_options_sheet.dart';
+import '../widgets/mini_player.dart';
+import '../player/now_playing_screen.dart';
 
 class ArtistDetailScreen extends StatefulWidget {
   final String artistName;
@@ -30,7 +31,7 @@ class ArtistDetailScreen extends StatefulWidget {
 class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
   bool _isLoading = true;
   List<Song> _topSongs = [];
-  List<Playlist> _albums = [];
+  List<dynamic> _albums = [];
 
   @override
   void initState() {
@@ -50,12 +51,12 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
     }
 
     List<Song> topSongs = [];
-    List<Playlist> albums = [];
+    List<dynamic> albums = [];
 
     if (finalArtistId != null && finalArtistId.isNotEmpty) {
       final artistData = await api.fetchArtistDetails(finalArtistId);
       topSongs = artistData['topSongs'] as List<Song>? ?? [];
-      albums = artistData['albums'] as List<Playlist>? ?? [];
+      albums = artistData['albums'] as List<dynamic>? ?? [];
     } else {
       topSongs = await api.searchSongs(widget.artistName, count: 50);
       albums = await api.searchAlbums(widget.artistName, count: 20);
@@ -76,6 +77,28 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.midnightBackground,
+      bottomNavigationBar: MiniPlayer(
+        onTap: () {
+          Navigator.push(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => const NowPlayingScreen(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 1),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  )),
+                  child: child,
+                );
+              },
+            ),
+          );
+        },
+      ),
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent))
@@ -351,7 +374,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                     ),
                   ],
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
               ),
       ),

@@ -78,3 +78,20 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - Jio REST API integration with 320kbps DES-ECB URL deciphering (`DesDecryptor`).
 - Dual theme support: Burgundy (`#220F19`) and Midnight Blue (`#090D16`).
 - Core screens: Home ("Your Mix"), Now Playing, Library, Lyrics, and Search.
+
+
+## [Unreleased]
+### Added
+- Integrated Android Home Screen Widget (home_widget) displaying current song, artist, and play/pause controls.
+- Added Android Auto integration hooks (MediaBrowserService and XML descriptors).
+- Implemented robust Material You Dynamic Theming tied to the currently playing song's album art.
+- Integrated ibration plugin for Haptics on media player controls.
+- Implemented true Gapless Playback via ConcatenatingAudioSource in just_audio.
+- Added Tap-to-Seek functionality for synchronized lyrics.
+- Added missing lyrics fallback message UI.
+- Implemented share intent (ndroid.intent.action.SEND) for Spotify/music links in AndroidManifest.
+
+### Changed
+- Improved Bottom Navigation Bar click area and icon sizes.
+- Fixed MiniPlayer visibility in custom app bar screens (Playlist, Artist, Custom Playlist details) by utilizing Scaffold's bottomNavigationBar.
+- Refactored AudioPlayerProvider as the single source of truth for app state and theming.

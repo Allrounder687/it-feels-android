@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:palette_generator/palette_generator.dart';
+import 'package:vibration/vibration.dart';
+import 'package:home_widget/home_widget.dart';
 import '../core/theme/app_colors.dart';
 import '../data/models/song_model.dart';
 import '../data/services/audio_player_handler.dart';
@@ -16,6 +18,7 @@ enum AppThemeMode {
   midnight,
   burgundy,
   amoled,
+  materialYou,
 }
 
 class AudioPlayerProvider extends ChangeNotifier {
@@ -37,6 +40,10 @@ class AudioPlayerProvider extends ChangeNotifier {
   Color _themeBackgroundColor = AppColors.midnightBackground;
   Color _themeSurfaceColor = AppColors.midnightSurface;
   Color _themeAccentColor = AppColors.midnightPrimary;
+
+  Color? _materialYouSurface;
+  Color? _materialYouSurfaceContainer;
+  Color? _materialYouPrimary;
 
   AppThemeMode _appThemeMode = AppThemeMode.dynamic;
 
@@ -121,6 +128,11 @@ class AudioPlayerProvider extends ChangeNotifier {
   void _listenToEvents() {
     audioHandler.onSkipNext = () => skipToNext();
     audioHandler.onSkipPrevious = () => skipToPrevious();
+    audioHandler.onToggleFavorite = () async {
+      if (_currentSong != null) {
+        toggleFavorite(_currentSong!);
+      }
+    };
     _listenToAudioState();
     _loadFavorites();
   }
@@ -167,13 +179,25 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   void setAppThemeMode(AppThemeMode mode) {
     _appThemeMode = mode;
+    _saveMemory();
     notifyListeners();
+  }
+
+  void setMaterialYouColors(Color surface, Color surfaceContainer, Color primary) {
+    _materialYouSurface = surface;
+    _materialYouSurfaceContainer = surfaceContainer;
+    _materialYouPrimary = primary;
+    if (_appThemeMode == AppThemeMode.materialYou) {
+      notifyListeners();
+    }
   }
 
   Color get themeBackgroundColor {
     switch (_appThemeMode) {
       case AppThemeMode.dynamic:
         return _themeBackgroundColor;
+      case AppThemeMode.materialYou:
+        return _materialYouSurface ?? AppColors.midnightBackground;
       case AppThemeMode.midnight:
         return AppColors.midnightBackground;
       case AppThemeMode.burgundy:
@@ -187,6 +211,8 @@ class AudioPlayerProvider extends ChangeNotifier {
     switch (_appThemeMode) {
       case AppThemeMode.dynamic:
         return _themeSurfaceColor;
+      case AppThemeMode.materialYou:
+        return _materialYouSurfaceContainer ?? AppColors.midnightSurface;
       case AppThemeMode.midnight:
         return AppColors.midnightSurface;
       case AppThemeMode.burgundy:
@@ -200,12 +226,29 @@ class AudioPlayerProvider extends ChangeNotifier {
     switch (_appThemeMode) {
       case AppThemeMode.dynamic:
         return _themeAccentColor;
+      case AppThemeMode.materialYou:
+        return _materialYouPrimary ?? AppColors.midnightPrimary;
       case AppThemeMode.midnight:
         return AppColors.midnightPrimary;
       case AppThemeMode.burgundy:
         return AppColors.burgundyPrimary;
       case AppThemeMode.amoled:
         return Colors.white;
+    }
+  }
+
+  // --- Haptics ---
+  Future<void> triggerHaptic({bool heavy = false}) async {
+    final settings = await StorageService.loadSettings();
+    final mode = settings['hapticsMode'] as String? ?? 'Off';
+    if (mode == 'Off') return;
+    
+    if (await Vibration.hasVibrator() ?? false) {
+      if (heavy) {
+        Vibration.vibrate(duration: 50, amplitude: 128);
+      } else {
+        Vibration.vibrate(duration: 20, amplitude: 64);
+      }
     }
   }
 
@@ -279,6 +322,7 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   void toggleFavorite(Song song) {
+    triggerHaptic();
     if (isFavorite(song.id)) {
       _favoriteSongs.removeWhere((s) => s.id == song.id);
     } else {
@@ -371,11 +415,13 @@ class AudioPlayerProvider extends ChangeNotifier {
       debugPrint('[AudioPlayerProvider] Failed to resolve stream for ${song.title}');
     }
 
+    _updateHomeWidget();
     notifyListeners();
   }
 
   Future<void> togglePlayPause() async {
     if (_currentSong == null) return;
+    triggerHaptic(heavy: true);
     if (_isPlaying) {
       await audioHandler.pause();
     } else {
@@ -390,12 +436,13 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> skipToNext([BuildContext? context]) async {
     if (_queue.isEmpty) return;
+    triggerHaptic();
     int nextIndex;
     if (_isShuffle && _queue.length > 1) {
       final rng = Random();
       nextIndex = rng.nextInt(_queue.length);
-      if (nextIndex == _currentIndex && _queue.length > 1) {
-        nextIndex = (nextIndex + 1) % _queue.length;
+      while (nextIndex == _currentIndex) {
+        nextIndex = rng.nextInt(_queue.length);
       }
     } else {
       nextIndex = _currentIndex + 1;
@@ -408,6 +455,7 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> skipToPrevious([BuildContext? context]) async {
     if (_queue.isEmpty) return;
+    triggerHaptic();
     int prevIndex = _currentIndex - 1;
     if (prevIndex < 0) {
       prevIndex = _queue.length - 1;
@@ -476,14 +524,10 @@ class AudioPlayerProvider extends ChangeNotifier {
   Future<void> _extractPalette(String imageUrl) async {
     if (imageUrl.isEmpty) return;
     try {
-      ImageProvider provider = imageUrl.startsWith('http') 
-          ? NetworkImage(imageUrl) as ImageProvider
-          : FileImage(File(imageUrl));
-      final palette = await PaletteGenerator.fromImageProvider(
-        ResizeImage(provider, width: 100, height: 100),
-        maximumColorCount: 6,
+      final PaletteGenerator palette = await PaletteGenerator.fromImageProvider(
+        NetworkImage(imageUrl),
       );
-
+      
       final dominant = palette.dominantColor?.color ?? AppColors.burgundyBackground;
       final darkMuted = palette.darkMutedColor?.color ?? AppColors.burgundySurface;
       final lightVibrant = palette.lightVibrantColor?.color ?? AppColors.burgundyAccent;
@@ -495,6 +539,16 @@ class AudioPlayerProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('[AudioPlayerProvider] Palette extraction error: $e');
+    }
+  }
+
+  Future<void> _updateHomeWidget() async {
+    try {
+      await HomeWidget.saveWidgetData<String>('title', _currentSong?.title ?? 'No Song Playing');
+      await HomeWidget.saveWidgetData<String>('artist', _currentSong?.artist ?? 'It Feels Music');
+      await HomeWidget.updateWidget(name: 'MusicWidgetProvider');
+    } catch (e) {
+      debugPrint('Error updating home widget: $e');
     }
   }
 }

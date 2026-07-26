@@ -91,8 +91,8 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
 
                 // Floating Bottom Navigation Bar Pill Container
                 Container(
-                  height: 64,
-                  margin: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+                  height: 76,
+                  margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
                   decoration: BoxDecoration(
                     color: AppColors.midnightSurface.withValues(alpha: 0.95),
                     borderRadius: BorderRadius.circular(32),
@@ -136,7 +136,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
             child: Center(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: BoxDecoration(
                   color: isSelected ? AppColors.midnightPill : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
@@ -147,7 +147,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
                     Icon(
                       icon,
                       color: isSelected ? AppColors.midnightAccent : Colors.white60,
-                      size: 26,
+                      size: 32,
                     ),
                     if (isSelected) ...[
                       const SizedBox(width: 6),

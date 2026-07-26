@@ -20,6 +20,9 @@ subprojects {
         val android = project.extensions.findByName("android")
         if (android != null && android is com.android.build.gradle.LibraryExtension) {
             android.compileSdk = 36
+            if (android.namespace == null) {
+                android.namespace = project.group.toString()
+            }
         }
     }
     project.evaluationDependsOn(":app")

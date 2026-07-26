@@ -7,6 +7,8 @@ import '../../providers/audio_player_provider.dart';
 import '../../providers/custom_playlist_provider.dart';
 import '../widgets/custom_image_widget.dart';
 import '../widgets/song_options_sheet.dart';
+import '../widgets/mini_player.dart';
+import '../player/now_playing_screen.dart';
 
 class CustomPlaylistDetailScreen extends StatelessWidget {
   final CustomPlaylist playlist;
@@ -26,6 +28,28 @@ class CustomPlaylistDetailScreen extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: AppColors.midnightBackground,
+          bottomNavigationBar: MiniPlayer(
+            onTap: () {
+              Navigator.push(
+                context,
+                PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) => const NowPlayingScreen(),
+                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                    return SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 1),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      )),
+                      child: child,
+                    );
+                  },
+                ),
+              );
+            },
+          ),
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,

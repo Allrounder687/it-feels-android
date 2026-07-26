@@ -17,7 +17,12 @@ class DownloadService {
   Future<bool> downloadSong(Song song, {Function(double)? onProgress}) async {
     try {
       Directory musicDir;
-      if (Platform.isAndroid) {
+      final settings = await StorageService.loadSettings();
+      final customPath = settings['customDownloadPath'] ?? '';
+      
+      if (customPath.isNotEmpty) {
+        musicDir = Directory(customPath);
+      } else if (Platform.isAndroid) {
         await Permission.storage.request();
         if (await Permission.manageExternalStorage.isDenied) {
           await Permission.manageExternalStorage.request();
@@ -106,6 +111,7 @@ class DownloadService {
         coverArt: localCover,
         encryptedMediaUrl: audioFile.path, // Local file path
         hasLyrics: song.hasLyrics,
+        addedAt: DateTime.now(),
       );
 
       final currentDownloads = await StorageService.loadDownloads();

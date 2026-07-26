@@ -241,6 +241,8 @@ class StorageService {
     required String downloadQuality,
     required String theme,
     required String customDownloadPath,
+    required bool enableAndroidAuto,
+    required String hapticsMode,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_wifiQualityKey, wifiQuality);
@@ -248,16 +250,54 @@ class StorageService {
     await prefs.setString(_downloadQualityKey, downloadQuality);
     await prefs.setString(_themeKey, theme);
     await prefs.setString(_downloadPathKey, customDownloadPath);
+    await prefs.setBool('enable_android_auto', enableAndroidAuto);
+    await prefs.setString('haptics_mode', hapticsMode);
   }
 
-  static Future<Map<String, String>> loadSettings() async {
+  static Future<Map<String, dynamic>> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     return {
       'wifiQuality': prefs.getString(_wifiQualityKey) ?? '320 kbps (Very High)',
       'mobileQuality': prefs.getString(_mobileQualityKey) ?? '160 kbps (High)',
       'downloadQuality': prefs.getString(_downloadQualityKey) ?? '320 kbps (Very High)',
-      'theme': prefs.getString(_themeKey) ?? 'Midnight Dark',
+      'theme': prefs.getString(_themeKey) ?? 'System (Material You)',
       'customDownloadPath': prefs.getString(_downloadPathKey) ?? '',
+      'enableAndroidAuto': prefs.getBool('enable_android_auto') ?? false,
+      'hapticsMode': prefs.getString('haptics_mode') ?? 'Off',
+    };
+  }
+
+  /// Audio Enhancements (EQ, Loudness, Speed, Pitch)
+  static Future<void> saveAudioSettings({
+    required List<double> eqBands,
+    required double loudness,
+    required double speed,
+    required double pitch,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_audioEqKey, json.encode(eqBands));
+    await prefs.setDouble(_audioLoudnessKey, loudness);
+    await prefs.setDouble(_audioSpeedKey, speed);
+    await prefs.setDouble(_audioPitchKey, pitch);
+  }
+
+  static Future<Map<String, dynamic>> loadAudioSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    List<double> eqBands = [];
+    final rawEq = prefs.getString(_audioEqKey);
+    if (rawEq != null && rawEq.isNotEmpty) {
+      try {
+        final decoded = json.decode(rawEq) as List;
+        eqBands = decoded.map((e) => (e as num).toDouble()).toList();
+      } catch (_) {}
+    }
+
+    return {
+      'eqBands': eqBands,
+      'loudness': prefs.getDouble(_audioLoudnessKey) ?? 0.0,
+      'speed': prefs.getDouble(_audioSpeedKey) ?? 1.0,
+      'pitch': prefs.getDouble(_audioPitchKey) ?? 1.0,
     };
   }
 }

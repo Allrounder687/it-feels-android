@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 import 'core/theme/app_colors.dart';
 import 'data/services/audio_player_handler.dart';
 import 'data/services/music_api_service.dart';
@@ -25,8 +26,9 @@ Future<void> main() async {
   await Permission.notification.request();
 
   // Initialize Android background AudioService
+  final apiService = MusicApiService();
   _audioHandler = await AudioService.init(
-    builder: () => AudioPlayerHandler(),
+    builder: () => AudioPlayerHandler(apiService: apiService),
     config: const AudioServiceConfig(
       androidNotificationChannelId: 'com.itfeels.music.channel.audio',
       androidNotificationChannelName: 'It Feels Playback',
@@ -84,16 +86,30 @@ class PixelPlayerSaavnApp extends StatelessWidget {
           create: (_) => ListeningHistoryProvider(),
         ),
       ],
-      child: MaterialApp(
-        title: 'It Feels',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: AppColors.midnightBackground,
-          textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-        ),
-        home: const MainNavigationWrapper(),
+      child: DynamicColorBuilder(
+        builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+          final colorScheme = darkDynamic ?? ColorScheme.fromSeed(seedColor: AppColors.midnightPrimary, brightness: Brightness.dark);
+          return Builder(
+            builder: (context) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final provider = Provider.of<AudioPlayerProvider>(context, listen: false);
+                provider.setMaterialYouColors(colorScheme.surface, colorScheme.surfaceContainer, colorScheme.primary);
+              });
+              return MaterialApp(
+                title: 'It Feels',
+                debugShowCheckedModeBanner: false,
+                theme: ThemeData(
+                  useMaterial3: true,
+                  brightness: Brightness.dark,
+                  colorScheme: colorScheme,
+                  scaffoldBackgroundColor: AppColors.midnightBackground,
+                  textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+                ),
+                home: const MainNavigationWrapper(),
+              );
+            },
+          );
+        },
       ),
     );
   }
