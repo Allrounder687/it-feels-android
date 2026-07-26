@@ -9,6 +9,8 @@ import 'hidden_songs_screen.dart';
 import 'audio_settings_screen.dart';
 import 'package:file_picker/file_picker.dart';
 
+import 'ai_settings_screen.dart';
+
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -209,6 +211,18 @@ class SettingsScreen extends StatelessWidget {
                     player.setAppThemeMode(AppThemeMode.dynamic);
                   }
                 },
+              ),
+
+              const SizedBox(height: 24),
+
+              // Category: AI Features
+              _buildSectionHeader("✨ AI Features"),
+              const SizedBox(height: 8),
+              _buildActionTile(
+                title: "AI Settings",
+                subtitle: "Configure AI-powered playlist generation and mood matching",
+                icon: Icons.auto_awesome_rounded,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AISettingsScreen())),
               ),
 
               const SizedBox(height: 24),

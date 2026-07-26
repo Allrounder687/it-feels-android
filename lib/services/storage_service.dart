@@ -294,4 +294,25 @@ class StorageService {
       'pitch': prefs.getDouble(_audioPitchKey) ?? 1.0,
     };
   }
+
+  // ── AI Settings ──────────────────────────────────────────────
+  static const String _aiEnabledKey = 'ai_enabled_v1';
+  static const String _aiProviderKey = 'ai_selected_provider_v1';
+
+  static Future<void> saveAISettings({
+    required bool aiEnabled,
+    required String selectedProvider,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_aiEnabledKey, aiEnabled);
+    await prefs.setString(_aiProviderKey, selectedProvider);
+  }
+
+  static Future<Map<String, dynamic>> loadAISettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'aiEnabled': prefs.getBool(_aiEnabledKey) ?? true,
+      'selectedProvider': prefs.getString(_aiProviderKey) ?? 'auto',
+    };
+  }
 }

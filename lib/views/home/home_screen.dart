@@ -12,6 +12,7 @@ import '../../data/models/song_model.dart';
 import '../details/playlist_detail_screen.dart';
 import '../details/see_all_screen.dart';
 import '../settings/settings_screen.dart';
+import '../ai/ask_ai_screen.dart';
 import '../widgets/song_options_sheet.dart';
 import 'smart_recommendations_row.dart';
 
@@ -236,9 +237,19 @@ class _HomeScreenState extends State<HomeScreen> {
                             Text("It Feels", style: GoogleFonts.outfit(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.5)),
                           ],
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.settings_outlined, color: Colors.white, size: 22),
-                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 22),
+                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AskAIScreen())),
+                              tooltip: 'Ask AI',
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.settings_outlined, color: Colors.white, size: 22),
+                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
+                            ),
+                          ],
                         ),
                       ],
                     ),
