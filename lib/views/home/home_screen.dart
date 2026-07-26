@@ -6,6 +6,9 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/home_provider.dart';
+import '../../providers/hidden_songs_provider.dart';
+import '../../providers/listening_history_provider.dart';
+import '../../data/models/song_model.dart';
 import '../details/playlist_detail_screen.dart';
 import '../details/see_all_screen.dart';
 import '../settings/settings_screen.dart';
@@ -24,6 +27,9 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedFilterIndex = 0;
   final PageController _swipePageController = PageController(viewportFraction: 0.88);
   final List<String> _filters = [
+    "YOU",
+    "Moods",
+    "Charts",
     "Bollywood",
     "Telugu",
     "Tamil",
@@ -35,18 +41,43 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+      final historyProvider = Provider.of<ListeningHistoryProvider>(context, listen: false);
+      if (homeProvider.selectedCategory == "YOU" && homeProvider.currentCategoryPlaylists.isEmpty) {
+        homeProvider.fetchYouSongs(historyProvider.getTopArtists());
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _swipePageController.dispose();
     super.dispose();
   }
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    if (hour < 21) return "Good Evening";
+    return "Late Night Vibes";
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Consumer2<HomeProvider, AudioPlayerProvider>(
-      builder: (context, homeProvider, playerProvider, child) {
-        final activeSongs = homeProvider.currentCategorySongs;
-        final activePlaylists = homeProvider.currentCategoryPlaylists;
+    return Consumer4<HomeProvider, AudioPlayerProvider, HiddenSongsProvider, ListeningHistoryProvider>(
+      builder: (context, homeProvider, playerProvider, hiddenProvider, historyProvider, child) {
         final selectedCat = _filters[_selectedFilterIndex];
+        
+        List<Song> activeSongs = homeProvider.currentCategorySongs.where((s) => !hiddenProvider.isHidden(s.id)).toList();
+        if (selectedCat == "YOU") {
+          activeSongs = historyProvider.recentlyPlayed.where((s) => !hiddenProvider.isHidden(s.id)).toList();
+        }
+        
+        final activePlaylists = homeProvider.currentCategoryPlaylists;
 
         return Scaffold(
           backgroundColor: AppColors.midnightBackground,
@@ -60,14 +91,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          "It Feels",
-                          style: GoogleFonts.outfit(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: -0.5,
-                          ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getGreeting(),
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.midnightTextMuted,
+                              ),
+                            ),
+                            Text(
+                              "It Feels",
+                              style: GoogleFonts.outfit(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ],
                         ),
 
                         IconButton(
@@ -100,15 +144,29 @@ class _HomeScreenState extends State<HomeScreen> {
                               _selectedFilterIndex = index;
                             });
                             homeProvider.selectCategory(_filters[index]);
+                            if (_filters[index] == "YOU" && homeProvider.currentCategoryPlaylists.isEmpty) {
+                              homeProvider.fetchYouSongs(historyProvider.getTopArtists());
+                            }
                           },
                           child: Container(
                             margin: const EdgeInsets.only(right: 10),
                             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                             decoration: BoxDecoration(
+                              gradient: isSelected
+                                  ? const LinearGradient(
+                                      colors: [Color(0xFFE91E63), Color(0xFF9C27B0)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    )
+                                  : null,
                               color: isSelected
-                                  ? AppColors.midnightPrimary
-                                  : AppColors.midnightPill.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(16),
+                                  ? null
+                                  : AppColors.midnightPill.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSelected ? Colors.transparent : Colors.white10,
+                                width: 0.5,
+                              ),
                             ),
                             child: Text(
                               _filters[index],
@@ -127,8 +185,90 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-                // Interactive Swipeable Song Cards Carousel System
-                if (selectedCat != "Playlists" && selectedCat != "Albums" && activeSongs.isNotEmpty)
+                // Moods Language Toggle
+                if (selectedCat == "Moods")
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Curated Moods",
+                            style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white),
+                          ),
+                          GestureDetector(
+                            onTap: () => homeProvider.toggleMoodLanguage(),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: AppColors.midnightPill,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: AppColors.midnightPrimary.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.language, size: 16, color: AppColors.midnightPrimary),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    homeProvider.moodLanguage,
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                if (selectedCat == "Moods" && homeProvider.isLoadingMoods)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(40),
+                      child: Center(child: CircularProgressIndicator(color: AppColors.midnightAccent)),
+                    ),
+                  ),
+                if (selectedCat == "Charts" && homeProvider.isLoadingCharts)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(40),
+                      child: Center(child: CircularProgressIndicator(color: AppColors.midnightAccent)),
+                    ),
+                  ),
+                  
+                // Empty State for YOU Section
+                if (selectedCat == "YOU" && activeSongs.isEmpty && activePlaylists.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.headphones_rounded, size: 64, color: AppColors.midnightTextMuted.withValues(alpha: 0.5)),
+                          const SizedBox(height: 16),
+                          Text(
+                            "Your Music, Your Rules",
+                            style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Listen to more songs to unlock your personalized Daily Mixes and history.",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(fontSize: 14, color: AppColors.midnightTextMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else ...[
+                  // Interactive Swipeable Song Cards Carousel System
+                  if (selectedCat != "Playlists" && selectedCat != "Albums" && activeSongs.isNotEmpty)
                   SliverToBoxAdapter(
                     child: SizedBox(
                       height: 190,
@@ -404,7 +544,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            "$selectedCat Hits",
+                            selectedCat == "YOU" ? "Recently Played" : "$selectedCat Hits",
                             style: GoogleFonts.outfit(
                               fontSize: 24,
                               fontWeight: FontWeight.w800,
@@ -419,7 +559,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => SeeAllSongsScreen(
-                                    title: "$selectedCat Hits",
+                                    title: selectedCat == "YOU" ? "Recently Played" : "$selectedCat Hits",
                                     songs: activeSongs,
                                   ),
                                 ),
@@ -472,14 +612,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           return Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                            child: Material(
-                              color: isCurrentlyPlaying
-                                  ? AppColors.midnightCard.withValues(alpha: 0.9)
-                                  : AppColors.midnightCard.withValues(alpha: 0.35),
-                              borderRadius: BorderRadius.circular(14),
-                              child: ListTile(
-                                leading: ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isCurrentlyPlaying
+                                    ? AppColors.midnightCard.withValues(alpha: 0.9)
+                                    : AppColors.midnightCard.withValues(alpha: 0.4),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 0.5),
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: ListTile(
+                                  leading: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
                                   child: SizedBox(
                                     width: 48,
                                     height: 48,
@@ -524,8 +669,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 },
                               ),
                             ),
-                          );
-                        },
+                          ),
+                        );},
                         childCount: activeSongs.length > 6 ? 6 : activeSongs.length,
                       ),
                     ),
@@ -538,7 +683,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Text(
-                          "$selectedCat Playlists",
+                          selectedCat == "YOU" ? "Daily Mixes" : "$selectedCat Playlists",
                           style: GoogleFonts.outfit(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
@@ -605,6 +750,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ],
+                ], // Close the outer else ...[ for YOU empty state
 
                 const SliverToBoxAdapter(child: SizedBox(height: 110)),
               ],

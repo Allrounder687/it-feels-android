@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:audio_service/audio_service.dart';
 import 'package:palette_generator/palette_generator.dart';
 import '../core/theme/app_colors.dart';
 import '../data/models/song_model.dart';
@@ -42,6 +43,42 @@ class AudioPlayerProvider extends ChangeNotifier {
     required this.audioHandler,
     required this.apiService,
   }) {
+    _listenToEvents();
+    _initMemory();
+  }
+
+  Future<void> _initMemory() async {
+    final state = await StorageService.loadPlaybackState();
+    if (state != null) {
+      final List<Song> savedQueue = state['queue'];
+      final int savedIndex = state['currentIndex'];
+
+      if (savedQueue.isNotEmpty && savedIndex >= 0 && savedIndex < savedQueue.length) {
+        _queue = savedQueue;
+        _currentIndex = savedIndex;
+        _currentSong = _queue[_currentIndex];
+        
+        final mediaItems = _queue.map<MediaItem>((s) => MediaItem(
+              id: s.id,
+              title: s.title,
+              artist: s.artist,
+              artUri: Uri.tryParse(s.coverArt),
+              duration: Duration(seconds: s.duration),
+            )).toList();
+
+        await audioHandler.updateQueue(mediaItems);
+        await audioHandler.skipToQueueItem(_currentIndex);
+
+        notifyListeners();
+      }
+    }
+  }
+
+  void _saveMemory() {
+    StorageService.savePlaybackState(_queue, _currentIndex);
+  }
+
+  void _listenToEvents() {
     audioHandler.onSkipNext = () => skipToNext();
     audioHandler.onSkipPrevious = () => skipToPrevious();
     _listenToAudioState();
@@ -144,8 +181,8 @@ class AudioPlayerProvider extends ChangeNotifier {
     if (queue != null && queue.isNotEmpty) {
       _queue = List.from(queue);
       _currentIndex = index >= 0 && index < _queue.length ? index : 0;
+      _saveMemory();
     } else {
-      // If no explicit queue provided, manage existing queue smart
       final existingIndex = _queue.indexWhere((s) => s.id == song.id || (s.title == song.title && s.artist == song.artist));
       if (existingIndex != -1) {
         _currentIndex = existingIndex;
@@ -159,6 +196,7 @@ class AudioPlayerProvider extends ChangeNotifier {
           _currentIndex = insertPos;
         }
       }
+      _saveMemory();
     }
 
     _isLoading = true;
@@ -195,6 +233,7 @@ class AudioPlayerProvider extends ChangeNotifier {
     } else {
       await audioHandler.play();
     }
+    _saveMemory();
   }
 
   Future<void> seek(Duration pos) async {
@@ -230,6 +269,7 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   void addToQueue(Song song) {
     _queue.add(song);
+    _saveMemory();
     notifyListeners();
   }
 
@@ -239,6 +279,7 @@ class AudioPlayerProvider extends ChangeNotifier {
     } else {
       _queue.add(song);
     }
+    _saveMemory();
     notifyListeners();
   }
 
@@ -251,7 +292,6 @@ class AudioPlayerProvider extends ChangeNotifier {
     final item = _queue.removeAt(oldIndex);
     _queue.insert(newIndex, item);
     
-    // Update current index
     if (_currentIndex == oldIndex) {
       _currentIndex = newIndex;
     } else if (oldIndex < _currentIndex && newIndex >= _currentIndex) {
@@ -259,6 +299,7 @@ class AudioPlayerProvider extends ChangeNotifier {
     } else if (oldIndex > _currentIndex && newIndex <= _currentIndex) {
       _currentIndex++;
     }
+    _saveMemory();
     notifyListeners();
   }
 

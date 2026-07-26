@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/settings_provider.dart';
+import 'hidden_songs_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -67,7 +68,25 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Category 2: Storage & Downloads
+              // Category 2: Privacy & Preferences
+              _buildSectionHeader("🛡️ Privacy & Preferences"),
+              const SizedBox(height: 8),
+
+              _buildActionTile(
+                title: "Manage Hidden Songs",
+                subtitle: "View and unhide songs you've removed from your feed",
+                icon: Icons.visibility_off_outlined,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HiddenSongsScreen()),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 24),
+
+              // Category 3: Storage & Downloads
               _buildSectionHeader("💾 Storage & Downloads"),
               const SizedBox(height: 8),
 
@@ -163,7 +182,25 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Category 4: About
+              // Category 4: Privacy & Content
+              _buildSectionHeader("🔒 Privacy & Content"),
+              const SizedBox(height: 8),
+
+              _buildActionTile(
+                title: "Hidden Songs",
+                subtitle: "Manage tracks you've hidden",
+                icon: Icons.visibility_off_outlined,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HiddenSongsScreen()),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 24),
+
+              // Category 5: About
               _buildSectionHeader("ℹ️ About & Info"),
               const SizedBox(height: 8),
 

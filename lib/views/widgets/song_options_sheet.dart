@@ -7,6 +7,8 @@ import '../../core/theme/app_colors.dart';
 import '../../data/models/song_model.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
+import '../../providers/hidden_songs_provider.dart';
+import '../../providers/custom_playlist_provider.dart';
 import '../details/artist_detail_screen.dart';
 
 class SongOptionsSheet extends StatelessWidget {
@@ -32,6 +34,8 @@ class SongOptionsSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final playerProvider = Provider.of<AudioPlayerProvider>(context);
     final downloadProvider = Provider.of<DownloadProvider>(context);
+    final hiddenProvider = Provider.of<HiddenSongsProvider>(context, listen: false);
+    final customPlaylistProvider = Provider.of<CustomPlaylistProvider>(context, listen: false);
 
     final isFav = playerProvider.isFavorite(song.id);
     final isDown = downloadProvider.isDownloaded(song.id);
@@ -160,7 +164,18 @@ class SongOptionsSheet extends StatelessWidget {
             },
           ),
 
-          // Action 4: Download / Remove Download
+          // Action 4: Add to Playlist
+          _buildOptionTile(
+            icon: Icons.playlist_add_rounded,
+            iconColor: Colors.tealAccent,
+            title: "Add to Playlist",
+            onTap: () {
+              Navigator.pop(context);
+              _showAddToPlaylistDialog(context, customPlaylistProvider);
+            },
+          ),
+
+          // Action 5: Download / Remove Download
           _buildOptionTile(
             icon: isDownloading
                 ? Icons.hourglass_top_rounded
@@ -237,6 +252,26 @@ class SongOptionsSheet extends StatelessWidget {
                 );
               },
             ),
+
+          // Action 7: Hide Song
+          _buildOptionTile(
+            icon: Icons.visibility_off_outlined,
+            iconColor: Colors.redAccent,
+            title: "Hide Song",
+            onTap: () {
+              Navigator.pop(context);
+              hiddenProvider.hideSong(song);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Hidden: ${song.title}"),
+                  action: SnackBarAction(
+                    label: "UNDO",
+                    onPressed: () => hiddenProvider.unhideSong(song.id),
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -263,6 +298,45 @@ class SongOptionsSheet extends StatelessWidget {
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
         visualDensity: VisualDensity.compact,
+      ),
+    );
+  }
+
+  void _showAddToPlaylistDialog(BuildContext context, CustomPlaylistProvider provider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.midnightSurface,
+        title: Text("Add to Playlist", style: GoogleFonts.outfit(color: Colors.white)),
+        content: provider.playlists.isEmpty
+            ? Text("You haven't created any playlists yet.", style: GoogleFonts.inter(color: Colors.white70))
+            : SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: provider.playlists.length,
+                  itemBuilder: (context, index) {
+                    final pl = provider.playlists[index];
+                    return ListTile(
+                      title: Text(pl.title, style: GoogleFonts.inter(color: Colors.white)),
+                      subtitle: Text("${pl.songs.length} tracks", style: GoogleFonts.inter(color: Colors.white54)),
+                      onTap: () {
+                        provider.addSongToPlaylist(pl.id, song);
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Added to ${pl.title}")),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
+          ),
+        ],
       ),
     );
   }

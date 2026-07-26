@@ -25,7 +25,19 @@ class HomeProvider extends ChangeNotifier {
   List<Song> _hollywoodSongs = [];
   List<Playlist> _hollywoodPlaylists = [];
 
-  String _selectedCategory = "Bollywood";
+  List<Song> _youSongs = [];
+  List<Playlist> _youPlaylists = [];
+
+  // Moods
+  String _moodLanguage = 'English'; // English or Hindi
+  List<Playlist> _moodPlaylists = [];
+  bool _isLoadingMoods = false;
+
+  // Charts
+  List<Playlist> _chartPlaylists = [];
+  bool _isLoadingCharts = false;
+
+  String _selectedCategory = "YOU";
   bool _isLoading = true;
 
   HomeProvider({required this.apiService}) {
@@ -37,6 +49,9 @@ class HomeProvider extends ChangeNotifier {
   List<Playlist> get topAlbums => _topAlbums;
   String get selectedCategory => _selectedCategory;
   bool get isLoading => _isLoading;
+  bool get isLoadingMoods => _isLoadingMoods;
+  bool get isLoadingCharts => _isLoadingCharts;
+  String get moodLanguage => _moodLanguage;
 
   List<Song> get currentCategorySongs {
     switch (_selectedCategory) {
@@ -50,6 +65,12 @@ class HomeProvider extends ChangeNotifier {
         return _punjabiSongs.isNotEmpty ? _punjabiSongs : _trendingSongs;
       case "Hollywood":
         return _hollywoodSongs.isNotEmpty ? _hollywoodSongs : _trendingSongs;
+      case "YOU":
+        return _youSongs;
+      case "Moods":
+        return [];
+      case "Charts":
+        return [];
       case "Trending":
         return _trendingSongs;
       case "Playlists":
@@ -74,6 +95,12 @@ class HomeProvider extends ChangeNotifier {
         return _punjabiPlaylists.isNotEmpty ? _punjabiPlaylists : _topPlaylists;
       case "Hollywood":
         return _hollywoodPlaylists.isNotEmpty ? _hollywoodPlaylists : _topPlaylists;
+      case "YOU":
+        return _youPlaylists;
+      case "Moods":
+        return _moodPlaylists;
+      case "Charts":
+        return _chartPlaylists;
       case "Playlists":
         return _topPlaylists.where((p) => p.type == 'playlist').toList();
       case "Albums":
@@ -101,6 +128,10 @@ class HomeProvider extends ChangeNotifier {
       await fetchHollywoodSongs();
     } else if (category == "Albums" && _topAlbums.length < 10) {
       await fetchIndianAlbums();
+    } else if (category == "Moods" && _moodPlaylists.isEmpty) {
+      await fetchMoods();
+    } else if (category == "Charts" && _chartPlaylists.isEmpty) {
+      await fetchCharts();
     }
   }
 
@@ -120,10 +151,15 @@ class HomeProvider extends ChangeNotifier {
       if (cleanTitle.isEmpty) {
         cleanTitle = s.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '').trim();
       }
+      
+      // Combine with artist name to allow the same song title by different artists
+      // but prevent exact duplicates of the same song by the same artist
+      String artistClean = s.artist.split(',').first.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '').trim();
+      String uniqueKey = '${cleanTitle}_$artistClean';
 
-      // Keep only the first instance of each clean song title (Spotify style)
-      if (cleanTitle.isNotEmpty && !unique.containsKey(cleanTitle)) {
-        unique[cleanTitle] = s;
+      // Keep only the first instance
+      if (uniqueKey.isNotEmpty && !unique.containsKey(uniqueKey)) {
+        unique[uniqueKey] = s;
       }
     }
     return unique.values.toList();
@@ -217,6 +253,93 @@ class HomeProvider extends ChangeNotifier {
         _topAlbums = unique.values.toList();
       }
     } catch (_) {}
+    notifyListeners();
+  }
+
+  Future<void> fetchYouSongs(List<String> topArtists) async {
+    _youSongs.clear();
+    _youPlaylists.clear();
+    
+    if (topArtists.isEmpty) {
+      notifyListeners();
+      return;
+    }
+
+    try {
+      for (int i = 0; i < topArtists.length; i++) {
+        final artist = topArtists[i];
+        final songs = await apiService.searchSongs(artist, count: 20);
+        
+        if (songs.isNotEmpty) {
+          _youPlaylists.add(Playlist(
+            id: 'mix_$i',
+            title: 'Daily Mix: $artist',
+            type: 'playlist',
+            coverArt: songs.first.coverArt,
+            songCount: songs.length,
+          ));
+          _youSongs.addAll(songs);
+        }
+      }
+      _youSongs = _deduplicate(_youSongs);
+    } catch (_) {}
+    
+    notifyListeners();
+  }
+
+  void toggleMoodLanguage() {
+    _moodLanguage = _moodLanguage == 'English' ? 'Hindi' : 'English';
+    fetchMoods();
+  }
+
+  Future<void> fetchMoods() async {
+    if (_isLoadingMoods) return;
+    _isLoadingMoods = true;
+    notifyListeners();
+
+    try {
+      final moods = ['Chill', 'Party', 'Lofi', 'Romance', 'Car Ride', 'Workout'];
+      final futures = moods.map((mood) => apiService.searchPlaylists('$_moodLanguage $mood', count: 3));
+      final results = await Future.wait(futures);
+      
+      _moodPlaylists.clear();
+      for (var result in results) {
+        if (result.isNotEmpty) {
+          _moodPlaylists.addAll(result);
+        }
+      }
+      
+      // Deduplicate playlists by id
+      final seen = <String>{};
+      _moodPlaylists = _moodPlaylists.where((p) => seen.add(p.id)).toList();
+    } catch (_) {}
+    
+    _isLoadingMoods = false;
+    notifyListeners();
+  }
+
+  Future<void> fetchCharts() async {
+    if (_chartPlaylists.isNotEmpty || _isLoadingCharts) return;
+    _isLoadingCharts = true;
+    notifyListeners();
+
+    try {
+      final queries = ['Spotify Top 50 Global', 'Billboard Hot 100', 'Top 50 Hindi', 'Global Top 100', 'Viral 50'];
+      final futures = queries.map((query) => apiService.searchPlaylists(query, count: 2));
+      final results = await Future.wait(futures);
+      
+      _chartPlaylists.clear();
+      for (var result in results) {
+        if (result.isNotEmpty) {
+          _chartPlaylists.addAll(result);
+        }
+      }
+      
+      final seen = <String>{};
+      _chartPlaylists = _chartPlaylists.where((p) => seen.add(p.id)).toList();
+    } catch (_) {}
+    
+    _isLoadingCharts = false;
     notifyListeners();
   }
 

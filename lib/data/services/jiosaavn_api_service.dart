@@ -363,6 +363,43 @@ class JioSaavnApiService {
     }
   }
 
+  /// Fetch artist details (Top Songs, Albums)
+  Future<Map<String, dynamic>> fetchArtistDetails(String artistId, {Function(String message)? onError}) async {
+    try {
+      final url = Uri.parse(
+          '$_baseUrl?__call=artist.getArtistPageDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&artistId=$artistId');
+
+      final response = await http.get(url, headers: _headers);
+      if (response.statusCode != 200) {
+        return {'topSongs': <Song>[], 'albums': <Playlist>[]};
+      }
+
+      final data = json.decode(response.body);
+      final List<Song> topSongs = [];
+      final List<Playlist> albums = [];
+
+      if (data['topSongs'] != null && data['topSongs'] is List) {
+        for (var item in data['topSongs']) {
+          topSongs.add(Song.fromJson(item));
+        }
+      }
+
+      if (data['topAlbums'] != null && data['topAlbums'] is List) {
+        for (var item in data['topAlbums']) {
+          albums.add(Playlist.fromJson({...item, 'type': 'album'}));
+        }
+      }
+
+      return {
+        'topSongs': topSongs,
+        'albums': albums,
+      };
+    } catch (e) {
+      debugPrint('[JioSaavnApiService] Artist details error for ID $artistId: $e');
+      return {'topSongs': <Song>[], 'albums': <Playlist>[]};
+    }
+  }
+
   /// Resolve streamable 320kbps audio URL for a song
   Future<String?> getStreamUrl(Song song, {Function(String message)? onError}) async {
     if (_streamCache.containsKey(song.saavnId)) {

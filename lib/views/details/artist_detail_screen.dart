@@ -14,11 +14,13 @@ import '../widgets/song_options_sheet.dart';
 class ArtistDetailScreen extends StatefulWidget {
   final String artistName;
   final String? artistImage;
+  final String? artistId;
 
   const ArtistDetailScreen({
     super.key,
     required this.artistName,
     this.artistImage,
+    this.artistId,
   });
 
   @override
@@ -38,11 +40,26 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
 
   Future<void> _loadArtistData() async {
     final api = JioSaavnApiService();
-    final topSongsFuture = api.searchSongs(widget.artistName, count: 50);
-    final albumsFuture = api.searchAlbums(widget.artistName, count: 20);
+    
+    String? finalArtistId = widget.artistId;
+    if (finalArtistId == null || finalArtistId.isEmpty) {
+      final searchRes = await api.searchAll(widget.artistName);
+      if (searchRes['artists'] != null && (searchRes['artists'] as List).isNotEmpty) {
+        finalArtistId = searchRes['artists'][0]['id']?.toString();
+      }
+    }
 
-    final topSongs = await topSongsFuture;
-    final albums = await albumsFuture;
+    List<Song> topSongs = [];
+    List<Playlist> albums = [];
+
+    if (finalArtistId != null && finalArtistId.isNotEmpty) {
+      final artistData = await api.fetchArtistDetails(finalArtistId);
+      topSongs = artistData['topSongs'] as List<Song>? ?? [];
+      albums = artistData['albums'] as List<Playlist>? ?? [];
+    } else {
+      topSongs = await api.searchSongs(widget.artistName, count: 50);
+      albums = await api.searchAlbums(widget.artistName, count: 20);
+    }
 
     if (mounted) {
       setState(() {

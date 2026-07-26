@@ -9,6 +9,8 @@ import '../../providers/search_provider.dart';
 import '../details/artist_detail_screen.dart';
 import '../details/playlist_detail_screen.dart';
 
+import '../../providers/hidden_songs_provider.dart';
+
 import '../widgets/song_options_sheet.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -31,9 +33,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<SearchProvider, AudioPlayerProvider>(
-      builder: (context, searchProvider, playerProvider, child) {
-        final songs = searchProvider.songs;
+    return Consumer3<SearchProvider, AudioPlayerProvider, HiddenSongsProvider>(
+      builder: (context, searchProvider, playerProvider, hiddenProvider, child) {
+        final songs = searchProvider.songs.where((s) => !hiddenProvider.isHidden(s.id)).toList();
         final albums = searchProvider.albums;
         final playlists = searchProvider.playlists;
 
@@ -194,6 +196,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                               builder: (_) => ArtistDetailScreen(
                                                 artistName: artist['title'] ?? _searchController.text,
                                                 artistImage: artist['image'],
+                                                artistId: artist['id']?.toString(),
                                               ),
                                             ),
                                           );

@@ -42,11 +42,26 @@ class SearchProvider extends ChangeNotifier {
     final results = await resultsFuture;
     final topSongs = await songsFuture;
 
-    // Use the 50 fetched songs, fallback to searchAll songs if empty
-    _songs = topSongs.isNotEmpty ? topSongs : List<Song>.from(results['songs'] ?? []);
     _albums = List<Playlist>.from(results['albums'] ?? []);
     _playlists = List<Playlist>.from(results['playlists'] ?? []);
     _artists = List<Map<String, dynamic>>.from(results['artists'] ?? []);
+
+    // Ultimate Artist Search: If an artist is matched, fetch their true top songs
+    if (_artists.isNotEmpty && _artists.first['id'] != null && _artists.first['id'].toString().isNotEmpty) {
+      final artistId = _artists.first['id'].toString();
+      final artistData = await apiService.fetchArtistDetails(artistId);
+      if (artistData['topSongs'] != null && (artistData['topSongs'] as List).isNotEmpty) {
+        // Prepend true artist songs or replace completely
+        final trueArtistSongs = artistData['topSongs'] as List<Song>;
+        _songs = trueArtistSongs;
+        
+        if (artistData['albums'] != null && (artistData['albums'] as List).isNotEmpty) {
+          _albums.insertAll(0, artistData['albums'] as List<Playlist>);
+        }
+      }
+    } else {
+      _songs = topSongs.isNotEmpty ? topSongs : List<Song>.from(results['songs'] ?? []);
+    }
 
     _isSearching = false;
     notifyListeners();

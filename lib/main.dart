@@ -10,6 +10,9 @@ import 'data/services/lyrics_service.dart';
 import 'providers/audio_player_provider.dart';
 import 'providers/download_provider.dart';
 import 'providers/home_provider.dart';
+import 'providers/hidden_songs_provider.dart';
+import 'providers/custom_playlist_provider.dart';
+import 'providers/listening_history_provider.dart';
 import 'providers/lyrics_provider.dart';
 import 'providers/search_provider.dart';
 import 'providers/settings_provider.dart';
@@ -70,6 +73,15 @@ class PixelPlayerSaavnApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => SettingsProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => HiddenSongsProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CustomPlaylistProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ListeningHistoryProvider(),
         ),
       ],
       child: MaterialApp(

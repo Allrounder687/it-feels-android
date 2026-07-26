@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../core/theme/app_colors.dart';
 import '../providers/audio_player_provider.dart';
+import '../providers/listening_history_provider.dart';
+import '../data/models/song_model.dart';
 import 'home/home_screen.dart';
 import 'library/library_screen.dart';
 import 'player/now_playing_screen.dart';
@@ -18,6 +20,24 @@ class MainNavigationWrapper extends StatefulWidget {
 
 class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
   int _currentTab = 0;
+  Song? _lastLoggedSong;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final player = Provider.of<AudioPlayerProvider>(context, listen: false);
+      final history = Provider.of<ListeningHistoryProvider>(context, listen: false);
+      
+      player.addListener(() {
+        final currentSong = player.currentSong;
+        if (currentSong != null && currentSong.id != _lastLoggedSong?.id) {
+          _lastLoggedSong = currentSong;
+          history.logSong(currentSong);
+        }
+      });
+    });
+  }
 
   void _openFullPlayer() {
     Navigator.push(

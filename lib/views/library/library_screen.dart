@@ -8,8 +8,10 @@ import '../../data/models/song_model.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/home_provider.dart';
+import '../../providers/custom_playlist_provider.dart';
 import '../details/artist_detail_screen.dart';
 import '../details/playlist_detail_screen.dart';
+import '../details/custom_playlist_detail_screen.dart';
 import '../settings/settings_screen.dart';
 import '../widgets/song_options_sheet.dart';
 
@@ -22,7 +24,7 @@ class LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<LibraryScreen> {
   int _selectedTabIndex = 0;
-  final List<String> _tabs = ["SONGS", "FAVORITES", "DOWNLOADS", "ALBUMS", "ARTIST", "PLAYLISTS"];
+  final List<String> _tabs = ["SONGS", "FAVORITES", "DOWNLOADS", "ALBUMS", "ARTIST", "MY PLAYLISTS"];
 
   final List<Map<String, String>> _topArtists = [
     {'name': 'Atif Aslam', 'image': 'https://c.saavncdn.com/artists/Atif_Aslam_500x500.jpg'},
@@ -36,8 +38,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer3<HomeProvider, AudioPlayerProvider, DownloadProvider>(
-      builder: (context, homeProvider, playerProvider, downloadProvider, child) {
+    return Consumer4<HomeProvider, AudioPlayerProvider, DownloadProvider, CustomPlaylistProvider>(
+      builder: (context, homeProvider, playerProvider, downloadProvider, customPlaylistProvider, child) {
         final trending = homeProvider.trendingSongs;
         final playlists = homeProvider.topPlaylists;
 
@@ -121,7 +123,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
                 // Main Content View per selected Tab
                 Expanded(
-                  child: _buildTabContent(homeProvider, playerProvider, downloadProvider, trending, playlists),
+                  child: _buildTabContent(homeProvider, playerProvider, downloadProvider, customPlaylistProvider, trending, playlists),
                 ),
 
                 const SizedBox(height: 80),
@@ -137,6 +139,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     HomeProvider homeProvider,
     AudioPlayerProvider playerProvider,
     DownloadProvider downloadProvider,
+    CustomPlaylistProvider customPlaylistProvider,
     List<Song> trending,
     List<Playlist> playlists,
   ) {
@@ -244,49 +247,77 @@ class _LibraryScreenState extends State<LibraryScreen> {
         },
       );
     } else if (_selectedTabIndex == 5) {
-      // PLAYLISTS TAB
-      return ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: playlists.length,
-        itemBuilder: (context, index) {
-          final pl = playlists[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Material(
-              color: AppColors.midnightCard.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
-              child: ListTile(
-                leading: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: pl.coverArt.isNotEmpty
-                        ? CustomImageWidget(imageUrl: pl.coverArt, fit: BoxFit.cover)
-                        : const Icon(Icons.queue_music, color: Colors.white),
-                  ),
-                ),
-                title: Text(
-                  pl.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
-                ),
-                subtitle: Text(
-                  "Featured Playlist",
-                  style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12),
-                ),
-                trailing: const Icon(Icons.chevron_right, color: Colors.white54),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => PlaylistDetailScreen(playlist: pl)),
-                  );
-                },
+      // MY PLAYLISTS TAB
+      final myPlaylists = customPlaylistProvider.playlists;
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.midnightPill,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
+              icon: const Icon(Icons.add),
+              label: Text("Create New Playlist", style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              onPressed: () {
+                _showCreatePlaylistDialog(context, customPlaylistProvider);
+              },
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: myPlaylists.isEmpty
+                ? Center(
+                    child: Text("You haven't created any playlists yet.",
+                        style: GoogleFonts.inter(color: AppColors.midnightTextMuted)),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    itemCount: myPlaylists.length,
+                    itemBuilder: (context, index) {
+                      final pl = myPlaylists[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Material(
+                          color: AppColors.midnightCard.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(16),
+                          child: ListTile(
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: SizedBox(
+                                width: 48,
+                                height: 48,
+                                child: pl.songs.isNotEmpty && pl.songs.first.coverArt.isNotEmpty
+                                    ? CustomImageWidget(imageUrl: pl.songs.first.coverArt, fit: BoxFit.cover)
+                                    : const Icon(Icons.queue_music, color: Colors.white),
+                              ),
+                            ),
+                            title: Text(
+                              pl.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                            ),
+                            subtitle: Text(
+                              "${pl.songs.length} tracks",
+                              style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12),
+                            ),
+                            trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => CustomPlaylistDetailScreen(playlist: pl)),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       );
     } else {
       // SONGS TAB (Default)
@@ -350,6 +381,43 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ),
         );
       },
+    );
+  }
+
+  void _showCreatePlaylistDialog(BuildContext context, CustomPlaylistProvider provider) {
+    final TextEditingController controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.midnightSurface,
+        title: Text("New Playlist", style: GoogleFonts.outfit(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          style: GoogleFonts.inter(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: "Playlist Name",
+            hintStyle: GoogleFonts.inter(color: Colors.white38),
+            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.midnightAccent)),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          TextButton(
+            child: const Text("Create", style: TextStyle(color: AppColors.midnightAccent)),
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                provider.createPlaylist(controller.text.trim());
+              }
+              Navigator.pop(ctx);
+            },
+          ),
+        ],
+      ),
     );
   }
 }
