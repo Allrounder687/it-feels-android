@@ -9,6 +9,13 @@ import '../data/services/audio_player_handler.dart';
 import '../data/services/jiosaavn_api_service.dart';
 import '../services/storage_service.dart';
 
+enum AppThemeMode {
+  dynamic,
+  midnight,
+  burgundy,
+  amoled,
+}
+
 class AudioPlayerProvider extends ChangeNotifier {
   final AudioPlayerHandler audioHandler;
   final JioSaavnApiService apiService;
@@ -25,9 +32,11 @@ class AudioPlayerProvider extends ChangeNotifier {
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
 
-  Color _themeBackgroundColor = AppColors.burgundyBackground;
-  Color _themeSurfaceColor = AppColors.burgundySurface;
-  Color _themeAccentColor = AppColors.burgundyAccent;
+  Color _themeBackgroundColor = AppColors.midnightBackground;
+  Color _themeSurfaceColor = AppColors.midnightSurface;
+  Color _themeAccentColor = AppColors.midnightPrimary;
+
+  AppThemeMode _appThemeMode = AppThemeMode.dynamic;
 
   AudioPlayerProvider({
     required this.audioHandler,
@@ -49,10 +58,39 @@ class AudioPlayerProvider extends ChangeNotifier {
   Duration get position => _position;
   Duration get duration => _duration;
   List<Song> get favoriteSongs => _favoriteSongs;
+  AppThemeMode get appThemeMode => _appThemeMode;
 
-  Color get themeBackgroundColor => _themeBackgroundColor;
-  Color get themeSurfaceColor => _themeSurfaceColor;
-  Color get themeAccentColor => _themeAccentColor;
+  void setAppThemeMode(AppThemeMode mode) {
+    _appThemeMode = mode;
+    notifyListeners();
+  }
+
+  Color get themeBackgroundColor {
+    switch (_appThemeMode) {
+      case AppThemeMode.midnight: return AppColors.midnightBackground;
+      case AppThemeMode.burgundy: return AppColors.burgundyBackground;
+      case AppThemeMode.amoled: return Colors.black;
+      case AppThemeMode.dynamic: return _themeBackgroundColor;
+    }
+  }
+
+  Color get themeSurfaceColor {
+    switch (_appThemeMode) {
+      case AppThemeMode.midnight: return AppColors.midnightSurface;
+      case AppThemeMode.burgundy: return AppColors.burgundySurface;
+      case AppThemeMode.amoled: return const Color(0xFF111111);
+      case AppThemeMode.dynamic: return _themeSurfaceColor;
+    }
+  }
+
+  Color get themeAccentColor {
+    switch (_appThemeMode) {
+      case AppThemeMode.midnight: return AppColors.midnightPrimary;
+      case AppThemeMode.burgundy: return AppColors.burgundyPrimary;
+      case AppThemeMode.amoled: return Colors.white;
+      case AppThemeMode.dynamic: return _themeAccentColor;
+    }
+  }
 
   bool isFavorite(String songId) {
     return _favoriteSongs.any((s) => s.id == songId);
@@ -128,7 +166,17 @@ class AudioPlayerProvider extends ChangeNotifier {
 
     _extractPalette(song.coverArt);
 
-    final streamUrl = await apiService.getStreamUrl(song);
+    String? streamUrl;
+    final downloads = await StorageService.loadDownloads();
+    final downloadedSong = downloads.cast<Song?>().firstWhere((s) => s?.id == song.id, orElse: () => null);
+
+    if (downloadedSong != null && downloadedSong.encryptedMediaUrl != null && File(downloadedSong.encryptedMediaUrl!).existsSync()) {
+      streamUrl = downloadedSong.encryptedMediaUrl;
+      debugPrint('[AudioPlayerProvider] Playing downloaded file for ${song.title}');
+    } else {
+      streamUrl = await apiService.getStreamUrl(song);
+    }
+    
     _isLoading = false;
 
     if (streamUrl != null) {
@@ -190,6 +238,26 @@ class AudioPlayerProvider extends ChangeNotifier {
       _queue.insert(_currentIndex + 1, song);
     } else {
       _queue.add(song);
+    }
+    notifyListeners();
+  }
+
+  void reorderQueue(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    if (oldIndex < 0 || oldIndex >= _queue.length || newIndex < 0 || newIndex > _queue.length) return;
+
+    final item = _queue.removeAt(oldIndex);
+    _queue.insert(newIndex, item);
+    
+    // Update current index
+    if (_currentIndex == oldIndex) {
+      _currentIndex = newIndex;
+    } else if (oldIndex < _currentIndex && newIndex >= _currentIndex) {
+      _currentIndex--;
+    } else if (oldIndex > _currentIndex && newIndex <= _currentIndex) {
+      _currentIndex++;
     }
     notifyListeners();
   }

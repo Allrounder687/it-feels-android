@@ -2,6 +2,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'core/theme/app_colors.dart';
 import 'data/services/audio_player_handler.dart';
 import 'data/services/jiosaavn_api_service.dart';
@@ -18,6 +19,7 @@ late AudioPlayerHandler _audioHandler;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Permission.notification.request();
 
   // Initialize Android background AudioService
   _audioHandler = await AudioService.init(
@@ -27,6 +29,8 @@ Future<void> main() async {
       androidNotificationChannelName: 'It Feels Playback',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,
+      androidNotificationIcon: 'mipmap/ic_launcher',
+      androidShowNotificationBadge: true,
     ),
   );
 

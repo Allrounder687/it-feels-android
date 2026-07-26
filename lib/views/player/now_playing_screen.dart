@@ -51,10 +51,22 @@ class NowPlayingScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: bgColor,
           body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              child: Column(
-                children: [
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onVerticalDragEnd: (details) {
+                if (details.primaryVelocity != null && details.primaryVelocity! < -100) {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => const QueueBottomSheet(),
+                  );
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Column(
+                  children: [
                   // Top App Bar
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -139,8 +151,17 @@ class NowPlayingScreen extends StatelessWidget {
                   const Spacer(),
 
                   // Center Album Artwork with Hero Animation
-                  Hero(
-                    tag: 'cover_${currentSong.id}',
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned.fill(
+                        child: PulseGlowBackground(
+                          color: accentColor,
+                          isPlaying: playerProvider.isPlaying,
+                        ),
+                      ),
+                      Hero(
+                        tag: 'cover_${currentSong.id}',
                     child: Container(
                       width: artSize,
                       height: artSize,
@@ -166,6 +187,8 @@ class NowPlayingScreen extends StatelessWidget {
                             : Container(color: surfaceColor),
                       ),
                     ),
+                  ),
+                  ],
                   ),
 
                   const Spacer(),
@@ -453,6 +476,65 @@ class NowPlayingScreen extends StatelessWidget {
                 ],
               ),
             ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class PulseGlowBackground extends StatefulWidget {
+  final Color color;
+  final bool isPlaying;
+
+  const PulseGlowBackground({super.key, required this.color, required this.isPlaying});
+
+  @override
+  State<PulseGlowBackground> createState() => _PulseGlowBackgroundState();
+}
+
+class _PulseGlowBackgroundState extends State<PulseGlowBackground> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
+    if (widget.isPlaying) _controller.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(PulseGlowBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isPlaying && !oldWidget.isPlaying) {
+      _controller.repeat(reverse: true);
+    } else if (!widget.isPlaying && oldWidget.isPlaying) {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withValues(alpha: 0.15 + (_controller.value * 0.15)),
+                blurRadius: 80 + (_controller.value * 60),
+                spreadRadius: 20 + (_controller.value * 30),
+              ),
+            ],
           ),
         );
       },

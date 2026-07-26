@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/settings_provider.dart';
 
@@ -143,9 +144,21 @@ class SettingsScreen extends StatelessWidget {
                 context: context,
                 title: "App Primary Theme",
                 subtitle: settings.theme,
-                options: ["Midnight Dark", "Burgundy Dark"],
+                options: ["Dynamic (Album Art)", "Midnight Dark", "Burgundy Dark", "AMOLED Black"],
                 currentValue: settings.theme,
-                onSelected: (val) => settings.setTheme(val),
+                onSelected: (val) {
+                  settings.setTheme(val);
+                  final player = Provider.of<AudioPlayerProvider>(context, listen: false);
+                  if (val == "Midnight Dark") {
+                    player.setAppThemeMode(AppThemeMode.midnight);
+                  } else if (val == "Burgundy Dark") {
+                    player.setAppThemeMode(AppThemeMode.burgundy);
+                  } else if (val == "AMOLED Black") {
+                    player.setAppThemeMode(AppThemeMode.amoled);
+                  } else {
+                    player.setAppThemeMode(AppThemeMode.dynamic);
+                  }
+                },
               ),
 
               const SizedBox(height: 24),

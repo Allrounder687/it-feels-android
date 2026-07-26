@@ -5,7 +5,7 @@ class SettingsProvider extends ChangeNotifier {
   String _wifiQuality = '320 kbps (Very High)';
   String _mobileQuality = '160 kbps (High)';
   String _downloadQuality = '320 kbps (Very High)';
-  String _theme = 'Midnight Dark';
+  String _theme = 'Dynamic (Album Art)';
 
   SettingsProvider() {
     _loadSettings();

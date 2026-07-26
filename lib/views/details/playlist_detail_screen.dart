@@ -9,6 +9,7 @@ import '../../data/services/jiosaavn_api_service.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
 import '../widgets/song_options_sheet.dart';
+import '../widgets/animated_equalizer.dart';
 
 class PlaylistDetailScreen extends StatefulWidget {
   final Playlist playlist;
@@ -234,8 +235,12 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                         final song = _songs[index];
                         final isDown = downloadProvider.isDownloaded(song.id);
 
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                        return Consumer<AudioPlayerProvider>(
+                          builder: (context, playerProvider, child) {
+                            final isCurrentSong = playerProvider.currentSong?.id == song.id;
+
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                           child: Material(
                             color: AppColors.midnightCard.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(16),
@@ -262,8 +267,8 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.inter(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w600,
+                                        color: isCurrentSong ? AppColors.midnightPrimary : Colors.white,
+                                        fontWeight: isCurrentSong ? FontWeight.w800 : FontWeight.w600,
                                         fontSize: 14,
                                       ),
                                     ),
@@ -283,12 +288,17 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                   fontSize: 12,
                                 ),
                               ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.more_vert, color: Colors.white54),
-                                onPressed: () {
-                                  SongOptionsSheet.show(context, song, playlistContext: _songs);
-                                },
-                              ),
+                              trailing: isCurrentSong && playerProvider.isPlaying
+                                  ? const Padding(
+                                      padding: EdgeInsets.only(right: 12.0),
+                                      child: AnimatedEqualizer(color: AppColors.midnightPrimary),
+                                    )
+                                  : IconButton(
+                                      icon: const Icon(Icons.more_vert, color: Colors.white54),
+                                      onPressed: () {
+                                        SongOptionsSheet.show(context, song, playlistContext: _songs);
+                                      },
+                                    ),
                               onTap: () {
                                 playerProvider.playSong(song, queue: _songs, index: index);
                               },
@@ -297,6 +307,8 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                               },
                             ),
                           ),
+                        );
+                          },
                         );
                       },
                       childCount: _songs.length,

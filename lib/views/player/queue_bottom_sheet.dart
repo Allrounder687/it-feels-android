@@ -66,14 +66,18 @@ class QueueBottomSheet extends StatelessWidget {
                           style: GoogleFonts.inter(color: Colors.white54),
                         ),
                       )
-                    : ListView.builder(
+                    : ReorderableListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         itemCount: queue.length,
+                        onReorder: (oldIndex, newIndex) {
+                          playerProvider.reorderQueue(oldIndex, newIndex);
+                        },
                         itemBuilder: (context, index) {
                           final song = queue[index];
                           final isCurrent = index == currentIndex;
 
                           return Padding(
+                            key: ValueKey('${song.id}_$index'),
                             padding: const EdgeInsets.only(bottom: 6),
                             child: Material(
                               color: isCurrent

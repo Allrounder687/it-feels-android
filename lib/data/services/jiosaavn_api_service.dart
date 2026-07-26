@@ -22,6 +22,19 @@ class JioSaavnApiService {
   final Map<String, DateTime> _playlistCacheExpiries = {};
   final Map<String, DateTime> _albumCacheExpiries = {};
 
+  bool _isBhakti(String? text) {
+    if (text == null || text.isEmpty) return false;
+    final lower = text.toLowerCase();
+    final keywords = [
+      'bhakti', 'bhakthi', 'bhajan', 'aarti', 'arti', 'hanuman', 
+      'chalisa', 'chaleesa', 'mantra', 'shiv', 'ram ', 'krishna', 
+      'devotional', 'ganpati', 'ganesha', 'mahadev', 'mata', 
+      'shri ', 'shree ', 'bhagwan', 'kirtan', 'sai ', 'durga',
+      'radha', 'shyam', 'hari'
+    ];
+    return keywords.any((k) => lower.contains(k));
+  }
+
   /// Search all categories (songs, albums, playlists)
   Future<Map<String, dynamic>> searchAll(String query, {Function(String message)? onError}) async {
     if (query.trim().isEmpty) {
@@ -61,6 +74,19 @@ class JioSaavnApiService {
       if (data['playlists'] != null && data['playlists']['data'] is List) {
         for (var item in data['playlists']['data']) {
           playlists.add(Playlist.fromJson({...item, 'type': 'playlist'}));
+        }
+      }
+
+      // Top Query (Often contains the exact artist match like Taylor Swift)
+      if (data['topquery'] != null && data['topquery']['data'] is List) {
+        for (var item in data['topquery']['data']) {
+          if (item['type'] == 'artist') {
+            artists.add({
+              'id': item['id'] ?? '',
+              'title': item['title'] ?? item['name'] ?? '',
+              'image': (item['image'] ?? '').toString().replaceAll('50x50', '500x500'),
+            });
+          }
         }
       }
 
@@ -228,6 +254,10 @@ class JioSaavnApiService {
         trendingSongs.addAll(fallbackSongs);
       }
 
+      // Filter out religious/bhakti songs from recommendations
+      trendingSongs.removeWhere((s) => _isBhakti(s.title) || _isBhakti(s.album) || _isBhakti(s.artist));
+      playlists.removeWhere((p) => _isBhakti(p.title));
+
       final result = {
         'trending': trendingSongs,
         'playlists': playlists,
@@ -273,6 +303,8 @@ class JioSaavnApiService {
         }
       }
 
+      songs.removeWhere((s) => _isBhakti(s.title) || _isBhakti(s.album) || _isBhakti(s.artist));
+
       final result = {
         'name': playlistName,
         'songs': songs,
@@ -314,6 +346,8 @@ class JioSaavnApiService {
           songs.add(Song.fromJson(item));
         }
       }
+
+      songs.removeWhere((s) => _isBhakti(s.title) || _isBhakti(s.album) || _isBhakti(s.artist));
 
       final result = {
         'name': albumName,
