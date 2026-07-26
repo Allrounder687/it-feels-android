@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../core/utils/des_decryptor.dart';
 import '../models/song_model.dart';
 
-class JioSaavnApiService {
+class MusicApiService {
   static const String _baseUrl = 'https://www.jiosaavn.com/api.php';
   static final Map<String, String> _headers = {
     'User-Agent':
@@ -108,12 +108,12 @@ class JioSaavnApiService {
         'artists': artists,
       };
     } catch (e) {
-      debugPrint('[JioSaavnApiService] Search error: $e');
+      debugPrint('[MusicApiService] Search error: $e');
       return {'songs': <Song>[], 'albums': <Playlist>[], 'playlists': <Playlist>[], 'artists': <Map<String, dynamic>>[]};
     }
   }
 
-  /// Search for songs on JioSaavn (returns 40+ songs per query)
+  /// Search for songs on Music API (returns 40+ songs per query)
   Future<List<Song>> searchSongs(String query, {int page = 1, int count = 40, Function(String message)? onError}) async {
     if (query.trim().isEmpty) return [];
 
@@ -134,14 +134,14 @@ class JioSaavnApiService {
         if (songs.isNotEmpty) return songs;
       }
     } catch (e) {
-      debugPrint('[JioSaavnApiService] searchSongs error: $e');
+      debugPrint('[MusicApiService] searchSongs error: $e');
     }
 
     final res = await searchAll(query, onError: onError);
     return res['songs'] as List<Song>;
   }
 
-  /// Search for playlists on JioSaavn
+  /// Search for playlists on Music API
   Future<List<Playlist>> searchPlaylists(String query, {int page = 1, int count = 30}) async {
     try {
       final url = Uri.parse(
@@ -159,13 +159,13 @@ class JioSaavnApiService {
         if (playlists.isNotEmpty) return playlists;
       }
     } catch (e) {
-      debugPrint('[JioSaavnApiService] searchPlaylists error: $e');
+      debugPrint('[MusicApiService] searchPlaylists error: $e');
     }
     final res = await searchAll(query);
     return res['playlists'] as List<Playlist>;
   }
 
-  /// Search for albums on JioSaavn
+  /// Search for albums on Music API
   Future<List<Playlist>> searchAlbums(String query, {int page = 1, int count = 30}) async {
     try {
       final url = Uri.parse(
@@ -183,7 +183,7 @@ class JioSaavnApiService {
         if (albums.isNotEmpty) return albums;
       }
     } catch (e) {
-      debugPrint('[JioSaavnApiService] searchAlbums error: $e');
+      debugPrint('[MusicApiService] searchAlbums error: $e');
     }
     final res = await searchAll(query);
     return res['albums'] as List<Playlist>;
@@ -242,7 +242,7 @@ class JioSaavnApiService {
         }
       }
 
-      // Fallback: If JioSaavn homepage API returned empty trending list, fetch Trending Today playlist (110858205)
+      // Fallback: If Music API homepage API returned empty trending list, fetch Trending Today playlist (110858205)
       if (trendingSongs.isEmpty) {
         final fallbackChart = await fetchPlaylistDetails('110858205');
         trendingSongs.addAll(fallbackChart['songs'] as List<Song>);
@@ -268,7 +268,7 @@ class JioSaavnApiService {
       _homepageCacheExpiry = DateTime.now().add(_cacheDuration);
       return result;
     } catch (e) {
-      debugPrint('[JioSaavnApiService] Homepage error: $e');
+      debugPrint('[MusicApiService] Homepage error: $e');
       // Emergency fallback
       final fallbackSongs = await searchSongs('Hindi');
       return {'trending': fallbackSongs, 'playlists': <Playlist>[]};
@@ -314,7 +314,7 @@ class JioSaavnApiService {
       _playlistCacheExpiries[listId] = DateTime.now().add(_cacheDuration);
       return result;
     } catch (e) {
-      debugPrint('[JioSaavnApiService] Playlist error for ID $listId: $e');
+      debugPrint('[MusicApiService] Playlist error for ID $listId: $e');
       return {'name': '', 'songs': <Song>[]};
     }
   }
@@ -358,7 +358,7 @@ class JioSaavnApiService {
       _albumCacheExpiries[albumId] = DateTime.now().add(_cacheDuration);
       return result;
     } catch (e) {
-      debugPrint('[JioSaavnApiService] Album error for ID $albumId: $e');
+      debugPrint('[MusicApiService] Album error for ID $albumId: $e');
       return {'name': '', 'songs': <Song>[]};
     }
   }
@@ -395,7 +395,7 @@ class JioSaavnApiService {
         'albums': albums,
       };
     } catch (e) {
-      debugPrint('[JioSaavnApiService] Artist details error for ID $artistId: $e');
+      debugPrint('[MusicApiService] Artist details error for ID $artistId: $e');
       return {'topSongs': <Song>[], 'albums': <Playlist>[]};
     }
   }
@@ -427,7 +427,7 @@ class JioSaavnApiService {
       }
 
       if (encUrl == null || encUrl.isEmpty) {
-        debugPrint('[JioSaavnApiService] No encrypted URL found for ${song.saavnId}');
+        debugPrint('[MusicApiService] No encrypted URL found for ${song.saavnId}');
         return null;
       }
 
@@ -443,7 +443,7 @@ class JioSaavnApiService {
         return finalUrl;
       }
     } catch (e) {
-      debugPrint('[JioSaavnApiService] Stream resolution error for ${song.saavnId}: $e');
+      debugPrint('[MusicApiService] Stream resolution error for ${song.saavnId}: $e');
     }
 
     return null;

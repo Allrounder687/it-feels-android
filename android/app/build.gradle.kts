@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.pixelplayer.saavn.pixel_player_saavn"
+    namespace = "com.itfeels.music"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.pixelplayer.saavn.pixel_player_saavn"
+        applicationId = "com.itfeels.music"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

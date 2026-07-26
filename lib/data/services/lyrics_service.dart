@@ -16,19 +16,19 @@ class LyricsResult {
 }
 
 class LyricsService {
-  static const String _saavnBaseUrl = 'https://www.jiosaavn.com/api.php';
+  static const String _saavnBaseUrl = 'https://www.Music API.com/api.php';
   static final Map<String, String> _headers = {
     'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'application/json',
   };
 
-  /// Fetch lyrics for a song (Static from JioSaavn, Synced from LRCLIB)
+  /// Fetch lyrics for a song (Static from Music API, Synced from LRCLIB)
   Future<LyricsResult> fetchLyrics(Song song, {Function(String)? onError}) async {
     String? staticLrc;
     List<LyricLine> syncedLrc = [];
 
-    // 1. Try JioSaavn static lyrics
+    // 1. Try Music API static lyrics
     try {
       final saavnUrl = Uri.parse(
           '$_saavnBaseUrl?__call=lyrics.getLyrics&_format=json&ctx=web6dot0&api_version=4&lyrics_id=${song.saavnId}');
@@ -42,8 +42,8 @@ class LyricsService {
         }
       }
     } catch (e) {
-      debugPrint('[LyricsService] JioSaavn lyrics error: $e');
-      if (onError != null) onError('Failed to load JioSaavn lyrics');
+      debugPrint('[LyricsService] Music API lyrics error: $e');
+      if (onError != null) onError('Failed to load Music API lyrics');
     }
 
     // 2. Try LRCLIB for synced LRC lyrics

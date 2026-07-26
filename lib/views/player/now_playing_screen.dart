@@ -1,4 +1,4 @@
-import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
+import 'package:it_feels_music/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -434,6 +434,45 @@ class NowPlayingScreen extends StatelessWidget {
                         IconButton(
                           icon: const Icon(Icons.forward_10_rounded, color: Colors.white70, size: 28),
                           onPressed: () => playerProvider.seekForward(),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Secondary Control Bar (Shuffle, Queue, Repeat)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            Icons.shuffle_rounded, 
+                            color: playerProvider.isShuffle ? accentColor : Colors.white60, 
+                            size: 24,
+                          ),
+                          onPressed: () => playerProvider.toggleShuffle(),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.queue_music_rounded, color: Colors.white60, size: 24),
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => const QueueBottomSheet(),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: Icon(
+                            playerProvider.isRepeat ? Icons.repeat_one_rounded : Icons.repeat_rounded, 
+                            color: playerProvider.isRepeat ? accentColor : Colors.white60, 
+                            size: 24,
+                          ),
+                          onPressed: () => playerProvider.toggleRepeat(),
                         ),
                       ],
                     ),

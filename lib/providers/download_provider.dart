@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../data/models/song_model.dart';
-import '../data/services/jiosaavn_api_service.dart';
+import '../data/services/music_api_service.dart';
 import '../services/download_service.dart';
 import '../services/storage_service.dart';
 
@@ -11,7 +11,7 @@ class DownloadProvider extends ChangeNotifier {
   final Map<String, double> _downloadProgressMap = {};
   final Set<String> _downloadingIds = {};
 
-  DownloadProvider({required JioSaavnApiService apiService})
+  DownloadProvider({required MusicApiService apiService})
       : downloadService = DownloadService(apiService: apiService) {
     _init();
   }

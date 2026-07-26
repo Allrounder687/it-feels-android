@@ -5,11 +5,11 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:audiotags/audiotags.dart';
 import '../data/models/song_model.dart';
-import '../data/services/jiosaavn_api_service.dart';
+import '../data/services/music_api_service.dart';
 import 'storage_service.dart';
 
 class DownloadService {
-  final JioSaavnApiService apiService;
+  final MusicApiService apiService;
 
   DownloadService({required this.apiService});
 

@@ -7,7 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Import s
 
 class DesDecryptor {
   // Using a constant for the storage key, not the decryption key itself.
-  static const String _secureStorageKey = 'jiosaavn_des_key';
+  static const String _secureStorageKey = 'Music API_des_key';
   static const String _fallbackKey = '38346591'; // Original hardcoded key as fallback/initial value
 
   static final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
@@ -32,7 +32,7 @@ class DesDecryptor {
     return key;
   }
 
-  /// Decrypt JioSaavn DES-ECB encrypted_media_url
+  /// Decrypt Music API DES-ECB encrypted_media_url
   static Future<String?> decrypt(String encryptedBase64, {Function(String message)? onError}) async {
     if (encryptedBase64.isEmpty) return null;
     try {

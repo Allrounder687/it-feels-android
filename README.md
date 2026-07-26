@@ -1,8 +1,8 @@
-# PixelPlayer Saavn 🎵
+# IT Feels Music  🎵
 
-A premium, modern Flutter Android music application built with the design aesthetics of **PixelPlayer** and powered by the **JioSaavn API**.
+A premium, modern Flutter Android music application built with the design aesthetics of **IT Feels Music** and powered by the **Jio API**.
 
-![PixelPlayer Saavn Banner](https://img.shields.io/badge/PixelPlayer-Saavn%20Edition-FF4081?style=for-the-badge&logo=flutter)
+![IT Feels Music  Banner](https://img.shields.io/badge/IT Feels Music-%20Edition-FF4081?style=for-the-badge&logo=flutter)
 ![Version](https://img.shields.io/badge/Version-2.1.1-blue?style=for-the-badge)
 ![Flutter Version](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter)
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android)
@@ -12,13 +12,13 @@ A premium, modern Flutter Android music application built with the design aesthe
 
 ## ✨ Highlights & Key Features
 
-- **PixelPlayer UI Aesthetics**: High-contrast dark themes (Burgundy `#220F19` & Midnight Blue `#090D16`), organic artwork bubble collages (`HeroCollage`), display typography (`Outfit` & `Inter`), and custom squiggly progress bars (`WavySeekBar`).
+- **IT Feels Music UI Aesthetics**: High-contrast dark themes (Burgundy `#220F19` & Midnight Blue `#090D16`), organic artwork bubble collages (`HeroCollage`), display typography (`Outfit` & `Inter`), and custom squiggly progress bars (`WavySeekBar`).
 - **Curated Moods & Charts**: Dedicated dynamic tabs for curated mood playlists (with English/Hindi toggle) and top global streaming charts.
 - **Hidden Songs Manager**: Full control over your feed with the ability to hide unwanted songs and manage them via a dedicated privacy setting.
 - **Fully Populated Library Tabs**: Real dynamic data for `SONGS`, `FAVORITES`, `DOWNLOADS`, `ALBUMS`, `ARTIST`, and `PLAYLISTS`.
 - **Offline Download Manager**: Full `DownloadService` allowing users to download 320kbps audio streams (`.mp3`/`.mp4`) and cover art to local device storage (`path_provider`) for offline playback.
 - **Full Artist Discography (`ArtistDetailScreen`)**: Artist search (e.g., "Atif Aslam", "Arijit Singh") displays verified artist cards with avatar image, top songs, and discography albums & singles grid.
-- **JioSaavn 320kbps High Quality Audio**: Real-time DES-ECB link decryption and 320kbps AAC/MP4 stream URL resolution (`DesDecryptor`).
+- **Jio 320kbps High Quality Audio**: Real-time DES-ECB link decryption and 320kbps AAC/MP4 stream URL resolution (`DesDecryptor`).
 - **30pt High-Contrast Synced Lyrics**: Devanagari-to-Romanized transliteration (`HinglishTransliterator`) with enlarged 30pt bold active line autoscroll and smooth scale transitions.
 - **Categorized Audio Quality & Settings**: Dedicated `SettingsScreen` for Wi-Fi streaming quality (`320 kbps` / `160 kbps`), mobile data quality, download quality, storage management, and theme selection.
 - **Hero Artwork Transitions**: Seamless morphing of album cover art between `MiniPlayer` and `NowPlayingScreen`.
@@ -52,8 +52,8 @@ A premium, modern Flutter Android music application built with the design aesthe
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/PixelPlayerHQ/PixelPlayer.git
-   cd PixelPlayer
+   git clone https://github.com/IT Feels MusicHQ/IT Feels Music.git
+   cd IT Feels Music
    ```
 
 2. Fetch Flutter packages:

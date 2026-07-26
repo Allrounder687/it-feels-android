@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to **PixelPlayer Saavn Edition** will be documented in this file.
+All notable changes to **IT Feels Music** will be documented in this file.
 
 ## [2.1.2] - 2026-07-26
 
@@ -11,7 +11,7 @@ All notable changes to **PixelPlayer Saavn Edition** will be documented in this 
 - **Enhanced Now Playing Gestures**: Swipe down anywhere to close the player, and swipe up from the bottom to seamlessly open the Queue drawer.
 
 ### Fixed
-- **Ultimate Artist Search Logic**: Prioritized parsing the `topquery` API node in JioSaavn to ensure top-tier verified artists like "Taylor Swift" and "Atif Aslam" appear as direct matches instead of obscure collabs.
+- **Ultimate Artist Search Logic**: Prioritized parsing the `topquery` API node in Jio to ensure top-tier verified artists like "Taylor Swift" and "Atif Aslam" appear as direct matches instead of obscure collabs.
 - **UX Polish**: Increased the tap target size and icon scaling for the Like, Lyrics, Download, and Options buttons on the Now Playing screen.
 - **Empty States**: "YOU", Moods, and Charts tabs now gracefully fall back to default trending content if user history or API queries return empty.
 
@@ -20,7 +20,7 @@ All notable changes to **PixelPlayer Saavn Edition** will be documented in this 
 ## [2.1.1] - 2026-07-26
 
 ### Fixed
-- **Artist Search Logic**: Prioritized parsing the `topquery` API node in JioSaavn to ensure top-tier verified artists like "Taylor Swift" and "Atif Aslam" appear as direct matches instead of obscure collabs.
+- **Artist Search Logic**: Prioritized parsing the `topquery` API node in Jio to ensure top-tier verified artists like "Taylor Swift" and "Atif Aslam" appear as direct matches instead of obscure collabs.
 - **Offline Playback Logic**: Updated `AudioPlayerProvider` to intercept `getStreamUrl`. If a song is marked as downloaded in `StorageService`, the audio engine now correctly streams the local MP4 file from device storage without hitting the network.
 - **Aggressive Content Filtering**: Expanded the `_isBhakti` homepage filter with more keywords (`chaleesa`, `mata`, `bhagwan`, `shree`, `durga`, etc.) to strictly prevent devotional tracks from bleeding into popular recommended playlists.
 
@@ -57,6 +57,6 @@ All notable changes to **PixelPlayer Saavn Edition** will be documented in this 
 - Initial project architecture with Flutter, `just_audio`, and `audio_service`.
 - Custom `WavySeekBar` squiggly audio progress slider painter.
 - Organic `HeroCollage` artwork composition widget.
-- JioSaavn REST API integration with 320kbps DES-ECB URL deciphering (`DesDecryptor`).
+- Jio REST API integration with 320kbps DES-ECB URL deciphering (`DesDecryptor`).
 - Dual theme support: Burgundy (`#220F19`) and Midnight Blue (`#090D16`).
 - Core screens: Home ("Your Mix"), Now Playing, Library, Lyrics, and Search.

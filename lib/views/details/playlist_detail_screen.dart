@@ -1,11 +1,11 @@
-import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
+import 'package:it_feels_music/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/models/song_model.dart';
-import '../../data/services/jiosaavn_api_service.dart';
+import '../../data/services/music_api_service.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
 import '../widgets/song_options_sheet.dart';
@@ -33,7 +33,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   }
 
   Future<void> _loadDetails() async {
-    final api = JioSaavnApiService();
+    final api = MusicApiService();
     Map<String, dynamic> data;
 
     if (widget.playlist.type == 'album') {

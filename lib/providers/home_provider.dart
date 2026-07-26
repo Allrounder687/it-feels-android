@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../core/utils/error_reporter.dart';
 import '../data/models/song_model.dart';
-import '../data/services/jiosaavn_api_service.dart';
+import '../data/services/music_api_service.dart';
 import '../services/storage_service.dart';
 
 class HomeProvider extends ChangeNotifier {
-  final JioSaavnApiService apiService;
+  final MusicApiService apiService;
 
   List<Song> _trendingSongs = [];
   List<Playlist> _topPlaylists = [];

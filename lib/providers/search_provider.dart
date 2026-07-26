@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../data/models/song_model.dart';
-import '../data/services/jiosaavn_api_service.dart';
+import '../data/services/music_api_service.dart';
 
 class SearchProvider extends ChangeNotifier {
-  final JioSaavnApiService apiService;
+  final MusicApiService apiService;
 
   String _query = '';
   List<Song> _songs = [];

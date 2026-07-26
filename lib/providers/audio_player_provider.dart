@@ -7,7 +7,7 @@ import 'package:palette_generator/palette_generator.dart';
 import '../core/theme/app_colors.dart';
 import '../data/models/song_model.dart';
 import '../data/services/audio_player_handler.dart';
-import '../data/services/jiosaavn_api_service.dart';
+import '../data/services/music_api_service.dart';
 import '../services/storage_service.dart';
 
 enum AppThemeMode {
@@ -19,7 +19,7 @@ enum AppThemeMode {
 
 class AudioPlayerProvider extends ChangeNotifier {
   final AudioPlayerHandler audioHandler;
-  final JioSaavnApiService apiService;
+  final MusicApiService apiService;
 
   Song? _currentSong;
   List<Song> _queue = [];

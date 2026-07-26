@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'core/theme/app_colors.dart';
 import 'data/services/audio_player_handler.dart';
-import 'data/services/jiosaavn_api_service.dart';
+import 'data/services/music_api_service.dart';
 import 'data/services/lyrics_service.dart';
 import 'providers/audio_player_provider.dart';
 import 'providers/download_provider.dart';
@@ -47,7 +47,7 @@ class PixelPlayerSaavnApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final apiService = JioSaavnApiService();
+    final apiService = MusicApiService();
     final lyricsService = LyricsService();
     final handler = audioHandler ?? _audioHandler;
 
