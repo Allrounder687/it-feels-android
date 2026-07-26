@@ -2,6 +2,15 @@
 
 All notable changes to **PixelPlayer Saavn Edition** will be documented in this file.
 
+## [2.1.1] - 2026-07-26
+
+### Fixed
+- **Artist Search Logic**: Prioritized parsing the `topquery` API node in JioSaavn to ensure top-tier verified artists like "Taylor Swift" and "Atif Aslam" appear as direct matches instead of obscure collabs.
+- **Offline Playback Logic**: Updated `AudioPlayerProvider` to intercept `getStreamUrl`. If a song is marked as downloaded in `StorageService`, the audio engine now correctly streams the local MP4 file from device storage without hitting the network.
+- **Aggressive Content Filtering**: Expanded the `_isBhakti` homepage filter with more keywords (`chaleesa`, `mata`, `bhagwan`, `shree`, `durga`, etc.) to strictly prevent devotional tracks from bleeding into popular recommended playlists.
+
+---
+
 ## [2.1.0] - 2026-07-26
 
 ### Added

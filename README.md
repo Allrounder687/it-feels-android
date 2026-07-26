@@ -3,7 +3,7 @@
 A premium, modern Flutter Android music application built with the design aesthetics of **PixelPlayer** and powered by the **JioSaavn API**.
 
 ![PixelPlayer Saavn Banner](https://img.shields.io/badge/PixelPlayer-Saavn%20Edition-FF4081?style=for-the-badge&logo=flutter)
-![Version](https://img.shields.io/badge/Version-2.1.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-2.1.1-blue?style=for-the-badge)
 ![Flutter Version](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter)
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
