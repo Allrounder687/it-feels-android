@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../core/ai/ai_provider.dart';
 import '../core/ai/mock_ai_provider.dart';
+import '../core/ai/providers/gemini_provider.dart';
+import '../core/ai/providers/chatgpt_provider.dart';
+import '../core/ai/providers/claude_provider.dart';
 import '../services/ai_service.dart';
 import '../services/storage_service.dart';
 
@@ -12,6 +15,10 @@ class AISettingsProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _lastError;
 
+  String _geminiKey = '';
+  String _openaiKey = '';
+  String _anthropicKey = '';
+
   AISettingsProvider() {
     _loadSettings();
   }
@@ -21,6 +28,10 @@ class AISettingsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get lastError => _lastError;
   bool get isInitialized => AIService.instance.isInitialized;
+
+  String get geminiKey => _geminiKey;
+  String get openaiKey => _openaiKey;
+  String get anthropicKey => _anthropicKey;
 
   List<Map<String, String>> get providerOptions => [
         {'id': 'auto', 'name': 'Auto'},
@@ -33,10 +44,20 @@ class AISettingsProvider extends ChangeNotifier {
     final settings = await StorageService.loadAISettings();
     _aiEnabled = settings['aiEnabled'] as bool;
     _selectedProviderId = settings['selectedProvider'] as String;
+    _geminiKey = settings['geminiKey'] as String;
+    _openaiKey = settings['openaiKey'] as String;
+    _anthropicKey = settings['anthropicKey'] as String;
 
-    // Initialize AIService with mock provider (real providers added later)
-    await AIService.instance.initialize([MockAIProvider()]);
+    _reinitializeProviders();
+  }
 
+  void _reinitializeProviders() {
+    final providers = <AIProvider>[MockAIProvider()];
+    if (_geminiKey.isNotEmpty) providers.add(GeminiProvider(_geminiKey));
+    if (_openaiKey.isNotEmpty) providers.add(ChatGPTProvider(_openaiKey));
+    if (_anthropicKey.isNotEmpty) providers.add(ClaudeProvider(_anthropicKey));
+
+    AIService.instance.initialize(providers);
     notifyListeners();
   }
 
@@ -54,6 +75,24 @@ class AISettingsProvider extends ChangeNotifier {
   void resetProvider() {
     _selectedProviderId = 'auto';
     _save();
+  }
+
+  void setGeminiKey(String key) {
+    _geminiKey = key;
+    _save();
+    _reinitializeProviders();
+  }
+
+  void setOpenaiKey(String key) {
+    _openaiKey = key;
+    _save();
+    _reinitializeProviders();
+  }
+
+  void setAnthropicKey(String key) {
+    _anthropicKey = key;
+    _save();
+    _reinitializeProviders();
   }
 
   Future<AIResponse> askAI(String request, List<dynamic> library) async {
@@ -89,6 +128,9 @@ class AISettingsProvider extends ChangeNotifier {
     StorageService.saveAISettings(
       aiEnabled: _aiEnabled,
       selectedProvider: _selectedProviderId,
+      geminiKey: _geminiKey,
+      openaiKey: _openaiKey,
+      anthropicKey: _anthropicKey,
     );
     notifyListeners();
   }

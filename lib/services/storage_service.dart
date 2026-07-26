@@ -298,14 +298,23 @@ class StorageService {
   // ── AI Settings ──────────────────────────────────────────────
   static const String _aiEnabledKey = 'ai_enabled_v1';
   static const String _aiProviderKey = 'ai_selected_provider_v1';
+  static const String _geminiKeyKey = 'gemini_api_key_v1';
+  static const String _openaiKeyKey = 'openai_api_key_v1';
+  static const String _anthropicKeyKey = 'anthropic_api_key_v1';
 
   static Future<void> saveAISettings({
     required bool aiEnabled,
     required String selectedProvider,
+    String? geminiKey,
+    String? openaiKey,
+    String? anthropicKey,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_aiEnabledKey, aiEnabled);
     await prefs.setString(_aiProviderKey, selectedProvider);
+    if (geminiKey != null) await prefs.setString(_geminiKeyKey, geminiKey);
+    if (openaiKey != null) await prefs.setString(_openaiKeyKey, openaiKey);
+    if (anthropicKey != null) await prefs.setString(_anthropicKeyKey, anthropicKey);
   }
 
   static Future<Map<String, dynamic>> loadAISettings() async {
@@ -313,6 +322,9 @@ class StorageService {
     return {
       'aiEnabled': prefs.getBool(_aiEnabledKey) ?? true,
       'selectedProvider': prefs.getString(_aiProviderKey) ?? 'auto',
+      'geminiKey': prefs.getString(_geminiKeyKey) ?? '',
+      'openaiKey': prefs.getString(_openaiKeyKey) ?? '',
+      'anthropicKey': prefs.getString(_anthropicKeyKey) ?? '',
     };
   }
 }

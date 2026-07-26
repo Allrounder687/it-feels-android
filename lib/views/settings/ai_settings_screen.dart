@@ -69,11 +69,77 @@ class AISettingsScreen extends StatelessWidget {
                   "API keys are only needed for real providers (ChatGPT, Gemini, Claude). "
                   "They are stored locally on your device and never sent to us.",
                 ),
+                const SizedBox(height: 16),
+                _buildApiKeyField(
+                  context: context,
+                  label: "Gemini API Key",
+                  hint: "AIzaSy...",
+                  value: aiSettings.geminiKey,
+                  onChanged: (v) => aiSettings.setGeminiKey(v),
+                ),
+                const SizedBox(height: 12),
+                _buildApiKeyField(
+                  context: context,
+                  label: "OpenAI API Key",
+                  hint: "sk-...",
+                  value: aiSettings.openaiKey,
+                  onChanged: (v) => aiSettings.setOpenaiKey(v),
+                ),
+                const SizedBox(height: 12),
+                _buildApiKeyField(
+                  context: context,
+                  label: "Anthropic API Key",
+                  hint: "sk-ant-...",
+                  value: aiSettings.anthropicKey,
+                  onChanged: (v) => aiSettings.setAnthropicKey(v),
+                ),
               ],
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildApiKeyField({
+    required BuildContext context,
+    required String label,
+    required String hint,
+    required String value,
+    required ValueChanged<String> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.outfit(
+              color: Colors.white70,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: TextEditingController(text: value)..selection = TextSelection.fromPosition(TextPosition(offset: value.length)),
+            style: GoogleFonts.outfit(color: Colors.white, fontSize: 15),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: GoogleFonts.outfit(color: Colors.white24),
+              isDense: true,
+              border: InputBorder.none,
+            ),
+            obscureText: true,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
     );
   }
 
