@@ -1,47 +1,164 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# ===============================
+# Comprehensive .gitignore for Flutter/Dart Project
+# ===============================
 
-# IntelliJ related
+# ===============================
+# General / OS-specific
+# ===============================
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# ===============================
+# Editor / IDE Specifics
+# ===============================
+*.swp
+*.swo
+*.backup
+*.log
+
+# VS Code
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# IntelliJ / Android Studio
 *.iml
 *.ipr
 *.iws
 .idea/
+local.properties
+*.temp
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# ===============================
+# Build Output Directories
+# ===============================
+/build/
+/bin/
+*.dSYM/
+*.apk
+*.aab
+*.jar
+*.war
+*.nar
+*.exe
+*.out
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# ===============================
+# Flutter / Dart Specifics
+# ===============================
 .dart_tool/
-.flutter-plugins-dependencies
+.build/
 .pub-cache/
 .pub/
-/build/
+.flutter-plugins-dependencies
+/flutter_plugins.dart
+/gen_l10n/
+/ios/Flutter/.last_build_id
+/test_coverage/
 /coverage/
 
-# Symbolication related
-app.*.symbols
+# Pub spec lock should NOT be committed usually, but keep it for reproducibility if needed
+# pubspec.lock
 
-# Obfuscation related
-app.*.map.json
+# ===============================
+# Android Specifics
+# ===============================
+/android/app/build/
+/android/.gradle/
+/gradle.properties
+/gradlew
+/gradlew.bat
+!/android/gradle/wrapper/gradle-wrapper.jar
+/kotlin/
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# ===============================
+# iOS Specifics
+# ===============================
+/ios/Flutter/Flutter.framework
+/ios/Flutter/_framework
+/ios/Pods
+/ios/Podfiles
+/ios/workspace.xcworkspace
+/ios/*.xccheckout
+/ios/*.xcuserstate
+/ios/Generated.xcconfig
 
-pixel_player_ref/
+# ===============================
+# Python Specifics (for our script)
+# ===============================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+.venv/
+pip-log.txt
+pip-delete-this-directory/setup.py
+.tox/
+.nox/
+.coverage
+.Cython.env
+Cython.d
+.hypothesis/
+.pytest_cache/
+pytest_report.html
+
+# ===============================
+# Node.js / Frontend (if applicable)
+# ===============================
+/node_modules/
+/npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+.dist/
+.prettiercache
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+next-build/
+.next/
+!/.env.local
+
+# ===============================
+# Test Artifacts
+# ===============================
+*covprof
+coverage/
+unittest-results.xml
+test-results.xml
+*.profraw
+*.profdata
+
+# ===============================
+# Your Project-Specific Ignored Files
+# ===============================
+# Upload tracking files
+.uploaded_apks.json
+*.uploaded_apps.json
+
+# Auto-generated files
+apks_to_drive.py
+upload_apks.bat
+requirements.txt
+
+# Your personal configs
+.settings/
+.config/
+.secrets/
+
+# Large binary or generated assets
+/assets/generated/
+/assets/downloads/
+/assets/cache/
