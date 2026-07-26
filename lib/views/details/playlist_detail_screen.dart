@@ -10,6 +10,8 @@ import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
 import '../widgets/song_options_sheet.dart';
 import '../widgets/animated_equalizer.dart';
+import '../widgets/mini_player.dart';
+import '../player/now_playing_screen.dart';
 
 class PlaylistDetailScreen extends StatefulWidget {
   final Playlist playlist;
@@ -62,10 +64,12 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.midnightBackground,
       body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent))
-            : CustomScrollView(
-                slivers: [
+        child: Stack(
+          children: [
+            _isLoading
+                ? const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent))
+                : CustomScrollView(
+                    slivers: [
                   // App Bar with Back Button
                   SliverToBoxAdapter(
                     child: Padding(
@@ -318,6 +322,35 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                   const SliverToBoxAdapter(child: SizedBox(height: 100)),
                 ],
               ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: MiniPlayer(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const NowPlayingScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        return SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 1),
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOutCubic,
+                          )),
+                          child: child,
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
