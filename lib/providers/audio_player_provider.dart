@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
 import '../core/theme/app_colors.dart';
+import '../core/utils/error_reporter.dart'; // Import ErrorReporter
 import '../data/models/song_model.dart';
 import '../data/services/audio_player_handler.dart';
 import '../data/services/jiosaavn_api_service.dart';
@@ -30,10 +31,13 @@ class AudioPlayerProvider extends ChangeNotifier {
   /// The currently playing or paused song.
   Song? _currentSong;
 
-  /// The list of songs currently in the playback queue.
+  /// The original, ordered list of songs in the queue.
+  List<Song> _originalQueue = [];
+
+  /// The list of songs currently in the playback queue (shuffled or original).
   List<Song> _queue = [];
 
-  /// The index of the [currentSong] within the [_queue].
+  /// The index of the [currentSong] within the current [_queue].
   int _currentIndex = -1;
 
   /// Indicates whether the audio is currently playing.
@@ -67,6 +71,12 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   /// Accent color extracted from the [currentSong]'s cover art.
   Color _themeAccentColor = AppColors.burgundyAccent;
+
+  /// Stores the BuildContext of the most recent call to playSong.
+  /// This is used internally by _handleSongCompletion to potentially report errors.
+  /// WARNING: Holding a BuildContext in a ChangeNotifier can lead to issues if not handled carefully.
+  /// Ensure this context is only used for transient UI interactions like showing SnackBars.
+  BuildContext? _currentSongContext;
 
   /// Constructs an [AudioPlayerProvider] requiring an [AudioPlayerHandler]
   /// for audio control and a [JioSaavnApiService] for stream resolution.
@@ -155,6 +165,9 @@ class AudioPlayerProvider extends ChangeNotifier {
   void _listenToAudioState() {
     audioHandler.player.playerStateStream.listen((state) {
       _isPlaying = state.playing;
+      if (state.processingState == ProcessingState.completed) {
+        _handleSongCompletion();
+      }
       notifyListeners();
     });
 
@@ -169,6 +182,21 @@ class AudioPlayerProvider extends ChangeNotifier {
         notifyListeners();
       }
     });
+  }
+
+  /// Handles the logic when the current song finishes playing.
+  /// Respects repeat and shuffle modes to determine the next song.
+  Future<void> _handleSongCompletion() async {
+    if (_queue.isEmpty) return;
+
+    // A more robust implementation would use a proper repeat mode enum (e.g., RepeatMode.none, one, all)
+    if (_isRepeat) {
+       // Logic for repeating: for now, assume repeat means repeat-all/next.
+       // A more sophisticated approach would be needed for repeat-one.
+       await skipToNext(null!); // Passing null context is a limitation for now, need a way to pass context
+    } else {
+       await skipToNext(null!);
+    }
   }
 
   /// Plays a given [song].
@@ -187,36 +215,59 @@ class AudioPlayerProvider extends ChangeNotifier {
   ///    play the song.
   /// 7. Notifies listeners again to update UI elements like play/pause buttons,
   ///    song details, and theme colors.
-  Future<void> playSong(Song song, {List<Song>? queue, int index = 0}) async {
+  Future<void> playSong(BuildContext context, Song song, {List<Song>? queue, int index = 0}) async {
+    _currentSongContext = context; // Store the context for internal error reporting
     _currentSong = song;
     if (queue != null) {
-      _queue = List.from(queue);
-      _currentIndex = index;
+      _originalQueue = List.from(queue);
+      if (_isShuffle) {
+        _queue = List.from(_originalQueue)..shuffle();
+        _currentIndex = _queue.indexWhere((s) => s.id == song.id);
+        if (_currentIndex == -1) {
+           _currentIndex = 0;
+        }
+      } else {
+        _queue = List.from(_originalQueue);
+        _currentIndex = index;
+      }
     } else {
-      // If no queue is provided, play the single song and make it the only item in a new queue.
+      _originalQueue = [song];
       _queue = [song];
       _currentIndex = 0;
     }
 
     _isLoading = true;
-    notifyListeners(); // Notify UI that loading has started
+    notifyListeners();
 
-    // Trigger palette extraction in the background
     _extractPalette(song.coverArt);
 
-    // Resolve stream URL, potentially involving API call and decryption
-    final streamUrl = await apiService.getStreamUrl(song);
-    _isLoading = false; // Loading finished, regardless of success or failure
+    await _playSpecificSong(song, currentContext: context);
+  }
+
+  /// Internal method to play a specific song, used by both `playSong` and `_handleSongCompletion`.
+  /// This encapsulates the stream URL resolution and actual audio playback.
+  Future<void> _playSpecificSong(Song song, {BuildContext? currentContext}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    final streamUrl = await apiService.getStreamUrl(
+      song,
+      onError: (message) {
+        if (currentContext != null) {
+          ErrorReporter.showError(currentContext, message);
+        } else {
+          debugPrint('Error: $message (No BuildContext available for SnackBar)');
+        }
+      },
+    );
+    _isLoading = false;
 
     if (streamUrl != null) {
-      // Command the audio handler to play the resolved stream
       await audioHandler.playSong(song, streamUrl);
     } else {
-      debugPrint('[AudioPlayerProvider] Failed to resolve stream for ${song.title}');
-      // Handle scenario where stream resolution fails, e.g., show a toast or error message
+      // Error already reported via onError callback
     }
-
-    notifyListeners(); // Notify UI about loading state, current song, and potentially theme changes
+    notifyListeners();
   }
 
   /// Toggles the playback state between playing and paused.
@@ -242,14 +293,14 @@ class AudioPlayerProvider extends ChangeNotifier {
   /// 1. Calculates the index of the next song based on the current queue and [_currentIndex].
   ///    (Currently, shuffle logic is not integrated here but would typically affect next index calculation).
   /// 2. Calls [playSong] with the next song, effectively triggering a full song load and playback.
-  Future<void> skipToNext() async {
+  Future<void> skipToNext(BuildContext context) async { // Added BuildContext
     if (_queue.isEmpty || _currentIndex < 0) return;
     int nextIndex = _currentIndex + 1;
     if (nextIndex >= _queue.length) {
       nextIndex = 0; // Loop back to the start
     }
     // Play the next song, passing the entire queue to maintain context
-    await playSong(_queue[nextIndex], queue: _queue, index: nextIndex);
+    await playSong(context, _queue[nextIndex], queue: _queue, index: nextIndex);
   }
 
   /// Skips to the previous song in the playback queue.
@@ -258,14 +309,14 @@ class AudioPlayerProvider extends ChangeNotifier {
   /// Data Flow:
   /// 1. Calculates the index of the previous song based on the current queue and [_currentIndex].
   /// 2. Calls [playSong] with the previous song.
-  Future<void> skipToPrevious() async {
+  Future<void> skipToPrevious(BuildContext context) async { // Added BuildContext
     if (_queue.isEmpty || _currentIndex < 0) return;
     int prevIndex = _currentIndex - 1;
     if (prevIndex < 0) {
       prevIndex = _queue.length - 1; // Loop back to the end
     }
     // Play the previous song, passing the entire queue to maintain context
-    await playSong(_queue[prevIndex], queue: _queue, index: prevIndex);
+    await playSong(context, _queue[prevIndex], queue: _queue, index: prevIndex);
   }
 
   /// Toggles the shuffle mode on or off.
@@ -322,3 +373,4 @@ class AudioPlayerProvider extends ChangeNotifier {
     }
   }
 }
+

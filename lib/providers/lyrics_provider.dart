@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/error_reporter.dart'; // Import ErrorReporter
 import '../data/models/song_model.dart';
 import '../data/services/lyrics_service.dart';
 
@@ -27,6 +28,9 @@ class LyricsProvider extends ChangeNotifier {
   /// static lyrics, or both.
   LyricsResult? _lyricsResult;
 
+  /// Indicates if lyrics were fetched successfully or not found.
+  bool _lyricsNotFound = false;
+
   /// Indicates if lyrics are currently being fetched.
   bool _isLoading = false;
 
@@ -42,6 +46,9 @@ class LyricsProvider extends ChangeNotifier {
   /// Getter for the lyrics loading status.
   bool get isLoading => _isLoading;
 
+  /// Getter to check if lyrics were not found after an attempt to fetch.
+  bool get lyricsNotFound => _lyricsNotFound;
+
   /// Sets the lyrics display mode to a [newMode] and notifies listeners.
   /// This allows the UI to switch between synced and static views.
   void setMode(LyricsMode newMode) {
@@ -51,21 +58,35 @@ class LyricsProvider extends ChangeNotifier {
 
   /// Fetches lyrics for a given [song].
   ///
+  /// **IMPORTANT:** This method now requires a [BuildContext] to display
+  /// user-facing error messages via [ErrorReporter].
+  ///
   /// Data Flow:
-  /// 1. Sets [_isLoading] to `true` and clears any previous [_lyricsResult].
+  /// 1. Sets [_isLoading] to `true`, clears any previous [_lyricsResult], and resets [_lyricsNotFound].
   /// 2. Notifies listeners to show a loading state in the UI.
-  /// 3. Calls [lyricsService.fetchLyrics] to get the lyrics from the API.
-  ///    This service handles the fallback logic (e.g., trying LRCLIB first, then JioSaavn static).
+  /// 3. Calls [lyricsService.fetchLyrics] to get the lyrics from the API,
+  ///    passing [ErrorReporter.showError] as the `onError` callback.
   /// 4. Stores the result in [_lyricsResult].
-  /// 5. Sets [_isLoading] to `false` and notifies listeners again to display the
+  /// 5. Sets [_lyricsNotFound] to `true` if no lyrics (neither static nor synced) are found.
+  /// 6. Sets [_isLoading] to `false` and notifies listeners again to display the
   ///    fetched lyrics or an appropriate "no lyrics" message.
-  Future<void> fetchLyrics(Song song) async {
+  Future<void> fetchLyrics(BuildContext context, Song song) async { // Added BuildContext
     _isLoading = true;
     _lyricsResult = null;
+    _lyricsNotFound = false; // Reset before fetching
     notifyListeners(); // Show loading indicator
 
-    _lyricsResult = await lyricsService.fetchLyrics(song);
+    _lyricsResult = await lyricsService.fetchLyrics(
+      song,
+      onError: (message) => ErrorReporter.showError(context, message),
+    );
     _isLoading = false;
+
+    // Determine if lyrics were genuinely not found
+    if (_lyricsResult == null || (!_lyricsResult!.hasStatic && !_lyricsResult!.hasSynced)) {
+      _lyricsNotFound = true;
+    }
+
     notifyListeners(); // Show lyrics or "not found" message
   }
 

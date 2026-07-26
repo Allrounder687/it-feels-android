@@ -27,10 +27,18 @@ class Song {
     final id = json['id']?.toString() ?? json['saavnId']?.toString() ?? '';
     final saavnId = id.contains(':') ? id.split(':').last : id;
     
+import '../../core/utils/image_utils.dart'; // Import ImageUtils
+import '../../core/utils/string_utils.dart'; // Import StringUtils
+// ... existing imports
+
+// ...
+
     var rawImage = json['image']?.toString() ?? json['coverArt']?.toString() ?? '';
     if (rawImage.isNotEmpty) {
-      rawImage = rawImage.replaceAll('150x150', '500x500').replaceAll('50x50', '500x500');
+      rawImage = ImageUtils.getSizedCoverArt(rawImage, size: 500); // Use ImageUtils
     }
+// ...
+
 
     String artistName = 'Unknown Artist';
     if (json['more_info'] != null && json['more_info']['artistMap'] != null) {
@@ -53,26 +61,15 @@ class Song {
     return Song(
       id: id.startsWith('saavn:') ? id : 'saavn:$id',
       saavnId: saavnId,
-      title: cleanText(songTitle.toString()),
-      artist: cleanText(artistName),
-      album: cleanText(albumTitle.toString()),
+      title: StringUtils.cleanText(songTitle.toString()),
+      artist: StringUtils.cleanText(artistName),
+      album: StringUtils.cleanText(albumTitle.toString()),
       duration: durationSec,
       coverArt: rawImage,
       encryptedMediaUrl: encUrl,
       hasLyrics: hasLrc,
     );
   }
-
-  static String cleanText(String input) {
-    return input
-        .replaceAll('&quot;', '"')
-        .replaceAll('&amp;', '&')
-        .replaceAll('&#039;', "'")
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .replaceAll('&nbsp;', ' ');
-  }
-
 
   Song copyWith({
     String? streamUrl,
@@ -111,11 +108,11 @@ class Playlist {
   factory Playlist.fromJson(Map<String, dynamic> json) {
     var rawImage = json['image']?.toString() ?? '';
     if (rawImage.isNotEmpty) {
-      rawImage = rawImage.replaceAll('150x150', '500x500').replaceAll('50x50', '500x500');
+      rawImage = ImageUtils.getSizedCoverArt(rawImage, size: 500); // Use ImageUtils
     }
     return Playlist(
       id: json['listid']?.toString() ?? json['id']?.toString() ?? '',
-      title: Song.cleanText(json['title']?.toString() ?? json['listname']?.toString() ?? json['name']?.toString() ?? 'Playlist'),
+      title: StringUtils.cleanText(json['title']?.toString() ?? json['listname']?.toString() ?? json['name']?.toString() ?? 'Playlist'),
 
       coverArt: rawImage,
       songCount: int.tryParse(json['list_count']?.toString() ?? json['count']?.toString() ?? '0') ?? 0,

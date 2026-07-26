@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/error_reporter.dart'; // Import ErrorReporter
 import '../data/models/song_model.dart';
 import '../data/services/jiosaavn_api_service.dart';
 
@@ -50,16 +51,20 @@ class SearchProvider extends ChangeNotifier {
 
   /// Executes a search operation for a given [newQuery].
   ///
+  /// **IMPORTANT:** This method now requires a [BuildContext] to display
+  /// user-facing error messages via [ErrorReporter].
+  ///
   /// Data Flow:
   /// 1. Updates the [_query] and checks if it's empty or blank.
   /// 2. If empty, clears previous results, resets search status, and notifies listeners.
   /// 3. If not empty, sets [_isSearching] to `true` and notifies listeners
   ///    to show a loading indicator in the UI.
-  /// 4. Calls [apiService.searchAll] to fetch search results from the API.
+  /// 4. Calls [apiService.searchAll] to fetch search results from the API,
+  ///    passing [ErrorReporter.showError] as the `onError` callback.
   /// 5. Populates [_songs], [_albums], and [_playlists] lists from the results map.
   /// 6. Sets [_isSearching] to `false` and notifies listeners to update the UI
   ///    with new search results.
-  void search(String newQuery) async {
+  Future<void> search(BuildContext context, String newQuery) async { // Added BuildContext
     _query = newQuery;
     if (newQuery.trim().isEmpty) {
       // If query is empty, reset results
@@ -76,7 +81,10 @@ class SearchProvider extends ChangeNotifier {
     notifyListeners();
 
     // Fetch results from API
-    final results = await apiService.searchAll(newQuery);
+    final results = await apiService.searchAll(
+      newQuery,
+      onError: (message) => ErrorReporter.showError(context, message),
+    );
     _songs = List<Song>.from(results['songs'] ?? []);
     _albums = List<Playlist>.from(results['albums'] ?? []);
     _playlists = List<Playlist>.from(results['playlists'] ?? []);

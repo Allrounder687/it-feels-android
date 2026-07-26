@@ -60,6 +60,23 @@ class _LyricsScreenState extends State<LyricsScreen> {
         final lyricsResult = lyricsProvider.lyricsResult;
         final activeIndex = lyricsProvider.getActiveLineIndex(playerProvider.position);
 
+        // CONCEPTUAL UI NOTE:
+        // With the addition of `lyricsProvider.lyricsNotFound`, this section
+        // should be updated to show a specific "No Lyrics Found" message.
+        // For example:
+        //
+        // if (lyricsProvider.isLoading) {
+        //   return const Center(child: CircularProgressIndicator(color: Colors.white));
+        // } else if (lyricsProvider.lyricsNotFound) {
+        //   return const Center(child: Text("No lyrics available for this song", style: TextStyle(color: Colors.white70)));
+        // } else if (mode == LyricsMode.synced && lyricsResult != null && lyricsResult.hasSynced) {
+        //   // ... existing ListView.builder
+        // } else {
+        //   // ... existing SingleChildScrollView for static lyrics
+        // }
+        //
+        // This ensures the user gets clear feedback when lyrics are not available.
+
         if (mode == LyricsMode.synced && lyricsResult != null && lyricsResult.hasSynced) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _scrollToActiveLine(activeIndex, lyricsResult.syncedLyrics.length);
