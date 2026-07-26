@@ -3,33 +3,14 @@ import 'package:flutter/foundation.dart';
 import 'package:pointycastle/api.dart';
 import 'package:pointycastle/block/desede_engine.dart';
 import 'package:pointycastle/block/modes/ecb.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Import secure storage
 
 class DesDecryptor {
-  // Using a constant for the storage key, not the decryption key itself.
-  static const String _secureStorageKey = 'Music API_des_key';
   static const String _fallbackKey = '38346591'; // Original hardcoded key as fallback/initial value
 
-  static final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
-
-  /// Asynchronously retrieves the DES decryption key from secure storage.
-  /// If the key is not found, it stores the [_fallbackKey] and then retrieves it.
-  ///
-  /// **Security Note:** While `flutter_secure_storage` is used, hardcoding a fallback
-  /// key (even for initial storage) means it's still present in the codebase.
-  /// For true security, this initial key should ideally come from a secure remote source
-  /// or be generated and protected uniquely per installation, not embedded.
   static Future<String> _getSecureKey({Function(String message)? onError}) async {
-    String? key = await _secureStorage.read(key: _secureStorageKey);
-    if (key == null || key.isEmpty) {
-      // Store the fallback key if not present (first run)
-      await _secureStorage.write(key: _secureStorageKey, value: _fallbackKey);
-      key = _fallbackKey;
-      if (kDebugMode) {
-        debugPrint('[DesDecryptor] Stored and using fallback DES key.');
-      }
-    }
-    return key;
+    // Note: To support Windows without requiring C++ ATL, and since the key is
+    // currently hardcoded anyway, we just return the hardcoded key directly.
+    return _fallbackKey;
   }
 
   /// Decrypt Music API DES-ECB encrypted_media_url

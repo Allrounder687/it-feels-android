@@ -15,7 +15,7 @@ extension GetSongCollection on Isar {
 
 const SongSchema = CollectionSchema(
   name: r'Song',
-  id: -5548886644249537934,
+  id: -5548886644249537536,
   properties: {
     r'addedAt': PropertySchema(
       id: 0,
@@ -136,7 +136,7 @@ const SongSchema = CollectionSchema(
   idName: r'isarId',
   indexes: {
     r'id': IndexSchema(
-      id: -3268401673993471357,
+      id: -3268401673993471488,
       name: r'id',
       unique: true,
       replace: true,
@@ -149,7 +149,7 @@ const SongSchema = CollectionSchema(
       ],
     ),
     r'searchVector': IndexSchema(
-      id: -5936365576876897214,
+      id: -5936365576876897280,
       name: r'searchVector',
       unique: false,
       replace: false,

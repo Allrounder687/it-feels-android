@@ -77,6 +77,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 
 ## Recent Updates
+- **Audiophile DSP Engine:** Built-in Equalizer and Loudness Enhancer with zero-config smart toggles.
+- **Bitrate Badges:** Visually distinguish between LOSSLESS, HIGH-RES, and 320 KBPS audio streams dynamically on the player screen.
+- **Cross-Platform Refinements:** Eliminated heavy C++ ATL dependencies for fast Windows compilation and patched Isar for Web compatibility.
 - **Gapless Playback:** Seamless transitions between tracks using ConcatenatingAudioSource.
 - **Android Home Widget:** Control your music right from the home screen.
 - **Dynamic Theming (Material You):** The app adapts perfectly to the album art of the currently playing track.

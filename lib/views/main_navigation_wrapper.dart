@@ -1,15 +1,22 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import '../core/theme/app_colors.dart';
 import '../providers/audio_player_provider.dart';
 import '../providers/listening_history_provider.dart';
+import '../providers/custom_playlist_provider.dart';
 import '../data/models/song_model.dart';
+import '../data/services/music_api_service.dart';
+import '../services/playlist_import_service.dart';
 import 'home/home_screen.dart';
 import 'library/library_screen.dart';
 import 'player/now_playing_screen.dart';
 import 'search/search_screen.dart';
 import 'widgets/mini_player.dart';
+import 'widgets/import_progress_banner.dart';
 
 class MainNavigationWrapper extends StatefulWidget {
   const MainNavigationWrapper({super.key});
@@ -18,13 +25,34 @@ class MainNavigationWrapper extends StatefulWidget {
   State<MainNavigationWrapper> createState() => _MainNavigationWrapperState();
 }
 
-class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
+class _MainNavigationWrapperState extends State<MainNavigationWrapper> with WidgetsBindingObserver {
   int _currentTab = 0;
   Song? _lastLoggedSong;
+  late StreamSubscription _intentSubscription;
+  String _lastCheckedClipboard = '';
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    
+    // Listen to media sharing incoming links while app is in memory
+    _intentSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((value) {
+      if (value.isNotEmpty) {
+        _handleSharedText(value.first.path);
+      }
+    }, onError: (err) {
+      debugPrint("Intent error: $err");
+    });
+
+    // Check for sharing intent when app is opened from closed state
+    ReceiveSharingIntent.instance.getInitialMedia().then((value) {
+      if (value.isNotEmpty) {
+        _handleSharedText(value.first.path);
+      }
+      ReceiveSharingIntent.instance.reset();
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final player = Provider.of<AudioPlayerProvider>(context, listen: false);
       final history = Provider.of<ListeningHistoryProvider>(context, listen: false);
@@ -36,7 +64,109 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
           history.logSong(currentSong);
         }
       });
+      
+      // Check clipboard on startup
+      _checkClipboardForPlaylist();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _intentSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkClipboardForPlaylist();
+    }
+  }
+
+  Future<void> _checkClipboardForPlaylist() async {
+    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = clipboardData?.text?.trim() ?? '';
+    
+    if (text.isNotEmpty && text != _lastCheckedClipboard) {
+      _lastCheckedClipboard = text;
+      _handleSharedText(text);
+    }
+  }
+
+  void _handleSharedText(String text) {
+    if (text.contains('open.spotify.com/playlist/')) {
+      // Extract URL from possible text like "Check out this playlist: https://..."
+      final RegExp urlRegExp = RegExp(r'(https?://[^\s]+)');
+      final match = urlRegExp.firstMatch(text);
+      if (match != null) {
+        final url = match.group(0)!;
+        _promptImport(url);
+      }
+    }
+  }
+
+  void _promptImport(String url) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.midnightSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.playlist_add, size: 48, color: AppColors.midnightAccent),
+              const SizedBox(height: 16),
+              Text(
+                'Import Playlist?',
+                style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'We detected a Spotify playlist link. Would you like to import it to IT-Feels?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(color: Colors.white70),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white60)),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.midnightAccent,
+                        foregroundColor: AppColors.midnightBackground,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        PlaylistImportService().startBackgroundImport(
+                          url, 
+                          Provider.of<CustomPlaylistProvider>(context, listen: false), 
+                          MusicApiService()
+                        );
+                      },
+                      child: Text('Import Now', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _openFullPlayer() {
@@ -86,6 +216,9 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Import Progress Banner
+                const ImportProgressBanner(),
+                
                 // Mini Player Pill
                 MiniPlayer(onTap: _openFullPlayer),
 

@@ -129,96 +129,50 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
           ),
           const SizedBox(height: 32),
 
-          _buildSectionHeader("🔊 Bass / Loudness Boost"),
+          _buildSectionHeader("🎛️ It Feels DSP Engine"),
           const SizedBox(height: 8),
           Text(
-            "Hardware amplifier for a heavier punch. Careful, this can distort!",
+            "Our custom-tuned Digital Signal Processor. Enables a premium, punchy EQ and hardware loudness boost for an audiophile experience.",
             style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
           ),
           const SizedBox(height: 16),
           if (isAndroid)
-            SliderTheme(
-              data: _sliderTheme(),
-              child: Slider(
-                value: audioProvider.loudnessEnhancer.targetGain,
-                min: 0.0,
-                max: 1.0,
-                divisions: 20,
-                label: '${(audioProvider.loudnessEnhancer.targetGain * 100).toInt()}%',
-                onChanged: (val) => audioProvider.setLoudnessGain(val),
-              ),
+            SwitchListTile(
+              title: Text("Enable DSP Engine", style: GoogleFonts.inter(color: Colors.white)),
+              value: audioProvider.isDspEngineEnabled,
+              onChanged: (val) => audioProvider.setDspEngine(val),
+              activeColor: AppColors.midnightPrimary,
+              tileColor: Colors.white.withOpacity(0.05),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           const SizedBox(height: 32),
 
-          _buildSectionHeader("🎛️ Equalizer (EQ)"),
+          _buildSectionHeader("📳 Haptic Feedback"),
           const SizedBox(height: 8),
           Text(
-            "Customize hardware frequency bands to match your headphones.",
+            "Premium physical responses to your interactions.",
             style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
           ),
-          const SizedBox(height: 24),
-          if (isAndroid)
-            FutureBuilder<AndroidEqualizerParameters>(
-              future: audioProvider.equalizer.parameters,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError || !snapshot.hasData) {
-                  return const Text("Failed to load Equalizer from hardware", style: TextStyle(color: Colors.red));
-                }
-
-                final params = snapshot.data!;
-                final maxGain = params.maxDecibels;
-                final minGain = params.minDecibels;
-
-                return SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: params.bands.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final band = entry.value;
-                      final hz = (band.centerFrequency / 1000).toStringAsFixed(1);
-                      final label = band.centerFrequency >= 1000 ? '${hz}k' : '${band.centerFrequency.toInt()}';
-
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                        child: Column(
-                          children: [
-                            Text(
-                              "${band.gain > 0 ? '+' : ''}${band.gain.toStringAsFixed(1)}",
-                              style: GoogleFonts.inter(color: AppColors.midnightPrimary, fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              height: 180,
-                              child: RotatedBox(
-                                quarterTurns: 3,
-                                child: SliderTheme(
-                                  data: _sliderTheme(),
-                                  child: Slider(
-                                    value: band.gain,
-                                    min: minGain,
-                                    max: maxGain,
-                                    onChanged: (val) => audioProvider.setEqBandGain(index, val),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              label,
-                              style: GoogleFonts.inter(color: Colors.white54, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                );
-              },
-            ),
-            
+          const SizedBox(height: 16),
+          SwitchListTile(
+            title: Text("UI Haptics", style: GoogleFonts.inter(color: Colors.white)),
+            subtitle: Text("Subtle vibrations on Play/Pause, Skip, etc.", style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+            value: audioProvider.uiHapticsEnabled,
+            onChanged: (val) => audioProvider.setUiHaptics(val),
+            activeColor: AppColors.midnightPrimary,
+            tileColor: Colors.white.withOpacity(0.05),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            title: Text("Audio-Sync Haptics (Experimental)", style: GoogleFonts.inter(color: Colors.white)),
+            subtitle: Text("Simulates beat drops. Warning: May cause battery drain.", style: GoogleFonts.inter(color: Colors.orangeAccent, fontSize: 12)),
+            value: audioProvider.audioSyncHapticsEnabled,
+            onChanged: (val) => audioProvider.setAudioSyncHaptics(val),
+            activeColor: AppColors.midnightPrimary,
+            tileColor: Colors.white.withOpacity(0.05),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
           const SizedBox(height: 32),
           _buildSectionHeader("🎚️ Crossfade"),
           const SizedBox(height: 8),

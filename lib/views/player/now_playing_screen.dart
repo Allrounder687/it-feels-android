@@ -12,6 +12,7 @@ import '../widgets/song_options_sheet.dart';
 import '../widgets/wavy_seek_bar.dart';
 import 'queue_bottom_sheet.dart';
 import 'sleep_timer_sheet.dart';
+import '../widgets/animated_play_pause_button.dart';
 
 class NowPlayingScreen extends StatelessWidget {
   const NowPlayingScreen({super.key});
@@ -249,7 +250,30 @@ class NowPlayingScreen extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: AppColors.burgundyTextMuted,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Bitrate / Codec Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: Colors.amber.withOpacity(0.5)),
+                          ),
+                          child: Text(
+                            (currentSong.streamUrl?.toLowerCase().endsWith('.flac') ?? false) || (currentSong.streamUrl?.toLowerCase().endsWith('.alac') ?? false)
+                                ? 'LOSSLESS'
+                                : (currentSong.streamUrl?.toLowerCase().endsWith('.wav') ?? false)
+                                    ? 'HIGH-RES'
+                                    : '320 KBPS',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.amber,
+                              letterSpacing: 1.2,
+                            ),
                           ),
                         ),
                       ],
@@ -435,7 +459,7 @@ class NowPlayingScreen extends StatelessWidget {
                           onPressed: () => playerProvider.skipToPrevious(),
                         ),
 
-                        // Center Big Play/Pause Toggle
+                      // Center Big Play/Pause Toggle
                         BouncyIconButton(
                           onPressed: () => playerProvider.togglePlayPause(),
                           padding: EdgeInsets.zero,
@@ -446,17 +470,11 @@ class NowPlayingScreen extends StatelessWidget {
                               color: accentColor,
                               shape: BoxShape.circle,
                             ),
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
-                              child: Icon(
-                                playerProvider.isPlaying
-                                    ? Icons.pause_rounded
-                                    : Icons.play_arrow_rounded,
-                                key: ValueKey<bool>(playerProvider.isPlaying),
-                                color: Colors.black,
-                                size: 38,
-                              ),
+                            child: AnimatedPlayPauseButton(
+                              isPlaying: playerProvider.isPlaying,
+                              onPressed: () => playerProvider.togglePlayPause(),
+                              color: Colors.black,
+                              size: 38,
                             ),
                           ),
                         ),

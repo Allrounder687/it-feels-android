@@ -267,16 +267,18 @@ class StorageService {
     };
   }
 
-  /// Audio Enhancements (EQ, Loudness, Speed, Pitch)
+  /// Audio Enhancements (DSP, Haptics, Speed, Pitch)
   static Future<void> saveAudioSettings({
-    required List<double> eqBands,
-    required double loudness,
+    required bool dspEngine,
+    required bool uiHaptics,
+    required bool audioSyncHaptics,
     required double speed,
     required double pitch,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_audioEqKey, json.encode(eqBands));
-    await prefs.setDouble(_audioLoudnessKey, loudness);
+    await prefs.setBool('dspEngine', dspEngine);
+    await prefs.setBool('uiHaptics', uiHaptics);
+    await prefs.setBool('audioSyncHaptics', audioSyncHaptics);
     await prefs.setDouble(_audioSpeedKey, speed);
     await prefs.setDouble(_audioPitchKey, pitch);
   }
@@ -284,18 +286,10 @@ class StorageService {
   static Future<Map<String, dynamic>> loadAudioSettings() async {
     final prefs = await SharedPreferences.getInstance();
     
-    List<double> eqBands = [];
-    final rawEq = prefs.getString(_audioEqKey);
-    if (rawEq != null && rawEq.isNotEmpty) {
-      try {
-        final decoded = json.decode(rawEq) as List;
-        eqBands = decoded.map((e) => (e as num).toDouble()).toList();
-      } catch (_) {}
-    }
-
     return {
-      'eqBands': eqBands,
-      'loudness': prefs.getDouble(_audioLoudnessKey) ?? 0.0,
+      'dspEngine': prefs.getBool('dspEngine') ?? false,
+      'uiHaptics': prefs.getBool('uiHaptics') ?? true,
+      'audioSyncHaptics': prefs.getBool('audioSyncHaptics') ?? false,
       'speed': prefs.getDouble(_audioSpeedKey) ?? 1.0,
       'pitch': prefs.getDouble(_audioPitchKey) ?? 1.0,
     };

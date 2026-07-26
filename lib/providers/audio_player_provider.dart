@@ -52,6 +52,12 @@ class AudioPlayerProvider extends ChangeNotifier {
   DateTime? _sleepTimerEndTime;
   bool _sleepAfterCurrentTrack = false;
 
+  // Pro Features & Haptics State
+  bool _isDspEngineEnabled = false;
+  bool _uiHapticsEnabled = true;
+  bool _audioSyncHapticsEnabled = false;
+  Timer? _audioSyncHapticTimer;
+
   AudioPlayerProvider({
     required this.audioHandler,
     required this.apiService,
@@ -102,19 +108,15 @@ class AudioPlayerProvider extends ChangeNotifier {
       await audioHandler.player.setSpeed(speed);
       await audioHandler.player.setPitch(pitch);
 
-      // Loudness
-      final double loudness = settings['loudness'] ?? 0.0;
-      await loudnessEnhancer.setEnabled(loudness > 0.0);
-      await loudnessEnhancer.setTargetGain(loudness);
+      // Pro Features
+      _isDspEngineEnabled = settings['dspEngine'] ?? false;
+      _uiHapticsEnabled = settings['uiHaptics'] ?? true;
+      _audioSyncHapticsEnabled = settings['audioSyncHaptics'] ?? false;
 
-      // EQ
-      final List<double> eqBands = settings['eqBands'] ?? [];
-      await equalizer.setEnabled(true);
-      final params = await equalizer.parameters;
-      for (int i = 0; i < params.bands.length; i++) {
-        if (i < eqBands.length) {
-          await params.bands[i].setGain(eqBands[i]);
-        }
+      if (_isDspEngineEnabled) {
+        await _enableDspEngine(equalizer, loudnessEnhancer);
+      } else {
+        await _disableDspEngine(equalizer, loudnessEnhancer);
       }
     } catch (e) {
       debugPrint("Audio Enhancer initialization error: $e");
@@ -148,6 +150,10 @@ class AudioPlayerProvider extends ChangeNotifier {
   Duration get duration => _duration;
   List<Song> get favoriteSongs => _favoriteSongs;
   AppThemeMode get appThemeMode => _appThemeMode;
+
+  bool get isDspEngineEnabled => _isDspEngineEnabled;
+  bool get uiHapticsEnabled => _uiHapticsEnabled;
+  bool get audioSyncHapticsEnabled => _audioSyncHapticsEnabled;
 
   bool get isSleepTimerActive => _sleepTimer != null && _sleepTimer!.isActive;
   Duration? get sleepTimerRemaining => _sleepTimerEndTime != null ? _sleepTimerEndTime!.difference(DateTime.now()) : null;
@@ -239,9 +245,7 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   // --- Haptics ---
   Future<void> triggerHaptic({bool heavy = false}) async {
-    final settings = await StorageService.loadSettings();
-    final mode = settings['hapticsMode'] as String? ?? 'Off';
-    if (mode == 'Off') return;
+    if (!_uiHapticsEnabled) return;
     
     if (await Vibration.hasVibrator() ?? false) {
       if (heavy) {
@@ -252,32 +256,88 @@ class AudioPlayerProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> setUiHaptics(bool enabled) async {
+    _uiHapticsEnabled = enabled;
+    _saveAudioSettings();
+    notifyListeners();
+  }
+
+  Future<void> setAudioSyncHaptics(bool enabled) async {
+    _audioSyncHapticsEnabled = enabled;
+    _saveAudioSettings();
+    if (_isPlaying && enabled) {
+      _startAudioSyncHaptics();
+    } else {
+      _stopAudioSyncHaptics();
+    }
+    notifyListeners();
+  }
+
+  void _startAudioSyncHaptics() {
+    _audioSyncHapticTimer?.cancel();
+    // Simulate beats for audio-sync haptics (Mocked until native FFT is available)
+    _audioSyncHapticTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) async {
+      if (_isPlaying && _audioSyncHapticsEnabled && (await Vibration.hasVibrator() ?? false)) {
+        Vibration.vibrate(duration: 15, amplitude: 40); // Subtle beat pulse
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  void _stopAudioSyncHaptics() {
+    _audioSyncHapticTimer?.cancel();
+  }
+
   // --- Audio Pro Features ---
   AndroidEqualizer get equalizer => audioHandler.equalizer;
   AndroidLoudnessEnhancer get loudnessEnhancer => audioHandler.loudnessEnhancer;
   
   double get playbackSpeed => audioHandler.player.speed;
   double get playbackPitch => audioHandler.player.pitch;
-  
-  Future<void> setEqBandGain(int bandIndex, double gain) async {
+
+  Future<void> setDspEngine(bool enabled) async {
+    _isDspEngineEnabled = enabled;
+    if (enabled) {
+      await _enableDspEngine(equalizer, loudnessEnhancer);
+    } else {
+      await _disableDspEngine(equalizer, loudnessEnhancer);
+    }
+    _saveAudioSettings();
+    notifyListeners();
+  }
+
+  Future<void> _enableDspEngine(AndroidEqualizer eq, AndroidLoudnessEnhancer le) async {
     try {
-      final params = await equalizer.parameters;
-      await params.bands[bandIndex].setGain(gain);
-      _saveAudioSettings();
-      notifyListeners();
+      if (Platform.isAndroid) {
+        await le.setEnabled(true);
+        await le.setTargetGain(0.4); // Premium punch
+
+        await eq.setEnabled(true);
+        final params = await eq.parameters;
+        // Apply a "V-Shape" premium EQ curve
+        if (params.bands.length >= 5) {
+          await params.bands[0].setGain(params.maxDecibels * 0.5); // Bass
+          await params.bands[1].setGain(params.maxDecibels * 0.2); // Mid-bass
+          await params.bands[2].setGain(0);                        // Mids
+          await params.bands[3].setGain(params.maxDecibels * 0.3); // Mid-highs
+          await params.bands[4].setGain(params.maxDecibels * 0.6); // Treble
+        }
+      }
     } catch (e) {
-      debugPrint("Error setting EQ gain: $e");
+      debugPrint("Error enabling DSP: $e");
     }
   }
 
-  Future<void> setLoudnessGain(double gain) async {
+  Future<void> _disableDspEngine(AndroidEqualizer eq, AndroidLoudnessEnhancer le) async {
     try {
-      await loudnessEnhancer.setEnabled(gain > 0.0);
-      await loudnessEnhancer.setTargetGain(gain);
-      _saveAudioSettings();
-      notifyListeners();
+      if (Platform.isAndroid) {
+        await le.setEnabled(false);
+        await le.setTargetGain(0.0);
+        await eq.setEnabled(false);
+      }
     } catch (e) {
-      debugPrint("Error setting Loudness gain: $e");
+      debugPrint("Error disabling DSP: $e");
     }
   }
 
@@ -303,12 +363,10 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> _saveAudioSettings() async {
     try {
-      final params = await equalizer.parameters;
-      final eqBands = params.bands.map((b) => b.gain).toList();
-      
       await StorageService.saveAudioSettings(
-        eqBands: eqBands,
-        loudness: loudnessEnhancer.targetGain,
+        dspEngine: _isDspEngineEnabled,
+        uiHaptics: _uiHapticsEnabled,
+        audioSyncHaptics: _audioSyncHapticsEnabled,
         speed: playbackSpeed,
         pitch: playbackPitch,
       );
@@ -340,6 +398,13 @@ class AudioPlayerProvider extends ChangeNotifier {
   void _listenToAudioState() {
     audioHandler.player.playerStateStream.listen((state) async {
       _isPlaying = state.playing;
+      
+      if (_isPlaying && _audioSyncHapticsEnabled) {
+        _startAudioSyncHaptics();
+      } else {
+        _stopAudioSyncHaptics();
+      }
+
       if (state.processingState == ProcessingState.completed) {
         if (_sleepAfterCurrentTrack) {
           _sleepAfterCurrentTrack = false;

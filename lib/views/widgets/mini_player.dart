@@ -2,6 +2,7 @@ import 'package:it_feels_music/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'animated_play_pause_button.dart';
 import '../../providers/audio_player_provider.dart';
 
 class MiniPlayer extends StatelessWidget {
@@ -120,19 +121,23 @@ class MiniPlayer extends StatelessWidget {
                             },
                           ),
 
-                          // Play/Pause Action Button
-                          IconButton(
-                            icon: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 300),
-                              transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
-                              child: Icon(
-                                playerProvider.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                key: ValueKey<bool>(playerProvider.isPlaying),
+                          // Play/Pause Button
+                          GestureDetector(
+                            onTap: () => playerProvider.togglePlayPause(),
+                            behavior: HitTestBehavior.opaque,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: AnimatedPlayPauseButton(
+                                isPlaying: playerProvider.isPlaying,
+                                onPressed: () => playerProvider.togglePlayPause(),
                                 color: Colors.white,
-                                size: 28,
+                                size: 24,
                               ),
                             ),
-                            onPressed: () => playerProvider.togglePlayPause(),
                           ),
                         ],
                       ),

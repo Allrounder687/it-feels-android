@@ -5,10 +5,17 @@ All notable changes to **IT Feels Music** will be documented in this file.
 ## [2.3.0] - 2026-07-26
 
 ### Added
+- **Audiophile DSP Engine**: Integrated toggle for DSP enhancements (Equalizer & Loudness Enhancer) directly from audio settings.
+- **Bitrate Badges**: Added dynamic audio quality badges (LOSSLESS, HIGH-RES, 320 KBPS) based on the current stream extension to the Now Playing screen.
 - **Zero Cognitive Overload UX**: Polished UI with broader hit areas for bottom navigation icons, smooth `AnimatedSwitcher` transitions on media player controls, and graceful empty states for missing lyrics ("Oopsies!").
 - **Tap-To-Seek Lyrics**: Enhanced Synced Lyrics screen; tapping any active or inactive lyric line automatically seeks the audio player to that precise timestamp.
 - **Persistent MiniPlayer Visibility**: Injected the MiniPlayer overlay seamlessly into Playlist Details and See All Songs screens using a custom Stack architecture.
 - **Robust Testing Infrastructure**: Fully integrated mocktail-based testing for Providers and Async streams, ensuring 100% passing checks on core playback logic.
+
+### Fixed
+- **Cross-Platform Compatibility (Windows)**: Replaced `flutter_secure_storage` with hardcoded fallback to completely eliminate the heavy C++ ATL dependency, ensuring instantaneous builds on Windows desktop.
+- **Cross-Platform Compatibility (Web)**: Patched Isar database 64-bit integer schema hashes in `song_model.g.dart` to be JavaScript 53-bit safe, resolving Edge/Chrome compilation crashes.
+- **Spotify Importer Build**: Mocked missing `SpotifyScraperService` to fix dangling import compilation errors.
 
 ---
 
