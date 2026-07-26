@@ -9,10 +9,16 @@ class StorageService {
   static const String _mobileQualityKey = 'mobile_quality_setting';
   static const String _downloadQualityKey = 'download_quality_setting';
   static const String _themeKey = 'primary_theme_setting';
+  static const String _downloadPathKey = 'custom_download_path_setting';
   static const String _customPlaylistsKey = 'custom_playlists_v1';
   static const String _playbackStateKey = 'playback_state_v1';
   static const String _artistHistoryKey = 'artist_history_v1';
   static const String _recentSongsKey = 'recent_songs_v1';
+  
+  static const String _audioEqKey = 'audio_eq_bands_v1';
+  static const String _audioLoudnessKey = 'audio_loudness_v1';
+  static const String _audioSpeedKey = 'audio_speed_v1';
+  static const String _audioPitchKey = 'audio_pitch_v1';
 
   /// Learning Engine: Artist History
   static Future<void> saveListeningHistory(Map<String, int> artistCounts) async {
@@ -234,12 +240,14 @@ class StorageService {
     required String mobileQuality,
     required String downloadQuality,
     required String theme,
+    required String customDownloadPath,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_wifiQualityKey, wifiQuality);
     await prefs.setString(_mobileQualityKey, mobileQuality);
     await prefs.setString(_downloadQualityKey, downloadQuality);
     await prefs.setString(_themeKey, theme);
+    await prefs.setString(_downloadPathKey, customDownloadPath);
   }
 
   static Future<Map<String, String>> loadSettings() async {
@@ -249,6 +257,7 @@ class StorageService {
       'mobileQuality': prefs.getString(_mobileQualityKey) ?? '160 kbps (High)',
       'downloadQuality': prefs.getString(_downloadQualityKey) ?? '320 kbps (Very High)',
       'theme': prefs.getString(_themeKey) ?? 'Midnight Dark',
+      'customDownloadPath': prefs.getString(_downloadPathKey) ?? '',
     };
   }
 }

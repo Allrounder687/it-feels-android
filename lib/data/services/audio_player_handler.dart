@@ -4,15 +4,30 @@ import 'package:just_audio/just_audio.dart';
 import '../models/song_model.dart';
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
-  final AudioPlayer _player = AudioPlayer();
+  late final AudioPlayer _player;
+  late final AndroidEqualizer _equalizer;
+  late final AndroidLoudnessEnhancer _loudnessEnhancer;
+  
   VoidCallback? onSkipNext;
   VoidCallback? onSkipPrevious;
 
   AudioPlayerHandler() {
+    _equalizer = AndroidEqualizer();
+    _loudnessEnhancer = AndroidLoudnessEnhancer();
+    _player = AudioPlayer(
+      audioPipeline: AudioPipeline(
+        androidAudioEffects: [
+          _equalizer,
+          _loudnessEnhancer,
+        ],
+      ),
+    );
     _init();
   }
 
   AudioPlayer get player => _player;
+  AndroidEqualizer get equalizer => _equalizer;
+  AndroidLoudnessEnhancer get loudnessEnhancer => _loudnessEnhancer;
 
   void _init() {
     _player.playbackEventStream.listen((PlaybackEvent event) {

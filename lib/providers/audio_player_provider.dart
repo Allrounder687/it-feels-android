@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
@@ -39,6 +40,11 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   AppThemeMode _appThemeMode = AppThemeMode.dynamic;
 
+  // Sleep Timer State
+  Timer? _sleepTimer;
+  DateTime? _sleepTimerEndTime;
+  bool _sleepAfterCurrentTrack = false;
+
   AudioPlayerProvider({
     required this.audioHandler,
     required this.apiService,
@@ -48,6 +54,10 @@ class AudioPlayerProvider extends ChangeNotifier {
   }
 
   Future<void> _initMemory() async {
+    // Load existing EQ & playback settings
+    final audioSettings = await StorageService.loadAudioSettings();
+    _applyAudioSettings(audioSettings);
+
     final state = await StorageService.loadPlaybackState();
     if (state != null) {
       final List<Song> savedQueue = state['queue'];
@@ -74,6 +84,36 @@ class AudioPlayerProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _applyAudioSettings(Map<String, dynamic> settings) async {
+    try {
+      final equalizer = audioHandler.equalizer;
+      final loudnessEnhancer = audioHandler.loudnessEnhancer;
+      
+      // Speed & Pitch
+      final double speed = settings['speed'] ?? 1.0;
+      final double pitch = settings['pitch'] ?? 1.0;
+      await audioHandler.player.setSpeed(speed);
+      await audioHandler.player.setPitch(pitch);
+
+      // Loudness
+      final double loudness = settings['loudness'] ?? 0.0;
+      await loudnessEnhancer.setEnabled(loudness > 0.0);
+      await loudnessEnhancer.setTargetGain(loudness);
+
+      // EQ
+      final List<double> eqBands = settings['eqBands'] ?? [];
+      await equalizer.setEnabled(true);
+      final params = await equalizer.parameters;
+      for (int i = 0; i < params.bands.length; i++) {
+        if (i < eqBands.length) {
+          await params.bands[i].setGain(eqBands[i]);
+        }
+      }
+    } catch (e) {
+      debugPrint("Audio Enhancer initialization error: $e");
+    }
+  }
+
   void _saveMemory() {
     StorageService.savePlaybackState(_queue, _currentIndex);
   }
@@ -97,6 +137,34 @@ class AudioPlayerProvider extends ChangeNotifier {
   List<Song> get favoriteSongs => _favoriteSongs;
   AppThemeMode get appThemeMode => _appThemeMode;
 
+  bool get isSleepTimerActive => _sleepTimer != null && _sleepTimer!.isActive;
+  Duration? get sleepTimerRemaining => _sleepTimerEndTime != null ? _sleepTimerEndTime!.difference(DateTime.now()) : null;
+  bool get sleepAfterCurrentTrack => _sleepAfterCurrentTrack;
+
+  void startSleepTimer(Duration duration) {
+    cancelSleepTimer();
+    _sleepTimerEndTime = DateTime.now().add(duration);
+    _sleepTimer = Timer(duration, () {
+      audioHandler.pause();
+      cancelSleepTimer();
+    });
+    notifyListeners();
+  }
+
+  void cancelSleepTimer() {
+    _sleepTimer?.cancel();
+    _sleepTimer = null;
+    _sleepTimerEndTime = null;
+    _sleepAfterCurrentTrack = false;
+    notifyListeners();
+  }
+
+  void setSleepAfterCurrentTrack() {
+    cancelSleepTimer();
+    _sleepAfterCurrentTrack = true;
+    notifyListeners();
+  }
+
   void setAppThemeMode(AppThemeMode mode) {
     _appThemeMode = mode;
     notifyListeners();
@@ -104,28 +172,105 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Color get themeBackgroundColor {
     switch (_appThemeMode) {
-      case AppThemeMode.midnight: return AppColors.midnightBackground;
-      case AppThemeMode.burgundy: return AppColors.burgundyBackground;
-      case AppThemeMode.amoled: return Colors.black;
-      case AppThemeMode.dynamic: return _themeBackgroundColor;
+      case AppThemeMode.dynamic:
+        return _themeBackgroundColor;
+      case AppThemeMode.midnight:
+        return AppColors.midnightBackground;
+      case AppThemeMode.burgundy:
+        return AppColors.burgundyBackground;
+      case AppThemeMode.amoled:
+        return Colors.black;
     }
   }
 
   Color get themeSurfaceColor {
     switch (_appThemeMode) {
-      case AppThemeMode.midnight: return AppColors.midnightSurface;
-      case AppThemeMode.burgundy: return AppColors.burgundySurface;
-      case AppThemeMode.amoled: return const Color(0xFF111111);
-      case AppThemeMode.dynamic: return _themeSurfaceColor;
+      case AppThemeMode.dynamic:
+        return _themeSurfaceColor;
+      case AppThemeMode.midnight:
+        return AppColors.midnightSurface;
+      case AppThemeMode.burgundy:
+        return AppColors.burgundySurface;
+      case AppThemeMode.amoled:
+        return const Color(0xFF121212);
     }
   }
 
   Color get themeAccentColor {
     switch (_appThemeMode) {
-      case AppThemeMode.midnight: return AppColors.midnightPrimary;
-      case AppThemeMode.burgundy: return AppColors.burgundyPrimary;
-      case AppThemeMode.amoled: return Colors.white;
-      case AppThemeMode.dynamic: return _themeAccentColor;
+      case AppThemeMode.dynamic:
+        return _themeAccentColor;
+      case AppThemeMode.midnight:
+        return AppColors.midnightPrimary;
+      case AppThemeMode.burgundy:
+        return AppColors.burgundyPrimary;
+      case AppThemeMode.amoled:
+        return Colors.white;
+    }
+  }
+
+  // --- Audio Pro Features ---
+  AndroidEqualizer get equalizer => audioHandler.equalizer;
+  AndroidLoudnessEnhancer get loudnessEnhancer => audioHandler.loudnessEnhancer;
+  
+  double get playbackSpeed => audioHandler.player.speed;
+  double get playbackPitch => audioHandler.player.pitch;
+  
+  Future<void> setEqBandGain(int bandIndex, double gain) async {
+    try {
+      final params = await equalizer.parameters;
+      await params.bands[bandIndex].setGain(gain);
+      _saveAudioSettings();
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error setting EQ gain: $e");
+    }
+  }
+
+  Future<void> setLoudnessGain(double gain) async {
+    try {
+      await loudnessEnhancer.setEnabled(gain > 0.0);
+      await loudnessEnhancer.setTargetGain(gain);
+      _saveAudioSettings();
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error setting Loudness gain: $e");
+    }
+  }
+
+  Future<void> setPlaybackSpeed(double speed) async {
+    try {
+      await audioHandler.player.setSpeed(speed);
+      _saveAudioSettings();
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error setting Speed: $e");
+    }
+  }
+
+  Future<void> setPlaybackPitch(double pitch) async {
+    try {
+      await audioHandler.player.setPitch(pitch);
+      _saveAudioSettings();
+      notifyListeners();
+    } catch (e) {
+      debugPrint("Error setting Pitch: $e");
+    }
+  }
+
+  Future<void> _saveAudioSettings() async {
+    try {
+      final params = await equalizer.parameters;
+      final eqBands = params.bands.map((b) => b.gain).toList();
+      
+      await StorageService.saveAudioSettings(
+        eqBands: eqBands,
+        loudness: loudnessEnhancer.targetGain,
+        speed: playbackSpeed,
+        pitch: playbackPitch,
+      );
+    } catch (e) {
+      debugPrint("Error saving Audio Settings: $e");
     }
   }
 
@@ -152,7 +297,10 @@ class AudioPlayerProvider extends ChangeNotifier {
     audioHandler.player.playerStateStream.listen((state) async {
       _isPlaying = state.playing;
       if (state.processingState == ProcessingState.completed) {
-        if (_isRepeat) {
+        if (_sleepAfterCurrentTrack) {
+          _sleepAfterCurrentTrack = false;
+          await audioHandler.pause();
+        } else if (_isRepeat) {
           await seek(Duration.zero);
           await audioHandler.play();
         } else if (_queue.isNotEmpty) {
