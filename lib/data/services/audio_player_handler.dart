@@ -68,7 +68,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         title: song.title,
         artist: song.artist,
         duration: Duration(seconds: song.duration),
-        artUri: song.coverArt.isNotEmpty ? Uri.parse(song.coverArt) : null,
+        artUri: song.coverArt.isNotEmpty ? (song.coverArt.startsWith('http') ? Uri.parse(song.coverArt) : Uri.file(song.coverArt)) : null,
       ));
 
       await _player.setUrl(streamUrl);

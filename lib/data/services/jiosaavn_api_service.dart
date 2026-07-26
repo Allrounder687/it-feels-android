@@ -41,6 +41,7 @@ class JioSaavnApiService {
       final List<Song> songs = [];
       final List<Playlist> albums = [];
       final List<Playlist> playlists = [];
+      final List<Map<String, dynamic>> artists = [];
 
       // Songs
       if (data['songs'] != null && data['songs']['data'] is List) {
@@ -63,14 +64,26 @@ class JioSaavnApiService {
         }
       }
 
+      // Artists
+      if (data['artists'] != null && data['artists']['data'] is List) {
+        for (var item in data['artists']['data']) {
+          artists.add({
+            'id': item['id'] ?? '',
+            'title': item['title'] ?? item['name'] ?? '',
+            'image': (item['image'] ?? '').toString().replaceAll('50x50', '500x500'),
+          });
+        }
+      }
+
       return {
         'songs': songs,
         'albums': albums,
         'playlists': playlists,
+        'artists': artists,
       };
     } catch (e) {
       debugPrint('[JioSaavnApiService] Search error: $e');
-      return {'songs': <Song>[], 'albums': <Playlist>[], 'playlists': <Playlist>[]};
+      return {'songs': <Song>[], 'albums': <Playlist>[], 'playlists': <Playlist>[], 'artists': <Map<String, dynamic>>[]};
     }
   }
 

@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.pixelplayer.saavn.pixel_player_saavn"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

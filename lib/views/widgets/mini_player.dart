@@ -1,3 +1,4 @@
+import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -68,7 +69,7 @@ class MiniPlayer extends StatelessWidget {
                                 width: 44,
                                 height: 44,
                                 child: currentSong.coverArt.isNotEmpty
-                                    ? CachedNetworkImage(
+                                    ? CustomImageWidget(
                                         imageUrl: currentSong.coverArt,
                                         fit: BoxFit.cover,
                                         errorWidget: (context, url, error) => const Icon(Icons.music_note, color: Colors.white),

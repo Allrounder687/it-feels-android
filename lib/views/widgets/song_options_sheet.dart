@@ -1,3 +1,4 @@
+import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -72,7 +73,7 @@ class SongOptionsSheet extends StatelessWidget {
                   width: 54,
                   height: 54,
                   child: song.coverArt.isNotEmpty
-                      ? CachedNetworkImage(imageUrl: song.coverArt, fit: BoxFit.cover)
+                      ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover)
                       : Container(
                           color: AppColors.midnightCard,
                           child: const Icon(Icons.music_note, color: Colors.white),

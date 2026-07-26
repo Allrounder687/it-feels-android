@@ -1,3 +1,4 @@
+import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -155,42 +156,51 @@ class _SearchScreenState extends State<SearchScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  Material(
-                                    color: AppColors.midnightCard.withValues(alpha: 0.5),
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: ListTile(
-                                      leading: const CircleAvatar(
-                                        backgroundColor: AppColors.midnightPrimary,
-                                        child: Icon(Icons.person, color: Colors.black),
-                                      ),
-                                      title: Text(
-                                        _searchController.text,
-                                        style: GoogleFonts.inter(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 15,
+                                  ...searchProvider.artists.map((artist) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 6),
+                                    child: Material(
+                                      color: AppColors.midnightCard.withValues(alpha: 0.5),
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: ListTile(
+                                        leading: CircleAvatar(
+                                          backgroundColor: AppColors.midnightPrimary,
+                                          backgroundImage: artist['image']?.toString().isNotEmpty == true 
+                                              ? CachedNetworkImageProvider(artist['image']) 
+                                              : null,
+                                          child: artist['image']?.toString().isNotEmpty == true 
+                                              ? null 
+                                              : const Icon(Icons.person, color: Colors.black),
                                         ),
-                                      ),
-                                      subtitle: Text(
-                                        "Explore full artist discography",
-                                        style: GoogleFonts.inter(
-                                          color: AppColors.midnightTextMuted,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                      trailing: const Icon(Icons.chevron_right, color: Colors.white54),
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => ArtistDetailScreen(
-                                              artistName: _searchController.text,
-                                            ),
+                                        title: Text(
+                                          artist['title'] ?? _searchController.text,
+                                          style: GoogleFonts.inter(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 15,
                                           ),
-                                        );
-                                      },
+                                        ),
+                                        subtitle: Text(
+                                          "Explore full artist discography",
+                                          style: GoogleFonts.inter(
+                                            color: AppColors.midnightTextMuted,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => ArtistDetailScreen(
+                                                artistName: artist['title'] ?? _searchController.text,
+                                                artistImage: artist['image'],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
                                     ),
-                                  ),
+                                  )),
                                   const SizedBox(height: 16),
                                 ],
 
@@ -217,7 +227,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                                 width: 44,
                                                 height: 44,
                                                 child: song.coverArt.isNotEmpty
-                                                    ? CachedNetworkImage(
+                                                    ? CustomImageWidget(
                                                         imageUrl: song.coverArt,
                                                         fit: BoxFit.cover,
                                                       )
@@ -284,7 +294,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                                 width: 44,
                                                 height: 44,
                                                 child: album.coverArt.isNotEmpty
-                                                    ? CachedNetworkImage(
+                                                    ? CustomImageWidget(
                                                         imageUrl: album.coverArt,
                                                         fit: BoxFit.cover,
                                                       )
@@ -346,7 +356,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                                 width: 44,
                                                 height: 44,
                                                 child: pl.coverArt.isNotEmpty
-                                                    ? CachedNetworkImage(
+                                                    ? CustomImageWidget(
                                                         imageUrl: pl.coverArt,
                                                         fit: BoxFit.cover,
                                                       )

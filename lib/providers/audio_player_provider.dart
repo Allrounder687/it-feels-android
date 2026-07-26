@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:palette_generator/palette_generator.dart';
@@ -218,8 +219,11 @@ class AudioPlayerProvider extends ChangeNotifier {
   Future<void> _extractPalette(String imageUrl) async {
     if (imageUrl.isEmpty) return;
     try {
+      ImageProvider provider = imageUrl.startsWith('http') 
+          ? NetworkImage(imageUrl) as ImageProvider
+          : FileImage(File(imageUrl));
       final palette = await PaletteGenerator.fromImageProvider(
-        ResizeImage(NetworkImage(imageUrl), width: 100, height: 100),
+        ResizeImage(provider, width: 100, height: 100),
         maximumColorCount: 6,
       );
 

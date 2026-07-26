@@ -1,3 +1,4 @@
+import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -156,7 +157,7 @@ class _SeeAllSongsScreenState extends State<SeeAllSongsScreen> {
                                   width: 50,
                                   height: 50,
                                   child: song.coverArt.isNotEmpty
-                                      ? CachedNetworkImage(imageUrl: song.coverArt, fit: BoxFit.cover)
+                                      ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover)
                                       : const Icon(Icons.music_note, color: Colors.white),
                                 ),
                               ),
@@ -171,7 +172,7 @@ class _SeeAllSongsScreenState extends State<SeeAllSongsScreen> {
                                 ),
                               ),
                               subtitle: Text(
-                                "${song.artist} • ${song.album.isNotEmpty ? song.album : 'Single'}",
+                                "${song.artist} â€¢ ${song.album.isNotEmpty ? song.album : 'Single'}",
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(

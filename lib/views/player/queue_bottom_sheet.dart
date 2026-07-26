@@ -1,3 +1,4 @@
+import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -86,7 +87,7 @@ class QueueBottomSheet extends StatelessWidget {
                                     width: 44,
                                     height: 44,
                                     child: song.coverArt.isNotEmpty
-                                        ? CachedNetworkImage(
+                                        ? CustomImageWidget(
                                             imageUrl: song.coverArt,
                                             fit: BoxFit.cover,
                                           )

@@ -1,3 +1,4 @@
+import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -177,7 +178,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: album.coverArt.isNotEmpty
-                        ? CachedNetworkImage(imageUrl: album.coverArt, fit: BoxFit.cover, width: double.infinity)
+                        ? CustomImageWidget(imageUrl: album.coverArt, fit: BoxFit.cover, width: double.infinity)
                         : Container(color: AppColors.midnightCard),
                   ),
                 ),
@@ -210,7 +211,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   child: SizedBox(
                     width: 48,
                     height: 48,
-                    child: CachedNetworkImage(
+                    child: CustomImageWidget(
                       imageUrl: artist['image']!,
                       fit: BoxFit.cover,
                       errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.white),
@@ -261,7 +262,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     width: 48,
                     height: 48,
                     child: pl.coverArt.isNotEmpty
-                        ? CachedNetworkImage(imageUrl: pl.coverArt, fit: BoxFit.cover)
+                        ? CustomImageWidget(imageUrl: pl.coverArt, fit: BoxFit.cover)
                         : const Icon(Icons.queue_music, color: Colors.white),
                   ),
                 ),
@@ -317,7 +318,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   width: 48,
                   height: 48,
                   child: song.coverArt.isNotEmpty
-                      ? CachedNetworkImage(imageUrl: song.coverArt, fit: BoxFit.cover)
+                      ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover)
                       : const Icon(Icons.music_note, color: Colors.white),
                 ),
               ),

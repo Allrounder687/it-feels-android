@@ -1,3 +1,4 @@
+import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -156,7 +157,7 @@ class NowPlayingScreen extends StatelessWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(28),
                         child: currentSong.coverArt.isNotEmpty
-                            ? CachedNetworkImage(
+                            ? CustomImageWidget(
                                 imageUrl: currentSong.coverArt,
                                 fit: BoxFit.cover,
                                 errorWidget: (context, url, error) =>

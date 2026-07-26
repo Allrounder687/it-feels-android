@@ -1,3 +1,4 @@
+import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/song_model.dart';
@@ -42,7 +43,7 @@ class HeroCollage extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(48),
                 child: images.isNotEmpty
-                    ? CachedNetworkImage(
+                    ? CustomImageWidget(
                         imageUrl: images[0],
                         fit: BoxFit.cover,
                         errorWidget: (context, url, error) => Container(color: const Color(0xFF2C1622)),
@@ -61,7 +62,7 @@ class HeroCollage extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(35),
               child: images.length > 1
-                  ? CachedNetworkImage(
+                  ? CustomImageWidget(
                       imageUrl: images[1],
                       fit: BoxFit.cover,
                       errorWidget: (context, url, error) => Container(color: Colors.pinkAccent.withValues(alpha: 0.3)),
@@ -79,7 +80,7 @@ class HeroCollage extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(40),
               child: images.length > 2
-                  ? CachedNetworkImage(
+                  ? CustomImageWidget(
                       imageUrl: images[2],
                       fit: BoxFit.cover,
                       errorWidget: (context, url, error) => Container(color: Colors.blueAccent.withValues(alpha: 0.3)),

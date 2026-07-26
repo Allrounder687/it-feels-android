@@ -1,3 +1,4 @@
+import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -122,7 +123,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(28),
                               child: _coverArt.isNotEmpty
-                                  ? CachedNetworkImage(
+                                  ? CustomImageWidget(
                                       imageUrl: _coverArt,
                                       fit: BoxFit.cover,
                                     )
@@ -246,7 +247,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                   width: 48,
                                   height: 48,
                                   child: song.coverArt.isNotEmpty
-                                      ? CachedNetworkImage(
+                                      ? CustomImageWidget(
                                           imageUrl: song.coverArt,
                                           fit: BoxFit.cover,
                                         )

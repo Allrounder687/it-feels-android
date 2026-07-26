@@ -1,3 +1,4 @@
+import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -173,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       width: 135,
                                       height: 135,
                                       child: song.coverArt.isNotEmpty
-                                          ? CachedNetworkImage(
+                                          ? CustomImageWidget(
                                               imageUrl: song.coverArt,
                                               fit: BoxFit.cover,
                                             )
@@ -349,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         child: SizedBox(
                                           width: double.infinity,
                                           child: pl.coverArt.isNotEmpty
-                                              ? CachedNetworkImage(
+                                              ? CustomImageWidget(
                                                   imageUrl: pl.coverArt,
                                                   fit: BoxFit.cover,
                                                 )
@@ -374,7 +375,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
-                                            "${pl.songCount > 0 ? '${pl.songCount} Songs • ' : ''}${pl.type == 'album' ? 'Album' : 'Playlist'}",
+                                            "${pl.songCount > 0 ? '${pl.songCount} Songs â€¢ ' : ''}${pl.type == 'album' ? 'Album' : 'Playlist'}",
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: GoogleFonts.inter(
@@ -483,7 +484,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     width: 48,
                                     height: 48,
                                     child: song.coverArt.isNotEmpty
-                                        ? CachedNetworkImage(
+                                        ? CustomImageWidget(
                                             imageUrl: song.coverArt,
                                             fit: BoxFit.cover,
                                           )
@@ -501,7 +502,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                                 subtitle: Text(
-                                  "${song.artist} • ${song.album.isNotEmpty ? song.album : 'Single'}",
+                                  "${song.artist} â€¢ ${song.album.isNotEmpty ? song.album : 'Single'}",
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
@@ -576,7 +577,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       child: AspectRatio(
                                         aspectRatio: 1.0,
                                         child: pl.coverArt.isNotEmpty
-                                            ? CachedNetworkImage(
+                                            ? CustomImageWidget(
                                                 imageUrl: pl.coverArt,
                                                 fit: BoxFit.cover,
                                               )

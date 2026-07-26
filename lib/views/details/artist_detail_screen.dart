@@ -1,3 +1,4 @@
+import 'package:pixel_player_saavn/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -37,12 +38,16 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
 
   Future<void> _loadArtistData() async {
     final api = JioSaavnApiService();
-    final res = await api.searchAll(widget.artistName);
+    final topSongsFuture = api.searchSongs(widget.artistName, count: 50);
+    final albumsFuture = api.searchAlbums(widget.artistName, count: 20);
+
+    final topSongs = await topSongsFuture;
+    final albums = await albumsFuture;
 
     if (mounted) {
       setState(() {
-        _topSongs = List<Song>.from(res['songs'] ?? []);
-        _albums = List<Playlist>.from(res['albums'] ?? []);
+        _topSongs = topSongs;
+        _albums = albums;
         _isLoading = false;
       });
     }
@@ -115,7 +120,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                             ),
                             child: ClipOval(
                               child: widget.artistImage?.isNotEmpty == true
-                                  ? CachedNetworkImage(
+                                  ? CustomImageWidget(
                                       imageUrl: widget.artistImage!,
                                       fit: BoxFit.cover,
                                     )
@@ -211,7 +216,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                   width: 48,
                                   height: 48,
                                   child: song.coverArt.isNotEmpty
-                                      ? CachedNetworkImage(
+                                      ? CustomImageWidget(
                                           imageUrl: song.coverArt,
                                           fit: BoxFit.cover,
                                         )
@@ -301,7 +306,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                       child: AspectRatio(
                                         aspectRatio: 1.0,
                                         child: album.coverArt.isNotEmpty
-                                            ? CachedNetworkImage(
+                                            ? CustomImageWidget(
                                                 imageUrl: album.coverArt,
                                                 fit: BoxFit.cover,
                                               )
