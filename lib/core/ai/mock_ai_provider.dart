@@ -184,6 +184,27 @@ class MockAIProvider extends ChangeNotifier implements AIProvider {
   }
 
   @override
+  Future<List<String>> generateGlobalPlaylistNames({
+    required String userRequest,
+    Duration? maxResponseTime,
+  }) async {
+    await _applyLatency();
+    if (_shouldFail()) throw _generateFailureException();
+    return [
+      "Blinding Lights - The Weeknd",
+      "Shape of You - Ed Sheeran",
+      "Dance Monkey - Tones and I",
+      "Rockstar - Post Malone",
+      "One Dance - Drake",
+      "Closer - The Chainsmokers",
+      "Sunflower - Post Malone",
+      "Señorita - Shawn Mendes",
+      "Bad Guy - Billie Eilish",
+      "Perfect - Ed Sheeran"
+    ];
+  }
+
+  @override
   Future<List<Song>> reorderQueueByMood({
     required List<Song> queue,
     required String moodDescription,

@@ -57,18 +57,25 @@ class AIService extends ChangeNotifier {
   }
 
   Future<void> initialize(List<AIProvider> providers) async {
-    if (_isInitialized) return;
+    _providerRegistry.clear();
+    _providerOrder.clear();
     for (final p in providers) {
       _providerRegistry[p.id] = p;
       _providerOrder.add(p);
-      _providerStats[p.id] = <String, dynamic>{};
+      if (!_providerStats.containsKey(p.id)) {
+        _providerStats[p.id] = <String, dynamic>{};
+      }
     }
     if (_providerOrder.isNotEmpty) {
       final persisted = _persistedSelection;
-      if (persisted != null && _providerRegistry.containsKey(persisted)) {
+      if (persisted != null && _providerRegistry.containsKey(persisted) && persisted != 'auto') {
         _selectProvider(persisted, notify: false);
       } else {
-        _activeProvider = _providerOrder.first;
+        // If 'auto' or not found, try to pick the first REAL provider (not mock)
+        _activeProvider = _providerOrder.firstWhere(
+          (p) => p.id != 'mock',
+          orElse: () => _providerOrder.first,
+        );
       }
       _selectedProviderId = _activeProvider?.id ?? '';
     }
@@ -122,8 +129,10 @@ class AIService extends ChangeNotifier {
   void _recordFailure(String providerId, String? error) {
     final stats = _providerStats[providerId];
     if (stats == null) return;
+    // Set a very short lockout (e.g. 10 seconds) just to prevent spam loops, 
+    // instead of 15 minutes which ruins UX if it was a simple network drop.
     stats['failing_until'] =
-        DateTime.now().add(const Duration(minutes: 15)).millisecondsSinceEpoch;
+        DateTime.now().add(const Duration(seconds: 10)).millisecondsSinceEpoch;
     stats['last_error'] = error;
   }
 
@@ -153,6 +162,8 @@ class AIService extends ChangeNotifier {
       
       if (result is List<Song>) {
         return AIResponse.songs(providerId: providerId, songs: result);
+      } else if (result is List<String>) {
+        return AIResponse.names(providerId: providerId, names: result);
       } else if (result is String) {
         return AIResponse.text(providerId: providerId, text: result);
       }
@@ -215,6 +226,26 @@ class AIService extends ChangeNotifier {
         maxResponseTime: maxResponseTime,
       ),
       'generatePlaylistFromRequest',
+    );
+  }
+
+  Future<AIResponse> generateGlobalPlaylistNames({
+    required String userRequest,
+    Duration? maxResponseTime,
+  }) async {
+    final provider = _activeProvider;
+    if (provider == null) {
+      return AIResponse.failure(providerId: 'unknown', error: 'No AI provider configured');
+    }
+    if (userRequest.trim().isEmpty) {
+      return AIResponse.failure(providerId: provider.id, error: 'Please enter a request');
+    }
+    return _executeWithProvider(
+      () => provider.generateGlobalPlaylistNames(
+        userRequest: userRequest,
+        maxResponseTime: maxResponseTime,
+      ),
+      'generateGlobalPlaylistNames',
     );
   }
 

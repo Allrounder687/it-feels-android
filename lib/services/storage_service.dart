@@ -274,6 +274,7 @@ class StorageService {
     required bool audioSyncHaptics,
     required double speed,
     required double pitch,
+    required bool autoplay,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('dspEngine', dspEngine);
@@ -281,6 +282,7 @@ class StorageService {
     await prefs.setBool('audioSyncHaptics', audioSyncHaptics);
     await prefs.setDouble(_audioSpeedKey, speed);
     await prefs.setDouble(_audioPitchKey, pitch);
+    await prefs.setBool('autoplay', autoplay);
   }
 
   static Future<Map<String, dynamic>> loadAudioSettings() async {
@@ -292,6 +294,7 @@ class StorageService {
       'audioSyncHaptics': prefs.getBool('audioSyncHaptics') ?? false,
       'speed': prefs.getDouble(_audioSpeedKey) ?? 1.0,
       'pitch': prefs.getDouble(_audioPitchKey) ?? 1.0,
+      'autoplay': prefs.getBool('autoplay') ?? true,
     };
   }
 

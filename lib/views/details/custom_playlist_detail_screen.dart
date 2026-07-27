@@ -56,6 +56,44 @@ class CustomPlaylistDetailScreen extends StatelessWidget {
             iconTheme: const IconThemeData(color: Colors.white),
             actions: [
               IconButton(
+                icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                onPressed: () async {
+                  final controller = TextEditingController(text: currentPlaylist.title);
+                  final newName = await showDialog<String>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: AppColors.midnightSurface,
+                      title: Text("Rename Playlist", style: GoogleFonts.outfit(color: Colors.white)),
+                      content: TextField(
+                        controller: controller,
+                        autofocus: true,
+                        style: GoogleFonts.inter(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: "Enter new name",
+                          hintStyle: GoogleFonts.inter(color: Colors.white54),
+                          enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                          focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.midnightAccent)),
+                        ),
+                      ),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                        TextButton(
+                          onPressed: () {
+                            if (controller.text.trim().isNotEmpty) {
+                              Navigator.pop(ctx, controller.text.trim());
+                            }
+                          },
+                          child: const Text("Rename", style: TextStyle(color: AppColors.midnightAccent)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (newName != null && newName != currentPlaylist.title) {
+                    playlistProvider.renamePlaylist(currentPlaylist.id, newName);
+                  }
+                },
+              ),
+              IconButton(
                 icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                 onPressed: () async {
                   final confirm = await showDialog<bool>(

@@ -28,9 +28,11 @@ class GeminiProvider implements AIProvider {
     }).toList();
 
     final prompt = '''
-You are a music recommender. Given the user's request and the list of available songs in their library, return a playlist consisting ONLY of songs from their library that match the request.
-Return the output as a JSON object matching this schema:
-{"playlist": ["Song Title 1", "Song Title 2"]}
+You are an intelligent music DJ. Given the user's request and the list of available songs in their library, return a playlist consisting ONLY of songs from their library that match the request.
+If you are unfamiliar with some tracks (e.g. regional or indie songs), take your best guess based on the title, artist, or genre. 
+ALWAYS try to return at least 10 songs if possible. If the library doesn't have 10 matching songs, return as many as you can. If the user's request is very generic (like "play something" or "any"), return a varied mix of songs.
+Return the output as a JSON object matching this schema exactly (no markdown formatting):
+{"playlist": ["Exact Song Title 1", "Exact Song Title 2"]}
 
 User Request: "$userRequest"
 
@@ -70,22 +72,92 @@ ${json.encode(libraryMetadata)}
       throw Exception('Gemini returned empty text.');
     }
 
-    final parsedJson = json.decode(text.trim()) as Map<String, dynamic>;
+    String cleanedText = text.trim();
+    if (cleanedText.startsWith('```json')) {
+      cleanedText = cleanedText.replaceAll(RegExp(r'^```json\n?'), '').replaceAll(RegExp(r'\n?```$'), '').trim();
+    } else if (cleanedText.startsWith('```')) {
+      cleanedText = cleanedText.replaceAll(RegExp(r'^```\n?'), '').replaceAll(RegExp(r'\n?```$'), '').trim();
+    }
+
+    final parsedJson = json.decode(cleanedText) as Map<String, dynamic>;
     final playlistNames = (parsedJson['playlist'] as List?)?.cast<String>() ?? [];
 
     // Map names back to library using exact or basic title containment
     final results = <Song>[];
     for (final name in playlistNames) {
-      final nameLower = name.toLowerCase();
+      final nameLower = name.toLowerCase().trim();
       final match = localLibrary.firstWhere(
-        (s) => s.title.toLowerCase() == nameLower || s.title.toLowerCase().contains(nameLower),
+        (s) {
+           final sTitle = s.title.toLowerCase().trim();
+           return sTitle == nameLower || 
+                  sTitle.contains(nameLower) || 
+                  nameLower.contains(sTitle);
+        },
         orElse: () => Song(id: '', saavnId: '', title: '', artist: '', album: '', duration: 0, coverArt: '', addedAt: DateTime.now()),
       );
-      if (match.id.isNotEmpty) {
+      if (match.id.isNotEmpty && !results.any((r) => r.id == match.id)) {
         results.add(match);
       }
     }
     return results;
+  }
+
+  @override
+  Future<List<String>> generateGlobalPlaylistNames({
+    required String userRequest,
+    Duration? maxResponseTime,
+  }) async {
+    final prompt = '''
+You are an intelligent music DJ. Given the user's request, recommend exactly 15 highly relevant songs from across all global music.
+Return the output as a JSON object matching this schema exactly (no markdown formatting):
+{"playlist": ["Song Title Artist", "Song Title Artist"]}
+
+User Request: "$userRequest"
+''';
+
+    final response = await _postRequest(
+      url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey',
+      body: {
+        'contents': [
+          {
+            'parts': [
+              {'text': prompt}
+            ]
+          }
+        ],
+        'generationConfig': {
+          'responseMimeType': 'application/json',
+        }
+      },
+      timeout: maxResponseTime ?? const Duration(seconds: 15),
+    );
+
+    final data = json.decode(response) as Map<String, dynamic>;
+    final candidates = data['candidates'] as List?;
+    if (candidates == null || candidates.isEmpty) {
+      throw Exception('Gemini returned no candidates.');
+    }
+    final content = candidates[0]['content'] as Map<String, dynamic>?;
+    final parts = content?['parts'] as List?;
+    if (parts == null || parts.isEmpty) {
+      throw Exception('Gemini candidate content was empty.');
+    }
+    final text = parts[0]['text'] as String?;
+    if (text == null || text.trim().isEmpty) {
+      throw Exception('Gemini returned empty text.');
+    }
+
+    String cleanedText = text.trim();
+    if (cleanedText.startsWith('```json')) {
+      cleanedText = cleanedText.replaceAll(RegExp(r'^```json\n?'), '').replaceAll(RegExp(r'\n?```$'), '').trim();
+    } else if (cleanedText.startsWith('```')) {
+      cleanedText = cleanedText.replaceAll(RegExp(r'^```\n?'), '').replaceAll(RegExp(r'\n?```$'), '').trim();
+    }
+
+    final parsedJson = json.decode(cleanedText) as Map<String, dynamic>;
+    final playlistNames = (parsedJson['playlist'] as List?)?.cast<String>() ?? [];
+    
+    return playlistNames.take(15).toList();
   }
 
   @override

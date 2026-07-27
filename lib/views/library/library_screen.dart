@@ -126,7 +126,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   child: _buildTabContent(homeProvider, playerProvider, downloadProvider, customPlaylistProvider, trending, playlists),
                 ),
 
-                const SizedBox(height: 80),
+                SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
               ],
             ),
           ),

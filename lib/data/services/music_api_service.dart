@@ -448,4 +448,34 @@ class MusicApiService {
 
     return null;
   }
+
+  /// Fetch recommended songs based on a track (used for Autoplay)
+  Future<List<Song>> getRecommendedSongs(Song song) async {
+    try {
+      final url = Uri.parse(
+          '$_baseUrl?__call=reco.getreco&_format=json&api_version=4&ctx=web6dot0&pid=${song.saavnId}');
+      final response = await http.get(url, headers: _headers);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data is List && data.isNotEmpty) {
+           final List<Song> recoSongs = [];
+           for (var item in data) {
+             recoSongs.add(Song.fromJson(item));
+           }
+           if (recoSongs.isNotEmpty) return recoSongs;
+        }
+      }
+    } catch (e) {
+      debugPrint('[MusicApiService] getRecommendedSongs error: $e');
+    }
+
+    // Fallback: search for artist's songs
+    if (song.artist.isNotEmpty) {
+       final artist = song.artist.split(',').first.trim();
+       if (artist.isNotEmpty) {
+         return await searchSongs(artist);
+       }
+    }
+    return [];
+  }
 }

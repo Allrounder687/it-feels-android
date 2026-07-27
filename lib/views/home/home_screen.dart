@@ -8,6 +8,7 @@ import '../../providers/audio_player_provider.dart';
 import '../../providers/home_provider.dart';
 import '../../providers/hidden_songs_provider.dart';
 import '../../providers/listening_history_provider.dart';
+import '../../providers/ai_settings_provider.dart';
 import '../../data/models/song_model.dart';
 import '../details/playlist_detail_screen.dart';
 import '../details/see_all_screen.dart';
@@ -240,11 +241,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 22),
-                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AskAIScreen())),
-                              tooltip: 'Ask AI',
-                            ),
+                            if (context.watch<AISettingsProvider>().isConfigured)
+                              IconButton(
+                                icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 22),
+                                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AskAIScreen())),
+                                tooltip: 'Ask Feels',
+                              ),
                             IconButton(
                               icon: const Icon(Icons.settings_outlined, color: Colors.white, size: 22),
                               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
@@ -345,7 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildPlaylistCarousel(context, "Global Charts", homeProvider.chartPlaylists),
                 ],
 
-                const SliverToBoxAdapter(child: SizedBox(height: 110)),
+                SliverToBoxAdapter(child: SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom)),
               ],
             ),
           ),

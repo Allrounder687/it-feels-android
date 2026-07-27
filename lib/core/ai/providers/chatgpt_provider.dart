@@ -33,7 +33,7 @@ class ChatGPTProvider implements AIProvider {
         'messages': [
           {
             'role': 'system',
-            'content': 'You are a music recommender. From the available library, output a playlist matching the user request. Return only the structured schema.'
+            'content': 'You are an intelligent music DJ. From the available library, output a playlist matching the user request. If unfamiliar with some tracks, take your best guess based on the title, artist, or genre. ALWAYS try to return at least 3-5 songs if possible. If the user request is generic, return a varied mix. Return only the structured schema.'
           },
           {
             'role': 'user',
@@ -69,9 +69,14 @@ class ChatGPTProvider implements AIProvider {
 
     final results = <Song>[];
     for (final name in playlistNames) {
-      final nameLower = name.toLowerCase();
+      final nameLower = name.toLowerCase().trim();
       final match = localLibrary.firstWhere(
-        (s) => s.title.toLowerCase() == nameLower || s.title.toLowerCase().contains(nameLower),
+        (s) {
+           final sTitle = s.title.toLowerCase().trim();
+           return sTitle == nameLower || 
+                  sTitle.contains(nameLower) || 
+                  nameLower.contains(sTitle);
+        },
         orElse: () => Song(id: '', saavnId: '', title: '', artist: '', album: '', duration: 0, coverArt: '', addedAt: DateTime.now()),
       );
       if (match.id.isNotEmpty) {
@@ -79,6 +84,54 @@ class ChatGPTProvider implements AIProvider {
       }
     }
     return results;
+  }
+
+  @override
+  Future<List<String>> generateGlobalPlaylistNames({
+    required String userRequest,
+    Duration? maxResponseTime,
+  }) async {
+    final response = await _postRequest(
+      body: {
+        'model': 'gpt-5-mini-2025-08-07',
+        'messages': [
+          {
+            'role': 'system',
+            'content': 'You are an intelligent music DJ. Given the user request, recommend exactly 10 highly relevant songs from across all global music. Return only the structured schema.'
+          },
+          {
+            'role': 'user',
+            'content': 'Request: "$userRequest"'
+          }
+        ],
+        'response_format': {
+          'type': 'json_schema',
+          'json_schema': {
+            'name': 'playlist_schema',
+            'strict': true,
+            'schema': {
+              'type': 'object',
+              'properties': {
+                'playlist': {
+                  'type': 'array',
+                  'items': {'type': 'string'}
+                }
+              },
+              'required': ['playlist'],
+              'additionalProperties': false
+            }
+          }
+        }
+      },
+      timeout: maxResponseTime ?? const Duration(seconds: 15),
+    );
+
+    final data = json.decode(response) as Map<String, dynamic>;
+    final choice = data['choices'][0]['message']['content'] as String;
+    final parsedJson = json.decode(choice.trim()) as Map<String, dynamic>;
+    final playlistNames = (parsedJson['playlist'] as List?)?.cast<String>() ?? [];
+    
+    return playlistNames.take(10).toList();
   }
 
   @override

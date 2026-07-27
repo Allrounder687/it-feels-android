@@ -77,6 +77,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 
 ## Recent Updates
+- **Ask Feels AI Engine:** Branded and updated smart playlist capabilities featuring "What are you feeling like?" UX.
+- **Dynamic UI Padding:** Fluid edge-to-edge screens that adapt flawlessly to native Android gesture bars and system insets.
 - **Audiophile DSP Engine:** Built-in Equalizer and Loudness Enhancer with zero-config smart toggles.
 - **Bitrate Badges:** Visually distinguish between LOSSLESS, HIGH-RES, and 320 KBPS audio streams dynamically on the player screen.
 - **Cross-Platform Refinements:** Eliminated heavy C++ ATL dependencies for fast Windows compilation and patched Isar for Web compatibility.

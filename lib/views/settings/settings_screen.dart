@@ -49,7 +49,12 @@ class SettingsScreen extends StatelessWidget {
                 context: context,
                 title: "Wi-Fi Streaming Quality",
                 subtitle: settings.wifiQuality,
-                options: ["320 kbps (Very High)", "160 kbps (High)", "96 kbps (Medium)", "64 kbps (Low)"],
+                options: [
+                  "320 kbps (Very High)",
+                  "160 kbps (High)",
+                  "96 kbps (Medium)",
+                  "64 kbps (Low)",
+                ],
                 currentValue: settings.wifiQuality,
                 onSelected: (val) => settings.setWifiQuality(val),
               ),
@@ -57,7 +62,12 @@ class SettingsScreen extends StatelessWidget {
                 context: context,
                 title: "Mobile Data Streaming Quality",
                 subtitle: settings.mobileQuality,
-                options: ["320 kbps (Very High)", "160 kbps (High)", "96 kbps (Medium)", "64 kbps (Low)"],
+                options: [
+                  "320 kbps (Very High)",
+                  "160 kbps (High)",
+                  "96 kbps (Medium)",
+                  "64 kbps (Low)",
+                ],
                 currentValue: settings.mobileQuality,
                 onSelected: (val) => settings.setMobileQuality(val),
               ),
@@ -65,7 +75,11 @@ class SettingsScreen extends StatelessWidget {
                 context: context,
                 title: "Download Quality",
                 subtitle: settings.downloadQuality,
-                options: ["320 kbps (Very High)", "160 kbps (High)", "96 kbps (Medium)"],
+                options: [
+                  "320 kbps (Very High)",
+                  "160 kbps (High)",
+                  "96 kbps (Medium)",
+                ],
                 currentValue: settings.downloadQuality,
                 onSelected: (val) => settings.setDownloadQuality(val),
               ),
@@ -77,7 +91,9 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const AudioSettingsScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const AudioSettingsScreen(),
+                    ),
                   );
                 },
               ),
@@ -92,7 +108,19 @@ class SettingsScreen extends StatelessWidget {
                 context: context,
                 title: "Default Startup Category",
                 subtitle: settings.defaultCategory,
-                options: ["YOU", "Moods", "Charts", "Bollywood", "Telugu", "Tamil", "Punjabi", "Hollywood", "Trending", "Playlists", "Albums"],
+                options: [
+                  "YOU",
+                  "Moods",
+                  "Charts",
+                  "Bollywood",
+                  "Telugu",
+                  "Tamil",
+                  "Punjabi",
+                  "Hollywood",
+                  "Trending",
+                  "Playlists",
+                  "Albums",
+                ],
                 currentValue: settings.defaultCategory,
                 onSelected: (val) => settings.setDefaultCategory(val),
               ),
@@ -104,7 +132,9 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const HiddenSongsScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const HiddenSongsScreen(),
+                    ),
                   );
                 },
               ),
@@ -117,15 +147,22 @@ class SettingsScreen extends StatelessWidget {
 
               _buildActionTile(
                 title: "Download Storage Location",
-                subtitle: settings.customDownloadPath.isEmpty ? "Internal App Storage" : settings.customDownloadPath,
+                subtitle: settings.customDownloadPath.isEmpty
+                    ? "Internal App Storage"
+                    : settings.customDownloadPath,
                 icon: Icons.folder_special_rounded,
                 onTap: () async {
-                  String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+                  String? selectedDirectory = await FilePicker.platform
+                      .getDirectoryPath();
                   if (selectedDirectory != null) {
                     settings.setCustomDownloadPath(selectedDirectory);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Location updated to: $selectedDirectory")),
+                        SnackBar(
+                          content: Text(
+                            "Location updated to: $selectedDirectory",
+                          ),
+                        ),
                       );
                     }
                   }
@@ -133,12 +170,15 @@ class SettingsScreen extends StatelessWidget {
               ),
               _buildActionTile(
                 title: "Clear All Downloads",
-                subtitle: "${downloadProvider.downloadedSongs.length} tracks downloaded",
+                subtitle:
+                    "${downloadProvider.downloadedSongs.length} tracks downloaded",
                 icon: Icons.delete_outline_rounded,
                 onTap: () async {
                   if (downloadProvider.downloadedSongs.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("No downloaded tracks to delete")),
+                      const SnackBar(
+                        content: Text("No downloaded tracks to delete"),
+                      ),
                     );
                     return;
                   }
@@ -146,18 +186,27 @@ class SettingsScreen extends StatelessWidget {
                     context: context,
                     builder: (ctx) => AlertDialog(
                       backgroundColor: AppColors.midnightSurface,
-                      title: Text("Clear Downloads", style: GoogleFonts.outfit(color: Colors.white)),
+                      title: Text(
+                        "Clear Downloads",
+                        style: GoogleFonts.outfit(color: Colors.white),
+                      ),
                       content: Text(
                         "Are you sure you want to delete all offline downloaded songs?",
                         style: GoogleFonts.inter(color: Colors.white70),
                       ),
                       actions: [
                         TextButton(
-                          child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
+                          child: const Text(
+                            "Cancel",
+                            style: TextStyle(color: Colors.white60),
+                          ),
                           onPressed: () => Navigator.pop(ctx, false),
                         ),
                         TextButton(
-                          child: const Text("Delete All", style: TextStyle(color: Colors.redAccent)),
+                          child: const Text(
+                            "Delete All",
+                            style: TextStyle(color: Colors.redAccent),
+                          ),
                           onPressed: () => Navigator.pop(ctx, true),
                         ),
                       ],
@@ -194,11 +243,20 @@ class SettingsScreen extends StatelessWidget {
                 context: context,
                 title: "App Primary Theme",
                 subtitle: settings.theme,
-                options: ["System (Material You)", "Dynamic (Album Art)", "Midnight Dark", "Burgundy Dark", "AMOLED Black"],
+                options: [
+                  "System (Material You)",
+                  "Dynamic (Album Art)",
+                  "Midnight Dark",
+                  "Burgundy Dark",
+                  "AMOLED Black",
+                ],
                 currentValue: settings.theme,
                 onSelected: (val) {
                   settings.setTheme(val);
-                  final player = Provider.of<AudioPlayerProvider>(context, listen: false);
+                  final player = Provider.of<AudioPlayerProvider>(
+                    context,
+                    listen: false,
+                  );
                   if (val == "System (Material You)") {
                     player.setAppThemeMode(AppThemeMode.materialYou);
                   } else if (val == "Midnight Dark") {
@@ -220,9 +278,13 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 8),
               _buildActionTile(
                 title: "AI Settings",
-                subtitle: "Configure AI-powered playlist generation and mood matching",
+                subtitle:
+                    "Configure AI-powered playlist generation and mood matching",
                 icon: Icons.auto_awesome_rounded,
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AISettingsScreen())),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AISettingsScreen()),
+                ),
               ),
 
               const SizedBox(height: 24),
@@ -232,8 +294,18 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 8),
 
               SwitchListTile(
-                title: Text("Android Auto Integration", style: GoogleFonts.outfit(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
-                subtitle: Text("Sync your playlists and history with your car dashboard", style: GoogleFonts.inter(color: Colors.white70, fontSize: 13)),
+                title: Text(
+                  "Android Auto Integration",
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                subtitle: Text(
+                  "Sync your playlists and history with your car dashboard",
+                  style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
+                ),
                 value: settings.enableAndroidAuto,
                 activeColor: AppColors.midnightPrimary,
                 onChanged: (val) async {
@@ -242,18 +314,29 @@ class SettingsScreen extends StatelessWidget {
                       context: context,
                       builder: (ctx) => AlertDialog(
                         backgroundColor: AppColors.midnightSurface,
-                        title: Text("Enable Android Auto", style: GoogleFonts.outfit(color: Colors.white)),
+                        title: Text(
+                          "Enable Android Auto",
+                          style: GoogleFonts.outfit(color: Colors.white),
+                        ),
                         content: Text(
                           "This will expose your playlists and listening history to the car's OS. Are you sure you wish to proceed?",
                           style: GoogleFonts.inter(color: Colors.white70),
                         ),
                         actions: [
                           TextButton(
-                            child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
+                            child: const Text(
+                              "Cancel",
+                              style: TextStyle(color: Colors.white60),
+                            ),
                             onPressed: () => Navigator.pop(ctx, false),
                           ),
                           TextButton(
-                            child: const Text("Proceed", style: TextStyle(color: AppColors.midnightPrimary)),
+                            child: const Text(
+                              "Proceed",
+                              style: TextStyle(
+                                color: AppColors.midnightPrimary,
+                              ),
+                            ),
                             onPressed: () => Navigator.pop(ctx, true),
                           ),
                         ],
@@ -278,7 +361,11 @@ class SettingsScreen extends StatelessWidget {
                   settings.setHapticsMode(val);
                   if (val == "Audio Sync") {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Warning: Real-time Audio Sync Haptics may cause battery drain.")),
+                      const SnackBar(
+                        content: Text(
+                          "Warning: Real-time Audio Sync Haptics may cause battery drain.",
+                        ),
+                      ),
                     );
                   }
                 },
@@ -297,7 +384,9 @@ class SettingsScreen extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const HiddenSongsScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const HiddenSongsScreen(),
+                    ),
                   );
                 },
               ),
@@ -340,57 +429,75 @@ class SettingsScreen extends StatelessWidget {
     required String currentValue,
     required Function(String) onSelected,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
         color: AppColors.midnightCard.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
-      ),
-      child: ListTile(
-        title: Text(
-          title,
-          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12),
-        ),
-        trailing: const Icon(Icons.arrow_drop_down, color: Colors.white54),
-        onTap: () {
-          showDialog(
-            context: context,
-            builder: (ctx) => SimpleDialog(
-              backgroundColor: AppColors.midnightSurface,
-              title: Text(title, style: GoogleFonts.outfit(color: Colors.white, fontSize: 18)),
-              children: options.map((opt) {
-                final isSelected = opt == currentValue;
-                return SimpleDialogOption(
-                  onPressed: () {
-                    onSelected(opt);
-                    Navigator.pop(ctx);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          opt,
-                          style: GoogleFonts.inter(
-                            color: isSelected ? AppColors.midnightPrimary : Colors.white70,
-                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
-                          ),
-                        ),
-                        if (isSelected)
-                          const Icon(Icons.check, color: AppColors.midnightPrimary, size: 18),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
+        child: ListTile(
+          title: Text(
+            title,
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
             ),
-          );
-        },
+          ),
+          subtitle: Text(
+            subtitle,
+            style: GoogleFonts.inter(
+              color: AppColors.midnightTextMuted,
+              fontSize: 12,
+            ),
+          ),
+          trailing: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (ctx) => SimpleDialog(
+                backgroundColor: AppColors.midnightSurface,
+                title: Text(
+                  title,
+                  style: GoogleFonts.outfit(color: Colors.white, fontSize: 18),
+                ),
+                children: options.map((opt) {
+                  final isSelected = opt == currentValue;
+                  return SimpleDialogOption(
+                    onPressed: () {
+                      onSelected(opt);
+                      Navigator.pop(ctx);
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            opt,
+                            style: GoogleFonts.inter(
+                              color: isSelected
+                                  ? AppColors.midnightPrimary
+                                  : Colors.white70,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                          if (isSelected)
+                            const Icon(
+                              Icons.check,
+                              color: AppColors.midnightPrimary,
+                              size: 18,
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -401,23 +508,30 @@ class SettingsScreen extends StatelessWidget {
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
         color: AppColors.midnightCard.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
-      ),
-      child: ListTile(
-        leading: Icon(icon, color: Colors.white70, size: 22),
-        title: Text(
-          title,
-          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+        child: ListTile(
+          leading: Icon(icon, color: Colors.white70, size: 22),
+          title: Text(
+            title,
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+          subtitle: Text(
+            subtitle,
+            style: GoogleFonts.inter(
+              color: AppColors.midnightTextMuted,
+              fontSize: 12,
+            ),
+          ),
+          onTap: onTap,
         ),
-        subtitle: Text(
-          subtitle,
-          style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12),
-        ),
-        onTap: onTap,
       ),
     );
   }

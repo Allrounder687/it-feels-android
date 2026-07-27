@@ -213,40 +213,43 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
             left: 0,
             right: 0,
             bottom: 0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Import Progress Banner
-                const ImportProgressBanner(),
-                
-                // Mini Player Pill
-                MiniPlayer(onTap: _openFullPlayer),
-
-                // Floating Bottom Navigation Bar Pill Container
-                Container(
-                  height: 76,
-                  margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.midnightSurface.withValues(alpha: 0.95),
-                    borderRadius: BorderRadius.circular(32),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.4),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+            child: SafeArea(
+              bottom: true,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Import Progress Banner
+                  const ImportProgressBanner(),
+                  
+                  // Mini Player Pill
+                  MiniPlayer(onTap: _openFullPlayer),
+  
+                  // Floating Bottom Navigation Bar Pill Container
+                  Container(
+                    height: 76,
+                    margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.midnightSurface.withValues(alpha: 0.95),
+                      borderRadius: BorderRadius.circular(32),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildNavItem(0, Icons.home_rounded, "Home"),
+                        _buildNavItem(1, Icons.search_rounded, "Search"),
+                        _buildNavItem(2, Icons.library_music_rounded, "Library"),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildNavItem(0, Icons.home_rounded, "Home"),
-                      _buildNavItem(1, Icons.search_rounded, "Search"),
-                      _buildNavItem(2, Icons.library_music_rounded, "Library"),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

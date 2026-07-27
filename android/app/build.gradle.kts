@@ -34,6 +34,14 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            manifestPlaceholders["appName"] = "It Feels"
+        }
+        getByName("debug") {
+            applicationIdSuffix = ".debug"
+            manifestPlaceholders["appName"] = "It Feels (Debug)"
+        }
+        getByName("profile") {
+            manifestPlaceholders["appName"] = "It Feels"
         }
     }
 

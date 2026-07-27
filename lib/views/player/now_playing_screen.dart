@@ -26,7 +26,8 @@ class NowPlayingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final artSize = (screenWidth * 0.84).clamp(250.0, 360.0);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final artSize = (screenWidth * 0.82).clamp(150.0, screenHeight * 0.35);
 
     return Consumer2<AudioPlayerProvider, DownloadProvider>(
       builder: (context, playerProvider, downloadProvider, child) {
@@ -466,6 +467,7 @@ class NowPlayingScreen extends StatelessWidget {
                           child: Container(
                             width: 62,
                             height: 62,
+                            alignment: Alignment.center,
                             decoration: BoxDecoration(
                               color: accentColor,
                               shape: BoxShape.circle,

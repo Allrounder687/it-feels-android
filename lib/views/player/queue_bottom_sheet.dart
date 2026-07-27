@@ -56,6 +56,25 @@ class QueueBottomSheet extends StatelessWidget {
                   ],
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Autoplay Similar Songs",
+                      style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+                    ),
+                    Switch(
+                      value: playerProvider.isAutoplayEnabled,
+                      onChanged: (val) {
+                        playerProvider.toggleAutoplay();
+                      },
+                      activeColor: playerProvider.themeAccentColor,
+                    ),
+                  ],
+                ),
+              ),
 
               // Queue Items List
               Expanded(

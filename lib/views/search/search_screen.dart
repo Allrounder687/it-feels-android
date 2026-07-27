@@ -397,7 +397,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                       )),
                                 ],
 
-                                const SizedBox(height: 80),
+                                SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
                               ],
                             ),
                 ),

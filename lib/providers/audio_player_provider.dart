@@ -112,6 +112,7 @@ class AudioPlayerProvider extends ChangeNotifier {
       _isDspEngineEnabled = settings['dspEngine'] ?? false;
       _uiHapticsEnabled = settings['uiHaptics'] ?? true;
       _audioSyncHapticsEnabled = settings['audioSyncHaptics'] ?? false;
+      _isAutoplayEnabled = settings['autoplay'] ?? true;
 
       if (_isDspEngineEnabled) {
         await _enableDspEngine(equalizer, loudnessEnhancer);
@@ -369,6 +370,7 @@ class AudioPlayerProvider extends ChangeNotifier {
         audioSyncHaptics: _audioSyncHapticsEnabled,
         speed: playbackSpeed,
         pitch: playbackPitch,
+        autoplay: _isAutoplayEnabled,
       );
     } catch (e) {
       debugPrint("Error saving Audio Settings: $e");
@@ -395,6 +397,15 @@ class AudioPlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _isAutoplayEnabled = true; // Auto queue songs by default
+  bool get isAutoplayEnabled => _isAutoplayEnabled;
+
+  void toggleAutoplay() {
+    _isAutoplayEnabled = !_isAutoplayEnabled;
+    _saveAudioSettings();
+    notifyListeners();
+  }
+
   void _listenToAudioState() {
     audioHandler.player.playerStateStream.listen((state) async {
       _isPlaying = state.playing;
@@ -413,6 +424,20 @@ class AudioPlayerProvider extends ChangeNotifier {
           await seek(Duration.zero);
           await audioHandler.play();
         } else if (_queue.isNotEmpty) {
+          if (_currentIndex == _queue.length - 1 && _isAutoplayEnabled) {
+            // Reached the end of the queue, fetch similar songs!
+            final current = _queue[_currentIndex];
+            final recommendations = await apiService.getRecommendedSongs(current);
+            if (recommendations.isNotEmpty) {
+              // Filter out songs already in the queue
+              final newSongs = recommendations.where((s) => !_queue.any((q) => q.id == s.id)).toList();
+              if (newSongs.isNotEmpty) {
+                _queue.addAll(newSongs.take(10));
+                _saveMemory();
+                notifyListeners();
+              }
+            }
+          }
           await skipToNext();
         }
       }
@@ -530,6 +555,12 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   void addToQueue(Song song) {
     _queue.add(song);
+    _saveMemory();
+    notifyListeners();
+  }
+
+  void addSongsToQueue(List<Song> songs) {
+    _queue.addAll(songs);
     _saveMemory();
     notifyListeners();
   }

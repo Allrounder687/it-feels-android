@@ -6,6 +6,8 @@ import '../core/ai/providers/chatgpt_provider.dart';
 import '../core/ai/providers/claude_provider.dart';
 import '../services/ai_service.dart';
 import '../services/storage_service.dart';
+import '../data/models/song_model.dart';
+import '../data/services/music_api_service.dart';
 
 /// Manages AI feature state for the app.
 /// Wires AIService into the Flutter provider tree.
@@ -32,6 +34,8 @@ class AISettingsProvider extends ChangeNotifier {
   String get geminiKey => _geminiKey;
   String get openaiKey => _openaiKey;
   String get anthropicKey => _anthropicKey;
+
+  bool get isConfigured => _geminiKey.isNotEmpty || _openaiKey.isNotEmpty || _anthropicKey.isNotEmpty;
 
   List<Map<String, String>> get providerOptions => [
         {'id': 'auto', 'name': 'Auto'},
@@ -104,11 +108,60 @@ class AISettingsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await AIService.instance.generatePlaylistFromRequest(
+      AIResponse result = await AIService.instance.generatePlaylistFromRequest(
         userRequest: request,
-        localLibrary: library.cast(),
+        localLibrary: library.cast<Song>(),
       );
-      if (!result.success) {
+
+      // If library is empty or less than 10 songs were found, fall back to global search to fill the gap
+      if (!result.success || result.resultSongs == null || result.resultSongs!.length < 10) {
+        final existingSongs = result.success && result.resultSongs != null ? List<Song>.from(result.resultSongs!) : <Song>[];
+        
+        // Add a delay to prevent Gemini 429 Rate Limit error for back-to-back requests
+        await Future.delayed(const Duration(milliseconds: 2000));
+        
+        final globalResult = await AIService.instance.generateGlobalPlaylistNames(
+          userRequest: request,
+        );
+        
+        if (globalResult.success && globalResult.resultNames != null) {
+          final musicService = MusicApiService();
+          final resolvedSongs = <Song>[];
+          
+          // Run sequentially instead of concurrently to prevent JioSaavn rate limits
+          // and SocketException host lookup failures on Android devices.
+          for (final name in globalResult.resultNames!) {
+            try {
+              final searchRes = await musicService.searchSongs(name, count: 1);
+              if (searchRes.isNotEmpty) {
+                final s = searchRes.first;
+                final isDup = existingSongs.any((e) => e.id == s.id || (e.title == s.title && e.artist == s.artist)) ||
+                              resolvedSongs.any((r) => r.id == s.id || (r.title == s.title && r.artist == s.artist));
+                if (!isDup) {
+                  resolvedSongs.add(s);
+                }
+              }
+              // Prevent JioSaavn rate limit 429s
+              await Future.delayed(const Duration(milliseconds: 400));
+            } catch (_) {}
+          }
+          
+          existingSongs.addAll(resolvedSongs);
+          
+          if (existingSongs.isNotEmpty) {
+            result = AIResponse.songs(providerId: globalResult.providerId, songs: existingSongs);
+          } else {
+             _lastError = 'Failed to find matching global songs on JioSaavn.';
+          }
+        } else if (!globalResult.success && existingSongs.isEmpty) {
+           _lastError = globalResult.error;
+        } else if (existingSongs.isNotEmpty) {
+           // We have some local songs, but global failed. Just use local.
+           result = AIResponse.songs(providerId: result.providerId, songs: existingSongs);
+        }
+      }
+
+      if (!result.success && _lastError == null) {
         _lastError = result.error;
       }
       return result;

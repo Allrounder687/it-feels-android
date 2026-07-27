@@ -14,6 +14,13 @@ abstract class AIProvider {
     Duration? maxResponseTime,
   });
 
+  /// Generates a list of 10 global song titles + artists based on a user request
+  /// when the local library is empty or lacks matches.
+  Future<List<String>> generateGlobalPlaylistNames({
+    required String userRequest,
+    Duration? maxResponseTime,
+  });
+
   Future<List<Song>> reorderQueueByMood({
     required List<Song> queue,
     required String moodDescription,
@@ -45,6 +52,7 @@ class AIResponse {
   final String? error;
   final List<Song>? resultSongs;
   final String? resultText;
+  final List<String>? resultNames;
 
   const AIResponse._({
     required this.providerId,
@@ -53,6 +61,7 @@ class AIResponse {
     this.error,
     this.resultSongs,
     this.resultText,
+    this.resultNames,
   });
 
   factory AIResponse.songs({
@@ -75,6 +84,17 @@ class AIResponse {
         timestamp: DateTime.now(),
         success: true,
         resultText: text,
+      );
+
+  factory AIResponse.names({
+    required String providerId,
+    required List<String> names,
+  }) =>
+      AIResponse._(
+        providerId: providerId,
+        timestamp: DateTime.now(),
+        success: true,
+        resultNames: names,
       );
 
   factory AIResponse.failure({

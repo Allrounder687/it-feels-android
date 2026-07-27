@@ -2,6 +2,27 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
+## [2.3.3] - 2026-07-27
+
+### Added
+- **Ask Feels**: Rebranded the AI system to "Ask Feels" with a more welcoming greeting ("What are you feeling like?").
+- **Dual App Installations**: Configured debug builds to use a unique application ID (`.debug`) and app name, allowing release and debug builds to exist simultaneously on the same device.
+
+### Fixed
+- **Dynamic Edge-to-Edge Padding**: Removed hardcoded safe areas in favor of `MediaQuery.viewPadding.bottom`, allowing the UI to perfectly adapt to varying system gesture bars and navigation buttons on all Android devices.
+- **ListTile Rendering Crash**: Replaced intermediate `DecoratedBox` implementations with `Material` wrappers in settings screens to fix severe layout exceptions and crashes when interacting with settings toggles.
+
+---
+
+## [2.3.2] - 2026-07-27
+
+### Fixed
+- **AI Initialization Bug**: Fixed an edge case in `AIService` where the early exit `_isInitialized` check prevented dynamic swapping of AI providers when API keys were entered post-startup, trapping the app in Mock mode.
+- **Auto AI Selection**: Rewrote "Auto" provider logic to intelligently skip `MockAIProvider` and actively lock onto the first configured real AI provider (ChatGPT, Gemini, or Claude).
+- **Edge-to-Edge System Navigation**: Wrapped the floating Bottom Navigation Bar overlay in a `SafeArea` to prevent the Android OS navigation gesture pill / 3-button layout from clipping and hiding the custom UI.
+
+---
+
 ## [2.3.1] - 2026-07-27
 
 ### Added

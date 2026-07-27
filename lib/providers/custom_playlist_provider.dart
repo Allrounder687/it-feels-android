@@ -43,6 +43,25 @@ class CustomPlaylistProvider extends ChangeNotifier {
     await _save();
   }
 
+  Future<void> createPlaylistWithSongs(String title, List<Song> songs) async {
+    final newPlaylist = CustomPlaylist(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      createdAt: DateTime.now(),
+      songs: List.from(songs),
+    );
+    _playlists.add(newPlaylist);
+    await _save();
+  }
+
+  Future<void> renamePlaylist(String id, String newTitle) async {
+    final idx = _playlists.indexWhere((p) => p.id == id);
+    if (idx != -1) {
+      _playlists[idx].title = newTitle;
+      await _save();
+    }
+  }
+
   Future<void> deletePlaylist(String id) async {
     _playlists.removeWhere((p) => p.id == id);
     await _save();

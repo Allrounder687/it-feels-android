@@ -34,7 +34,7 @@ class ClaudeProvider implements AIProvider {
         'messages': [
           {
             'role': 'user',
-            'content': 'Request: "$userRequest"\n\nLibrary:\n${json.encode(libraryMetadata)}'
+            'content': 'You are an intelligent music DJ. From the available library, output a playlist matching the user request. If unfamiliar with some tracks, take your best guess based on the title, artist, or genre. ALWAYS try to return at least 3-5 songs if possible. If the user request is generic, return a varied mix.\n\nRequest: "$userRequest"\n\nLibrary:\n${json.encode(libraryMetadata)}'
           }
         ],
         'tools': [
@@ -66,9 +66,14 @@ class ClaudeProvider implements AIProvider {
 
     final results = <Song>[];
     for (final name in playlistNames) {
-      final nameLower = name.toLowerCase();
+      final nameLower = name.toLowerCase().trim();
       final match = localLibrary.firstWhere(
-        (s) => s.title.toLowerCase() == nameLower || s.title.toLowerCase().contains(nameLower),
+        (s) {
+           final sTitle = s.title.toLowerCase().trim();
+           return sTitle == nameLower || 
+                  sTitle.contains(nameLower) || 
+                  nameLower.contains(sTitle);
+        },
         orElse: () => Song(id: '', saavnId: '', title: '', artist: '', album: '', duration: 0, coverArt: '', addedAt: DateTime.now()),
       );
       if (match.id.isNotEmpty) {
@@ -76,6 +81,51 @@ class ClaudeProvider implements AIProvider {
       }
     }
     return results;
+  }
+
+  @override
+  Future<List<String>> generateGlobalPlaylistNames({
+    required String userRequest,
+    Duration? maxResponseTime,
+  }) async {
+    final response = await _postRequest(
+      body: {
+        'model': 'claude-haiku-4-5-20251001',
+        'max_tokens': 1024,
+        'messages': [
+          {
+            'role': 'user',
+            'content': 'You are an intelligent music DJ. Given the user request, recommend exactly 10 highly relevant songs from across all global music.\n\nRequest: "$userRequest"'
+          }
+        ],
+        'tools': [
+          {
+            'name': 'return_playlist',
+            'description': 'Returns the selected playlist of songs',
+            'input_schema': {
+              'type': 'object',
+              'properties': {
+                'playlist': {
+                  'type': 'array',
+                  'items': {'type': 'string'}
+                }
+              },
+              'required': ['playlist']
+            }
+          }
+        ],
+        'tool_choice': {'type': 'tool', 'name': 'return_playlist'}
+      },
+      timeout: maxResponseTime ?? const Duration(seconds: 15),
+    );
+
+    final data = json.decode(response) as Map<String, dynamic>;
+    final content = data['content'] as List;
+    final toolUse = content.firstWhere((c) => c['type'] == 'tool_use') as Map<String, dynamic>;
+    final input = toolUse['input'] as Map<String, dynamic>;
+    final playlistNames = (input['playlist'] as List?)?.cast<String>() ?? [];
+    
+    return playlistNames.take(10).toList();
   }
 
   @override
