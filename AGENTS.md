@@ -2,7 +2,7 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
-- **Cross-Platform Build Fixes:** Removed flutter_secure_storage to eliminate Windows C++ ATL dependency, and patched Isar 64-bit integer hashes for Web (Edge/Chrome) JavaScript compatibility.
+|- **Model Updates for IT Feels AI Provider:** Upgraded ChatGPT from `gpt-4o-mini` → `gpt-5-mini-2025-08-07`, Claude from `claude-3-5-haiku-20241022` → `claude-haiku-4-5-20251001`, and Gemini from `gemini-1.5-flash` → `gemini-2.5-flash` for significantly better price/performance ratios in playlist generation features.
 - **Audiophile DSP Integration:** Implemented toggle controls for AndroidEqualizer and AndroidLoudnessEnhancer within Settings, bypassing complex manual slider UX for zero cognitive overload.
 - **Bitrate Badges:** Enhanced Now Playing screen to dynamically show LOSSLESS, HIGH-RES, or 320 KBPS badges by parsing the media stream extension.
 - **Gapless Playback Migration:** Switched from individual setUrl to ConcatenatingAudioSource for true gapless transitions.

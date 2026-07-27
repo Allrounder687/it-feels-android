@@ -2,6 +2,13 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
+## [2.3.1] - 2026-07-27
+
+### Added
+|- **AI Model Upgrades:** ChatGPT upgraded to `gpt-5-mini-2025-08-07`, Claude Haiku to `claude-haiku-4-5-20251001`, and Gemini to `gemini-2.5-flash` for lower-cost, higher-performance playlist generation (see `lib/core/ai/providers/`).
+
+---
+
 ## [2.3.0] - 2026-07-26
 
 ### Added

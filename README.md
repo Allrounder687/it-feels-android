@@ -15,7 +15,7 @@ A premium, modern Flutter Android music application built with the design aesthe
 - **IT Feels Music UI Aesthetics**: High-contrast dark themes (Burgundy `#220F19` & Midnight Blue `#090D16`), organic artwork bubble collages (`HeroCollage`), display typography (`Outfit` & `Inter`), and custom squiggly progress bars (`WavySeekBar`).
 - **Zero Cognitive Overload UX**: Graceful empty states, smooth animated transitions on all player controls, and broadened hit areas for an effortless navigation experience.
 - **Spotify-like Search Engine**: Typo-tolerant, instantaneous Full-Text Search using a native Isar database and normalized `searchVector` logic.
-- **Smart Filters Foundation**: Dynamic playlists like "On Repeat" and "Forgotten Favorites" powered by rich local behavioral tracking (`playCount`, `lastPlayedAt`).
+|- **Multi-Provider Smart Playlist Engine:** Leverages three production-ready LLM backends (ChatGPT `gpt-5-mini`, Claude Haiku 4.5, Gemini 2.5 Flash) for playlist generation with fallback auto-selection based on provider availability and cost efficiency.
 - **Curated Moods & Charts**: Dedicated dynamic tabs for curated mood playlists (with English/Hindi toggle) and top global streaming charts.
 - **Hidden Songs Manager**: Full control over your feed with the ability to hide unwanted songs and manage them via a dedicated privacy setting.
 - **Fully Populated Library Tabs**: Real dynamic data for `SONGS`, `FAVORITES`, `DOWNLOADS`, `ALBUMS`, `ARTIST`, and `PLAYLISTS`.
