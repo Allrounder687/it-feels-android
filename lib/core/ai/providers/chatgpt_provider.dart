@@ -29,7 +29,7 @@ class ChatGPTProvider implements AIProvider {
 
     final response = await _postRequest(
       body: {
-        'model': 'gpt-4o-mini',
+        'model': 'gpt-5-mini-2025-08-07',
         'messages': [
           {
             'role': 'system',
@@ -89,7 +89,7 @@ class ChatGPTProvider implements AIProvider {
     final queueMetadata = queue.map((s) => s.title).toList();
     final response = await _postRequest(
       body: {
-        'model': 'gpt-4o-mini',
+        'model': 'gpt-5-mini-2025-08-07',
         'messages': [
           {
             'role': 'system',
@@ -148,7 +148,7 @@ class ChatGPTProvider implements AIProvider {
     final songDetails = songs.map((s) => '${s.title} - ${s.artist}').toList();
     final response = await _postRequest(
       body: {
-        'model': 'gpt-4o-mini',
+        'model': 'gpt-5-mini-2025-08-07',
         'messages': [
           {
             'role': 'system',
@@ -189,7 +189,7 @@ class ChatGPTProvider implements AIProvider {
     final songDetails = songs.map((s) => '${s.title} - ${s.artist} - ${s.genre}').toList();
     final response = await _postRequest(
       body: {
-        'model': 'gpt-4o-mini',
+        'model': 'gpt-5-mini-2025-08-07',
         'messages': [
           {
             'role': 'system',
@@ -233,7 +233,7 @@ class ChatGPTProvider implements AIProvider {
     final libraryDetails = library.map((s) => '${s.title} - ${s.artist}').toList();
     final response = await _postRequest(
       body: {
-        'model': 'gpt-4o-mini',
+        'model': 'gpt-5-mini-2025-08-07',
         'messages': [
           {
             'role': 'system',
@@ -295,7 +295,7 @@ class ChatGPTProvider implements AIProvider {
           'Content-Type': 'application/json',
         },
         body: json.encode({
-          'model': 'gpt-4o-mini',
+          'model': 'gpt-5-mini-2025-08-07',
           'messages': [
             {'role': 'user', 'content': 'ping'}
           ],

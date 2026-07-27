@@ -29,7 +29,7 @@ class ClaudeProvider implements AIProvider {
 
     final response = await _postRequest(
       body: {
-        'model': 'claude-3-5-haiku-20241022',
+        'model': 'claude-haiku-4-5-20251001',
         'max_tokens': 1024,
         'messages': [
           {
@@ -86,7 +86,7 @@ class ClaudeProvider implements AIProvider {
     final queueMetadata = queue.map((s) => s.title).toList();
     final response = await _postRequest(
       body: {
-        'model': 'claude-3-5-haiku-20241022',
+        'model': 'claude-haiku-4-5-20251001',
         'max_tokens': 1024,
         'messages': [
           {
@@ -142,7 +142,7 @@ class ClaudeProvider implements AIProvider {
     final songDetails = songs.map((s) => '${s.title} - ${s.artist}').toList();
     final response = await _postRequest(
       body: {
-        'model': 'claude-3-5-haiku-20241022',
+        'model': 'claude-haiku-4-5-20251001',
         'max_tokens': 1024,
         'messages': [
           {
@@ -180,7 +180,7 @@ class ClaudeProvider implements AIProvider {
     final songDetails = songs.map((s) => '${s.title} - ${s.artist} - ${s.genre}').toList();
     final response = await _postRequest(
       body: {
-        'model': 'claude-3-5-haiku-20241022',
+        'model': 'claude-haiku-4-5-20251001',
         'max_tokens': 1024,
         'messages': [
           {
@@ -221,7 +221,7 @@ class ClaudeProvider implements AIProvider {
     final libraryDetails = library.map((s) => '${s.title} - ${s.artist}').toList();
     final response = await _postRequest(
       body: {
-        'model': 'claude-3-5-haiku-20241022',
+        'model': 'claude-haiku-4-5-20251001',
         'max_tokens': 1024,
         'messages': [
           {
@@ -281,7 +281,7 @@ class ClaudeProvider implements AIProvider {
           'Content-Type': 'application/json',
         },
         body: json.encode({
-          'model': 'claude-3-5-haiku-20241022',
+          'model': 'claude-haiku-4-5-20251001',
           'max_tokens': 5,
           'messages': [
             {'role': 'user', 'content': 'ping'}
