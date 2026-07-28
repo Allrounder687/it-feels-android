@@ -2,6 +2,12 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
+## [2.3.4] - 2026-07-29
+
+### Added
+- **iOS CI/CD Workflow**: Added GitHub Actions workflow to build unsigned `.ipa` for iOS following the Unsigned Build Guide, injecting code signing overrides, and generating a pseudo-signed executable via `ldid`.
+- **iOS Capabilities**: Updated `ios/Runner/Info.plist` with `UIBackgroundModes` (audio) and `UIFileSharingEnabled` for proper sandboxing constraints.
+
 ## [2.3.3] - 2026-07-27
 
 ### Added
