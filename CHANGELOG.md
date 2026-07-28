@@ -2,6 +2,11 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
+## [2.3.5] - 2026-07-30
+
+### Fixed
+- **iOS Hotfixes:** Fixed audio playback (ATS and local file path resolution for just_audio), resolved app name configuration ("Pixel Play" -> "IT Feels"), and generated correct iOS app launcher icons.
+
 ## [2.3.4] - 2026-07-29
 
 ### Added

@@ -90,7 +90,12 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         artUri: song.coverArt.isNotEmpty ? (song.coverArt.startsWith('http') ? Uri.parse(song.coverArt) : Uri.file(song.coverArt)) : null,
       ));
 
-      await _player.setUrl(streamUrl);
+      if (streamUrl.startsWith('/') || streamUrl.startsWith('file://')) {
+        final path = streamUrl.startsWith('file://') ? streamUrl.replaceFirst('file://', '') : streamUrl;
+        await _player.setFilePath(path);
+      } else {
+        await _player.setUrl(streamUrl);
+      }
       await _player.play();
     } catch (e) {
       debugPrint('[AudioPlayerHandler] Error setting stream URL: $e');
