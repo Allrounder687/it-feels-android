@@ -138,3 +138,8 @@ When building unsigned release IPAs, the Xcode linker aggressively strips symbol
 - **Mitigation 1:** Inject `DEAD_CODE_STRIPPING = 'NO'` and `STRIP_INSTALLED_PRODUCT = 'NO'` into the Podfile (as shown in Step 1).
 - **Mitigation 2:** If the linker error persists, the C/Rust static library (`.a`) is likely completely incompatible with `CODE_SIGNING_ALLOWED=NO`. In this scenario, you **MUST** conditionally disable, comment out, or remove the problematic FFI plugin entirely on iOS to salvage the build.
 - **Deployment Target Mismatch**: Plugins like `home_widget` may require a higher deployment target than the default. ALWAYS bump the `IPHONEOS_DEPLOYMENT_TARGET` in `ios/Runner.xcodeproj/project.pbxproj` to `14.0` or higher if pod compilation fails due to minimum OS version mismatches.
+
+## 8. App UI Configuration (Name & Icon)
+When porting an Android app to iOS, the iOS specific metadata is often neglected and must be updated explicitly.
+- **App Name**: The iOS app name is controlled by `CFBundleDisplayName` and `CFBundleName` in `ios/Runner/Info.plist`. You **MUST** update these fields to match the app's branding, otherwise it will default to the generic Xcode project name (e.g., `Runner` or `pixel_player_saavn`).
+- **App Icon**: You **MUST** ensure `ios: true` is set under the `flutter_launcher_icons` block in `pubspec.yaml`, and manually run `dart run flutter_launcher_icons` to generate the `AppIcon.appiconset` for iOS. Otherwise, the app will deploy with the default Flutter logo.
