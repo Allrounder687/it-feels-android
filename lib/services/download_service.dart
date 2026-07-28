@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:audiotags/audiotags.dart';
+
 import '../data/models/song_model.dart';
 import '../data/services/music_api_service.dart';
 import 'storage_service.dart';
@@ -82,6 +82,8 @@ class DownloadService {
       }
 
       // Write ID3 tags
+      // Removed audiotags due to iOS arm64 FFI linker issues
+      /*
       try {
         final tag = Tag(
           title: song.title,
@@ -99,6 +101,7 @@ class DownloadService {
       } catch (e) {
         debugPrint('[DownloadService] ID3 Tag error: $e');
       }
+      */
 
       // Create downloaded song entry
       final downloadedSong = Song(
