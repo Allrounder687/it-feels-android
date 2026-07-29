@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/audio_player_provider.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class SleepTimerSheet extends StatelessWidget {
   const SleepTimerSheet({Key? key}) : super(key: key);
@@ -26,7 +27,7 @@ class SleepTimerSheet extends StatelessWidget {
               const Text(
                 'Sleep Timer',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: context.themeTextColor,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Outfit',
@@ -78,11 +79,11 @@ class SleepTimerSheet extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             title: const Text(
               'End of Track',
-              style: TextStyle(color: Colors.white, fontSize: 18),
+              style: TextStyle(color: context.themeTextColor, fontSize: 18),
             ),
             trailing: audioProvider.sleepAfterCurrentTrack 
                 ? Icon(Icons.check_circle, color: audioProvider.themeAccentColor)
-                : const Icon(Icons.circle_outlined, color: Colors.white54),
+                : Icon(Icons.circle_outlined, color: context.themeMutedTextColor),
             onTap: () {
               audioProvider.setSleepAfterCurrentTrack();
               Navigator.pop(context);
@@ -99,7 +100,7 @@ class SleepTimerSheet extends StatelessWidget {
       contentPadding: EdgeInsets.zero,
       title: Text(
         title,
-        style: const TextStyle(color: Colors.white, fontSize: 18),
+        style: TextStyle(color: context.themeTextColor, fontSize: 18),
       ),
       onTap: () {
         provider.startSleepTimer(duration);

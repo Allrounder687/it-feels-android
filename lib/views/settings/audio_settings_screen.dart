@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class AudioSettingsScreen extends StatefulWidget {
   const AudioSettingsScreen({super.key});
@@ -22,12 +23,12 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
     final isAndroid = Platform.isAndroid;
 
     return Scaffold(
-      backgroundColor: AppColors.midnightBackground,
+      backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: context.themeTextColor),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -35,7 +36,7 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
           style: GoogleFonts.outfit(
             fontSize: 22,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: context.themeTextColor,
           ),
         ),
       ),
@@ -59,7 +60,7 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
                   Expanded(
                     child: Text(
                       "Equalizer and Bass Boost are only supported on Android hardware.",
-                      style: GoogleFonts.inter(color: Colors.white, fontSize: 13),
+                      style: GoogleFonts.inter(color: context.themeTextColor, fontSize: 13),
                     ),
                   ),
                 ],
@@ -70,7 +71,7 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
           const SizedBox(height: 8),
           Text(
             "Slow down for vibes, or pitch shift for karaoke.",
-            style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
+            style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13),
           ),
           const SizedBox(height: 16),
           Row(
@@ -79,7 +80,7 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Speed: ${audioProvider.playbackSpeed.toStringAsFixed(2)}x", style: GoogleFonts.inter(color: Colors.white)),
+                    Text("Speed: ${audioProvider.playbackSpeed.toStringAsFixed(2)}x", style: GoogleFonts.inter(color: context.themeTextColor)),
                     SliderTheme(
                       data: _sliderTheme(),
                       child: Slider(
@@ -97,7 +98,7 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("Pitch: ${audioProvider.playbackPitch.toStringAsFixed(2)}x", style: GoogleFonts.inter(color: Colors.white)),
+                    Text("Pitch: ${audioProvider.playbackPitch.toStringAsFixed(2)}x", style: GoogleFonts.inter(color: context.themeTextColor)),
                     SliderTheme(
                       data: _sliderTheme(),
                       child: Slider(
@@ -118,7 +119,7 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.midnightCard),
+                style: ElevatedButton.styleFrom(backgroundColor: context.themeCardColor),
                 onPressed: () {
                   audioProvider.setPlaybackSpeed(1.0);
                   audioProvider.setPlaybackPitch(1.0);
@@ -133,16 +134,16 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
           const SizedBox(height: 8),
           Text(
             "Our custom-tuned Digital Signal Processor. Enables a premium, punchy EQ and hardware loudness boost for an audiophile experience.",
-            style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
+            style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13),
           ),
           const SizedBox(height: 16),
           if (isAndroid)
             SwitchListTile(
-              title: Text("Enable DSP Engine", style: GoogleFonts.inter(color: Colors.white)),
+              title: Text("Enable DSP Engine", style: GoogleFonts.inter(color: context.themeTextColor)),
               value: audioProvider.isDspEngineEnabled,
               onChanged: (val) => audioProvider.setDspEngine(val),
-              activeColor: AppColors.midnightPrimary,
-              tileColor: Colors.white.withOpacity(0.05),
+              activeColor: context.themeAccentColor,
+              tileColor: context.themeTextColor.withOpacity(0.05),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           const SizedBox(height: 32),
@@ -151,26 +152,26 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
           const SizedBox(height: 8),
           Text(
             "Premium physical responses to your interactions.",
-            style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
+            style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13),
           ),
           const SizedBox(height: 16),
           SwitchListTile(
-            title: Text("UI Haptics", style: GoogleFonts.inter(color: Colors.white)),
-            subtitle: Text("Subtle vibrations on Play/Pause, Skip, etc.", style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+            title: Text("UI Haptics", style: GoogleFonts.inter(color: context.themeTextColor)),
+            subtitle: Text("Subtle vibrations on Play/Pause, Skip, etc.", style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
             value: audioProvider.uiHapticsEnabled,
             onChanged: (val) => audioProvider.setUiHaptics(val),
-            activeColor: AppColors.midnightPrimary,
-            tileColor: Colors.white.withOpacity(0.05),
+            activeColor: context.themeAccentColor,
+            tileColor: context.themeTextColor.withOpacity(0.05),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           const SizedBox(height: 8),
           SwitchListTile(
-            title: Text("Audio-Sync Haptics (Experimental)", style: GoogleFonts.inter(color: Colors.white)),
+            title: Text("Audio-Sync Haptics (Experimental)", style: GoogleFonts.inter(color: context.themeTextColor)),
             subtitle: Text("Simulates beat drops. Warning: May cause battery drain.", style: GoogleFonts.inter(color: Colors.orangeAccent, fontSize: 12)),
             value: audioProvider.audioSyncHapticsEnabled,
             onChanged: (val) => audioProvider.setAudioSyncHaptics(val),
-            activeColor: AppColors.midnightPrimary,
-            tileColor: Colors.white.withOpacity(0.05),
+            activeColor: context.themeAccentColor,
+            tileColor: context.themeTextColor.withOpacity(0.05),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           const SizedBox(height: 32),
@@ -178,12 +179,12 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
           const SizedBox(height: 8),
           Text(
             "Smoothly fade one song into the next for gapless playback.",
-            style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
+            style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Text("0s", style: GoogleFonts.inter(color: Colors.white70, fontWeight: FontWeight.w600)),
+              Text("0s", style: GoogleFonts.inter(color: context.themeMutedTextColor, fontWeight: FontWeight.w600)),
               Expanded(
                 child: SliderTheme(
                   data: _sliderTheme(),
@@ -201,7 +202,7 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
                   ),
                 ),
               ),
-              Text("12s", style: GoogleFonts.inter(color: Colors.white70, fontWeight: FontWeight.w600)),
+              Text("12s", style: GoogleFonts.inter(color: context.themeMutedTextColor, fontWeight: FontWeight.w600)),
             ],
           ),
         ],
@@ -212,8 +213,8 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
   SliderThemeData _sliderTheme() {
     return SliderThemeData(
       activeTrackColor: AppColors.midnightAccent,
-      inactiveTrackColor: Colors.white10,
-      thumbColor: AppColors.midnightPrimary,
+      inactiveTrackColor: context.themeTextColor10,
+      thumbColor: context.themeAccentColor,
       overlayColor: AppColors.midnightAccent.withOpacity(0.2),
       trackHeight: 4.0,
     );
@@ -223,7 +224,7 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
     return Text(
       title,
       style: GoogleFonts.outfit(
-        color: AppColors.midnightPrimary,
+        color: context.themeAccentColor,
         fontSize: 18,
         fontWeight: FontWeight.w700,
       ),

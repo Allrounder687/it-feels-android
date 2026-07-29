@@ -12,6 +12,7 @@ import '../widgets/song_options_sheet.dart';
 import '../widgets/animated_equalizer.dart';
 import '../widgets/mini_player.dart';
 import '../player/now_playing_screen.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class PlaylistDetailScreen extends StatefulWidget {
   final Playlist playlist;
@@ -62,7 +63,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     final downloadProvider = Provider.of<DownloadProvider>(context);
 
     return Scaffold(
-      backgroundColor: AppColors.midnightBackground,
+      backgroundColor: context.themeBackgroundColor,
       bottomNavigationBar: MiniPlayer(
         onTap: () {
           Navigator.push(
@@ -106,7 +107,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 color: AppColors.midnightPill,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                              child: Icon(Icons.arrow_back, color: context.themeTextColor, size: 20),
                             ),
                             onPressed: () => Navigator.pop(context),
                           ),
@@ -118,7 +119,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                               style: GoogleFonts.outfit(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: context.themeTextColor,
                               ),
                             ),
                           ),
@@ -142,7 +143,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                               borderRadius: BorderRadius.circular(28),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.4),
+                                  color: context.themeInvertedTextColor.withValues(alpha: 0.4),
                                   blurRadius: 24,
                                   offset: const Offset(0, 10),
                                 ),
@@ -155,7 +156,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                       imageUrl: _coverArt,
                                       fit: BoxFit.cover,
                                     )
-                                  : Container(color: AppColors.midnightCard),
+                                  : Container(color: context.themeCardColor),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -166,14 +167,14 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                             style: GoogleFonts.outfit(
                               fontSize: 24,
                               fontWeight: FontWeight.w800,
-                              color: Colors.white,
+                              color: context.themeTextColor,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             "${_songs.length} Tracks",
                             style: GoogleFonts.inter(
-                              color: AppColors.midnightTextMuted,
+                              color: context.themeMutedTextColor,
                               fontSize: 14,
                             ),
                           ),
@@ -187,8 +188,8 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                             children: [
                               ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.midnightPrimary,
-                                  foregroundColor: Colors.black,
+                                  backgroundColor: context.themeAccentColor,
+                                  foregroundColor: context.themeInvertedTextColor,
                                   elevation: 0,
                                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                   shape: RoundedRectangleBorder(
@@ -209,7 +210,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                               ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.midnightPill,
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: context.themeTextColor,
                                   elevation: 0,
                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                                   shape: RoundedRectangleBorder(
@@ -233,7 +234,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                   backgroundColor: AppColors.midnightPill,
                                   padding: const EdgeInsets.all(12),
                                 ),
-                                icon: const Icon(Icons.file_download_outlined, color: Colors.white),
+                                icon: Icon(Icons.file_download_outlined, color: context.themeTextColor),
                                 tooltip: "Download All",
                                 onPressed: () async {
                                   if (_songs.isEmpty) return;
@@ -269,7 +270,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                             return Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                           child: Material(
-                            color: AppColors.midnightCard.withValues(alpha: 0.5),
+                            color: context.themeCardColor.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(16),
                             clipBehavior: Clip.antiAlias,
                             child: ListTile(
@@ -283,7 +284,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                           imageUrl: song.coverArt,
                                           fit: BoxFit.cover,
                                         )
-                                      : const Icon(Icons.music_note, color: Colors.white),
+                                      : Icon(Icons.music_note, color: context.themeTextColor),
                                 ),
                               ),
                               title: Row(
@@ -294,7 +295,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.inter(
-                                        color: isCurrentSong ? AppColors.midnightPrimary : Colors.white,
+                                        color: isCurrentSong ? context.themeAccentColor : context.themeTextColor,
                                         fontWeight: isCurrentSong ? FontWeight.w800 : FontWeight.w600,
                                         fontSize: 14,
                                       ),
@@ -302,7 +303,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                   ),
                                   if (isDown) ...[
                                     const SizedBox(width: 4),
-                                    const Icon(Icons.download_done_rounded, color: AppColors.midnightPrimary, size: 16),
+                                    Icon(Icons.download_done_rounded, color: context.themeAccentColor, size: 16),
                                   ],
                                 ],
                               ),
@@ -311,17 +312,17 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  color: AppColors.midnightTextMuted,
+                                  color: context.themeMutedTextColor,
                                   fontSize: 12,
                                 ),
                               ),
                               trailing: isCurrentSong && playerProvider.isPlaying
                                   ? const Padding(
                                       padding: EdgeInsets.only(right: 12.0),
-                                      child: AnimatedEqualizer(color: AppColors.midnightPrimary),
+                                      child: AnimatedEqualizer(color: context.themeAccentColor),
                                     )
                                   : IconButton(
-                                      icon: const Icon(Icons.more_vert, color: Colors.white54),
+                                      icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
                                       onPressed: () {
                                         SongOptionsSheet.show(context, song, playlistContext: _songs);
                                       },

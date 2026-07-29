@@ -9,6 +9,7 @@ import '../widgets/custom_image_widget.dart';
 import '../widgets/song_options_sheet.dart';
 import '../widgets/mini_player.dart';
 import '../player/now_playing_screen.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class CustomPlaylistDetailScreen extends StatelessWidget {
   final CustomPlaylist playlist;
@@ -27,7 +28,7 @@ class CustomPlaylistDetailScreen extends StatelessWidget {
         final songs = currentPlaylist.songs;
 
         return Scaffold(
-          backgroundColor: AppColors.midnightBackground,
+          backgroundColor: context.themeBackgroundColor,
           bottomNavigationBar: MiniPlayer(
             onTap: () {
               Navigator.push(
@@ -53,25 +54,25 @@ class CustomPlaylistDetailScreen extends StatelessWidget {
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
-            iconTheme: const IconThemeData(color: Colors.white),
+            iconTheme: IconThemeData(color: context.themeTextColor),
             actions: [
               IconButton(
-                icon: const Icon(Icons.edit_outlined, color: Colors.white),
+                icon: Icon(Icons.edit_outlined, color: context.themeTextColor),
                 onPressed: () async {
                   final controller = TextEditingController(text: currentPlaylist.title);
                   final newName = await showDialog<String>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      backgroundColor: AppColors.midnightSurface,
-                      title: Text("Rename Playlist", style: GoogleFonts.outfit(color: Colors.white)),
+                      backgroundColor: context.themeSurfaceColor,
+                      title: Text("Rename Playlist", style: GoogleFonts.outfit(color: context.themeTextColor)),
                       content: TextField(
                         controller: controller,
                         autofocus: true,
-                        style: GoogleFonts.inter(color: Colors.white),
+                        style: GoogleFonts.inter(color: context.themeTextColor),
                         decoration: InputDecoration(
                           hintText: "Enter new name",
-                          hintStyle: GoogleFonts.inter(color: Colors.white54),
-                          enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+                          hintStyle: GoogleFonts.inter(color: context.themeMutedTextColor),
+                          enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.themeTextColor24)),
                           focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.midnightAccent)),
                         ),
                       ),
@@ -99,9 +100,9 @@ class CustomPlaylistDetailScreen extends StatelessWidget {
                   final confirm = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      backgroundColor: AppColors.midnightSurface,
-                      title: Text("Delete Playlist", style: GoogleFonts.outfit(color: Colors.white)),
-                      content: Text("Are you sure you want to delete '${currentPlaylist.title}'?", style: GoogleFonts.inter(color: Colors.white70)),
+                      backgroundColor: context.themeSurfaceColor,
+                      title: Text("Delete Playlist", style: GoogleFonts.outfit(color: context.themeTextColor)),
+                      content: Text("Are you sure you want to delete '${currentPlaylist.title}'?", style: GoogleFonts.inter(color: context.themeMutedTextColor)),
                       actions: [
                         TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
                         TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Delete", style: TextStyle(color: Colors.redAccent))),
@@ -128,10 +129,10 @@ class CustomPlaylistDetailScreen extends StatelessWidget {
                       width: 200,
                       height: 200,
                       decoration: BoxDecoration(
-                        color: AppColors.midnightCard,
+                        color: context.themeCardColor,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 10)),
+                          BoxShadow(color: context.themeInvertedTextColor.withValues(alpha: 0.3), blurRadius: 20, offset: Offset(0, 10)),
                         ],
                       ),
                       child: songs.isNotEmpty && songs.first.coverArt.isNotEmpty
@@ -139,25 +140,25 @@ class CustomPlaylistDetailScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(20),
                               child: CustomImageWidget(imageUrl: songs.first.coverArt, fit: BoxFit.cover),
                             )
-                          : const Icon(Icons.queue_music, size: 80, color: Colors.white24),
+                          : Icon(Icons.queue_music, size: 80, color: context.themeTextColor24),
                     ),
                     const SizedBox(height: 20),
                     Text(
                       currentPlaylist.title,
-                      style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white),
+                      style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.w800, color: context.themeTextColor),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       "${songs.length} tracks",
-                      style: GoogleFonts.inter(fontSize: 14, color: AppColors.midnightTextMuted),
+                      style: GoogleFonts.inter(fontSize: 14, color: context.themeMutedTextColor),
                     ),
                     const SizedBox(height: 20),
                     if (songs.isNotEmpty)
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.midnightAccent,
-                          foregroundColor: Colors.black,
+                          foregroundColor: context.themeInvertedTextColor,
                           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                         ),
@@ -176,7 +177,7 @@ class CustomPlaylistDetailScreen extends StatelessWidget {
                     ? Center(
                         child: Text("No songs added yet.\nAdd songs from the player or search.", 
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.inter(color: AppColors.midnightTextMuted),
+                          style: GoogleFonts.inter(color: context.themeMutedTextColor),
                         ),
                       )
                     : ListView.builder(
@@ -187,7 +188,7 @@ class CustomPlaylistDetailScreen extends StatelessWidget {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: Material(
-                              color: AppColors.midnightCard.withValues(alpha: 0.5),
+                              color: context.themeCardColor.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(16),
                               child: ListTile(
                                 leading: ClipRRect(
@@ -197,22 +198,22 @@ class CustomPlaylistDetailScreen extends StatelessWidget {
                                     height: 48,
                                     child: song.coverArt.isNotEmpty
                                         ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover)
-                                        : const Icon(Icons.music_note, color: Colors.white),
+                                        : Icon(Icons.music_note, color: context.themeTextColor),
                                   ),
                                 ),
-                                title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-                                subtitle: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12)),
+                                title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 14)),
+                                subtitle: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.remove_circle_outline, color: Colors.white38),
+                                      icon: Icon(Icons.remove_circle_outline, color: context.themeMutedTextColor),
                                       onPressed: () {
                                         playlistProvider.removeSongFromPlaylist(currentPlaylist.id, song.id);
                                       },
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.more_vert, color: Colors.white54),
+                                      icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
                                       onPressed: () {
                                         SongOptionsSheet.show(context, song, playlistContext: songs);
                                       },

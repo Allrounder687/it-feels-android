@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/hidden_songs_provider.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class HiddenSongsScreen extends StatelessWidget {
   const HiddenSongsScreen({super.key});
@@ -10,18 +11,18 @@ class HiddenSongsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.midnightBackground,
+      backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.midnightBackground,
+        backgroundColor: context.themeBackgroundColor,
         elevation: 0,
         title: Text(
           "Hidden Songs",
           style: GoogleFonts.outfit(
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: context.themeTextColor,
           ),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: context.themeTextColor),
       ),
       body: Consumer<HiddenSongsProvider>(
         builder: (context, provider, child) {
@@ -31,7 +32,7 @@ class HiddenSongsScreen extends StatelessWidget {
             return Center(
               child: Text(
                 "You haven't hidden any songs yet.",
-                style: GoogleFonts.inter(color: AppColors.midnightTextMuted),
+                style: GoogleFonts.inter(color: context.themeMutedTextColor),
               ),
             );
           }
@@ -44,26 +45,26 @@ class HiddenSongsScreen extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Material(
-                  color: AppColors.midnightCard,
+                  color: context.themeCardColor,
                   borderRadius: BorderRadius.circular(12),
                   child: ListTile(
                     title: Text(
                       song.title,
                       style: GoogleFonts.inter(
-                        color: Colors.white,
+                        color: context.themeTextColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     subtitle: Text(
                       "${song.artist} • Hidden from recommendations",
                       style: GoogleFonts.inter(
-                        color: AppColors.midnightTextMuted,
+                        color: context.themeMutedTextColor,
                         fontSize: 12,
                       ),
                     ),
                     trailing: TextButton(
                       style: TextButton.styleFrom(
-                        foregroundColor: AppColors.midnightPrimary,
+                        foregroundColor: context.themeAccentColor,
                       ),
                       onPressed: () {
                         provider.unhideSong(song.id);

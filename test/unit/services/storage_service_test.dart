@@ -39,6 +39,8 @@ void main() {
         downloadQuality: '320 kbps',
         theme: 'Light',
         customDownloadPath: '/custom/path',
+        enableAndroidAuto: false,
+        hapticsMode: 'light',
       );
 
       final settings = await StorageService.loadSettings();

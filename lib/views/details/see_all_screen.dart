@@ -9,6 +9,7 @@ import '../../providers/audio_player_provider.dart';
 import '../widgets/song_options_sheet.dart';
 import '../widgets/mini_player.dart';
 import '../player/now_playing_screen.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class SeeAllSongsScreen extends StatefulWidget {
   final String title;
@@ -47,26 +48,26 @@ class _SeeAllSongsScreenState extends State<SeeAllSongsScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.midnightBackground,
+      backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
-        backgroundColor: AppColors.midnightBackground,
+        backgroundColor: context.themeBackgroundColor,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.themeTextColor, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           widget.title,
           style: GoogleFonts.outfit(
-            color: Colors.white,
+            color: context.themeTextColor,
             fontSize: 20,
             fontWeight: FontWeight.w800,
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.midnightPrimary, size: 32),
+            icon: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 32),
             onPressed: () {
               if (filteredSongs.isNotEmpty) {
                 playerProvider.playSong(filteredSongs[0], queue: filteredSongs, index: 0);
@@ -86,7 +87,7 @@ class _SeeAllSongsScreenState extends State<SeeAllSongsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: TextField(
                 controller: _searchController,
-                style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+                style: GoogleFonts.inter(color: context.themeTextColor, fontSize: 14),
                 onChanged: (val) {
                   setState(() {
                     _filterText = val;
@@ -94,11 +95,11 @@ class _SeeAllSongsScreenState extends State<SeeAllSongsScreen> {
                 },
                 decoration: InputDecoration(
                   hintText: "Filter ${widget.title}...",
-                  hintStyle: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 14),
-                  prefixIcon: const Icon(Icons.search_rounded, color: AppColors.midnightTextMuted, size: 20),
+                  hintStyle: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 14),
+                  prefixIcon: Icon(Icons.search_rounded, color: context.themeMutedTextColor, size: 20),
                   suffixIcon: _filterText.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 18),
+                          icon: Icon(Icons.close_rounded, color: context.themeMutedTextColor, size: 18),
                           onPressed: () {
                             _searchController.clear();
                             setState(() {
@@ -108,7 +109,7 @@ class _SeeAllSongsScreenState extends State<SeeAllSongsScreen> {
                         )
                       : null,
                   filled: true,
-                  fillColor: AppColors.midnightSurface,
+                  fillColor: context.themeSurfaceColor,
                   contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -125,7 +126,7 @@ class _SeeAllSongsScreenState extends State<SeeAllSongsScreen> {
                 alignment: Alignment.centerLeft,
                 child: Text(
                   "${filteredSongs.length} Tracks",
-                  style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 13),
+                  style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13),
                 ),
               ),
             ),
@@ -137,7 +138,7 @@ class _SeeAllSongsScreenState extends State<SeeAllSongsScreen> {
                   ? Center(
                       child: Text(
                         "No songs found",
-                        style: GoogleFonts.inter(color: Colors.white60),
+                        style: GoogleFonts.inter(color: context.themeMutedTextColor),
                       ),
                     )
                   : ListView.builder(
@@ -151,8 +152,8 @@ class _SeeAllSongsScreenState extends State<SeeAllSongsScreen> {
                           padding: const EdgeInsets.only(bottom: 8),
                           child: Material(
                             color: isCurrentlyPlaying
-                                ? AppColors.midnightCard.withValues(alpha: 0.9)
-                                : AppColors.midnightCard.withValues(alpha: 0.35),
+                                ? context.themeCardColor.withValues(alpha: 0.9)
+                                : context.themeCardColor.withValues(alpha: 0.35),
                             borderRadius: BorderRadius.circular(14),
                             child: ListTile(
                               leading: ClipRRect(
@@ -162,7 +163,7 @@ class _SeeAllSongsScreenState extends State<SeeAllSongsScreen> {
                                   height: 50,
                                   child: song.coverArt.isNotEmpty
                                       ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover)
-                                      : const Icon(Icons.music_note, color: Colors.white),
+                                      : Icon(Icons.music_note, color: context.themeTextColor),
                                 ),
                               ),
                               title: Text(
@@ -170,7 +171,7 @@ class _SeeAllSongsScreenState extends State<SeeAllSongsScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  color: Colors.white,
+                                  color: context.themeTextColor,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 14,
                                 ),
@@ -180,12 +181,12 @@ class _SeeAllSongsScreenState extends State<SeeAllSongsScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  color: AppColors.midnightTextMuted,
+                                  color: context.themeMutedTextColor,
                                   fontSize: 12,
                                 ),
                               ),
                               trailing: IconButton(
-                                icon: const Icon(Icons.more_vert_rounded, color: Colors.white70),
+                                icon: Icon(Icons.more_vert_rounded, color: context.themeMutedTextColor),
                                 onPressed: () {
                                   SongOptionsSheet.show(context, song, playlistContext: filteredSongs);
                                 },

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/audio_player_provider.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class QueueBottomSheet extends StatelessWidget {
   const QueueBottomSheet({super.key});
@@ -30,7 +31,7 @@ class QueueBottomSheet extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.white24,
+                  color: context.themeTextColor24,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -46,12 +47,12 @@ class QueueBottomSheet extends StatelessWidget {
                       style: GoogleFonts.outfit(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: Colors.white,
+                        color: context.themeTextColor,
                       ),
                     ),
                     Text(
                       "${queue.length} Tracks",
-                      style: GoogleFonts.inter(color: Colors.white54, fontSize: 13),
+                      style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13),
                     ),
                   ],
                 ),
@@ -63,7 +64,7 @@ class QueueBottomSheet extends StatelessWidget {
                   children: [
                     Text(
                       "Autoplay Similar Songs",
-                      style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+                      style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 14),
                     ),
                     Switch(
                       value: playerProvider.isAutoplayEnabled,
@@ -82,7 +83,7 @@ class QueueBottomSheet extends StatelessWidget {
                     ? Center(
                         child: Text(
                           "Queue is empty",
-                          style: GoogleFonts.inter(color: Colors.white54),
+                          style: GoogleFonts.inter(color: context.themeMutedTextColor),
                         ),
                       )
                     : ReorderableListView.builder(
@@ -101,7 +102,7 @@ class QueueBottomSheet extends StatelessWidget {
                             child: Material(
                               color: isCurrent
                                   ? playerProvider.themeAccentColor.withValues(alpha: 0.15)
-                                  : Colors.white.withValues(alpha: 0.05),
+                                  : context.themeTextColor.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(16),
                               child: ListTile(
                                 leading: ClipRRect(
@@ -114,7 +115,7 @@ class QueueBottomSheet extends StatelessWidget {
                                             imageUrl: song.coverArt,
                                             fit: BoxFit.cover,
                                           )
-                                        : const Icon(Icons.music_note, color: Colors.white),
+                                        : Icon(Icons.music_note, color: context.themeTextColor),
                                   ),
                                 ),
                                 title: Text(
@@ -122,7 +123,7 @@ class QueueBottomSheet extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
-                                    color: isCurrent ? playerProvider.themeAccentColor : Colors.white,
+                                    color: isCurrent ? playerProvider.themeAccentColor : context.themeTextColor,
                                     fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
                                     fontSize: 14,
                                   ),
@@ -132,7 +133,7 @@ class QueueBottomSheet extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
-                                    color: Colors.white60,
+                                    color: context.themeMutedTextColor,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -143,7 +144,7 @@ class QueueBottomSheet extends StatelessWidget {
                                             : Icons.play_arrow_rounded,
                                         color: playerProvider.themeAccentColor,
                                       )
-                                    : const Icon(Icons.drag_handle_rounded, color: Colors.white30),
+                                    : Icon(Icons.drag_handle_rounded, color: context.themeTextColor.withOpacity(0.3)),
                                 onTap: () {
                                   playerProvider.playSong(song, queue: queue, index: index);
                                 },

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'animated_play_pause_button.dart';
 import '../../providers/audio_player_provider.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class MiniPlayer extends StatelessWidget {
   final VoidCallback onTap;
@@ -34,7 +35,7 @@ class MiniPlayer extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.45),
+                  color: context.themeInvertedTextColor.withValues(alpha: 0.45),
                   blurRadius: 18,
                   offset: const Offset(0, 6),
                 ),
@@ -52,7 +53,7 @@ class MiniPlayer extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 2.5,
-                      backgroundColor: Colors.white12,
+                      backgroundColor: context.themeTextColor12,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         playerProvider.themeAccentColor,
                       ),
@@ -81,14 +82,14 @@ class MiniPlayer extends StatelessWidget {
                                           imageUrl: currentSong.coverArt,
                                           fit: BoxFit.cover,
                                           errorWidget: (context, url, error) =>
-                                              const Icon(
+                                              Icon(
                                                 Icons.music_note,
-                                                color: Colors.white,
+                                                color: context.themeTextColor,
                                               ),
                                         )
-                                      : const Icon(
+                                      : Icon(
                                           Icons.music_note,
-                                          color: Colors.white,
+                                          color: context.themeTextColor,
                                         ),
                                 ),
                               ),
@@ -105,8 +106,8 @@ class MiniPlayer extends StatelessWidget {
                                     currentSong.title,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: context.themeTextColor,
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -117,7 +118,7 @@ class MiniPlayer extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: Colors.white.withValues(
+                                      color: context.themeTextColor.withValues(
                                         alpha: 0.7,
                                       ),
                                       fontSize: 12,
@@ -129,9 +130,9 @@ class MiniPlayer extends StatelessWidget {
 
                             // Cast Action Button
                             IconButton(
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.cast_rounded,
-                                color: Colors.white70,
+                                color: context.themeMutedTextColor,
                                 size: 20,
                               ),
                               onPressed: () {
@@ -152,14 +153,14 @@ class MiniPlayer extends StatelessWidget {
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
+                                  color: context.themeTextColor.withOpacity(0.15),
                                   shape: BoxShape.circle,
                                 ),
                                 child: AnimatedPlayPauseButton(
                                   isPlaying: playerProvider.isPlaying,
                                   onPressed: () =>
                                       playerProvider.togglePlayPause(),
-                                  color: Colors.white,
+                                  color: context.themeTextColor,
                                   size: 24,
                                 ),
                               ),

@@ -12,6 +12,7 @@ import '../details/playlist_detail_screen.dart';
 import '../../providers/hidden_songs_provider.dart';
 
 import '../widgets/song_options_sheet.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -40,7 +41,7 @@ class _SearchScreenState extends State<SearchScreen> {
         final playlists = searchProvider.playlists;
 
         return Scaffold(
-          backgroundColor: AppColors.midnightBackground,
+          backgroundColor: context.themeBackgroundColor,
           body: SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +57,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         style: GoogleFonts.outfit(
                           fontSize: 36,
                           fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: context.themeTextColor,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -69,14 +70,14 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                         child: TextField(
                           controller: _searchController,
-                          style: GoogleFonts.inter(color: Colors.white),
+                          style: GoogleFonts.inter(color: context.themeTextColor),
                           decoration: InputDecoration(
                             hintText: "Search songs, artists, albums, playlists...",
-                            hintStyle: GoogleFonts.inter(color: AppColors.midnightTextMuted),
-                            prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                            hintStyle: GoogleFonts.inter(color: context.themeMutedTextColor),
+                            prefixIcon: Icon(Icons.search, color: context.themeMutedTextColor),
                             suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.clear, color: Colors.white70),
+                                    icon: Icon(Icons.clear, color: context.themeMutedTextColor),
                                     onPressed: () {
                                       _searchController.clear();
                                       searchProvider.search('');
@@ -112,13 +113,13 @@ class _SearchScreenState extends State<SearchScreen> {
                           margin: const EdgeInsets.only(right: 8),
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.midnightPrimary : AppColors.midnightPill,
+                            color: isSelected ? context.themeAccentColor : AppColors.midnightPill,
                             borderRadius: BorderRadius.circular(19),
                           ),
                           child: Text(
                             _categories[index],
                             style: GoogleFonts.inter(
-                              color: isSelected ? Colors.black : Colors.white,
+                              color: isSelected ? context.themeInvertedTextColor : context.themeTextColor,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
@@ -141,7 +142,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           ? Center(
                               child: Text(
                                 "Search for tracks, artists, albums, or playlists",
-                                style: GoogleFonts.inter(color: AppColors.midnightTextMuted),
+                                style: GoogleFonts.inter(color: context.themeMutedTextColor),
                               ),
                             )
                           : ListView(
@@ -154,29 +155,29 @@ class _SearchScreenState extends State<SearchScreen> {
                                     style: GoogleFonts.outfit(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w700,
-                                      color: Colors.white,
+                                      color: context.themeTextColor,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
                                   ...searchProvider.artists.map((artist) => Padding(
                                     padding: const EdgeInsets.only(bottom: 6),
                                     child: Material(
-                                      color: AppColors.midnightCard.withValues(alpha: 0.5),
+                                      color: context.themeCardColor.withValues(alpha: 0.5),
                                       borderRadius: BorderRadius.circular(16),
                                       child: ListTile(
                                         leading: CircleAvatar(
-                                          backgroundColor: AppColors.midnightPrimary,
+                                          backgroundColor: context.themeAccentColor,
                                           backgroundImage: artist['image']?.toString().isNotEmpty == true 
                                               ? CachedNetworkImageProvider(artist['image']) 
                                               : null,
                                           child: artist['image']?.toString().isNotEmpty == true 
                                               ? null 
-                                              : const Icon(Icons.person, color: Colors.black),
+                                              : Icon(Icons.person, color: context.themeInvertedTextColor),
                                         ),
                                         title: Text(
                                           artist['title'] ?? _searchController.text,
                                           style: GoogleFonts.inter(
-                                            color: Colors.white,
+                                            color: context.themeTextColor,
                                             fontWeight: FontWeight.w700,
                                             fontSize: 15,
                                           ),
@@ -184,11 +185,11 @@ class _SearchScreenState extends State<SearchScreen> {
                                         subtitle: Text(
                                           "Explore full artist discography",
                                           style: GoogleFonts.inter(
-                                            color: AppColors.midnightTextMuted,
+                                            color: context.themeMutedTextColor,
                                             fontSize: 12,
                                           ),
                                         ),
-                                        trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                                        trailing: Icon(Icons.chevron_right, color: context.themeMutedTextColor),
                                         onTap: () {
                                           Navigator.push(
                                             context,
@@ -214,14 +215,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                     style: GoogleFonts.outfit(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w700,
-                                      color: Colors.white,
+                                      color: context.themeTextColor,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
                                   ...songs.map((song) => Padding(
                                         padding: const EdgeInsets.only(bottom: 6),
                                         child: Material(
-                                          color: AppColors.midnightCard.withValues(alpha: 0.5),
+                                          color: context.themeCardColor.withValues(alpha: 0.5),
                                           borderRadius: BorderRadius.circular(16),
                                           child: ListTile(
                                             leading: ClipRRect(
@@ -234,7 +235,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                                         imageUrl: song.coverArt,
                                                         fit: BoxFit.cover,
                                                       )
-                                                    : const Icon(Icons.music_note, color: Colors.white),
+                                                    : Icon(Icons.music_note, color: context.themeTextColor),
                                               ),
                                             ),
                                             title: Text(
@@ -242,7 +243,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               style: GoogleFonts.inter(
-                                                color: Colors.white,
+                                                color: context.themeTextColor,
                                                 fontWeight: FontWeight.w600,
                                                 fontSize: 14,
                                               ),
@@ -252,12 +253,12 @@ class _SearchScreenState extends State<SearchScreen> {
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               style: GoogleFonts.inter(
-                                                color: AppColors.midnightTextMuted,
+                                                color: context.themeMutedTextColor,
                                                 fontSize: 12,
                                               ),
                                             ),
                                             trailing: IconButton(
-                                              icon: const Icon(Icons.more_vert, color: Colors.white54),
+                                              icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
                                               onPressed: () {
                                                 SongOptionsSheet.show(context, song, playlistContext: songs);
                                               },
@@ -281,14 +282,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                     style: GoogleFonts.outfit(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w700,
-                                      color: Colors.white,
+                                      color: context.themeTextColor,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
                                   ...albums.map((album) => Padding(
                                         padding: const EdgeInsets.only(bottom: 6),
                                         child: Material(
-                                          color: AppColors.midnightCard.withValues(alpha: 0.5),
+                                          color: context.themeCardColor.withValues(alpha: 0.5),
                                           borderRadius: BorderRadius.circular(16),
                                           child: ListTile(
                                             leading: ClipRRect(
@@ -301,7 +302,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                                         imageUrl: album.coverArt,
                                                         fit: BoxFit.cover,
                                                       )
-                                                    : const Icon(Icons.album, color: Colors.white),
+                                                    : Icon(Icons.album, color: context.themeTextColor),
                                               ),
                                             ),
                                             title: Text(
@@ -309,7 +310,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               style: GoogleFonts.inter(
-                                                color: Colors.white,
+                                                color: context.themeTextColor,
                                                 fontWeight: FontWeight.w600,
                                                 fontSize: 14,
                                               ),
@@ -317,11 +318,11 @@ class _SearchScreenState extends State<SearchScreen> {
                                             subtitle: Text(
                                               "Album",
                                               style: GoogleFonts.inter(
-                                                color: AppColors.midnightTextMuted,
+                                                color: context.themeMutedTextColor,
                                                 fontSize: 12,
                                               ),
                                             ),
-                                            trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                                            trailing: Icon(Icons.chevron_right, color: context.themeMutedTextColor),
                                             onTap: () {
                                               Navigator.push(
                                                 context,
@@ -343,14 +344,14 @@ class _SearchScreenState extends State<SearchScreen> {
                                     style: GoogleFonts.outfit(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w700,
-                                      color: Colors.white,
+                                      color: context.themeTextColor,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
                                   ...playlists.map((pl) => Padding(
                                         padding: const EdgeInsets.only(bottom: 6),
                                         child: Material(
-                                          color: AppColors.midnightCard.withValues(alpha: 0.5),
+                                          color: context.themeCardColor.withValues(alpha: 0.5),
                                           borderRadius: BorderRadius.circular(16),
                                           child: ListTile(
                                             leading: ClipRRect(
@@ -363,7 +364,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                                         imageUrl: pl.coverArt,
                                                         fit: BoxFit.cover,
                                                       )
-                                                    : const Icon(Icons.queue_music, color: Colors.white),
+                                                    : Icon(Icons.queue_music, color: context.themeTextColor),
                                               ),
                                             ),
                                             title: Text(
@@ -371,7 +372,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               style: GoogleFonts.inter(
-                                                color: Colors.white,
+                                                color: context.themeTextColor,
                                                 fontWeight: FontWeight.w600,
                                                 fontSize: 14,
                                               ),
@@ -379,11 +380,11 @@ class _SearchScreenState extends State<SearchScreen> {
                                             subtitle: Text(
                                               "Playlist",
                                               style: GoogleFonts.inter(
-                                                color: AppColors.midnightTextMuted,
+                                                color: context.themeMutedTextColor,
                                                 fontSize: 12,
                                               ),
                                             ),
-                                            trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                                            trailing: Icon(Icons.chevron_right, color: context.themeMutedTextColor),
                                             onTap: () {
                                               Navigator.push(
                                                 context,

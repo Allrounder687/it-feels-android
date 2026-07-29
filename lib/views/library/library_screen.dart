@@ -14,6 +14,7 @@ import '../details/playlist_detail_screen.dart';
 import '../details/custom_playlist_detail_screen.dart';
 import '../settings/settings_screen.dart';
 import '../widgets/song_options_sheet.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -44,7 +45,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         final playlists = homeProvider.topPlaylists;
 
         return Scaffold(
-          backgroundColor: AppColors.midnightBackground,
+          backgroundColor: context.themeBackgroundColor,
           body: SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +61,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         style: GoogleFonts.outfit(
                           fontSize: 36,
                           fontWeight: FontWeight.w900,
-                          color: Colors.white,
+                          color: context.themeTextColor,
                         ),
                       ),
                       IconButton(
@@ -70,7 +71,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             color: AppColors.midnightPill,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.settings_outlined, color: Colors.white, size: 20),
+                          child: Icon(Icons.settings_outlined, color: context.themeTextColor, size: 20),
                         ),
                         onPressed: () {
                           Navigator.push(
@@ -102,13 +103,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           margin: const EdgeInsets.only(right: 10),
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.midnightPrimary : AppColors.midnightPill,
+                            color: isSelected ? context.themeAccentColor : AppColors.midnightPill,
                             borderRadius: BorderRadius.circular(21),
                           ),
                           child: Text(
                             _tabs[index],
                             style: GoogleFonts.inter(
-                              color: isSelected ? Colors.black : Colors.white,
+                              color: isSelected ? context.themeInvertedTextColor : context.themeTextColor,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
@@ -182,7 +183,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     borderRadius: BorderRadius.circular(20),
                     child: album.coverArt.isNotEmpty
                         ? CustomImageWidget(imageUrl: album.coverArt, fit: BoxFit.cover, width: double.infinity)
-                        : Container(color: AppColors.midnightCard),
+                        : Container(color: context.themeCardColor),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -190,7 +191,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   album.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                  style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 14),
                 ),
               ],
             ),
@@ -207,7 +208,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Material(
-              color: AppColors.midnightCard.withValues(alpha: 0.5),
+              color: context.themeCardColor.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
               child: ListTile(
                 leading: ClipOval(
@@ -217,19 +218,19 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     child: CustomImageWidget(
                       imageUrl: artist['image']!,
                       fit: BoxFit.cover,
-                      errorWidget: (context, url, error) => const Icon(Icons.person, color: Colors.white),
+                      errorWidget: (context, url, error) => Icon(Icons.person, color: context.themeTextColor),
                     ),
                   ),
                 ),
                 title: Text(
                   artist['name']!,
-                  style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15),
+                  style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 15),
                 ),
                 subtitle: Text(
                   "Artist",
-                  style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12),
+                  style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                 ),
-                trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                trailing: Icon(Icons.chevron_right, color: context.themeMutedTextColor),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -256,7 +257,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.midnightPill,
-                foregroundColor: Colors.white,
+                foregroundColor: context.themeTextColor,
                 minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
@@ -271,7 +272,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             child: myPlaylists.isEmpty
                 ? Center(
                     child: Text("You haven't created any playlists yet.",
-                        style: GoogleFonts.inter(color: AppColors.midnightTextMuted)),
+                        style: GoogleFonts.inter(color: context.themeMutedTextColor)),
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -281,7 +282,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Material(
-                          color: AppColors.midnightCard.withValues(alpha: 0.5),
+                          color: context.themeCardColor.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(16),
                           child: ListTile(
                             leading: ClipRRect(
@@ -291,20 +292,20 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                 height: 48,
                                 child: pl.songs.isNotEmpty && pl.songs.first.coverArt.isNotEmpty
                                     ? CustomImageWidget(imageUrl: pl.songs.first.coverArt, fit: BoxFit.cover)
-                                    : const Icon(Icons.queue_music, color: Colors.white),
+                                    : Icon(Icons.queue_music, color: context.themeTextColor),
                               ),
                             ),
                             title: Text(
                               pl.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                              style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 14),
                             ),
                             subtitle: Text(
                               "${pl.songs.length} tracks",
-                              style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12),
+                              style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                             ),
-                            trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+                            trailing: Icon(Icons.chevron_right, color: context.themeMutedTextColor),
                             onTap: () {
                               Navigator.push(
                                 context,
@@ -328,7 +329,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget _buildSongListView(List<Song> songs, AudioPlayerProvider playerProvider, String emptyMessage) {
     if (songs.isEmpty) {
       return Center(
-        child: Text(emptyMessage, style: GoogleFonts.inter(color: AppColors.midnightTextMuted)),
+        child: Text(emptyMessage, style: GoogleFonts.inter(color: context.themeMutedTextColor)),
       );
     }
 
@@ -340,7 +341,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         return Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: Material(
-            color: AppColors.midnightCard.withValues(alpha: 0.5),
+            color: context.themeCardColor.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(16),
             child: ListTile(
               leading: ClipRRect(
@@ -350,23 +351,23 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   height: 48,
                   child: song.coverArt.isNotEmpty
                       ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover)
-                      : const Icon(Icons.music_note, color: Colors.white),
+                      : Icon(Icons.music_note, color: context.themeTextColor),
                 ),
               ),
               title: Text(
                 song.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 14),
               ),
               subtitle: Text(
                 song.artist,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12),
+                style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
               ),
               trailing: IconButton(
-                icon: const Icon(Icons.more_vert, color: Colors.white54),
+                icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
                 onPressed: () {
                   SongOptionsSheet.show(context, song, playlistContext: songs);
                 },
@@ -389,22 +390,22 @@ class _LibraryScreenState extends State<LibraryScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.midnightSurface,
-        title: Text("New Playlist", style: GoogleFonts.outfit(color: Colors.white)),
+        backgroundColor: context.themeSurfaceColor,
+        title: Text("New Playlist", style: GoogleFonts.outfit(color: context.themeTextColor)),
         content: TextField(
           controller: controller,
-          style: GoogleFonts.inter(color: Colors.white),
+          style: GoogleFonts.inter(color: context.themeTextColor),
           decoration: InputDecoration(
             hintText: "Playlist Name",
-            hintStyle: GoogleFonts.inter(color: Colors.white38),
-            enabledBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+            hintStyle: GoogleFonts.inter(color: context.themeMutedTextColor),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.themeTextColor24)),
             focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: AppColors.midnightAccent)),
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
-            child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
+            child: Text("Cancel", style: TextStyle(color: context.themeMutedTextColor)),
             onPressed: () => Navigator.pop(ctx),
           ),
           TextButton(

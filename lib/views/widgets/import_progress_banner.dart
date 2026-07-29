@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/playlist_import_service.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class ImportProgressBanner extends StatelessWidget {
   const ImportProgressBanner({Key? key}) : super(key: key);
@@ -24,7 +25,7 @@ class ImportProgressBanner extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: context.themeInvertedTextColor.withOpacity(0.1),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               )

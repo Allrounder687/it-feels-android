@@ -12,6 +12,7 @@ import '../data/models/song_model.dart';
 import '../data/services/audio_player_handler.dart';
 import '../data/services/music_api_service.dart';
 import '../services/storage_service.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 enum AppThemeMode {
   dynamic,
@@ -19,6 +20,7 @@ enum AppThemeMode {
   burgundy,
   amoled,
   materialYou,
+  light,
 }
 
 class AudioPlayerProvider extends ChangeNotifier {
@@ -211,6 +213,8 @@ class AudioPlayerProvider extends ChangeNotifier {
         return AppColors.burgundyBackground;
       case AppThemeMode.amoled:
         return Colors.black;
+      case AppThemeMode.light:
+        return const Color(0xFFF0F2F5);
     }
   }
 
@@ -226,6 +230,8 @@ class AudioPlayerProvider extends ChangeNotifier {
         return AppColors.burgundySurface;
       case AppThemeMode.amoled:
         return const Color(0xFF121212);
+      case AppThemeMode.light:
+        return Colors.white;
     }
   }
 
@@ -241,6 +247,33 @@ class AudioPlayerProvider extends ChangeNotifier {
         return AppColors.burgundyPrimary;
       case AppThemeMode.amoled:
         return Colors.white;
+      case AppThemeMode.light:
+        return const Color(0xFF3B82F6);
+    }
+  }
+
+  Color get themeTextColor {
+    return _appThemeMode == AppThemeMode.light ? Colors.black87 : Colors.white;
+  }
+
+  Color get themeMutedTextColor {
+    return _appThemeMode == AppThemeMode.light ? Colors.black54 : Colors.white54;
+  }
+
+  Color get themeInvertedTextColor {
+    return _appThemeMode == AppThemeMode.light ? Colors.white : Colors.black;
+  }
+
+  Color get themeCardColor {
+    switch (_appThemeMode) {
+      case AppThemeMode.light:
+        return Colors.white;
+      case AppThemeMode.amoled:
+        return const Color(0xFF1A1A1A);
+      case AppThemeMode.burgundy:
+        return AppColors.burgundyCard;
+      default:
+        return AppColors.midnightCard;
     }
   }
 

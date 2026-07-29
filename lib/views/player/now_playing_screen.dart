@@ -13,6 +13,7 @@ import '../widgets/wavy_seek_bar.dart';
 import 'queue_bottom_sheet.dart';
 import 'sleep_timer_sheet.dart';
 import '../widgets/animated_play_pause_button.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class NowPlayingScreen extends StatelessWidget {
   const NowPlayingScreen({super.key});
@@ -38,11 +39,11 @@ class NowPlayingScreen extends StatelessWidget {
 
         if (currentSong == null) {
           return Scaffold(
-            backgroundColor: AppColors.burgundyBackground,
+            backgroundColor: context.themeBackgroundColor,
             body: Center(
               child: Text(
                 "No song selected",
-                style: GoogleFonts.inter(color: Colors.white70),
+                style: GoogleFonts.inter(color: context.themeMutedTextColor),
               ),
             ),
           );
@@ -81,7 +82,7 @@ class NowPlayingScreen extends StatelessWidget {
                     children: [
                       // Collapse Down Arrow
                       IconButton(
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 32),
+                        icon: Icon(Icons.keyboard_arrow_down_rounded, color: context.themeTextColor, size: 32),
                         onPressed: () => Navigator.pop(context),
                       ),
 
@@ -89,7 +90,7 @@ class NowPlayingScreen extends StatelessWidget {
                       Text(
                         "Now Playing",
                         style: GoogleFonts.inter(
-                          color: Colors.white,
+                          color: context.themeTextColor,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -111,7 +112,7 @@ class NowPlayingScreen extends StatelessWidget {
                                     : Icons.bedtime_outlined,
                                 color: playerProvider.isSleepTimerActive || playerProvider.sleepAfterCurrentTrack
                                     ? accentColor
-                                    : Colors.white,
+                                    : context.themeTextColor,
                                 size: 24,
                               ),
                             ),
@@ -132,14 +133,14 @@ class NowPlayingScreen extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: isDownloading
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       width: 24,
                                       height: 24,
-                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: context.themeTextColor),
                                     )
                                   : Icon(
                                       isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
-                                      color: isDown ? accentColor : Colors.white,
+                                      color: isDown ? accentColor : context.themeTextColor,
                                       size: 24,
                                     ),
                             ),
@@ -171,7 +172,7 @@ class NowPlayingScreen extends StatelessWidget {
                                 color: surfaceColor,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 24),
+                              child: Icon(Icons.more_vert_rounded, color: context.themeTextColor, size: 24),
                             ),
                             onPressed: () {
                               SongOptionsSheet.show(context, currentSong);
@@ -203,7 +204,7 @@ class NowPlayingScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(28),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.5),
+                            color: context.themeInvertedTextColor.withValues(alpha: 0.5),
                             blurRadius: 30,
                             offset: const Offset(0, 15),
                           ),
@@ -240,7 +241,7 @@ class NowPlayingScreen extends StatelessWidget {
                           style: GoogleFonts.outfit(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
-                            color: Colors.white,
+                            color: context.themeTextColor,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -251,7 +252,7 @@ class NowPlayingScreen extends StatelessWidget {
                           style: GoogleFonts.inter(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
-                            color: Colors.white70,
+                            color: context.themeMutedTextColor,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -301,14 +302,14 @@ class NowPlayingScreen extends StatelessWidget {
                               children: [
                                 Icon(
                                   isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                  color: isFav ? Colors.pinkAccent : Colors.white70,
+                                  color: isFav ? Colors.pinkAccent : context.themeMutedTextColor,
                                   size: 22,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
                                   isFav ? "Liked" : "Like",
                                   style: GoogleFonts.inter(
-                                    color: Colors.white,
+                                    color: context.themeTextColor,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -350,21 +351,21 @@ class NowPlayingScreen extends StatelessWidget {
                             child: Row(
                               children: [
                                 isDownloading
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    ? SizedBox(
+                                        width: 48,
+                                        height: 48,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: context.themeTextColor),
                                       )
                                     : Icon(
                                         isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
-                                        color: isDown ? accentColor : Colors.white70,
+                                        color: isDown ? accentColor : context.themeMutedTextColor,
                                         size: 22,
                                       ),
                                 const SizedBox(width: 8),
                                 Text(
                                   isDown ? "Downloaded" : "Download",
                                   style: GoogleFonts.inter(
-                                    color: Colors.white,
+                                    color: context.themeTextColor,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -391,12 +392,12 @@ class NowPlayingScreen extends StatelessWidget {
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.lyrics_outlined, color: Colors.white70, size: 22),
+                                Icon(Icons.lyrics_outlined, color: context.themeMutedTextColor, size: 22),
                                 const SizedBox(width: 6),
                                 Text(
                                   "Lyrics",
                                   style: GoogleFonts.inter(
-                                    color: Colors.white,
+                                    color: context.themeTextColor,
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -416,7 +417,7 @@ class NowPlayingScreen extends StatelessWidget {
                     position: playerProvider.position,
                     duration: playerProvider.duration,
                     activeColor: accentColor,
-                    inactiveColor: Colors.white24,
+                    inactiveColor: context.themeTextColor24,
                     onSeek: (newPos) => playerProvider.seek(newPos),
                   ),
 
@@ -428,11 +429,11 @@ class NowPlayingScreen extends StatelessWidget {
                       children: [
                         Text(
                           _formatDuration(playerProvider.position),
-                          style: GoogleFonts.inter(color: Colors.white60, fontSize: 12),
+                          style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                         ),
                         Text(
                           _formatDuration(playerProvider.duration),
-                          style: GoogleFonts.inter(color: Colors.white60, fontSize: 12),
+                          style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                         ),
                       ],
                     ),
@@ -452,11 +453,11 @@ class NowPlayingScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         BouncyIconButton(
-                          child: const Icon(Icons.replay_10_rounded, color: Colors.white70, size: 28),
+                          child: Icon(Icons.replay_10_rounded, color: context.themeMutedTextColor, size: 28),
                           onPressed: () => playerProvider.seekBackward(),
                         ),
                         BouncyIconButton(
-                          child: const Icon(Icons.skip_previous_rounded, color: Colors.white, size: 36),
+                          child: Icon(Icons.skip_previous_rounded, color: context.themeTextColor, size: 36),
                           onPressed: () => playerProvider.skipToPrevious(),
                         ),
 
@@ -475,18 +476,18 @@ class NowPlayingScreen extends StatelessWidget {
                             child: AnimatedPlayPauseButton(
                               isPlaying: playerProvider.isPlaying,
                               onPressed: () => playerProvider.togglePlayPause(),
-                              color: Colors.black,
+                              color: context.themeInvertedTextColor,
                               size: 38,
                             ),
                           ),
                         ),
 
                         BouncyIconButton(
-                          child: const Icon(Icons.skip_next_rounded, color: Colors.white, size: 36),
+                          child: Icon(Icons.skip_next_rounded, color: context.themeTextColor, size: 36),
                           onPressed: () => playerProvider.skipToNext(),
                         ),
                         BouncyIconButton(
-                          child: const Icon(Icons.forward_10_rounded, color: Colors.white70, size: 28),
+                          child: Icon(Icons.forward_10_rounded, color: context.themeMutedTextColor, size: 28),
                           onPressed: () => playerProvider.seekForward(),
                         ),
                       ],
@@ -504,13 +505,13 @@ class NowPlayingScreen extends StatelessWidget {
                         BouncyIconButton(
                           child: Icon(
                             Icons.shuffle_rounded, 
-                            color: playerProvider.isShuffle ? accentColor : Colors.white60, 
+                            color: playerProvider.isShuffle ? accentColor : context.themeMutedTextColor, 
                             size: 24,
                           ),
                           onPressed: () => playerProvider.toggleShuffle(),
                         ),
                         BouncyIconButton(
-                          child: const Icon(Icons.queue_music_rounded, color: Colors.white60, size: 24),
+                          child: Icon(Icons.queue_music_rounded, color: context.themeMutedTextColor, size: 24),
                           onPressed: () {
                             showModalBottomSheet(
                               context: context,
@@ -523,7 +524,7 @@ class NowPlayingScreen extends StatelessWidget {
                         BouncyIconButton(
                           child: Icon(
                             playerProvider.isRepeat ? Icons.repeat_one_rounded : Icons.repeat_rounded, 
-                            color: playerProvider.isRepeat ? accentColor : Colors.white60, 
+                            color: playerProvider.isRepeat ? accentColor : context.themeMutedTextColor, 
                             size: 24,
                           ),
                           onPressed: () => playerProvider.toggleRepeat(),
@@ -553,7 +554,7 @@ class NowPlayingScreen extends StatelessWidget {
                             width: 36,
                             height: 4,
                             decoration: BoxDecoration(
-                              color: Colors.white38,
+                              color: context.themeMutedTextColor,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -561,7 +562,7 @@ class NowPlayingScreen extends StatelessWidget {
                           Text(
                             "Your queue",
                             style: GoogleFonts.inter(
-                              color: Colors.white,
+                              color: context.themeTextColor,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),

@@ -10,6 +10,7 @@ import '../../providers/download_provider.dart';
 import '../../providers/hidden_songs_provider.dart';
 import '../../providers/custom_playlist_provider.dart';
 import '../details/artist_detail_screen.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class SongOptionsSheet extends StatelessWidget {
   final Song song;
@@ -44,11 +45,11 @@ class SongOptionsSheet extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.only(top: 16, bottom: 28, left: 20, right: 20),
       decoration: BoxDecoration(
-        color: AppColors.midnightSurface,
+        color: context.themeSurfaceColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
+            color: context.themeInvertedTextColor.withValues(alpha: 0.5),
             blurRadius: 24,
             offset: const Offset(0, -6),
           ),
@@ -62,7 +63,7 @@ class SongOptionsSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.white24,
+              color: context.themeTextColor24,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -79,8 +80,8 @@ class SongOptionsSheet extends StatelessWidget {
                   child: song.coverArt.isNotEmpty
                       ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover)
                       : Container(
-                          color: AppColors.midnightCard,
-                          child: const Icon(Icons.music_note, color: Colors.white),
+                          color: context.themeCardColor,
+                          child: Icon(Icons.music_note, color: context.themeTextColor),
                         ),
                 ),
               ),
@@ -96,7 +97,7 @@ class SongOptionsSheet extends StatelessWidget {
                       style: GoogleFonts.outfit(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: context.themeTextColor,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -106,7 +107,7 @@ class SongOptionsSheet extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
                         fontSize: 13,
-                        color: AppColors.midnightTextMuted,
+                        color: context.themeMutedTextColor,
                       ),
                     ),
                   ],
@@ -116,13 +117,13 @@ class SongOptionsSheet extends StatelessWidget {
           ),
 
           const SizedBox(height: 16),
-          const Divider(color: Colors.white10),
+          Divider(color: context.themeTextColor10),
           const SizedBox(height: 8),
 
           // Action 1: Play Now
-          _buildOptionTile(
+          _buildOptionTile(context, 
             icon: Icons.play_circle_fill_rounded,
-            iconColor: AppColors.midnightPrimary,
+            iconColor: context.themeAccentColor,
             title: "Play Now",
             onTap: () {
               Navigator.pop(context);
@@ -131,7 +132,7 @@ class SongOptionsSheet extends StatelessWidget {
           ),
 
           // Action 2: Play Next
-          _buildOptionTile(
+          _buildOptionTile(context, 
             icon: Icons.playlist_play_rounded,
             iconColor: Colors.amberAccent,
             title: "Play Next",
@@ -148,7 +149,7 @@ class SongOptionsSheet extends StatelessWidget {
           ),
 
           // Action 3: Add to Queue
-          _buildOptionTile(
+          _buildOptionTile(context, 
             icon: Icons.queue_music_rounded,
             iconColor: Colors.blueAccent,
             title: "Add to Queue",
@@ -165,7 +166,7 @@ class SongOptionsSheet extends StatelessWidget {
           ),
 
           // Action 4: Add to Playlist
-          _buildOptionTile(
+          _buildOptionTile(context, 
             icon: Icons.playlist_add_rounded,
             iconColor: Colors.tealAccent,
             title: "Add to Playlist",
@@ -176,13 +177,13 @@ class SongOptionsSheet extends StatelessWidget {
           ),
 
           // Action 5: Download / Remove Download
-          _buildOptionTile(
+          _buildOptionTile(context, 
             icon: isDownloading
                 ? Icons.hourglass_top_rounded
                 : isDown
                     ? Icons.download_done_rounded
                     : Icons.file_download_outlined,
-            iconColor: isDown ? AppColors.midnightPrimary : Colors.white70,
+            iconColor: isDown ? context.themeAccentColor : context.themeMutedTextColor,
             title: isDownloading
                 ? "Downloading... (${(downloadProvider.getProgress(song.id) * 100).toInt()}%)"
                 : isDown
@@ -216,9 +217,9 @@ class SongOptionsSheet extends StatelessWidget {
           ),
 
           // Action 5: Toggle Favorite
-          _buildOptionTile(
+          _buildOptionTile(context, 
             icon: isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-            iconColor: isFav ? Colors.pinkAccent : Colors.white70,
+            iconColor: isFav ? Colors.pinkAccent : context.themeMutedTextColor,
             title: isFav ? "Remove from Favorites" : "Add to Favorites",
             onTap: () {
               Navigator.pop(context);
@@ -236,7 +237,7 @@ class SongOptionsSheet extends StatelessWidget {
 
           // Action 6: View Artist
           if (song.artist.isNotEmpty && song.artist != 'Unknown Artist')
-            _buildOptionTile(
+            _buildOptionTile(context, 
               icon: Icons.person_outline_rounded,
               iconColor: Colors.purpleAccent,
               title: "Go to Artist (${song.artist.split(',').first})",
@@ -254,7 +255,7 @@ class SongOptionsSheet extends StatelessWidget {
             ),
 
           // Action 7: Hide Song
-          _buildOptionTile(
+          _buildOptionTile(context, 
             icon: Icons.visibility_off_outlined,
             iconColor: Colors.redAccent,
             title: "Hide Song",
@@ -277,7 +278,7 @@ class SongOptionsSheet extends StatelessWidget {
     );
   }
 
-  Widget _buildOptionTile({
+  Widget _buildOptionTile(BuildContext context, {
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -290,7 +291,7 @@ class SongOptionsSheet extends StatelessWidget {
         title: Text(
           title,
           style: GoogleFonts.inter(
-            color: Colors.white,
+            color: context.themeTextColor,
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -306,10 +307,10 @@ class SongOptionsSheet extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.midnightSurface,
-        title: Text("Add to Playlist", style: GoogleFonts.outfit(color: Colors.white)),
+        backgroundColor: context.themeSurfaceColor,
+        title: Text("Add to Playlist", style: GoogleFonts.outfit(color: context.themeTextColor)),
         content: provider.playlists.isEmpty
-            ? Text("You haven't created any playlists yet.", style: GoogleFonts.inter(color: Colors.white70))
+            ? Text("You haven't created any playlists yet.", style: GoogleFonts.inter(color: context.themeMutedTextColor))
             : SizedBox(
                 width: double.maxFinite,
                 child: ListView.builder(
@@ -318,8 +319,8 @@ class SongOptionsSheet extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final pl = provider.playlists[index];
                     return ListTile(
-                      title: Text(pl.title, style: GoogleFonts.inter(color: Colors.white)),
-                      subtitle: Text("${pl.songs.length} tracks", style: GoogleFonts.inter(color: Colors.white54)),
+                      title: Text(pl.title, style: GoogleFonts.inter(color: context.themeTextColor)),
+                      subtitle: Text("${pl.songs.length} tracks", style: GoogleFonts.inter(color: context.themeMutedTextColor)),
                       onTap: () {
                         provider.addSongToPlaylist(pl.id, song);
                         Navigator.pop(ctx);
@@ -334,7 +335,7 @@ class SongOptionsSheet extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel", style: TextStyle(color: Colors.white60)),
+            child: Text("Cancel", style: TextStyle(color: context.themeMutedTextColor)),
           ),
         ],
       ),

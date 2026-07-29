@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../providers/ai_settings_provider.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/custom_playlist_provider.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class AskAIScreen extends StatefulWidget {
   const AskAIScreen({super.key});
@@ -47,7 +48,7 @@ class _AskAIScreenState extends State<AskAIScreen> {
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
-          backgroundColor: AppColors.midnightSurface,
+          backgroundColor: context.themeSurfaceColor,
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
@@ -68,7 +69,7 @@ class _AskAIScreenState extends State<AskAIScreen> {
                       Text(
                         'AI Playlist Ready',
                         style: GoogleFonts.outfit(
-                          color: Colors.white,
+                          color: context.themeTextColor,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
@@ -78,7 +79,7 @@ class _AskAIScreenState extends State<AskAIScreen> {
                       Text(
                         '${response.resultSongs!.length} songs generated based on your mood.',
                         style: GoogleFonts.outfit(
-                          color: Colors.white70,
+                          color: context.themeMutedTextColor,
                           fontSize: 14,
                         ),
                         textAlign: TextAlign.center,
@@ -86,8 +87,8 @@ class _AskAIScreenState extends State<AskAIScreen> {
                       const SizedBox(height: 24),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.midnightPrimary,
-                          foregroundColor: Colors.white,
+                          backgroundColor: context.themeAccentColor,
+                          foregroundColor: context.themeTextColor,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
@@ -105,9 +106,9 @@ class _AskAIScreenState extends State<AskAIScreen> {
                           Expanded(
                             child: OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
+                                foregroundColor: context.themeTextColor,
                                 padding: const EdgeInsets.symmetric(vertical: 16),
-                                side: const BorderSide(color: Colors.white24),
+                                side: BorderSide(color: context.themeTextColor24),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               ),
                               icon: const Icon(Icons.queue_music, size: 20),
@@ -117,7 +118,7 @@ class _AskAIScreenState extends State<AskAIScreen> {
                                 Navigator.pop(bottomSheetContext); // close bottom sheet
                                 Navigator.pop(context); // close ask ai screen
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Added ${response.resultSongs!.length} songs to queue'), backgroundColor: AppColors.midnightPrimary),
+                                  SnackBar(content: Text('Added ${response.resultSongs!.length} songs to queue'), backgroundColor: context.themeAccentColor),
                                 );
                               },
                             ),
@@ -126,9 +127,9 @@ class _AskAIScreenState extends State<AskAIScreen> {
                           Expanded(
                             child: OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
+                                foregroundColor: context.themeTextColor,
                                 padding: const EdgeInsets.symmetric(vertical: 16),
-                                side: const BorderSide(color: Colors.white24),
+                                side: BorderSide(color: context.themeTextColor24),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               ),
                               icon: const Icon(Icons.playlist_add, size: 20),
@@ -140,7 +141,7 @@ class _AskAIScreenState extends State<AskAIScreen> {
                                 Navigator.pop(bottomSheetContext);
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Saved as "$playlistName"'), backgroundColor: AppColors.midnightPrimary),
+                                  SnackBar(content: Text('Saved as "$playlistName"'), backgroundColor: context.themeAccentColor),
                                 );
                               },
                             ),
@@ -162,7 +163,7 @@ class _AskAIScreenState extends State<AskAIScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Playing: "$query"'),
-            backgroundColor: AppColors.midnightPrimary,
+            backgroundColor: context.themeAccentColor,
             duration: const Duration(seconds: 2),
           ),
         );
@@ -198,19 +199,19 @@ class _AskAIScreenState extends State<AskAIScreen> {
 
     if (!aiSettings.aiEnabled) {
       return Scaffold(
-        backgroundColor: AppColors.midnightBackground,
+        backgroundColor: context.themeBackgroundColor,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: Icon(Icons.arrow_back, color: context.themeTextColor),
             onPressed: () => Navigator.pop(context),
           ),
         ),
         body: Center(
           child: Text(
             'AI features are disabled in Settings.',
-            style: GoogleFonts.outfit(color: Colors.white70, fontSize: 16),
+            style: GoogleFonts.outfit(color: context.themeMutedTextColor, fontSize: 16),
           ),
         ),
       );
@@ -219,12 +220,12 @@ class _AskAIScreenState extends State<AskAIScreen> {
     final suggestions = _getSuggestionsForTimeOfDay();
 
     return Scaffold(
-      backgroundColor: AppColors.midnightBackground,
+      backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: context.themeTextColor),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -232,7 +233,7 @@ class _AskAIScreenState extends State<AskAIScreen> {
           style: GoogleFonts.outfit(
             fontSize: 22,
             fontWeight: FontWeight.w800,
-            color: Colors.white,
+            color: context.themeTextColor,
           ),
         ),
       ),
@@ -246,7 +247,7 @@ class _AskAIScreenState extends State<AskAIScreen> {
               style: GoogleFonts.outfit(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: context.themeTextColor,
               ),
             ),
             const SizedBox(height: 8),
@@ -254,7 +255,7 @@ class _AskAIScreenState extends State<AskAIScreen> {
               "Try \"Play something for a rainy evening\" or \"Give me 45 minutes of calm songs.\"",
               style: GoogleFonts.outfit(
                 fontSize: 14,
-                color: Colors.white54,
+                color: context.themeMutedTextColor,
               ),
             ),
             const SizedBox(height: 24),
@@ -268,8 +269,8 @@ class _AskAIScreenState extends State<AskAIScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: ActionChip(
-                      label: Text(suggestion, style: GoogleFonts.outfit(color: Colors.white, fontSize: 13)),
-                      backgroundColor: Colors.white.withOpacity(0.08),
+                      label: Text(suggestion, style: GoogleFonts.outfit(color: context.themeTextColor, fontSize: 13)),
+                      backgroundColor: context.themeTextColor.withOpacity(0.08),
                       side: BorderSide.none,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       onPressed: () {
@@ -284,14 +285,14 @@ class _AskAIScreenState extends State<AskAIScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _controller,
-              style: GoogleFonts.outfit(color: Colors.white, fontSize: 18),
+              style: GoogleFonts.outfit(color: context.themeTextColor, fontSize: 18),
               autofocus: true,
               maxLines: 2,
               decoration: InputDecoration(
                 hintText: "E.g., I need focus music...",
-                hintStyle: GoogleFonts.outfit(color: Colors.white30),
+                hintStyle: GoogleFonts.outfit(color: context.themeTextColor.withOpacity(0.3)),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: context.themeTextColor.withOpacity(0.05),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
@@ -308,8 +309,8 @@ class _AskAIScreenState extends State<AskAIScreen> {
             else
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.midnightPrimary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.themeAccentColor,
+                  foregroundColor: context.themeTextColor,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),

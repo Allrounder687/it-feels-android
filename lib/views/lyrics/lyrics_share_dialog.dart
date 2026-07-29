@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/models/song_model.dart';
 import '../widgets/custom_image_widget.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class LyricsShareDialog extends StatefulWidget {
   final Song song;
@@ -68,13 +69,13 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
                 gradient: LinearGradient(
-                  colors: [AppColors.midnightCard, AppColors.midnightBackground],
+                  colors: [context.themeCardColor, context.themeBackgroundColor],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.5),
+                    color: context.themeInvertedTextColor.withValues(alpha: 0.5),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   )
@@ -103,7 +104,7 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
                     style: GoogleFonts.outfit(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: context.themeTextColor,
                       height: 1.3,
                     ),
                   ),
@@ -124,7 +125,7 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: Colors.white70,
+                            color: context.themeMutedTextColor,
                           ),
                         ),
                       ),
@@ -138,7 +139,7 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
                       fontSize: 10,
                       letterSpacing: 2,
                       fontWeight: FontWeight.w900,
-                      color: AppColors.midnightPrimary,
+                      color: context.themeAccentColor,
                     ),
                   ),
                 ],
@@ -163,18 +164,18 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
                   ? const Center(
                       child: SizedBox(
                         width: 20, height: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(color: context.themeTextColor, strokeWidth: 2),
                       ),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.share_rounded, color: Colors.white, size: 20),
+                        Icon(Icons.share_rounded, color: context.themeTextColor, size: 20),
                         const SizedBox(width: 8),
                         Text(
                           "Share to Instagram Stories",
                           style: GoogleFonts.inter(
-                            color: Colors.white,
+                            color: context.themeTextColor,
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
@@ -186,7 +187,7 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
           const SizedBox(height: 12),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Cancel", style: GoogleFonts.inter(color: Colors.white54)),
+            child: Text("Cancel", style: GoogleFonts.inter(color: context.themeMutedTextColor)),
           )
         ],
       ),

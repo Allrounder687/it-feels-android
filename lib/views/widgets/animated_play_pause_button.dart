@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class AnimatedPlayPauseButton extends StatefulWidget {
   final bool isPlaying;
   final VoidCallback onPressed;
   final double size;
-  final Color color;
+  final Color? color;
 
   const AnimatedPlayPauseButton({
     super.key,
     required this.isPlaying,
     required this.onPressed,
     this.size = 38.0,
-    this.color = Colors.black,
+    this.color,
   });
 
   @override
@@ -60,7 +61,7 @@ class _AnimatedPlayPauseButtonState extends State<AnimatedPlayPauseButton> with 
         icon: AnimatedIcons.play_pause,
         progress: _controller,
         size: widget.size,
-        color: widget.color,
+        color: widget.color ?? context.themeInvertedTextColor,
       ),
     );
   }

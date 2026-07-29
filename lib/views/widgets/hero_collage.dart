@@ -2,6 +2,7 @@ import 'package:it_feels_music/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/song_model.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class HeroCollage extends StatelessWidget {
   final List<Song> songs;
@@ -34,7 +35,7 @@ class HeroCollage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(48),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.4),
+                    color: context.themeInvertedTextColor.withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),

@@ -8,6 +8,7 @@ import '../../providers/audio_player_provider.dart';
 import '../../providers/lyrics_provider.dart';
 import '../widgets/wavy_seek_bar.dart';
 import 'lyrics_share_dialog.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class LyricsScreen extends StatelessWidget {
   const LyricsScreen({super.key});
@@ -24,7 +25,7 @@ class LyricsScreen extends StatelessWidget {
         }
 
         return Scaffold(
-          backgroundColor: AppColors.midnightBackground,
+          backgroundColor: context.themeBackgroundColor,
           body: SafeArea(
             child: Column(
               children: [
@@ -41,7 +42,7 @@ class LyricsScreen extends StatelessWidget {
                             color: AppColors.midnightPill,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                          child: Icon(Icons.arrow_back, color: context.themeTextColor, size: 20),
                         ),
                         onPressed: () => Navigator.pop(context),
                       ),
@@ -50,7 +51,7 @@ class LyricsScreen extends StatelessWidget {
                         style: GoogleFonts.outfit(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: context.themeTextColor,
                         ),
                       ),
 
@@ -69,7 +70,7 @@ class LyricsScreen extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: lyricsProvider.mode == LyricsMode.synced
-                                      ? AppColors.midnightPrimary
+                                      ? context.themeAccentColor
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(16),
                                 ),
@@ -79,8 +80,8 @@ class LyricsScreen extends StatelessWidget {
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                     color: lyricsProvider.mode == LyricsMode.synced
-                                        ? Colors.black
-                                        : Colors.white70,
+                                        ? context.themeInvertedTextColor
+                                        : context.themeMutedTextColor,
                                   ),
                                 ),
                               ),
@@ -91,7 +92,7 @@ class LyricsScreen extends StatelessWidget {
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                                 decoration: BoxDecoration(
                                   color: lyricsProvider.mode == LyricsMode.static
-                                      ? AppColors.midnightPrimary
+                                      ? context.themeAccentColor
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(16),
                                 ),
@@ -101,8 +102,8 @@ class LyricsScreen extends StatelessWidget {
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
                                     color: lyricsProvider.mode == LyricsMode.static
-                                        ? Colors.black
-                                        : Colors.white70,
+                                        ? context.themeInvertedTextColor
+                                        : context.themeMutedTextColor,
                                   ),
                                 ),
                               ),
@@ -139,8 +140,8 @@ class LyricsScreen extends StatelessWidget {
                                       fontSize: isActive ? 30 : 22,
                                       fontWeight: isActive ? FontWeight.w900 : FontWeight.w500,
                                       color: isActive
-                                          ? Colors.white
-                                          : Colors.white.withValues(alpha: 0.4),
+                                          ? context.themeTextColor
+                                          : context.themeTextColor.withValues(alpha: 0.4),
                                       height: 1.3,
                                       shadows: isActive
                                           ? [
@@ -180,7 +181,7 @@ class LyricsScreen extends StatelessWidget {
                                 style: GoogleFonts.outfit(
                                   fontSize: 22,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white70,
+                                  color: context.themeMutedTextColor,
                                   height: 1.6,
                                 ),
                               ),
@@ -193,11 +194,11 @@ class LyricsScreen extends StatelessWidget {
                     margin: const EdgeInsets.all(16),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: AppColors.midnightCard.withValues(alpha: 0.95),
+                      color: context.themeCardColor.withValues(alpha: 0.95),
                       borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.4),
+                          color: context.themeInvertedTextColor.withValues(alpha: 0.4),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -212,7 +213,7 @@ class LyricsScreen extends StatelessWidget {
                             height: 44,
                             child: currentSong.coverArt.isNotEmpty
                                 ? CustomImageWidget(imageUrl: currentSong.coverArt, fit: BoxFit.cover)
-                                : const Icon(Icons.music_note, color: Colors.white),
+                                : Icon(Icons.music_note, color: context.themeTextColor),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -226,7 +227,7 @@ class LyricsScreen extends StatelessWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  color: Colors.white,
+                                  color: context.themeTextColor,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13,
                                 ),
@@ -236,7 +237,7 @@ class LyricsScreen extends StatelessWidget {
                                 position: playerProvider.position,
                                 duration: playerProvider.duration,
                                 activeColor: AppColors.midnightAccent,
-                                inactiveColor: Colors.white24,
+                                inactiveColor: context.themeTextColor24,
                                 onSeek: (pos) => playerProvider.seek(pos),
                               ),
                             ],
@@ -250,12 +251,12 @@ class LyricsScreen extends StatelessWidget {
                             width: 40,
                             height: 40,
                             decoration: const BoxDecoration(
-                              color: AppColors.midnightPrimary,
+                              color: context.themeAccentColor,
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               playerProvider.isPlaying ? Icons.pause : Icons.play_arrow,
-                              color: Colors.black,
+                              color: context.themeInvertedTextColor,
                               size: 22,
                             ),
                           ),

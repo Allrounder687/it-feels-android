@@ -17,6 +17,7 @@ import 'player/now_playing_screen.dart';
 import 'search/search_screen.dart';
 import 'widgets/mini_player.dart';
 import 'widgets/import_progress_banner.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class MainNavigationWrapper extends StatefulWidget {
   const MainNavigationWrapper({super.key});
@@ -109,7 +110,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
   void _promptImport(String url) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.midnightSurface,
+      backgroundColor: context.themeSurfaceColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -123,13 +124,13 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
               const SizedBox(height: 16),
               Text(
                 'Import Playlist?',
-                style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: context.themeTextColor),
               ),
               const SizedBox(height: 8),
               Text(
                 'We detected a Spotify playlist link. Would you like to import it to IT-Feels?',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(color: Colors.white70),
+                style: GoogleFonts.inter(color: context.themeMutedTextColor),
               ),
               const SizedBox(height: 24),
               Row(
@@ -137,7 +138,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
                   Expanded(
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('Cancel', style: GoogleFonts.inter(color: Colors.white60)),
+                      child: Text('Cancel', style: GoogleFonts.inter(color: context.themeMutedTextColor)),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -145,7 +146,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.midnightAccent,
-                        foregroundColor: AppColors.midnightBackground,
+                        foregroundColor: context.themeBackgroundColor,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
@@ -199,7 +200,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.midnightBackground,
+      backgroundColor: context.themeBackgroundColor,
       body: Stack(
         children: [
           // Indexed Active Screen
@@ -229,11 +230,11 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
                     height: 76,
                     margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
                     decoration: BoxDecoration(
-                      color: AppColors.midnightSurface.withValues(alpha: 0.95),
+                      color: context.themeSurfaceColor.withValues(alpha: 0.95),
                       borderRadius: BorderRadius.circular(32),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.4),
+                          color: context.themeInvertedTextColor.withValues(alpha: 0.4),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -282,7 +283,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
                   children: [
                     Icon(
                       icon,
-                      color: isSelected ? AppColors.midnightAccent : Colors.white60,
+                      color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor,
                       size: 32,
                     ),
                     if (isSelected) ...[
@@ -293,7 +294,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
-                            color: Colors.white,
+                            color: context.themeTextColor,
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
                           ),

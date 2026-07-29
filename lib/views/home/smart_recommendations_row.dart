@@ -7,6 +7,7 @@ import '../../providers/audio_player_provider.dart';
 import '../../services/database_service.dart';
 import '../widgets/custom_image_widget.dart';
 import '../widgets/song_options_sheet.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class SmartRecommendationsRow extends StatefulWidget {
   const SmartRecommendationsRow({Key? key}) : super(key: key);
@@ -69,7 +70,7 @@ class _SmartRecommendationsRowState extends State<SmartRecommendationsRow> {
                 style: GoogleFonts.outfit(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white,
+                  color: context.themeTextColor,
                 ),
               ),
             ],
@@ -106,7 +107,7 @@ class _SmartRecommendationsRowState extends State<SmartRecommendationsRow> {
                                   imageUrl: song.coverArt,
                                   fit: BoxFit.cover,
                                 )
-                              : Container(color: AppColors.midnightCard),
+                              : Container(color: context.themeCardColor),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -115,7 +116,7 @@ class _SmartRecommendationsRowState extends State<SmartRecommendationsRow> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          color: Colors.white,
+                          color: context.themeTextColor,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -126,7 +127,7 @@ class _SmartRecommendationsRowState extends State<SmartRecommendationsRow> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
-                          color: AppColors.midnightTextMuted,
+                          color: context.themeMutedTextColor,
                           fontSize: 11,
                         ),
                       ),

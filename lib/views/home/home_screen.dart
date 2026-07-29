@@ -16,6 +16,7 @@ import '../settings/settings_screen.dart';
 import '../ai/ask_ai_screen.dart';
 import '../widgets/song_options_sheet.dart';
 import 'smart_recommendations_row.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback openFullPlayer;
@@ -85,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Text(
               title,
-              style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white),
+              style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, color: context.themeTextColor),
             ),
           ),
           SizedBox(
@@ -110,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             aspectRatio: 1.0,
                             child: pl.coverArt.isNotEmpty
                                 ? CustomImageWidget(imageUrl: pl.coverArt, fit: BoxFit.cover)
-                                : Container(color: AppColors.midnightCard),
+                                : Container(color: context.themeCardColor),
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -118,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           pl.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(color: context.themeTextColor, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
@@ -144,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+                Text(title, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, color: context.themeTextColor)),
                 GestureDetector(
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SeeAllSongsScreen(title: title, songs: songs))),
                   child: Text("See All", style: GoogleFonts.inter(color: AppColors.midnightAccent, fontSize: 13, fontWeight: FontWeight.w700)),
@@ -186,14 +187,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                            Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeTextColor, fontSize: 14, fontWeight: FontWeight.w700)),
                             const SizedBox(height: 2),
-                            Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: AppColors.midnightTextMuted, fontSize: 12)),
+                            Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 20),
+                        icon: Icon(Icons.more_vert_rounded, color: context.themeMutedTextColor, size: 20),
                         onPressed: () => SongOptionsSheet.show(context, song, playlistContext: songs),
                       )
                     ],
@@ -220,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         
         return Scaffold(
-          backgroundColor: AppColors.midnightBackground,
+          backgroundColor: context.themeBackgroundColor,
           body: SafeArea(
             child: CustomScrollView(
               slivers: [
@@ -234,8 +235,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(_getGreeting(), style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.midnightTextMuted)),
-                            Text("It Feels", style: GoogleFonts.outfit(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.5)),
+                            Text(_getGreeting(), style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: context.themeMutedTextColor)),
+                            Text("It Feels", style: GoogleFonts.outfit(fontSize: 26, fontWeight: FontWeight.w900, color: context.themeTextColor, letterSpacing: -0.5)),
                           ],
                         ),
                         Row(
@@ -243,12 +244,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             if (context.watch<AISettingsProvider>().isConfigured)
                               IconButton(
-                                icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 22),
+                                icon: Icon(Icons.auto_awesome_rounded, color: context.themeTextColor, size: 22),
                                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AskAIScreen())),
                                 tooltip: 'Ask Feels',
                               ),
                             IconButton(
-                              icon: const Icon(Icons.settings_outlined, color: Colors.white, size: 22),
+                              icon: Icon(Icons.settings_outlined, color: context.themeTextColor, size: 22),
                               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
                             ),
                           ],
@@ -286,11 +287,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                   : null,
                               color: isSelected ? null : AppColors.midnightPill.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: isSelected ? Colors.transparent : Colors.white10, width: 0.5),
+                              border: Border.all(color: isSelected ? Colors.transparent : context.themeTextColor10, width: 0.5),
                             ),
                             child: Text(
                               _filters[index],
-                              style: GoogleFonts.inter(color: isSelected ? Colors.black : Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                              style: GoogleFonts.inter(color: isSelected ? context.themeInvertedTextColor : context.themeTextColor, fontSize: 13, fontWeight: FontWeight.w700),
                             ),
                           ),
                         );
@@ -313,11 +314,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.headphones_rounded, size: 64, color: AppColors.midnightTextMuted.withValues(alpha: 0.5)),
+                            Icon(Icons.headphones_rounded, size: 64, color: context.themeMutedTextColor.withValues(alpha: 0.5)),
                             const SizedBox(height: 16),
-                            Text("Your Music, Your Rules", style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+                            Text("Your Music, Your Rules", style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, color: context.themeTextColor)),
                             const SizedBox(height: 8),
-                            Text("Listen to more songs to unlock your personalized Daily Mixes and history.", textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: AppColors.midnightTextMuted)),
+                            Text("Listen to more songs to unlock your personalized Daily Mixes and history.", textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 14, color: context.themeMutedTextColor)),
                           ],
                         ),
                       ),

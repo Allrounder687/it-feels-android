@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 /// A custom animated seek bar with a wavy progress indicator.
 ///
@@ -32,14 +33,15 @@ class WavySeekBar extends StatefulWidget {
   /// - [duration]: The total duration of the track.
   /// - [onSeek]: Optional callback for when the user interacts with the seek bar.
   /// - [activeColor]: Color for the played portion and thumb (defaults to `Colors.pinkAccent`).
-  /// - [inactiveColor]: Color for the unplayed portion (defaults to `Colors.white24`).
+  /// - [inactiveColor]: Color for the unplayed portion (defaults to `context.themeTextColor24`).
+  /// - [inactiveColor]: Color for the unplayed portion (defaults to `Colors.grey`).
   const WavySeekBar({
     super.key,
     required this.position,
     required this.duration,
     this.onSeek,
     this.activeColor = Colors.pinkAccent,
-    this.inactiveColor = Colors.white24,
+    this.inactiveColor = Colors.grey,
   });
 
   @override

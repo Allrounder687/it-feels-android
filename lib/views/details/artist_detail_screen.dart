@@ -11,6 +11,7 @@ import 'playlist_detail_screen.dart';
 import '../widgets/song_options_sheet.dart';
 import '../widgets/mini_player.dart';
 import '../player/now_playing_screen.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class ArtistDetailScreen extends StatefulWidget {
   final String artistName;
@@ -76,7 +77,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
     final playerProvider = Provider.of<AudioPlayerProvider>(context, listen: false);
 
     return Scaffold(
-      backgroundColor: AppColors.midnightBackground,
+      backgroundColor: context.themeBackgroundColor,
       bottomNavigationBar: MiniPlayer(
         onTap: () {
           Navigator.push(
@@ -117,7 +118,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                 color: AppColors.midnightPill,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
+                              child: Icon(Icons.arrow_back, color: context.themeTextColor, size: 20),
                             ),
                             onPressed: () => Navigator.pop(context),
                           ),
@@ -129,7 +130,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                               style: GoogleFonts.outfit(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: context.themeTextColor,
                               ),
                             ),
                           ),
@@ -152,7 +153,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                               shape: BoxShape.circle,
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.4),
+                                  color: context.themeInvertedTextColor.withValues(alpha: 0.4),
                                   blurRadius: 24,
                                   offset: const Offset(0, 10),
                                 ),
@@ -165,8 +166,8 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                       fit: BoxFit.cover,
                                     )
                                   : Container(
-                                      color: AppColors.midnightCard,
-                                      child: const Icon(Icons.person, color: Colors.white, size: 64),
+                                      color: context.themeCardColor,
+                                      child: Icon(Icons.person, color: context.themeTextColor, size: 64),
                                     ),
                             ),
                           ),
@@ -178,14 +179,14 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                             style: GoogleFonts.outfit(
                               fontSize: 26,
                               fontWeight: FontWeight.w800,
-                              color: Colors.white,
+                              color: context.themeTextColor,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             "Verified Artist",
                             style: GoogleFonts.inter(
-                              color: AppColors.midnightPrimary,
+                              color: context.themeAccentColor,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
@@ -198,8 +199,8 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                             children: [
                               ElevatedButton.icon(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.midnightPrimary,
-                                  foregroundColor: Colors.black,
+                                  backgroundColor: context.themeAccentColor,
+                                  foregroundColor: context.themeInvertedTextColor,
                                   elevation: 0,
                                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                   shape: RoundedRectangleBorder(
@@ -233,7 +234,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                         style: GoogleFonts.outfit(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: context.themeTextColor,
                         ),
                       ),
                     ),
@@ -247,7 +248,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                           child: Material(
-                            color: AppColors.midnightCard.withValues(alpha: 0.5),
+                            color: context.themeCardColor.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(16),
                             child: ListTile(
                               leading: ClipRRect(
@@ -260,7 +261,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                           imageUrl: song.coverArt,
                                           fit: BoxFit.cover,
                                         )
-                                      : const Icon(Icons.music_note, color: Colors.white),
+                                      : Icon(Icons.music_note, color: context.themeTextColor),
                                 ),
                               ),
                               title: Text(
@@ -268,7 +269,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  color: Colors.white,
+                                  color: context.themeTextColor,
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
                                 ),
@@ -278,12 +279,12 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
-                                  color: AppColors.midnightTextMuted,
+                                  color: context.themeMutedTextColor,
                                   fontSize: 12,
                                 ),
                               ),
                               trailing: IconButton(
-                                icon: const Icon(Icons.more_vert, color: Colors.white54),
+                                icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
                                 onPressed: () {
                                   SongOptionsSheet.show(context, song, playlistContext: _topSongs);
                                 },
@@ -312,7 +313,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                           style: GoogleFonts.outfit(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: context.themeTextColor,
                           ),
                         ),
                       ),
@@ -350,7 +351,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                                 imageUrl: album.coverArt,
                                                 fit: BoxFit.cover,
                                               )
-                                            : Container(color: AppColors.midnightCard),
+                                            : Container(color: context.themeCardColor),
                                       ),
                                     ),
                                     const SizedBox(height: 8),
@@ -359,7 +360,7 @@ class _ArtistDetailScreenState extends State<ArtistDetailScreen> {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: GoogleFonts.inter(
-                                        color: Colors.white,
+                                        color: context.themeTextColor,
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                       ),
