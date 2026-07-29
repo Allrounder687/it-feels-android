@@ -10,6 +10,7 @@ import '../details/artist_detail_screen.dart';
 import '../details/playlist_detail_screen.dart';
 
 import '../../providers/hidden_songs_provider.dart';
+import '../../providers/settings_provider.dart';
 
 import '../widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';

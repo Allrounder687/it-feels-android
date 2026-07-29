@@ -245,6 +245,7 @@ class StorageService {
     required String hapticsMode,
     bool? useProxyBackend,
     String? proxyUrl,
+    bool? enableMusicVideos,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_wifiQualityKey, wifiQuality);

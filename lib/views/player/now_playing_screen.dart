@@ -14,6 +14,8 @@ import 'queue_bottom_sheet.dart';
 import 'sleep_timer_sheet.dart';
 import '../home/driving_mode_screen.dart';
 import '../widgets/animated_play_pause_button.dart';
+import '../../providers/settings_provider.dart';
+import '../video/video_player_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class NowPlayingScreen extends StatelessWidget {
@@ -49,6 +51,7 @@ class NowPlayingScreen extends StatelessWidget {
         final isFav = playerProvider.isFavorite(currentSong.id);
         final isDown = downloadProvider.isDownloaded(currentSong.id);
         final isDownloading = downloadProvider.isDownloading(currentSong.id);
+        final settingsProvider = Provider.of<SettingsProvider>(context);
 
         return Scaffold(
           backgroundColor: bgColor,

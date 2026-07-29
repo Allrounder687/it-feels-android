@@ -12,6 +12,8 @@ import '../providers/custom_playlist_provider.dart';
 import '../data/models/song_model.dart';
 import '../data/services/music_api_service.dart';
 import '../services/playlist_import_service.dart';
+import '../providers/settings_provider.dart';
+import 'video/video_tab_screen.dart';
 import 'home/home_screen.dart';
 import 'library/library_screen.dart';
 import 'player/now_playing_screen.dart';
