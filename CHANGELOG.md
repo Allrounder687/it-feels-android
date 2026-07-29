@@ -2,9 +2,13 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
-## [2.3.7] - 2026-07-29
+## [2.3.8] - 2026-07-29
 
 ### Fixed
+- **Gapless Playback State Bug:** Fixed a deep-rooted bug where `just_audio` would show `00:00` and fail to play the next song in the queue because expired Jio CDN URLs were being cached in local storage. `encryptedMediaUrl` is now explicitly purged from the local database before saving, forcing the app to freshly fetch unexpired CDN stream URLs upon playback resuming.
+- **iOS AVPlayer Infinite Loop:** Fixed a critical iOS bug where `just_audio` would fail to reset the playback position when switching to a new audio source from the `completed` state, by enforcing `initialPosition: Duration.zero`.
+
+
 - **TrollStore QR Code:** URL-encoded the TrollStore installation link in GitHub Actions so that scanning the QR code properly works on Apple devices.
 - **Cache Playback Bug:** Fixed a JSON deserialization bug where the `encryptedMediaUrl` was missing when restoring songs from the "Recently Played" list or Playback Queue. Songs now properly resume and advance perfectly even after restarting the app.
 - **iPhone Notch Support:** Replaced hardcoded app bar paddings with dynamic `MediaQuery.viewPaddingOf` values to perfectly accommodate iPhone XR and other notched devices.
