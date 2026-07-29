@@ -112,6 +112,57 @@ class BackendApiService {
     return null;
   }
 
+  /// Fetch MP4 Video Streams with Age Restriction Bypass
+  static Future<Map<String, dynamic>> getVideoStreams(String videoId) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/video').replace(queryParameters: {'id': videoId});
+      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {
+          'title': data['title'] ?? 'Music Video',
+          'streams': data['streams'] ?? [],
+          'audioUrl': data['audioUrl'] ?? '',
+        };
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] getVideoStreams error: $e');
+    }
+    return {'title': 'Music Video', 'streams': []};
+  }
+
+  /// Search Videos for Dedicated Video Tab
+  static Future<List<Map<String, dynamic>>> searchVideos(String query) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/videos/search').replace(queryParameters: {'query': query});
+      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List list = data['videos'] ?? [];
+        return list.map((item) => Map<String, dynamic>.from(item)).toList();
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] searchVideos error: $e');
+    }
+    return [];
+  }
+
+  /// Get Trending Videos for Dedicated Video Tab
+  static Future<List<Map<String, dynamic>>> getTrendingVideos() async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/videos/trending');
+      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List list = data['videos'] ?? [];
+        return list.map((item) => Map<String, dynamic>.from(item)).toList();
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] getTrendingVideos error: $e');
+    }
+    return [];
+  }
+
   /// Deserializes normalized JSON from serverless proxy into Flutter Song model
   static Song _songFromProxyJson(Map<String, dynamic> json) {
     final rawId = json['id']?.toString() ?? '';

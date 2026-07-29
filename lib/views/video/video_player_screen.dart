@@ -114,8 +114,11 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   void _seekRelative(int seconds) {
     if (_controller != null && _controller!.value.isInitialized) {
       final current = _controller!.value.position;
-      final target = current + Duration(seconds: seconds);
-      _controller!.seekTo(target.clamp(Duration.zero, _controller!.value.duration));
+      final total = _controller!.value.duration;
+      var targetMs = current.inMilliseconds + (seconds * 1000);
+      if (targetMs < 0) targetMs = 0;
+      if (targetMs > total.inMilliseconds) targetMs = total.inMilliseconds;
+      _controller!.seekTo(Duration(milliseconds: targetMs));
     }
   }
 
