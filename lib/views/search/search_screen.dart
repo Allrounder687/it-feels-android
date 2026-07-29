@@ -251,14 +251,22 @@ class _SearchScreenState extends State<SearchScreen> {
                                                 fontSize: 14,
                                               ),
                                             ),
-                                            subtitle: Text(
-                                              song.artist,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.inter(
-                                                color: context.themeMutedTextColor,
-                                                fontSize: 12,
-                                              ),
+                                            subtitle: Row(
+                                              children: [
+                                                _buildProviderBadge(context, song.id),
+                                                const SizedBox(width: 6),
+                                                Expanded(
+                                                  child: Text(
+                                                    song.artist,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: GoogleFonts.inter(
+                                                      color: context.themeMutedTextColor,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                             trailing: IconButton(
                                               icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
@@ -412,6 +420,40 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildProviderBadge(BuildContext context, String songId) {
+    String label = 'SAAVN';
+    Color badgeColor = const Color(0xFF00B0FF); // Cool Saavn Blue
+
+    if (songId.startsWith('youtube:')) {
+      label = 'YOUTUBE';
+      badgeColor = const Color(0xFFFF3D00); // YouTube Red
+    } else if (songId.startsWith('spotify:')) {
+      label = 'SPOTIFY';
+      badgeColor = const Color(0xFF1DB954); // Spotify Green
+    } else if (songId.startsWith('soundcloud:')) {
+      label = 'SOUNDCLOUD';
+      badgeColor = const Color(0xFFFF5500); // SoundCloud Orange
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.35), width: 0.7),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.outfit(
+          fontSize: 8.5,
+          fontWeight: FontWeight.w800,
+          color: badgeColor,
+          letterSpacing: 0.4,
+        ),
+      ),
     );
   }
 }

@@ -4,6 +4,7 @@ import { SaavnProvider } from './providers/saavn';
 import { YoutubeProvider } from './providers/youtube';
 import { SpotifyProvider } from './providers/spotify';
 import { LrcLibProvider } from './providers/lrclib';
+import { MusixmatchProvider } from './providers/musixmatch';
 
 const app = new Hono();
 
@@ -15,8 +16,8 @@ app.get('/health', (c) => {
   return c.json({
     status: 'ok',
     service: 'FEELS Cloud Proxy Engine',
-    version: '1.0.0',
-    providers: ['saavn', 'youtube', 'spotify', 'lrclib'],
+    version: '1.1.0',
+    providers: ['saavn', 'youtube', 'spotify', 'lrclib', 'musixmatch'],
     timestamp: new Date().toISOString(),
   });
 });
@@ -62,6 +63,13 @@ app.get('/api/v1/sources', (c) => {
       version: '1.0.0',
       enabledByDefault: true,
     },
+    {
+      source_id: 'in.itfeels.provider.musixmatch',
+      source_name: 'MusixmatchLyricsProvider',
+      source_type: 'PROVIDER',
+      version: '1.0.0',
+      enabledByDefault: true,
+    },
   ]);
 });
 
@@ -103,7 +111,6 @@ app.get('/api/v1/search', async (c) => {
     const ytList = ytRes.status === 'fulfilled' ? ytRes.value : [];
     const spotifyList = spotifyRes.status === 'fulfilled' ? spotifyRes.value : [];
 
-    // Interleave results for best variety
     const combined = [...saavnList, ...ytList, ...spotifyList];
 
     return c.json({
@@ -130,13 +137,11 @@ app.get('/api/v1/stream', async (c) => {
   }
 
   try {
-    // Direct JioSaavn encrypted URL decryption
     if (encUrl) {
       const streamUrl = SaavnProvider.decryptUrl(encUrl);
       return c.json({ success: true, provider: 'saavn', streamUrl });
     }
 
-    // ID-based resolution
     if (id) {
       if (id.startsWith('youtube:')) {
         const streamUrl = await YoutubeProvider.getAudioStream(id);
@@ -161,7 +166,6 @@ app.get('/api/v1/stream', async (c) => {
       }
     }
 
-    // Title + Artist fallback matching
     if (title && artist) {
       const streamUrl = await SpotifyProvider.getAudioStream(title, artist);
       if (streamUrl) {
@@ -175,7 +179,7 @@ app.get('/api/v1/stream', async (c) => {
   }
 });
 
-// Synced & Plain Lyrics Route
+// Synced & Plain Lyrics Route (LrcLib -> Musixmatch Waterfall)
 app.get('/api/v1/lyrics', async (c) => {
   const track = c.req.query('track');
   const artist = c.req.query('artist');
@@ -187,10 +191,19 @@ app.get('/api/v1/lyrics', async (c) => {
   }
 
   try {
-    const lyrics = await LrcLibProvider.getLyrics(track, artist, album, duration);
+    // 1. Try LrcLib primary
+    let lyrics = await LrcLibProvider.getLyrics(track, artist, album, duration);
+    
+    // 2. Fallback to Musixmatch
+    if (!lyrics || (!lyrics.syncedLyrics && !lyrics.plainLyrics)) {
+      const mxmResult = await MusixmatchProvider.getLyrics(track, artist, album);
+      if (mxmResult) lyrics = mxmResult;
+    }
+
     if (!lyrics) {
       return c.json({ success: false, message: 'Lyrics not found' }, 404);
     }
+
     return c.json({ success: true, lyrics });
   } catch (e: any) {
     return c.json({ error: 'Lyrics fetch failed', details: e.message }, 500);

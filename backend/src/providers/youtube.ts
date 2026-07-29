@@ -11,6 +11,11 @@ export class YoutubeProvider {
    * Search YouTube for audio tracks via YoutubeExplode / InnerTube API logic
    */
   static async search(query: string, limit = 20): Promise<NormalizedTrack[]> {
+    // Primary: Direct InnerTube search
+    const innerTubeResults = await this.directInnerTubeSearch(query, limit);
+    if (innerTubeResults.length > 0) return innerTubeResults;
+
+    // Fallback: Piped API search
     for (const instance of this.PIPED_INSTANCES) {
       try {
         const url = `${instance}/search?q=${encodeURIComponent(query)}&filter=music_songs`;
@@ -19,6 +24,7 @@ export class YoutubeProvider {
 
         const data = (await response.json()) as any;
         const items = data.items || [];
+        if (items.length === 0) continue;
 
         return items.slice(0, limit).map((item: any) => {
           const videoId = item.url ? item.url.split('v=')[1] : '';
@@ -41,8 +47,7 @@ export class YoutubeProvider {
       }
     }
 
-    // Direct InnerTube search fallback
-    return await this.directInnerTubeSearch(query, limit);
+    return [];
   }
 
   /**

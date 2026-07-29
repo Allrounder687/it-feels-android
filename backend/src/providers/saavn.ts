@@ -1,6 +1,6 @@
 import CryptoJS from 'crypto-js';
 
-const DES_KEY = CryptoJS.enc.Utf8.parse('38588548');
+const DES_KEY = CryptoJS.enc.Utf8.parse('383465913834659138346591');
 const SAAVN_BASE_URL = 'https://www.jiosaavn.com/api.php';
 
 export interface NormalizedTrack {
@@ -21,22 +21,27 @@ export interface NormalizedTrack {
 
 export class SaavnProvider {
   /**
-   * Decrypt JioSaavn encrypted_media_url into direct audio CDN link
+   * Decrypt JioSaavn encrypted_media_url into direct 320kbps audio CDN link
    */
   static decryptUrl(encryptedUrl: string): string {
     try {
-      const ciphertext = CryptoJS.enc.Base64.parse(encryptedUrl);
-      const decrypted = CryptoJS.DES.decrypt(
-        { ciphertext: ciphertext } as CryptoJS.lib.CipherParams,
-        DES_KEY,
-        {
-          mode: CryptoJS.mode.ECB,
-          padding: CryptoJS.pad.Pkcs7,
-        }
-      );
+      if (!encryptedUrl || !encryptedUrl.trim()) return '';
+      const decrypted = CryptoJS.TripleDES.decrypt(encryptedUrl.trim(), DES_KEY, {
+        mode: CryptoJS.mode.ECB,
+        padding: CryptoJS.pad.Pkcs7,
+      });
       const url = decrypted.toString(CryptoJS.enc.Utf8);
-      // Upgrade preview URLs to high quality audio CDN
-      return url.replace('preview.saavncdn.com', 'aac.saavncdn.com');
+      if (!url) return '';
+      let cleanUrl = url.replace('http://', 'https://');
+      if (cleanUrl.includes('preview.saavncdn.com')) {
+        cleanUrl = cleanUrl.replace('preview.saavncdn.com', 'aac.saavncdn.com');
+      }
+      if (cleanUrl.includes('_96.mp4')) {
+        cleanUrl = cleanUrl.replace('_96.mp4', '_320.mp4');
+      } else if (cleanUrl.includes('_160.mp4')) {
+        cleanUrl = cleanUrl.replace('_160.mp4', '_320.mp4');
+      }
+      return cleanUrl;
     } catch (e) {
       console.error('Failed to decrypt Saavn URL:', e);
       return '';
@@ -105,8 +110,14 @@ export class SaavnProvider {
       coverArt = coverArt.replace('150x150', '500x500').replace('50x50', '500x500');
     }
 
-    const encUrl = item.encrypted_media_url || item.more_info?.encrypted_media_url || '';
-    const streamUrl = encUrl ? this.decryptUrl(encUrl) : '';
+    const encUrl = item.encrypted_media_url || 
+                   item.more_info?.encrypted_media_url || 
+                   item.encrypted_url || 
+                   item.more_info?.encrypted_url || 
+                   item.media_url || 
+                   item.more_info?.media_url || 
+                   '';
+    const streamUrl = encUrl ? this.decryptUrl(encUrl) : (item.media_preview_url || '');
     const hasLyrics = item.more_info?.has_lyrics === 'true' || item.more_info?.has_lyrics === true;
 
     return {
