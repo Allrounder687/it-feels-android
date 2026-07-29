@@ -2,6 +2,14 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
+## [2.3.6] - 2026-07-29
+
+### Added
+- **Immersive Tablet UX:** Completely overhauled the `NowPlayingScreen` to use a dynamic side-by-side layout on tablets with massive 45% screen width album art and deep pulse glow.
+- **Hero Banner:** Added a responsive, blur-heavy Hero Banner for the top recommended content on the Home screen.
+- **Glassmorphism Polish:** Applied authentic blur `BackdropFilter` effects to the side navigation rail (tablets), bottom navigation pill (mobile), and MiniPlayer pill.
+- **Snappier Animations:** Re-tuned `BouncyIconButton` with an `easeOutCubic` press and `elasticOut` release (75ms duration) for a lightning-fast feel.
+
 ## [2.3.5] - 2026-07-30
 
 ### Fixed
