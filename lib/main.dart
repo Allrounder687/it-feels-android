@@ -97,9 +97,9 @@ class PixelPlayerSaavnApp extends StatelessWidget {
       ],
       child: DynamicColorBuilder(
         builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-          final colorScheme = darkDynamic ?? ColorScheme.fromSeed(seedColor: context.themeAccentColor, brightness: Brightness.dark);
           return Builder(
             builder: (context) {
+              final colorScheme = darkDynamic ?? ColorScheme.fromSeed(seedColor: context.themeAccentColor, brightness: Brightness.dark);
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 final provider = Provider.of<AudioPlayerProvider>(context, listen: false);
                 provider.setMaterialYouColors(colorScheme.surface, colorScheme.surfaceContainer, colorScheme.primary);
