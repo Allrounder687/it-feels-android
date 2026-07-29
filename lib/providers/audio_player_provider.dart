@@ -7,6 +7,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:vibration/vibration.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:path_provider/path_provider.dart';
 import '../core/theme/app_colors.dart';
 import '../data/models/song_model.dart';
 import '../data/services/audio_player_handler.dart';
@@ -534,10 +535,22 @@ class AudioPlayerProvider extends ChangeNotifier {
     final downloads = await StorageService.loadDownloads();
     final downloadedSong = downloads.cast<Song?>().firstWhere((s) => s?.id == song.id, orElse: () => null);
 
-    if (downloadedSong != null && downloadedSong.encryptedMediaUrl != null && File(downloadedSong.encryptedMediaUrl!).existsSync()) {
-      streamUrl = downloadedSong.encryptedMediaUrl;
-      debugPrint('[AudioPlayerProvider] Playing downloaded file for ${song.title}');
-    } else {
+    if (downloadedSong != null && downloadedSong.encryptedMediaUrl != null) {
+      String localPath = downloadedSong.encryptedMediaUrl!;
+      if (!File(localPath).existsSync() && Platform.isIOS) {
+        // iOS app sandbox GUID changes on rebuilds/updates. Resolve dynamically:
+        final dir = await getApplicationDocumentsDirectory();
+        final fileName = localPath.split('/').last;
+        localPath = '${dir.path}/downloaded_music/$fileName';
+      }
+      
+      if (File(localPath).existsSync()) {
+        streamUrl = localPath;
+        debugPrint('[AudioPlayerProvider] Playing downloaded file for ${song.title}');
+      }
+    }
+    
+    if (streamUrl == null) {
       streamUrl = await apiService.getStreamUrl(song);
     }
     
