@@ -269,6 +269,31 @@ class SettingsScreen extends StatelessWidget {
                 },
               ),
 
+              SwitchListTile.adaptive(
+                value: settings.enableMusicVideos,
+                activeColor: context.themeAccentColor,
+                title: Text(
+                  "Enable Music Videos & Video Tab",
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: context.themeTextColor,
+                  ),
+                ),
+                subtitle: Text(
+                  settings.enableMusicVideos
+                      ? "Active: Dedicated Videos tab & ad-free video player unlocked"
+                      : "Inactive: Pure audio mode (0 video clutter)",
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: context.themeMutedTextColor,
+                  ),
+                ),
+                onChanged: (val) {
+                  settings.setEnableMusicVideos(val);
+                },
+              ),
+
               _buildActionTile(
                 context: context,
                 title: "Serverless Proxy URL",

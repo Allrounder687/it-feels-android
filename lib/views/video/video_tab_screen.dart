@@ -1,0 +1,430 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/theme_ext.dart';
+import '../../services/backend_api_service.dart';
+import '../../services/storage_service.dart';
+import 'video_player_screen.dart';
+
+class VideoTabScreen extends StatefulWidget {
+  const VideoTabScreen({super.key});
+
+  @override
+  State<VideoTabScreen> createState() => _VideoTabScreenState();
+}
+
+class _VideoTabScreenState extends State<VideoTabScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  bool _isLoading = true;
+  bool _isSearching = false;
+  List<Map<String, dynamic>> _trendingVideos = [];
+  List<Map<String, dynamic>> _searchResults = [];
+  List<Map<String, dynamic>> _offlineVideos = [];
+  int _selectedCategoryIndex = 0; // 0: Trending, 1: Search, 2: Downloads
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTrendingAndOffline();
+  }
+
+  Future<void> _loadTrendingAndOffline() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final trending = await BackendApiService.getTrendingVideos();
+      final offline = await StorageService.loadDownloadedVideos();
+
+      _trendingVideos = trending;
+      _offlineVideos = offline;
+    } catch (e) {
+      debugPrint('[VideoTabScreen] Error loading videos: $e');
+    }
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _searchVideos(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _isSearching = false;
+        _searchResults = [];
+      });
+      return;
+    }
+
+    setState(() => _isSearching = true);
+
+    try {
+      final results = await BackendApiService.searchVideos(query);
+      if (mounted) {
+        setState(() {
+          _searchResults = results;
+          _isSearching = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: context.themeBackgroundColor,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top Header Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.midnightAccent.withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.video_library, color: AppColors.midnightAccent, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        "Ad-Free Videos",
+                        style: GoogleFonts.outfit(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: context.themeTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  IconButton(
+                    icon: Icon(Icons.refresh, color: context.themeMutedTextColor),
+                    onPressed: _loadTrendingAndOffline,
+                  ),
+                ],
+              ),
+            ),
+
+            // Search Bar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: context.themeCardColor.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: context.themeMutedTextColor.withValues(alpha: 0.15)),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onSubmitted: (val) {
+                    setState(() => _selectedCategoryIndex = 1);
+                    _searchVideos(val);
+                  },
+                  style: GoogleFonts.inter(color: context.themeTextColor),
+                  decoration: InputDecoration(
+                    hintText: "Search YouTube ad-free videos...",
+                    hintStyle: GoogleFonts.inter(color: context.themeMutedTextColor),
+                    prefixIcon: Icon(Icons.search, color: context.themeMutedTextColor),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.clear, color: context.themeMutedTextColor),
+                            onPressed: () {
+                              _searchController.clear();
+                              _searchVideos('');
+                            },
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Category Filter Pills
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  _buildCategoryPill(0, "🔥 Trending"),
+                  const SizedBox(width: 8),
+                  _buildCategoryPill(1, "🔍 Search Results"),
+                  const SizedBox(width: 8),
+                  _buildCategoryPill(2, "📥 Offline Videos (${_offlineVideos.length})"),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Main Content Area
+            Expanded(
+              child: _isLoading || _isSearching
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent))
+                  : _selectedCategoryIndex == 2
+                      ? _buildOfflineVideosList()
+                      : _selectedCategoryIndex == 1
+                          ? _buildVideoGrid(_searchResults, emptyMessage: "No video search results found")
+                          : _buildVideoGrid(_trendingVideos, emptyMessage: "No trending videos available"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryPill(int index, String label) {
+    final isSelected = _selectedCategoryIndex == index;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedCategoryIndex = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? context.themeAccentColor : context.themeCardColor.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: isSelected ? context.themeInvertedTextColor : context.themeMutedTextColor,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoGrid(List<Map<String, dynamic>> videos, {required String emptyMessage}) {
+    if (videos.isEmpty) {
+      return Center(
+        child: Text(
+          emptyMessage,
+          style: GoogleFonts.inter(color: context.themeMutedTextColor),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.only(left: 20, right: 20, bottom: 160 + MediaQuery.of(context).viewPadding.bottom),
+      itemCount: videos.length,
+      itemBuilder: (context, index) {
+        final video = videos[index];
+        final videoId = video['id']?.toString() ?? '';
+        final title = video['title']?.toString() ?? 'Video';
+        final uploader = video['uploader']?.toString() ?? 'YouTube Creator';
+        final thumbnail = video['thumbnail']?.toString() ?? '';
+        final views = video['views']?.toString() ?? '';
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Material(
+            color: context.themeCardColor.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(20),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => VideoPlayerScreen(
+                      videoId: videoId,
+                      title: title,
+                      uploader: uploader,
+                    ),
+                  ),
+                );
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Video Thumbnail Banner
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    child: Stack(
+                      children: [
+                        AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: thumbnail.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: thumbnail,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) => Container(color: Colors.black26),
+                                )
+                              : Container(color: Colors.black26),
+                        ),
+
+                        // Center Play Glassmorphism Icon
+                        Positioned.fill(
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white30),
+                              ),
+                              child: const Icon(Icons.play_arrow, color: Colors.white, size: 32),
+                            ),
+                          ),
+                        ),
+
+                        // Views Pill Badge
+                        if (views.isNotEmpty)
+                          Positioned(
+                            bottom: 10,
+                            right: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.8),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                views,
+                                style: GoogleFonts.inter(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  // Video Details Footer
+                  Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: AppColors.midnightAccent.withValues(alpha: 0.2),
+                          radius: 18,
+                          child: const Icon(Icons.video_library, color: AppColors.midnightAccent, size: 18),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.themeTextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                uploader,
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: context.themeMutedTextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOfflineVideosList() {
+    if (_offlineVideos.isEmpty) {
+      return Center(
+        child: Text(
+          "No offline downloaded videos yet",
+          style: GoogleFonts.inter(color: context.themeMutedTextColor),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.only(left: 20, right: 20, bottom: 160 + MediaQuery.of(context).viewPadding.bottom),
+      itemCount: _offlineVideos.length,
+      itemBuilder: (context, index) {
+        final video = _offlineVideos[index];
+        final videoId = video['id']?.toString() ?? '';
+        final title = video['title']?.toString() ?? 'Downloaded Video';
+        final uploader = video['uploader']?.toString() ?? 'Offline Video';
+        final localPath = video['localPath']?.toString() ?? '';
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Material(
+            color: context.themeCardColor.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(16),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: AppColors.midnightAccent.withValues(alpha: 0.2),
+                child: const Icon(Icons.download_done, color: AppColors.midnightAccent),
+              ),
+              title: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: context.themeTextColor),
+              ),
+              subtitle: Text(
+                "$uploader • Offline MP4",
+                style: GoogleFonts.inter(fontSize: 12, color: context.themeMutedTextColor),
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                onPressed: () async {
+                  if (localPath.isNotEmpty && File(localPath).existsSync()) {
+                    File(localPath).deleteSync();
+                  }
+                  await StorageService.deleteDownloadedVideo(videoId);
+                  _loadTrendingAndOffline();
+                },
+              ),
+              onTap: () {
+                if (localPath.isNotEmpty && File(localPath).existsSync()) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => VideoPlayerScreen(
+                        videoId: videoId,
+                        title: title,
+                        uploader: uploader,
+                        initialUrl: localPath,
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

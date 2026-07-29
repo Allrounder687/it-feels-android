@@ -13,6 +13,7 @@ class SettingsProvider extends ChangeNotifier {
   String _hapticsMode = 'Off'; // Off, UI Only, Audio Sync
   bool _useProxyBackend = false;
   String _proxyUrl = 'https://it-feels-proxy.cleverfox687.workers.dev';
+  bool _enableMusicVideos = false;
 
   SettingsProvider() {
     _loadSettings();
@@ -28,6 +29,7 @@ class SettingsProvider extends ChangeNotifier {
   String get hapticsMode => _hapticsMode;
   bool get useProxyBackend => _useProxyBackend;
   String get proxyUrl => _proxyUrl;
+  bool get enableMusicVideos => _enableMusicVideos;
 
   Future<void> _loadSettings() async {
     final settings = await StorageService.loadSettings();
@@ -40,6 +42,7 @@ class SettingsProvider extends ChangeNotifier {
     _hapticsMode = settings['hapticsMode'] ?? _hapticsMode;
     _useProxyBackend = settings['useProxyBackend'] == true;
     _proxyUrl = settings['proxyUrl'] ?? _proxyUrl;
+    _enableMusicVideos = settings['enableMusicVideos'] == true;
     
     BackendApiService.useProxyBackend = _useProxyBackend;
     BackendApiService.baseUrl = _proxyUrl;
@@ -101,6 +104,11 @@ class SettingsProvider extends ChangeNotifier {
     _save();
   }
 
+  void setEnableMusicVideos(bool enable) {
+    _enableMusicVideos = enable;
+    _save();
+  }
+
   void _save() {
     StorageService.saveSettings(
       wifiQuality: _wifiQuality,
@@ -112,6 +120,7 @@ class SettingsProvider extends ChangeNotifier {
       hapticsMode: _hapticsMode,
       useProxyBackend: _useProxyBackend,
       proxyUrl: _proxyUrl,
+      enableMusicVideos: _enableMusicVideos,
     );
     notifyListeners();
   }

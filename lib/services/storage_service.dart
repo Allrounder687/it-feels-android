@@ -256,6 +256,7 @@ class StorageService {
     await prefs.setString('haptics_mode', hapticsMode);
     if (useProxyBackend != null) await prefs.setBool('use_proxy_backend', useProxyBackend);
     if (proxyUrl != null) await prefs.setString('proxy_url', proxyUrl);
+    if (enableMusicVideos != null) await prefs.setBool('enable_music_videos', enableMusicVideos);
   }
 
   static Future<Map<String, dynamic>> loadSettings() async {
@@ -270,7 +271,38 @@ class StorageService {
       'hapticsMode': prefs.getString('haptics_mode') ?? 'Off',
       'useProxyBackend': prefs.getBool('use_proxy_backend') ?? false,
       'proxyUrl': prefs.getString('proxy_url') ?? 'https://it-feels-proxy.cleverfox687.workers.dev',
+      'enableMusicVideos': prefs.getBool('enable_music_videos') ?? false,
     };
+  }
+
+  /// Save Downloaded Offline Video
+  static Future<void> saveDownloadedVideo(Map<String, dynamic> videoData) async {
+    final prefs = await SharedPreferences.getInstance();
+    final videos = await loadDownloadedVideos();
+    videos.removeWhere((v) => v['id'] == videoData['id']);
+    videos.insert(0, videoData);
+    await prefs.setString('offline_downloaded_videos_v1', json.encode(videos));
+  }
+
+  /// Load Downloaded Offline Videos
+  static Future<List<Map<String, dynamic>>> loadDownloadedVideos() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('offline_downloaded_videos_v1');
+    if (raw == null || raw.isEmpty) return [];
+    try {
+      final List<dynamic> list = json.decode(raw);
+      return list.map((item) => Map<String, dynamic>.from(item)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Delete Downloaded Video
+  static Future<void> deleteDownloadedVideo(String videoId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final videos = await loadDownloadedVideos();
+    videos.removeWhere((v) => v['id'] == videoId);
+    await prefs.setString('offline_downloaded_videos_v1', json.encode(videos));
   }
 
   /// Audio Enhancements (DSP, Haptics, Speed, Pitch)

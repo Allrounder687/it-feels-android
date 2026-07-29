@@ -36,6 +36,10 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     return Consumer3<SearchProvider, AudioPlayerProvider, HiddenSongsProvider>(
       builder: (context, searchProvider, playerProvider, hiddenProvider, child) {
+        final settingsProvider = Provider.of<SettingsProvider>(context);
+        final enableVideos = settingsProvider.enableMusicVideos;
+        final categories = ["ALL", "SONGS", "ARTISTS", "ALBUMS", "PLAYLISTS", if (enableVideos) "VIDEOS"];
+
         final songs = searchProvider.songs.where((s) => !hiddenProvider.isHidden(s.id)).toList();
         final albums = searchProvider.albums;
         final playlists = searchProvider.playlists;
@@ -100,7 +104,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: _categories.length,
+                    itemCount: categories.length,
                     itemBuilder: (context, index) {
                       final isSelected = index == _selectedCategoryIndex;
                       return GestureDetector(
@@ -117,7 +121,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             borderRadius: BorderRadius.circular(19),
                           ),
                           child: Text(
-                            _categories[index],
+                            categories[index],
                             style: GoogleFonts.inter(
                               color: isSelected ? context.themeInvertedTextColor : context.themeTextColor,
                               fontSize: 12,

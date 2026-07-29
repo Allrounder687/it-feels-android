@@ -175,6 +175,30 @@ class NowPlayingScreen extends StatelessWidget {
                                 }
                               },
                             ),
+                            if (settingsProvider.enableMusicVideos)
+                              IconButton(
+                                icon: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: accentColor.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: accentColor.withValues(alpha: 0.4)),
+                                  ),
+                                  child: Icon(Icons.video_library_rounded, color: accentColor, size: 24),
+                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => VideoPlayerScreen(
+                                        videoId: currentSong.id.contains(':') ? currentSong.id : 'youtube:${currentSong.saavnId}',
+                                        title: currentSong.title,
+                                        uploader: currentSong.artist,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                             IconButton(
                               icon: Container(
                                 padding: const EdgeInsets.all(10),

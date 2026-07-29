@@ -194,10 +194,14 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
 
   @override
   Widget build(BuildContext context) {
+    final settingsProvider = Provider.of<SettingsProvider>(context);
+    final enableVideos = settingsProvider.enableMusicVideos;
+
     final List<Widget> screens = [
       HomeScreen(openFullPlayer: _openFullPlayer),
       const SearchScreen(),
       const LibraryScreen(),
+      if (enableVideos) const VideoTabScreen(),
     ];
 
     return Scaffold(
@@ -231,26 +235,30 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
                           ],
                         ),
                         child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildNavItem(0, Icons.home_rounded, "Home", isVertical: true),
-                        const SizedBox(height: 24),
-                        _buildNavItem(1, Icons.search_rounded, "Search", isVertical: true),
-                        const SizedBox(height: 24),
-                        _buildNavItem(2, Icons.library_music_rounded, "Library", isVertical: true),
-                      ],
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildNavItem(0, Icons.home_rounded, "Home", isVertical: true),
+                            const SizedBox(height: 24),
+                            _buildNavItem(1, Icons.search_rounded, "Search", isVertical: true),
+                            const SizedBox(height: 24),
+                            _buildNavItem(2, Icons.library_music_rounded, "Library", isVertical: true),
+                            if (enableVideos) ...[
+                              const SizedBox(height: 24),
+                              _buildNavItem(3, Icons.video_library_rounded, "Videos", isVertical: true),
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ),
                 // Main Content
                 Expanded(
                   child: Stack(
                     children: [
                       // Indexed Active Screen
                       IndexedStack(
-                        index: _currentTab,
+                        index: _currentTab < screens.length ? _currentTab : 0,
                         children: screens,
                       ),
                       // Floating MiniPlayer Overlay
@@ -283,7 +291,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
             children: [
               // Indexed Active Screen
               IndexedStack(
-                index: _currentTab,
+                index: _currentTab < screens.length ? _currentTab : 0,
                 children: screens,
               ),
 
@@ -328,6 +336,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
                                 _buildNavItem(0, Icons.home_rounded, "Home"),
                                 _buildNavItem(1, Icons.search_rounded, "Search"),
                                 _buildNavItem(2, Icons.library_music_rounded, "Library"),
+                                if (enableVideos) _buildNavItem(3, Icons.video_library_rounded, "Videos"),
                               ],
                             ),
                           ),

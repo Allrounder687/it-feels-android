@@ -16,8 +16,10 @@ app.get('/health', (c) => {
   return c.json({
     status: 'ok',
     service: 'FEELS Cloud Proxy Engine',
-    version: '1.1.0',
+    version: '1.2.0',
     providers: ['saavn', 'youtube', 'spotify', 'lrclib', 'musixmatch'],
+    videoSupport: true,
+    ageRestrictionBypass: true,
     timestamp: new Date().toISOString(),
   });
 });
@@ -36,7 +38,9 @@ app.get('/api/v1/sources', (c) => {
       source_id: 'in.itfeels.provider.youtube',
       source_name: 'YoutubeProvider',
       source_type: 'DOWNLOADABLE_PROVIDER',
-      version: '1.0.0',
+      version: '1.2.0',
+      videoSupported: true,
+      ageBypass: true,
       enabledByDefault: true,
     },
     {
@@ -122,6 +126,70 @@ app.get('/api/v1/search', async (c) => {
     });
   } catch (e: any) {
     return c.json({ error: 'Search failed', details: e.message }, 500);
+  }
+});
+
+// Video Stream Resolution Route (with Age Restriction Bypass)
+app.get('/api/v1/video', async (c) => {
+  const id = c.req.query('id');
+  const query = c.req.query('query');
+
+  if (!id && !query) {
+    return c.json({ error: 'Either id or query parameter is required' }, 400);
+  }
+
+  try {
+    let videoId = id || '';
+    if (query && !videoId) {
+      const searchRes = await YoutubeProvider.searchVideos(query, 1);
+      if (searchRes.length > 0) {
+        videoId = searchRes[0].id;
+      }
+    }
+
+    if (!videoId) {
+      return c.json({ error: 'Video not found' }, 404);
+    }
+
+    const videoData = await YoutubeProvider.getVideoStreams(videoId);
+    return c.json({
+      success: true,
+      id: videoId,
+      title: videoData.title,
+      streams: videoData.streams,
+      audioUrl: videoData.audioUrl || '',
+    });
+  } catch (e: any) {
+    return c.json({ error: 'Video stream resolution failed', details: e.message }, 500);
+  }
+});
+
+// Video Search Route for Dedicated Videos Tab
+app.get('/api/v1/videos/search', async (c) => {
+  const query = c.req.query('query');
+  const limit = parseInt(c.req.query('limit') || '20', 10);
+
+  if (!query) {
+    return c.json({ error: 'Query parameter is required' }, 400);
+  }
+
+  try {
+    const videos = await YoutubeProvider.searchVideos(query, limit);
+    return c.json({ success: true, query, totalCount: videos.length, videos });
+  } catch (e: any) {
+    return c.json({ error: 'Video search failed', details: e.message }, 500);
+  }
+});
+
+// Trending Videos Route for Dedicated Videos Tab
+app.get('/api/v1/videos/trending', async (c) => {
+  const limit = parseInt(c.req.query('limit') || '20', 10);
+
+  try {
+    const videos = await YoutubeProvider.getTrendingVideos(limit);
+    return c.json({ success: true, totalCount: videos.length, videos });
+  } catch (e: any) {
+    return c.json({ error: 'Trending videos fetch failed', details: e.message }, 500);
   }
 });
 

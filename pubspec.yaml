@@ -44,6 +44,7 @@ dependencies:
   flutter_svg: ^2.0.17
   shared_preferences: ^2.3.2
   path_provider: ^2.1.5
+  video_player: ^2.9.2
 
   #flutter_secure_storage: ^9.0.0
   #audiotags: ^1.4.5
