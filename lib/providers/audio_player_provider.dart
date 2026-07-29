@@ -556,6 +556,13 @@ class AudioPlayerProvider extends ChangeNotifier {
   Future<void> togglePlayPause() async {
     if (_currentSong == null) return;
     triggerHaptic(heavy: true);
+
+    // If the app was relaunched and queue restored, the audio source might be empty.
+    if (audioHandler.player.audioSource == null) {
+      await playSong(_currentSong!, queue: _queue, index: _currentIndex);
+      return;
+    }
+
     if (_isPlaying) {
       await audioHandler.pause();
     } else {
