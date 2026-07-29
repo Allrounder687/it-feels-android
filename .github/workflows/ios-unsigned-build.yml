@@ -11,6 +11,8 @@ jobs:
   build-ios:
     name: Build unsigned iOS IPA
     runs-on: macos-latest
+    permissions:
+      contents: write
     
     steps:
       - name: Checkout code
@@ -95,3 +97,32 @@ jobs:
         with:
           name: IT-Feels-iOS.ipa
           path: IT-Feels.ipa
+
+      - name: Generate QR Code for Action Summary
+        run: |
+          URL="trollstore://install?url=https://github.com/${{ github.repository }}/releases/download/nightly/IT-Feels.ipa"
+          # We use a public QR code API to render the TrollStore URL in the summary
+          QR_URL="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${URL}"
+          
+          echo "### 📲 Install on iPad (TrollStore)" >> $GITHUB_STEP_SUMMARY
+          echo "**Tap this link from your iPad:** [Install Latest Build]($URL)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Or scan this QR Code using your iPad camera:**" >> $GITHUB_STEP_SUMMARY
+          echo "<br><img src=\"$QR_URL\" width=\"250\" height=\"250\">" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create or Update Nightly Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: "Latest Nightly Build"
+          body: |
+            This is the latest auto-generated build.
+            
+            [📲 **Tap here to Install via TrollStore**](trollstore://install?url=https://github.com/${{ github.repository }}/releases/download/nightly/IT-Feels.ipa)
+            
+            *(Note: If you are on a computer, scan the QR code found in the [Actions Summary](https://github.com/${{ github.repository }}/actions) page)*
+          files: IT-Feels.ipa
+          prerelease: true
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
