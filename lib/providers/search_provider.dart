@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../data/models/song_model.dart';
 import '../data/services/music_api_service.dart';
@@ -11,6 +12,8 @@ class SearchProvider extends ChangeNotifier {
   List<Playlist> _playlists = [];
   List<Map<String, dynamic>> _artists = [];
   bool _isSearching = false;
+  
+  Timer? _debounceTimer;
 
   SearchProvider({required this.apiService});
 
@@ -21,8 +24,13 @@ class SearchProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get artists => _artists;
   bool get isSearching => _isSearching;
 
-  void search(String newQuery, {BuildContext? context}) async {
+  void search(String newQuery, {BuildContext? context}) {
     _query = newQuery;
+    
+    if (_debounceTimer != null) {
+      _debounceTimer!.cancel();
+    }
+
     if (newQuery.trim().isEmpty) {
       _songs = [];
       _albums = [];
@@ -36,34 +44,50 @@ class SearchProvider extends ChangeNotifier {
     _isSearching = true;
     notifyListeners();
 
-    final resultsFuture = apiService.searchAll(newQuery);
-    final songsFuture = apiService.searchSongs(newQuery, count: 50);
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
+      if (_query != newQuery) return; // Prevent race conditions
 
-    final results = await resultsFuture;
-    final topSongs = await songsFuture;
+      try {
+        final resultsFuture = apiService.searchAll(newQuery);
+        final songsFuture = apiService.searchSongs(newQuery, count: 50);
 
-    _albums = List<Playlist>.from(results['albums'] ?? []);
-    _playlists = List<Playlist>.from(results['playlists'] ?? []);
-    _artists = List<Map<String, dynamic>>.from(results['artists'] ?? []);
+        final results = await resultsFuture;
+        final topSongs = await songsFuture;
 
-    // Ultimate Artist Search: If an artist is matched, fetch their true top songs
-    if (_artists.isNotEmpty && _artists.first['id'] != null && _artists.first['id'].toString().isNotEmpty) {
-      final artistId = _artists.first['id'].toString();
-      final artistData = await apiService.fetchArtistDetails(artistId);
-      if (artistData['topSongs'] != null && (artistData['topSongs'] as List).isNotEmpty) {
-        // Prepend true artist songs or replace completely
-        final trueArtistSongs = artistData['topSongs'] as List<Song>;
-        _songs = trueArtistSongs;
-        
-        if (artistData['albums'] != null && (artistData['albums'] as List).isNotEmpty) {
-          _albums.insertAll(0, artistData['albums'] as List<Playlist>);
+        if (_query != newQuery) return; // Re-check after await
+
+        _albums = List<Playlist>.from(results['albums'] ?? []);
+        _playlists = List<Playlist>.from(results['playlists'] ?? []);
+        _artists = List<Map<String, dynamic>>.from(results['artists'] ?? []);
+
+        // Ultimate Artist Search: If an artist is matched, fetch their true top songs
+        if (_artists.isNotEmpty && _artists.first['id'] != null && _artists.first['id'].toString().isNotEmpty) {
+          final artistId = _artists.first['id'].toString();
+          final artistData = await apiService.fetchArtistDetails(artistId);
+          
+          if (_query != newQuery) return; // Re-check after 2nd await
+
+          if (artistData['topSongs'] != null && (artistData['topSongs'] as List).isNotEmpty) {
+            // Prepend true artist songs or replace completely
+            final trueArtistSongs = artistData['topSongs'] as List<Song>;
+            _songs = trueArtistSongs;
+            
+            if (artistData['albums'] != null && (artistData['albums'] as List).isNotEmpty) {
+              _albums.insertAll(0, artistData['albums'] as List<Playlist>);
+            }
+          }
+        } else {
+          _songs = topSongs.isNotEmpty ? topSongs : List<Song>.from(results['songs'] ?? []);
+        }
+      } catch (e) {
+        debugPrint('[SearchProvider] Search error: $e');
+      } finally {
+        if (_query == newQuery) {
+          _isSearching = false;
+          notifyListeners();
         }
       }
-    } else {
-      _songs = topSongs.isNotEmpty ? topSongs : List<Song>.from(results['songs'] ?? []);
-    }
-
-    _isSearching = false;
-    notifyListeners();
+    });
   }
 }
+
