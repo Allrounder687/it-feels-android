@@ -250,7 +250,7 @@ class LyricsScreen extends StatelessWidget {
                           child: Container(
                             width: 40,
                             height: 40,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: context.themeAccentColor,
                               shape: BoxShape.circle,
                             ),

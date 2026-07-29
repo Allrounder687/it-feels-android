@@ -317,7 +317,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                                 ),
                               ),
                               trailing: isCurrentSong && playerProvider.isPlaying
-                                  ? const Padding(
+                                  ? Padding(
                                       padding: EdgeInsets.only(right: 12.0),
                                       child: AnimatedEqualizer(color: context.themeAccentColor),
                                     )

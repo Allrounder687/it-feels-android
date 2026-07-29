@@ -161,7 +161,7 @@ class _LyricsShareDialogState extends State<LyricsShareDialog> {
                 borderRadius: BorderRadius.circular(30),
               ),
               child: _isProcessing
-                  ? const Center(
+                  ? Center(
                       child: SizedBox(
                         width: 20, height: 20,
                         child: CircularProgressIndicator(color: context.themeTextColor, strokeWidth: 2),

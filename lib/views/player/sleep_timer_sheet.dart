@@ -24,7 +24,7 @@ class SleepTimerSheet extends StatelessWidget {
             children: [
               Icon(Icons.bedtime_rounded, color: audioProvider.themeAccentColor, size: 28),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Sleep Timer',
                 style: TextStyle(
                   color: context.themeTextColor,
@@ -77,7 +77,7 @@ class SleepTimerSheet extends StatelessWidget {
           _buildTimerOption(context, audioProvider, '60 Minutes', const Duration(minutes: 60)),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text(
+            title: Text(
               'End of Track',
               style: TextStyle(color: context.themeTextColor, fontSize: 18),
             ),
