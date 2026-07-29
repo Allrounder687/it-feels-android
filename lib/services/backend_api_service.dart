@@ -4,8 +4,8 @@ import '../data/models/song_model.dart';
 import '../core/utils/des_decryptor.dart';
 
 class BackendApiService {
-  // Configurable proxy base URL (defaults to localhost / Cloudflare worker URL)
-  static String baseUrl = 'https://it-feels-proxy.workers.dev'; 
+  // Configurable proxy base URL (defaults to user's live Cloudflare Worker URL)
+  static String baseUrl = 'https://it-feels-proxy.cleverfox687.workers.dev'; 
   static bool useProxyBackend = false; // Toggle to switch between direct & proxy mode
 
   /// Search tracks across multi-source backend proxy

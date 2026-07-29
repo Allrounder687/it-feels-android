@@ -12,7 +12,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _enableAndroidAuto = false;
   String _hapticsMode = 'Off'; // Off, UI Only, Audio Sync
   bool _useProxyBackend = false;
-  String _proxyUrl = 'https://it-feels-proxy.workers.dev';
+  String _proxyUrl = 'https://it-feels-proxy.cleverfox687.workers.dev';
 
   SettingsProvider() {
     _loadSettings();
