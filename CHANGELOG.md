@@ -6,8 +6,14 @@ All notable changes to **IT Feels Music** will be documented in this file.
 
 ### Added
 - **FEELS Cloud Proxy Engine**: Integrated lightweight Cloudflare Workers / Node.js backend proxy support. Decouples stream URL decryption, multi-source track search, and lyrics extraction from mobile APK binaries into zero-downtime serverless edge functions.
+- **Musixmatch Lyrics Integration**: Added Musixmatch API as secondary fallback provider in Cloudflare Worker lyrics pipeline for synced and plain text lyrics.
+- **Zero-Cognitive-Overload Search Badges**: Added micro provider pills (`[SAAVN]`, `[YOUTUBE]`, `[SPOTIFY]`) in Search result tiles for instant source transparency.
 - **Backend Settings Controls**: Added toggle in Settings to switch seamlessly between direct client-side scraping and Serverless Cloud Proxy mode, with custom endpoint URL configuration.
 - **Modular Cloudflare Worker Backend**: Created standalone TypeScript project under `backend/` powered by Hono.js for serverless deployment.
+
+### Fixed
+- **ExoPlayer Cleartext HTTP Bug**: Added `android:usesCleartextTraffic="true"` to `AndroidManifest.xml` to fix `CleartextNotPermittedException` on Android 9+ devices.
+- **LyricsProvider Build Phase Error**: Wrapped `notifyListeners()` in `addPostFrameCallback` to eliminate `setState() during build` framework assertion warnings.
 
 ## [2.4.0] - 2026-07-29
 

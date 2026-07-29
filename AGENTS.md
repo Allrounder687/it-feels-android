@@ -19,5 +19,5 @@ This file tracks major technical decisions, features implemented, and architectu
 - **Tablet Optimizations:** Added responsive Hero Banners, immersive side-by-side Now Playing screens, and authentic glassmorphism for tablet form factors.
 
 ## Agent Directives (Rules)
-- **Version Management:** Whenever compiling a new debug or release build for the user, ALWAYS check `CHANGELOG.md` and bump the `version` property in `pubspec.yaml` (e.g., from `1.0.0+1` to `1.0.1+2` or whatever the next logical/changelog version is) before running the build command. This ensures the output APKs and binaries always have accurate, incremental version tagging.
+- **Version Management:** Do NOT bump `pubspec.yaml` `version` for small hotfixes/edits. Only bump `pubspec.yaml` for major feature releases or major milestones. For small updates and bug fixes, document changes directly under the current version section in `CHANGELOG.md`.
 - **Responsive & Edge-to-Edge Design:** ALWAYS wrap top-level layout boundaries or floating widgets in `SafeArea` to respect system insets (notches, status bars, and navigation pills). NEVER hardcode fixed heights/widths for containers meant to fill the screen; instead use `Expanded`, `Flexible`, `LayoutBuilder`, or relative `MediaQuery.of(context).size` values to guarantee flawless adaptation across all Android form factors.

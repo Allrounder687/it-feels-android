@@ -137,35 +137,38 @@ app.get('/api/v1/stream', async (c) => {
   }
 
   try {
-    if (encUrl) {
+    // 1. Direct JioSaavn encrypted URL decryption
+    if (encUrl && encUrl.trim()) {
       const streamUrl = SaavnProvider.decryptUrl(encUrl);
-      return c.json({ success: true, provider: 'saavn', streamUrl });
+      if (streamUrl) {
+        return c.json({ success: true, provider: 'saavn', streamUrl });
+      }
     }
 
+    // 2. ID-based resolution (handles saavn:123, youtube:xyz, or raw ID)
     if (id) {
+      const cleanId = id.includes(':') ? id.split(':')[1] : id;
+
       if (id.startsWith('youtube:')) {
-        const streamUrl = await YoutubeProvider.getAudioStream(id);
+        const streamUrl = await YoutubeProvider.getAudioStream(cleanId);
         if (streamUrl) {
           return c.json({ success: true, provider: 'youtube', id, streamUrl, bitrate: '160kbps' });
         }
-      }
-
-      if (id.startsWith('saavn:')) {
-        const saavnId = id.split(':')[1];
-        const songDetails = await SaavnProvider.getDetails(saavnId);
-        if (songDetails?.streamUrl) {
-          return c.json({ success: true, provider: 'saavn', id, streamUrl: songDetails.streamUrl, bitrate: '320kbps' });
-        }
-      }
-
-      if (id.startsWith('spotify:') && title && artist) {
+      } else if (id.startsWith('spotify:') && title && artist) {
         const streamUrl = await SpotifyProvider.getAudioStream(title, artist);
         if (streamUrl) {
           return c.json({ success: true, provider: 'spotify', id, streamUrl });
         }
+      } else {
+        // Default: JioSaavn ID lookup (cleanId)
+        const songDetails = await SaavnProvider.getDetails(cleanId);
+        if (songDetails?.streamUrl) {
+          return c.json({ success: true, provider: 'saavn', id, streamUrl: songDetails.streamUrl, bitrate: '320kbps' });
+        }
       }
     }
 
+    // 3. Title + Artist fallback matching
     if (title && artist) {
       const streamUrl = await SpotifyProvider.getAudioStream(title, artist);
       if (streamUrl) {

@@ -53,13 +53,15 @@ class BackendApiService {
 
     try {
       final Uri uri;
-      if (song.encryptedMediaUrl != null) {
+      if (song.encryptedMediaUrl != null && song.encryptedMediaUrl!.isNotEmpty) {
         uri = Uri.parse('$baseUrl/api/v1/stream').replace(queryParameters: {
           'encryptedUrl': song.encryptedMediaUrl!,
         });
       } else {
         uri = Uri.parse('$baseUrl/api/v1/stream').replace(queryParameters: {
-          'id': song.saavnId,
+          'id': song.id,
+          'title': song.title,
+          'artist': song.artist,
         });
       }
 

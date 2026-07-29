@@ -38,18 +38,27 @@ class LyricsProvider extends ChangeNotifier {
       _loadedSongId = song.id;
       _isLoading = true;
       _lyricsResult = null;
-      notifyListeners();
+      _lyricsNotFound = false;
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
 
       _lyricsResult = await lyricsService.fetchLyrics(song);
       _isLoading = false;
-      notifyListeners();
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
     }
 
     if (_lyricsResult != null && _lyricsResult!.hasSynced) {
       final newIndex = getActiveLineIndex(position);
       if (newIndex != _activeIndex) {
         _activeIndex = newIndex;
-        notifyListeners();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifyListeners();
+        });
 
         // Autoscroll to active line
         if (_itemScrollController.isAttached && _activeIndex >= 0) {

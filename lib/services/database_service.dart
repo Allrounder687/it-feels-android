@@ -4,15 +4,19 @@ import '../data/models/song_model.dart';
 
 class DatabaseService {
   static late Isar _isar;
+  static bool _isInitialized = false;
 
   static Future<void> init() async {
+    if (_isInitialized) return;
     final dir = await getApplicationDocumentsDirectory();
     _isar = await Isar.open(
       [SongSchema],
       directory: dir.path,
     );
+    _isInitialized = true;
   }
 
+  static bool get isInitialized => _isInitialized;
   Isar get isar => _isar;
 
   // ----------------------------------------------------
@@ -107,6 +111,7 @@ class DatabaseService {
   // ----------------------------------------------------
 
   Future<void> incrementPlayCount(Song songObj) async {
+    if (!DatabaseService.isInitialized) return;
     await _isar.writeTxn(() async {
       var song = await _isar.songs.where().idEqualTo(songObj.id).findFirst();
       if (song != null) {
