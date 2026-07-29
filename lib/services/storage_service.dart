@@ -49,7 +49,7 @@ class StorageService {
       'album': s.album,
       'duration': s.duration,
       'coverArt': s.coverArt,
-      'encryptedMediaUrl': s.encryptedMediaUrl,
+      'encryptedMediaUrl': null, // Clear ephemeral CDN URL to force fresh fetch
       'hasLyrics': s.hasLyrics,
     }).toList();
     await prefs.setString(_recentSongsKey, json.encode(jsonList));
@@ -83,7 +83,7 @@ class StorageService {
               'album': s.album,
               'duration': s.duration,
               'coverArt': s.coverArt,
-              'encryptedMediaUrl': s.encryptedMediaUrl,
+              'encryptedMediaUrl': null, // Clear ephemeral CDN URL to force fresh fetch
               'hasLyrics': s.hasLyrics,
             })
         .toList();
@@ -147,7 +147,7 @@ class StorageService {
               'album': s.album,
               'duration': s.duration,
               'coverArt': s.coverArt,
-              'encryptedMediaUrl': s.encryptedMediaUrl,
+              'encryptedMediaUrl': null, // Clear ephemeral CDN URL to force fresh fetch
               'hasLyrics': s.hasLyrics,
             })
         .toList();
@@ -275,6 +275,7 @@ class StorageService {
     required double speed,
     required double pitch,
     required bool autoplay,
+    required double crossfade,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('dspEngine', dspEngine);
@@ -283,6 +284,7 @@ class StorageService {
     await prefs.setDouble(_audioSpeedKey, speed);
     await prefs.setDouble(_audioPitchKey, pitch);
     await prefs.setBool('autoplay', autoplay);
+    await prefs.setDouble('crossfade_v1', crossfade);
   }
 
   static Future<Map<String, dynamic>> loadAudioSettings() async {
@@ -295,6 +297,7 @@ class StorageService {
       'speed': prefs.getDouble(_audioSpeedKey) ?? 1.0,
       'pitch': prefs.getDouble(_audioPitchKey) ?? 1.0,
       'autoplay': prefs.getBool('autoplay') ?? true,
+      'crossfade': prefs.getDouble('crossfade_v1') ?? 0.0,
     };
   }
 
@@ -328,6 +331,24 @@ class StorageService {
       'geminiKey': prefs.getString(_geminiKeyKey) ?? '',
       'openaiKey': prefs.getString(_openaiKeyKey) ?? '',
       'anthropicKey': prefs.getString(_anthropicKeyKey) ?? '',
+    };
+  }
+
+  // ── Profile Settings ──────────────────────────────────────────
+  static const String _userNameKey = 'user_name_v1';
+  static const String _userAvatarKey = 'user_avatar_v1';
+
+  static Future<void> saveUserProfile({required String name, required String avatar}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userNameKey, name);
+    await prefs.setString(_userAvatarKey, avatar);
+  }
+
+  static Future<Map<String, String>> loadUserProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'name': prefs.getString(_userNameKey) ?? '',
+      'avatar': prefs.getString(_userAvatarKey) ?? '',
     };
   }
 }

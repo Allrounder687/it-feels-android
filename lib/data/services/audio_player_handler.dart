@@ -96,7 +96,10 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
       if (streamUrl.startsWith('/') || streamUrl.startsWith('file://')) {
         final path = streamUrl.startsWith('file://') ? streamUrl.replaceFirst('file://', '') : streamUrl;
-        await _player.setAudioSource(AudioSource.file(path, tag: item));
+        await _player.setAudioSource(
+          AudioSource.file(path, tag: item),
+          initialPosition: Duration.zero,
+        );
       } else {
         await _player.setAudioSource(
           AudioSource.uri(
@@ -107,6 +110,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
             },
             tag: item,
           ),
+          initialPosition: Duration.zero,
         );
       }
       await _player.play();

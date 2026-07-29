@@ -115,6 +115,7 @@ class AudioPlayerProvider extends ChangeNotifier {
       _uiHapticsEnabled = settings['uiHaptics'] ?? true;
       _audioSyncHapticsEnabled = settings['audioSyncHaptics'] ?? false;
       _isAutoplayEnabled = settings['autoplay'] ?? true;
+      _crossfadeDuration = settings['crossfade'] ?? 0.0;
 
       if (_isDspEngineEnabled) {
         await _enableDspEngine(equalizer, loudnessEnhancer);
@@ -395,6 +396,15 @@ class AudioPlayerProvider extends ChangeNotifier {
     }
   }
 
+  double _crossfadeDuration = 0.0;
+  double get crossfadeDuration => _crossfadeDuration;
+
+  void setCrossfadeDuration(double duration) {
+    _crossfadeDuration = duration;
+    _saveAudioSettings();
+    notifyListeners();
+  }
+
   Future<void> _saveAudioSettings() async {
     try {
       await StorageService.saveAudioSettings(
@@ -404,6 +414,7 @@ class AudioPlayerProvider extends ChangeNotifier {
         speed: playbackSpeed,
         pitch: playbackPitch,
         autoplay: _isAutoplayEnabled,
+        crossfade: _crossfadeDuration,
       );
     } catch (e) {
       debugPrint("Error saving Audio Settings: $e");
@@ -560,6 +571,11 @@ class AudioPlayerProvider extends ChangeNotifier {
   Future<void> skipToNext([BuildContext? context]) async {
     if (_queue.isEmpty) return;
     triggerHaptic();
+
+    if (_crossfadeDuration > 0 && _isPlaying) {
+      await _fadeOut();
+    }
+
     int nextIndex;
     if (_isShuffle && _queue.length > 1) {
       final rng = Random();
@@ -579,11 +595,29 @@ class AudioPlayerProvider extends ChangeNotifier {
   Future<void> skipToPrevious([BuildContext? context]) async {
     if (_queue.isEmpty) return;
     triggerHaptic();
+    
+    if (_crossfadeDuration > 0 && _isPlaying) {
+      await _fadeOut();
+    }
+
     int prevIndex = _currentIndex - 1;
     if (prevIndex < 0) {
       prevIndex = _queue.length - 1;
     }
     await playSong(_queue[prevIndex], queue: _queue, index: prevIndex);
+  }
+
+  Future<void> _fadeOut() async {
+    final fadeTime = _crossfadeDuration.toInt();
+    final step = 1.0 / (fadeTime * 10);
+    double vol = 1.0;
+    for (int i = 0; i < fadeTime * 10; i++) {
+      vol -= step;
+      if (vol < 0) vol = 0;
+      await audioHandler.player.setVolume(vol);
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    await audioHandler.player.setVolume(1.0); // Reset for next song
   }
 
   void addToQueue(Song song) {

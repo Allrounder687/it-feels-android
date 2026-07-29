@@ -15,7 +15,6 @@ class AudioSettingsScreen extends StatefulWidget {
 }
 
 class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
-  double _crossfadeDuration = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -189,15 +188,13 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
                 child: SliderTheme(
                   data: _sliderTheme(),
                   child: Slider(
-                    value: _crossfadeDuration,
+                    value: audioProvider.crossfadeDuration,
                     min: 0,
                     max: 12,
                     divisions: 12,
-                    label: '${_crossfadeDuration.toInt()}s',
+                    label: '${audioProvider.crossfadeDuration.toInt()}s',
                     onChanged: (val) {
-                      setState(() {
-                        _crossfadeDuration = val;
-                      });
+                      audioProvider.setCrossfadeDuration(val);
                     },
                   ),
                 ),

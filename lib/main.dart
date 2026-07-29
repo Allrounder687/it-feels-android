@@ -19,6 +19,7 @@ import 'providers/lyrics_provider.dart';
 import 'providers/search_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/ai_settings_provider.dart';
+import 'providers/profile_provider.dart';
 import 'views/main_navigation_wrapper.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
@@ -93,6 +94,9 @@ class PixelPlayerSaavnApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => AISettingsProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ProfileProvider(),
         ),
       ],
       child: DynamicColorBuilder(

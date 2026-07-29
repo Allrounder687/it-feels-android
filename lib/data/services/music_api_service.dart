@@ -13,7 +13,7 @@ class MusicApiService {
     'Cookie': 'L=hindi; telugu; tamil; punjabi; english;',
   };
 
-  final Map<String, String> _streamCache = {};
+
   final Map<String, dynamic> _homepageCache = {};
   final Map<String, dynamic> _playlistCache = {};
   final Map<String, dynamic> _albumCache = {};
@@ -402,10 +402,6 @@ class MusicApiService {
 
   /// Resolve streamable 320kbps audio URL for a song
   Future<String?> getStreamUrl(Song song, {Function(String message)? onError}) async {
-    if (_streamCache.containsKey(song.saavnId)) {
-      return _streamCache[song.saavnId];
-    }
-
     try {
       String? encUrl = song.encryptedMediaUrl;
 
@@ -439,7 +435,6 @@ class MusicApiService {
       final finalUrl = DesDecryptor.get320kbpsUrl(decrypted);
 
       if (finalUrl != null) {
-        _streamCache[song.saavnId] = finalUrl;
         return finalUrl;
       }
     } catch (e) {

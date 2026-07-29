@@ -72,6 +72,15 @@ class DatabaseService {
         .findAll();
   }
 
+  Future<List<Song>> getTopPlayedSongs({int limit = 20}) async {
+    return await _isar.songs
+        .filter()
+        .playCountGreaterThan(0)
+        .sortByPlayCountDesc()
+        .limit(limit)
+        .findAll();
+  }
+
   Future<List<Song>> getForgottenFavorites({int limit = 30}) async {
     final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 90));
     
@@ -97,13 +106,17 @@ class DatabaseService {
   // Behavioral Methods
   // ----------------------------------------------------
 
-  Future<void> incrementPlayCount(String saavnId) async {
+  Future<void> incrementPlayCount(Song songObj) async {
     await _isar.writeTxn(() async {
-      final song = await _isar.songs.where().idEqualTo(saavnId).findFirst();
+      var song = await _isar.songs.where().idEqualTo(songObj.id).findFirst();
       if (song != null) {
         song.playCount += 1;
         song.lastPlayedAt = DateTime.now();
         await _isar.songs.put(song);
+      } else {
+        songObj.playCount = 1;
+        songObj.lastPlayedAt = DateTime.now();
+        await _isar.songs.put(songObj);
       }
     });
   }

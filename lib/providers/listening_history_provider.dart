@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/models/song_model.dart';
 import '../services/storage_service.dart';
+import '../services/database_service.dart';
 
 class ListeningHistoryProvider extends ChangeNotifier {
   Map<String, int> _artistCounts = {};
@@ -21,6 +22,9 @@ class ListeningHistoryProvider extends ChangeNotifier {
 
   void logSong(Song song) {
     if (song.artist.isEmpty || song.artist == 'Unknown Artist') return;
+
+    // Log to Isar for advanced stats
+    DatabaseService().incrementPlayCount(song);
 
     // 1. Update Recently Played
     // Remove if already exists to move to top

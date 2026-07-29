@@ -14,8 +14,10 @@ import '../../data/models/song_model.dart';
 import '../details/playlist_detail_screen.dart';
 import '../details/see_all_screen.dart';
 import '../settings/settings_screen.dart';
+import '../settings/profile_screen.dart';
 import '../ai/ask_ai_screen.dart';
 import '../widgets/song_options_sheet.dart';
+import '../../providers/profile_provider.dart';
 import 'smart_recommendations_row.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
@@ -350,6 +352,8 @@ class _HomeScreenState extends State<HomeScreen> {
           body: SafeArea(
             child: CustomScrollView(
               slivers: [
+
+
                 // Top App Bar Branding
                 SliverToBoxAdapter(
                   child: Padding(
@@ -360,7 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(_getGreeting(), style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: context.themeMutedTextColor)),
+                            Text(context.watch<ProfileProvider>().getGreeting(), style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: context.themeMutedTextColor)),
                             Text("It Feels", style: GoogleFonts.outfit(fontSize: 26, fontWeight: FontWeight.w900, color: context.themeTextColor, letterSpacing: -0.5)),
                           ],
                         ),
@@ -373,6 +377,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AskAIScreen())),
                                 tooltip: 'Ask Feels',
                               ),
+                            IconButton(
+                              icon: Icon(Icons.person_outline, color: context.themeTextColor, size: 22),
+                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                              tooltip: 'Profile',
+                            ),
                             IconButton(
                               icon: Icon(Icons.settings_outlined, color: context.themeTextColor, size: 22),
                               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
