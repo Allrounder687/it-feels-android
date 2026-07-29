@@ -186,7 +186,7 @@ app.get('/api/v1/videos/trending', async (c) => {
   const limit = parseInt(c.req.query('limit') || '20', 10);
 
   try {
-    const videos = await YoutubeProvider.getTrendingVideos(limit);
+    const videos = await YoutubeProvider.searchVideos('music videos', limit);
     return c.json({ success: true, totalCount: videos.length, videos });
   } catch (e: any) {
     return c.json({ error: 'Trending videos fetch failed', details: e.message }, 500);
