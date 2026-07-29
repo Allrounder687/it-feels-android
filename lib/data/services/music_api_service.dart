@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../core/utils/des_decryptor.dart';
+import '../../services/backend_api_service.dart';
 import '../models/song_model.dart';
 
 class MusicApiService {
@@ -403,6 +404,14 @@ class MusicApiService {
   /// Resolve streamable 320kbps audio URL for a song
   Future<String?> getStreamUrl(Song song, {Function(String message)? onError}) async {
     try {
+      // 0. Try Backend Proxy API if enabled
+      if (BackendApiService.useProxyBackend) {
+        final proxyStreamUrl = await BackendApiService.getStreamUrl(song);
+        if (proxyStreamUrl != null && proxyStreamUrl.isNotEmpty) {
+          return proxyStreamUrl;
+        }
+      }
+
       String? encUrl = song.encryptedMediaUrl;
 
       if (encUrl == null || encUrl.isEmpty) {

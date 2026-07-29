@@ -243,6 +243,8 @@ class StorageService {
     required String customDownloadPath,
     required bool enableAndroidAuto,
     required String hapticsMode,
+    bool? useProxyBackend,
+    String? proxyUrl,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_wifiQualityKey, wifiQuality);
@@ -252,6 +254,8 @@ class StorageService {
     await prefs.setString(_downloadPathKey, customDownloadPath);
     await prefs.setBool('enable_android_auto', enableAndroidAuto);
     await prefs.setString('haptics_mode', hapticsMode);
+    if (useProxyBackend != null) await prefs.setBool('use_proxy_backend', useProxyBackend);
+    if (proxyUrl != null) await prefs.setString('proxy_url', proxyUrl);
   }
 
   static Future<Map<String, dynamic>> loadSettings() async {
@@ -264,6 +268,8 @@ class StorageService {
       'customDownloadPath': prefs.getString(_downloadPathKey) ?? '',
       'enableAndroidAuto': prefs.getBool('enable_android_auto') ?? false,
       'hapticsMode': prefs.getString('haptics_mode') ?? 'Off',
+      'useProxyBackend': prefs.getBool('use_proxy_backend') ?? false,
+      'proxyUrl': prefs.getString('proxy_url') ?? 'https://it-feels-proxy.workers.dev',
     };
   }
 

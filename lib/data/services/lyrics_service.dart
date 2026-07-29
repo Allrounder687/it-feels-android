@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../core/utils/hinglish_transliterator.dart';
 import '../../core/utils/lrc_parser.dart';
 import '../models/song_model.dart';
+import 'backend_api_service.dart';
 
 import 'package:string_similarity/string_similarity.dart';
 
@@ -25,8 +26,48 @@ class LyricsService {
     'Accept': 'application/json',
   };
 
-  /// Fetch lyrics for a song (Static from Music API, Synced from LRCLIB)
+  /// Fetch lyrics for a song (Proxy API -> LRCLIB / Saavn Fallback)
   Future<LyricsResult> fetchLyrics(Song song, {Function(String)? onError}) async {
+    // 0. Try Backend Proxy API if enabled
+    if (BackendApiService.useProxyBackend) {
+      try {
+        final proxyResult = await BackendApiService.getLyrics(
+          song.title,
+          song.artist,
+          album: song.album,
+          duration: song.duration,
+        );
+
+        if (proxyResult != null) {
+          final syncedStr = proxyResult['synced'];
+          final plainStr = proxyResult['plain'];
+
+          List<LyricLine> parsedSynced = [];
+          if (syncedStr != null && syncedStr.isNotEmpty) {
+            parsedSynced = LrcParser.parse(syncedStr)
+                .map((l) => LyricLine(
+                      time: l.time,
+                      text: HinglishTransliterator.transliterate(l.text),
+                    ))
+                .toList();
+          }
+
+          final staticText = (plainStr != null && plainStr.isNotEmpty)
+              ? HinglishTransliterator.transliterate(plainStr)
+              : null;
+
+          if (parsedSynced.isNotEmpty || staticText != null) {
+            return LyricsResult(
+              staticLyrics: staticText,
+              syncedLyrics: parsedSynced,
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('[LyricsService] Backend proxy lyrics error: $e');
+      }
+    }
+
     String? staticLrc;
     List<LyricLine> syncedLrc = [];
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/backend_api_service.dart';
 import '../services/storage_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
@@ -10,6 +11,8 @@ class SettingsProvider extends ChangeNotifier {
   String _customDownloadPath = '';
   bool _enableAndroidAuto = false;
   String _hapticsMode = 'Off'; // Off, UI Only, Audio Sync
+  bool _useProxyBackend = false;
+  String _proxyUrl = 'https://it-feels-proxy.workers.dev';
 
   SettingsProvider() {
     _loadSettings();
@@ -23,16 +26,24 @@ class SettingsProvider extends ChangeNotifier {
   String get customDownloadPath => _customDownloadPath;
   bool get enableAndroidAuto => _enableAndroidAuto;
   String get hapticsMode => _hapticsMode;
+  bool get useProxyBackend => _useProxyBackend;
+  String get proxyUrl => _proxyUrl;
 
   Future<void> _loadSettings() async {
     final settings = await StorageService.loadSettings();
-    _wifiQuality = settings['wifiQuality'];
-    _mobileQuality = settings['mobileQuality'];
-    _downloadQuality = settings['downloadQuality'];
-    _theme = settings['theme'];
-    _customDownloadPath = settings['customDownloadPath'];
-    _enableAndroidAuto = settings['enableAndroidAuto'];
-    _hapticsMode = settings['hapticsMode'];
+    _wifiQuality = settings['wifiQuality'] ?? _wifiQuality;
+    _mobileQuality = settings['mobileQuality'] ?? _mobileQuality;
+    _downloadQuality = settings['downloadQuality'] ?? _downloadQuality;
+    _theme = settings['theme'] ?? _theme;
+    _customDownloadPath = settings['customDownloadPath'] ?? _customDownloadPath;
+    _enableAndroidAuto = settings['enableAndroidAuto'] ?? _enableAndroidAuto;
+    _hapticsMode = settings['hapticsMode'] ?? _hapticsMode;
+    _useProxyBackend = settings['useProxyBackend'] == true;
+    _proxyUrl = settings['proxyUrl'] ?? _proxyUrl;
+    
+    BackendApiService.useProxyBackend = _useProxyBackend;
+    BackendApiService.baseUrl = _proxyUrl;
+    
     _defaultCategory = await StorageService.loadDefaultCategory();
     notifyListeners();
   }
@@ -78,6 +89,18 @@ class SettingsProvider extends ChangeNotifier {
     _save();
   }
 
+  void setUseProxyBackend(bool enable) {
+    _useProxyBackend = enable;
+    BackendApiService.useProxyBackend = enable;
+    _save();
+  }
+
+  void setProxyUrl(String url) {
+    _proxyUrl = url;
+    BackendApiService.baseUrl = url;
+    _save();
+  }
+
   void _save() {
     StorageService.saveSettings(
       wifiQuality: _wifiQuality,
@@ -87,6 +110,8 @@ class SettingsProvider extends ChangeNotifier {
       customDownloadPath: _customDownloadPath,
       enableAndroidAuto: _enableAndroidAuto,
       hapticsMode: _hapticsMode,
+      useProxyBackend: _useProxyBackend,
+      proxyUrl: _proxyUrl,
     );
     notifyListeners();
   }

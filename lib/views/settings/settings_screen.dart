@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -236,6 +235,78 @@ class SettingsScreen extends StatelessWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text("Cache cleared successfully")),
                   );
+                },
+              ),
+
+              const SizedBox(height: 24),
+
+              // Category 4: SoundBound Proxy Engine
+              _buildSectionHeader(context, "🌐 SoundBound Backend Engine"),
+              const SizedBox(height: 8),
+
+              SwitchListTile.adaptive(
+                value: settings.useProxyBackend,
+                activeColor: context.themeAccentColor,
+                title: Text(
+                  "Use Serverless Proxy Backend",
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: context.themeTextColor,
+                  ),
+                ),
+                subtitle: Text(
+                  settings.useProxyBackend
+                      ? "Active: Stream & lyrics extraction handled via Cloud Proxy"
+                      : "Inactive: Direct client scraping mode",
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: context.themeMutedTextColor,
+                  ),
+                ),
+                onChanged: (val) {
+                  settings.setUseProxyBackend(val);
+                },
+              ),
+
+              _buildActionTile(
+                context: context,
+                title: "Serverless Proxy URL",
+                subtitle: settings.proxyUrl,
+                icon: Icons.cloud_queue_rounded,
+                onTap: () async {
+                  final textController = TextEditingController(text: settings.proxyUrl);
+                  final newUrl = await showDialog<String>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: context.themeSurfaceColor,
+                      title: Text(
+                        "Cloud Proxy Endpoint",
+                        style: GoogleFonts.outfit(color: context.themeTextColor),
+                      ),
+                      content: TextField(
+                        controller: textController,
+                        style: TextStyle(color: context.themeTextColor),
+                        decoration: InputDecoration(
+                          hintText: "https://your-worker.workers.dev",
+                          hintStyle: TextStyle(color: context.themeMutedTextColor),
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          child: Text("Cancel", style: TextStyle(color: context.themeMutedTextColor)),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                        TextButton(
+                          child: Text("Save", style: TextStyle(color: context.themeAccentColor)),
+                          onPressed: () => Navigator.pop(ctx, textController.text.trim()),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (newUrl != null && newUrl.isNotEmpty) {
+                    settings.setProxyUrl(newUrl);
+                  }
                 },
               ),
 

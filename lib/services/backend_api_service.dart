@@ -1,0 +1,154 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../data/models/song_model.dart';
+import '../core/utils/des_decryptor.dart';
+
+class BackendApiService {
+  // Configurable proxy base URL (defaults to localhost / Cloudflare worker URL)
+  static String baseUrl = 'https://it-feels-proxy.workers.dev'; 
+  static bool useProxyBackend = false; // Toggle to switch between direct & proxy mode
+
+  /// Search tracks across multi-source backend proxy
+  static Future<List<Song>> search(String query, {int page = 1, int limit = 20}) async {
+    if (!useProxyBackend) {
+      // Direct client fallback
+      return _directSaavnSearch(query, page: page, limit: limit);
+    }
+
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/search').replace(queryParameters: {
+        'query': query,
+        'page': page.toString(),
+        'limit': limit.toString(),
+        'provider': 'saavn',
+      });
+
+      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['results'] is List) {
+          final List results = data['results'];
+          return results.map((item) => _songFromProxyJson(item)).toList();
+        }
+      }
+    } catch (e) {
+      // Fallback on network timeout/error
+    }
+
+    return _directSaavnSearch(query, page: page, limit: limit);
+  }
+
+  /// Resolve streamable URL for a song
+  static Future<String?> getStreamUrl(Song song) async {
+    if (song.streamUrl != null && song.streamUrl!.isNotEmpty) {
+      return song.streamUrl;
+    }
+
+    if (!useProxyBackend) {
+      if (song.encryptedMediaUrl != null) {
+        return DesDecryptor.decrypt(song.encryptedMediaUrl!);
+      }
+      return null;
+    }
+
+    try {
+      final Uri uri;
+      if (song.encryptedMediaUrl != null) {
+        uri = Uri.parse('$baseUrl/api/v1/stream').replace(queryParameters: {
+          'encryptedUrl': song.encryptedMediaUrl!,
+        });
+      } else {
+        uri = Uri.parse('$baseUrl/api/v1/stream').replace(queryParameters: {
+          'id': song.saavnId,
+        });
+      }
+
+      final response = await http.get(uri).timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['streamUrl'] != null) {
+          return data['streamUrl'] as String;
+        }
+      }
+    } catch (e) {
+      // Fallback to local decryption
+    }
+
+    if (song.encryptedMediaUrl != null) {
+      return DesDecryptor.decrypt(song.encryptedMediaUrl!);
+    }
+    return null;
+  }
+
+  /// Fetch synced or plain lyrics via Proxy/LrcLib
+  static Future<Map<String, String>?> getLyrics(String track, String artist, {String? album, int? duration}) async {
+    if (!useProxyBackend) return null;
+
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/lyrics').replace(queryParameters: {
+        'track': track,
+        'artist': artist,
+        if (album != null) 'album': album,
+        if (duration != null && duration > 0) 'duration': duration.toString(),
+      });
+
+      final response = await http.get(uri).timeout(const Duration(seconds: 6));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['lyrics'] != null) {
+          final lyrics = data['lyrics'];
+          return {
+            'plain': lyrics['plainLyrics'] ?? '',
+            'synced': lyrics['syncedLyrics'] ?? '',
+            'source': lyrics['source'] ?? 'proxy',
+          };
+        }
+      }
+    } catch (e) {
+      // Return null on failure
+    }
+    return null;
+  }
+
+  /// Deserializes normalized JSON from serverless proxy into Flutter Song model
+  static Song _songFromProxyJson(Map<String, dynamic> json) {
+    final rawId = json['id']?.toString() ?? '';
+    final saavnId = rawId.contains(':') ? rawId.split(':').last : rawId;
+
+    return Song(
+      id: rawId.startsWith('saavn:') ? rawId : 'saavn:$rawId',
+      saavnId: saavnId,
+      title: json['title']?.toString() ?? 'Unknown Title',
+      artist: json['artist']?.toString() ?? 'Unknown Artist',
+      album: json['album']?.toString() ?? '',
+      duration: (json['duration'] as num?)?.toInt() ?? 0,
+      coverArt: json['coverArt']?.toString() ?? '',
+      streamUrl: json['streamUrl']?.toString(),
+      encryptedMediaUrl: json['encryptedMediaUrl']?.toString(),
+      hasLyrics: json['hasLyrics'] == true,
+      language: json['language']?.toString() ?? 'unknown',
+      year: (json['year'] as num?)?.toInt() ?? 2024,
+      isExplicit: json['explicit'] == true,
+      addedAt: DateTime.now(),
+      searchVector: Song.generateSearchVector(
+        json['title']?.toString() ?? '',
+        json['artist']?.toString() ?? '',
+        json['album']?.toString() ?? '',
+      ),
+    );
+  }
+
+  /// Fallback direct JioSaavn search
+  static Future<List<Song>> _directSaavnSearch(String query, {int page = 1, int limit = 20}) async {
+    final uri = Uri.parse(
+      'https://www.jiosaavn.com/api.php?__call=search.getResults&p=$page&n=$limit&q=${Uri.encodeComponent(query)}&_format=json&_marker=0&api_version=4',
+    );
+    final response = await http.get(uri);
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List results = data['results'] ?? [];
+      return results.map((e) => Song.fromJson(e)).toList();
+    }
+    return [];
+  }
+}

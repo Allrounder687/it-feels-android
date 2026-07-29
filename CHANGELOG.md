@@ -2,6 +2,13 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
+## [2.5.0] - 2026-07-29
+
+### Added
+- **SoundBound Serverless Proxy Engine**: Integrated lightweight Cloudflare Workers / Node.js backend proxy support. Decouples stream URL decryption, multi-source track search, and lyrics extraction from mobile APK binaries into zero-downtime serverless edge functions.
+- **Backend Settings Controls**: Added toggle in Settings to switch seamlessly between direct client-side scraping and Serverless Cloud Proxy mode, with custom endpoint URL configuration.
+- **Modular Cloudflare Worker Backend**: Created standalone TypeScript project under `backend/` powered by Hono.js for serverless deployment.
+
 ## [2.4.0] - 2026-07-29
 
 ### Added
