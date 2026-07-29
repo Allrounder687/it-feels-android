@@ -2,6 +2,16 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
+## [2.4.0] - 2026-07-29
+
+### Added
+- **Smart Driving Mode**: A distraction-free UI with full-screen swipe gestures (Swipe Left for Next, Right for Previous) and massive playback controls, accessible via the Car icon in Now Playing.
+- **Local Device File Scanner**: The app can now scan for local `.mp3`, `.m4a`, and `.flac` files directly from your phone's storage via the Profile screen and integrate them into your music library.
+
+### Fixed
+- **Apple Music-Style Lyrics Scroll**: Upgraded the Lyrics screen to perfectly center the currently active lyric line with an active glow, while fading out past/upcoming lines smoothly above and below.
+- **Random Lyrics Bug**: Integrated Jaro-Winkler string similarity to reject heavily mismatched lyrics from LRCLIB, completely fixing the issue where songs without lyrics would display random incorrect words.
+
 ## [2.3.8] - 2026-07-29
 
 ### Fixed

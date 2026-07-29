@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/lyrics_provider.dart';
@@ -123,9 +124,9 @@ class LyricsScreen extends StatelessWidget {
                         )
                       : lyricsProvider.mode == LyricsMode.synced &&
                               lyricsProvider.result.hasSynced
-                          ? ListView.builder(
-                              controller: lyricsProvider.scrollController,
-                              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
+                          ? ScrollablePositionedList.builder(
+                              itemScrollController: lyricsProvider.itemScrollController,
+                              padding: EdgeInsets.symmetric(horizontal: 28, vertical: MediaQuery.of(context).size.height * 0.3),
                               itemCount: lyricsProvider.result.syncedLyrics.length,
                               itemBuilder: (context, index) {
                                 final line = lyricsProvider.result.syncedLyrics[index];

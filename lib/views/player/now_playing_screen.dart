@@ -12,6 +12,7 @@ import '../widgets/song_options_sheet.dart';
 import '../widgets/wavy_seek_bar.dart';
 import 'queue_bottom_sheet.dart';
 import 'sleep_timer_sheet.dart';
+import '../home/driving_mode_screen.dart';
 import '../widgets/animated_play_pause_button.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
@@ -94,6 +95,20 @@ class NowPlayingScreen extends StatelessWidget {
                         ),
                         Row(
                           children: [
+                            IconButton(
+                              icon: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: surfaceColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(Icons.directions_car_filled_rounded, color: context.themeTextColor, size: 24),
+                              ),
+                              onPressed: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const DrivingModeScreen()));
+                              },
+                              tooltip: 'Driving Mode',
+                            ),
                             IconButton(
                               icon: Container(
                                 padding: const EdgeInsets.all(10),

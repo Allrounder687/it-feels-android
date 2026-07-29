@@ -5,6 +5,8 @@ import '../../core/utils/hinglish_transliterator.dart';
 import '../../core/utils/lrc_parser.dart';
 import '../models/song_model.dart';
 
+import 'package:string_similarity/string_similarity.dart';
+
 class LyricsResult {
   final String? staticLyrics;
   final List<LyricLine> syncedLyrics;
@@ -58,6 +60,24 @@ class LyricsService {
         if (data is List && data.isNotEmpty) {
           String? bestLrc;
           for (var item in data) {
+            final trackName = item['trackName']?.toString() ?? '';
+            final artistName = item['artistName']?.toString() ?? '';
+            
+            // Clean strings for comparison
+            final cleanTrack = trackName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+            final cleanSongTitle = song.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+            final cleanArtist = artistName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+            final cleanSongArtist = song.artist.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+            // Calculate similarity
+            final titleSimilarity = cleanTrack.similarityTo(cleanSongTitle);
+            final artistSimilarity = cleanArtist.similarityTo(cleanSongArtist);
+
+            // Skip if the result is completely unrelated to our song
+            if (titleSimilarity < 0.4 && artistSimilarity < 0.3) {
+              continue;
+            }
+
             final rawSynced = item['syncedLyrics']?.toString();
             if (rawSynced != null && rawSynced.isNotEmpty) {
               if (!HinglishTransliterator.hasDevanagari(rawSynced)) {

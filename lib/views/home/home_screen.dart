@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 import 'package:it_feels_music/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -377,10 +378,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AskAIScreen())),
                                 tooltip: 'Ask Feels',
                               ),
-                            IconButton(
-                              icon: Icon(Icons.person_outline, color: context.themeTextColor, size: 22),
-                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
-                              tooltip: 'Profile',
+                            GestureDetector(
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                child: Consumer<ProfileProvider>(
+                                  builder: (context, profile, _) {
+                                    final hasAvatar = profile.userAvatar.isNotEmpty && File(profile.userAvatar).existsSync();
+                                    return CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: context.themeAccentColor.withOpacity(0.2),
+                                      backgroundImage: hasAvatar ? FileImage(File(profile.userAvatar)) : null,
+                                      child: hasAvatar
+                                          ? null
+                                          : Icon(Icons.person_outline, color: context.themeTextColor, size: 20),
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
                             IconButton(
                               icon: Icon(Icons.settings_outlined, color: context.themeTextColor, size: 22),

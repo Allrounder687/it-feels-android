@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../core/utils/error_reporter.dart';
 import '../data/models/song_model.dart';
 import '../data/services/lyrics_service.dart';
@@ -15,7 +16,7 @@ class LyricsProvider extends ChangeNotifier {
 
   String? _loadedSongId;
   int _activeIndex = -1;
-  final ScrollController _scrollController = ScrollController();
+  final ItemScrollController _itemScrollController = ItemScrollController();
 
   LyricsProvider({required this.lyricsService});
 
@@ -25,7 +26,7 @@ class LyricsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get lyricsNotFound => _lyricsNotFound;
   int get activeIndex => _activeIndex;
-  ScrollController get scrollController => _scrollController;
+  ItemScrollController get itemScrollController => _itemScrollController;
 
   void setMode(LyricsMode newMode) {
     _mode = newMode;
@@ -51,11 +52,12 @@ class LyricsProvider extends ChangeNotifier {
         notifyListeners();
 
         // Autoscroll to active line
-        if (_scrollController.hasClients && _activeIndex >= 0) {
-          _scrollController.animateTo(
-            (_activeIndex * 56.0).clamp(0.0, _scrollController.position.maxScrollExtent),
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
+        if (_itemScrollController.isAttached && _activeIndex >= 0) {
+          _itemScrollController.scrollTo(
+            index: _activeIndex,
+            alignment: 0.5,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutCubic,
           );
         }
       }

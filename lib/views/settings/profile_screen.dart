@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../providers/profile_provider.dart';
+import '../../data/services/local_audio_service.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'stats_screen.dart';
 
@@ -14,12 +17,14 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _nameController = TextEditingController();
+  String _avatarPath = '';
 
   @override
   void initState() {
     super.initState();
     final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
     _nameController.text = profileProvider.userName;
+    _avatarPath = profileProvider.userAvatar;
   }
 
   @override
@@ -28,9 +33,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.image);
+    if (result != null && result.files.single.path != null) {
+      setState(() {
+        _avatarPath = result.files.single.path!;
+      });
+    }
+  }
+
   void _saveProfile() {
     final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
-    profileProvider.updateProfile(name: _nameController.text.trim(), avatar: '');
+    profileProvider.updateProfile(name: _nameController.text.trim(), avatar: _avatarPath);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -71,13 +85,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 20),
-            CircleAvatar(
-              radius: 60,
-              backgroundColor: context.themeAccentColor.withOpacity(0.2),
-              child: Icon(
-                Icons.person_rounded,
-                size: 60,
-                color: context.themeAccentColor,
+            GestureDetector(
+              onTap: _pickImage,
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundColor: context.themeAccentColor.withOpacity(0.2),
+                    backgroundImage: _avatarPath.isNotEmpty && File(_avatarPath).existsSync()
+                        ? FileImage(File(_avatarPath))
+                        : null,
+                    child: _avatarPath.isEmpty || !File(_avatarPath).existsSync()
+                        ? Icon(
+                            Icons.person_rounded,
+                            size: 60,
+                            color: context.themeAccentColor,
+                          )
+                        : null,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: context.themeAccentColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: context.themeBackgroundColor, width: 3),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 32),
@@ -143,6 +183,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     fontWeight: FontWeight.bold,
                     color: context.themeTextColor,
                   ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton(
+                onPressed: () async {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Scanning local files...", style: GoogleFonts.inter())),
+                  );
+                  final localAudioService = LocalAudioService();
+                  final localSongs = await localAudioService.scanLocalMusic();
+                  if (context.mounted) {
+                    if (localSongs.isNotEmpty) {
+                      // Note: Ideally, we should merge these into our Isar DB or custom playlist.
+                      // For now, just show a success message.
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Found ${localSongs.length} local songs! We will merge these into your library.", style: GoogleFonts.inter())),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("No local songs found or permission denied.", style: GoogleFonts.inter())),
+                      );
+                    }
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: context.themeTextColor.withOpacity(0.3), width: 2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.folder_open_rounded, color: context.themeTextColor),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Scan Local Device",
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: context.themeTextColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

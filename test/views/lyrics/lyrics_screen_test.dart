@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:it_feels_music/views/lyrics/lyrics_screen.dart';
 import 'package:it_feels_music/providers/lyrics_provider.dart';
 import 'package:it_feels_music/providers/audio_player_provider.dart';
@@ -10,14 +11,14 @@ import 'package:it_feels_music/data/services/lyrics_service.dart';
 
 class MockLyricsProvider extends Mock implements LyricsProvider {}
 class MockAudioPlayerProvider extends Mock implements AudioPlayerProvider {}
-class MockScrollController extends Mock implements ScrollController {}
+class MockItemScrollController extends Mock implements ItemScrollController {}
 
 class FakeSong extends Fake implements Song {}
 
 void main() {
   late MockLyricsProvider mockLyrics;
   late MockAudioPlayerProvider mockAudio;
-  late MockScrollController mockScroll;
+  late MockItemScrollController mockScroll;
 
   setUpAll(() {
     registerFallbackValue(FakeSong());
@@ -27,7 +28,7 @@ void main() {
   setUp(() {
     mockLyrics = MockLyricsProvider();
     mockAudio = MockAudioPlayerProvider();
-    mockScroll = MockScrollController();
+    mockScroll = MockItemScrollController();
   });
 
   testWidgets('LyricsScreen displays cute apologetic message when no lyrics', (WidgetTester tester) async {
@@ -54,7 +55,7 @@ void main() {
     when(() => mockLyrics.mode).thenReturn(LyricsMode.synced);
     when(() => mockLyrics.activeIndex).thenReturn(-1);
     when(() => mockLyrics.result).thenReturn(LyricsResult());
-    when(() => mockLyrics.scrollController).thenReturn(mockScroll);
+    when(() => mockLyrics.itemScrollController).thenReturn(mockScroll);
     when(() => mockLyrics.loadLyricsIfNeeded(any(), any())).thenAnswer((_) async {});
 
     await tester.pumpWidget(
