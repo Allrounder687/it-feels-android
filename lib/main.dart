@@ -1,3 +1,4 @@
+import 'package:audio_session/audio_session.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -19,12 +20,16 @@ import 'providers/search_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/ai_settings_provider.dart';
 import 'views/main_navigation_wrapper.dart';
+import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 late AudioPlayerHandler _audioHandler;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Permission.notification.request();
+
+  final session = await AudioSession.instance;
+  await session.configure(const AudioSessionConfiguration.music());
 
   // Initialize Android background AudioService
   final apiService = MusicApiService();
@@ -92,7 +97,7 @@ class PixelPlayerSaavnApp extends StatelessWidget {
       ],
       child: DynamicColorBuilder(
         builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-          final colorScheme = darkDynamic ?? ColorScheme.fromSeed(seedColor: AppColors.midnightPrimary, brightness: Brightness.dark);
+          final colorScheme = darkDynamic ?? ColorScheme.fromSeed(seedColor: context.themeAccentColor, brightness: Brightness.dark);
           return Builder(
             builder: (context) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -106,7 +111,7 @@ class PixelPlayerSaavnApp extends StatelessWidget {
                   useMaterial3: true,
                   brightness: Brightness.dark,
                   colorScheme: colorScheme,
-                  scaffoldBackgroundColor: AppColors.midnightBackground,
+                  scaffoldBackgroundColor: context.themeBackgroundColor,
                   textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
                 ),
                 home: const MainNavigationWrapper(),
