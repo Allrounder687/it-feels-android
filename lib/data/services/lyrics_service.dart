@@ -19,7 +19,7 @@ class LyricsResult {
 }
 
 class LyricsService {
-  static const String _saavnBaseUrl = 'https://www.Music API.com/api.php';
+  static const String _saavnBaseUrl = 'https://www.jiosaavn.com/api.php';
   static final Map<String, String> _headers = {
     'User-Agent':
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
