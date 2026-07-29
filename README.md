@@ -3,7 +3,7 @@
 A premium, modern Flutter Android music application built with the design aesthetics of **IT Feels Music** and powered by the **Jio API**.
 
 ![IT Feels Music  Banner](https://img.shields.io/badge/IT Feels Music-%20Edition-FF4081?style=for-the-badge&logo=flutter)
-![Version](https://img.shields.io/badge/Version-2.3.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-2.3.7-blue?style=for-the-badge)
 ![Flutter Version](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter)
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
@@ -87,3 +87,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Dynamic Theming (Material You):** The app adapts perfectly to the album art of the currently playing track.
 - **Haptic Feedback:** Subtle, premium haptic responses on player controls.
 - **Android Auto Support:** Preparation for automotive integration.
+- **TrollStore iPad Support:** Correctly formatted QR codes for 1-tap installation via iOS/iPadOS camera.
+- **Flawless Playback Cache:** Robust JSON fallback mechanisms that guarantee Recently Played and Queue states resume flawlessly even after hard restarts.
+- **Tablet & Large Screen UI:** Added dynamic side-by-side player layouts, Hero Banners, and authentic glassmorphism for a stunning tablet experience.

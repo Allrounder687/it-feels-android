@@ -10,9 +10,11 @@ This file tracks major technical decisions, features implemented, and architectu
 - **Android Integrations:** Added home_widget implementation in native Kotlin (MusicWidgetProvider.kt), managed namespace mismatches, and prepared Android Auto manifest entries.
 - **Ask Feels Branding:** Renamed AI system to "Ask Feels" with conversational UX ("What are you feeling like?").
 - **Build Isolation:** Configured debug builds with unique `applicationIdSuffix` and `appName` for parallel release/debug installations on user devices.
-- **Dynamic Edge-to-Edge Padding:** Removed hardcoded safe areas in favor of `MediaQuery.viewPadding.bottom`, dynamically adapting the UI to any Android system navigation bar height.
+- **Dynamic Edge-to-Edge Padding:** Removed hardcoded safe areas in favor of `MediaQuery.viewPadding.bottom` and `MediaQuery.viewPadding.top`, dynamically adapting the UI to any Android system navigation bar and iOS Notch heights.
 - **Layout Exception Hotfixes:** Replaced raw `DecoratedBox` implementations around `ListTile`s with `Material` to resolve underlying layout crash vectors.
 - **UX Polish:** Implemented Haptics via vibration on player controls, adjusted bottom navigation size, and added tap-to-seek lyrics.
+- **Cache Playback Engine:** Patched local `Song` deserialization schemas to handle both camelCase and snake_case API mappings, restoring offline playback reliability for the Queue and Recently Played lists.
+- **Tablet Optimizations:** Added responsive Hero Banners, immersive side-by-side Now Playing screens, and authentic glassmorphism for tablet form factors.
 
 ## Agent Directives (Rules)
 - **Version Management:** Whenever compiling a new debug or release build for the user, ALWAYS check `CHANGELOG.md` and bump the `version` property in `pubspec.yaml` (e.g., from `1.0.0+1` to `1.0.1+2` or whatever the next logical/changelog version is) before running the build command. This ensures the output APKs and binaries always have accurate, incremental version tagging.

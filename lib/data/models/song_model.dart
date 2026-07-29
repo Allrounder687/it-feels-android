@@ -109,8 +109,17 @@ class Song {
     final songTitle = json['title'] ?? json['song'] ?? json['name'] ?? 'Unknown Title';
     final albumTitle = json['album'] ?? (json['more_info'] != null ? json['more_info']['album'] : '') ?? '';
     final durationSec = int.tryParse(json['duration']?.toString() ?? (json['more_info'] != null ? json['more_info']['duration']?.toString() ?? '0' : '0')) ?? 0;
-    final encUrl = json['encrypted_media_url'] ?? (json['more_info'] != null ? json['more_info']['encrypted_media_url'] : null);
-    final hasLrc = json['more_info'] != null ? (json['more_info']['has_lyrics'] == 'true' || json['more_info']['has_lyrics'] == true) : false;
+    
+    // Fix: Handle both snake_case (API) and camelCase (Local Cache / Isar)
+    final encUrl = json['encryptedMediaUrl'] ?? json['encrypted_media_url'] ?? (json['more_info'] != null ? json['more_info']['encrypted_media_url'] : null);
+    
+    // Fix: Handle hasLyrics from cache
+    bool hasLrc = false;
+    if (json.containsKey('hasLyrics')) {
+      hasLrc = json['hasLyrics'] == true || json['hasLyrics'] == 'true';
+    } else if (json['more_info'] != null) {
+      hasLrc = (json['more_info']['has_lyrics'] == 'true' || json['more_info']['has_lyrics'] == true);
+    }
     
     final cleanTitle = StringUtils.cleanText(songTitle.toString());
     final cleanArtist = StringUtils.cleanText(artistName);

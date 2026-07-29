@@ -101,8 +101,9 @@ jobs:
       - name: Generate QR Code for Action Summary
         run: |
           URL="trollstore://install?url=https://github.com/${{ github.repository }}/releases/download/nightly/IT-Feels.ipa"
+          ENCODED_URL=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$URL")
           # We use a public QR code API to render the TrollStore URL in the summary
-          QR_URL="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${URL}"
+          QR_URL="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${ENCODED_URL}"
           
           echo "### 📲 Install on iPad (TrollStore)" >> $GITHUB_STEP_SUMMARY
           echo "**Tap this link from your iPad:** [Install Latest Build]($URL)" >> $GITHUB_STEP_SUMMARY

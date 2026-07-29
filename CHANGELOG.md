@@ -2,6 +2,13 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
+## [2.3.7] - 2026-07-29
+
+### Fixed
+- **TrollStore QR Code:** URL-encoded the TrollStore installation link in GitHub Actions so that scanning the QR code properly works on Apple devices.
+- **Cache Playback Bug:** Fixed a JSON deserialization bug where the `encryptedMediaUrl` was missing when restoring songs from the "Recently Played" list or Playback Queue. Songs now properly resume and advance perfectly even after restarting the app.
+- **iPhone Notch Support:** Replaced hardcoded app bar paddings with dynamic `MediaQuery.viewPaddingOf` values to perfectly accommodate iPhone XR and other notched devices.
+
 ## [2.3.6] - 2026-07-29
 
 ### Added

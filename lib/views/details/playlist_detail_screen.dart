@@ -97,7 +97,12 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                   // App Bar with Back Button
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.only(
+                        top: MediaQuery.viewPaddingOf(context).top + 8,
+                        bottom: 8,
+                        left: 16,
+                        right: 16,
+                      ),
                       child: Row(
                         children: [
                           IconButton(
