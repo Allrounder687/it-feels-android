@@ -55,12 +55,14 @@ class DesDecryptor {
   static String? get320kbpsUrl(String? decryptedLink) {
     if (decryptedLink == null || decryptedLink.isEmpty) return null;
 
-    if (decryptedLink.contains('preview.saavncdn.com')) {
-      return decryptedLink
+    String httpsUrl = decryptedLink.replaceFirst('http://', 'https://');
+
+    if (httpsUrl.contains('preview.saavncdn.com')) {
+      return httpsUrl
           .replaceAll(RegExp(r'(_96_p|_96|_160)\.(mp3|m4a)$'), '_320.mp4')
           .replaceAll('preview.saavncdn.com', 'aac.saavncdn.com');
     }
 
-    return decryptedLink.replaceAll(RegExp(r'(_96_p|_96|_160)\.(mp3|m4a)$'), '_320.mp4');
+    return httpsUrl.replaceAll(RegExp(r'(_96_p|_96|_160)\.(mp3|m4a)$'), '_320.mp4');
   }
 }
