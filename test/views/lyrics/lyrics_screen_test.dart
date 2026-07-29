@@ -48,6 +48,13 @@ void main() {
     when(() => mockAudio.position).thenReturn(Duration.zero);
     when(() => mockAudio.duration).thenReturn(const Duration(seconds: 100));
     when(() => mockAudio.isPlaying).thenReturn(true);
+    when(() => mockAudio.themeBackgroundColor).thenReturn(const Color(0xFF000000));
+    when(() => mockAudio.themeTextColor).thenReturn(const Color(0xFFFFFFFF));
+    when(() => mockAudio.themeMutedTextColor).thenReturn(const Color(0xFF888888));
+    when(() => mockAudio.themeInvertedTextColor).thenReturn(const Color(0xFF000000));
+    when(() => mockAudio.themeAccentColor).thenReturn(const Color(0xFFFF0000));
+    when(() => mockAudio.themeCardColor).thenReturn(const Color(0xFF111111));
+    when(() => mockAudio.themeSurfaceColor).thenReturn(const Color(0xFF222222));
 
     // Setup MockLyricsProvider
     when(() => mockLyrics.isLoading).thenReturn(false);
@@ -56,6 +63,7 @@ void main() {
     when(() => mockLyrics.activeIndex).thenReturn(-1);
     when(() => mockLyrics.result).thenReturn(LyricsResult());
     when(() => mockLyrics.itemScrollController).thenReturn(mockScroll);
+    when(() => mockScroll.isAttached).thenReturn(true);
     when(() => mockLyrics.loadLyricsIfNeeded(any(), any())).thenAnswer((_) async {});
 
     await tester.pumpWidget(
@@ -72,6 +80,11 @@ void main() {
 
     await tester.pump();
 
-    expect(find.textContaining("Oopsies!"), findsOneWidget);
+    try {
+      expect(find.textContaining("Oopsies!"), findsOneWidget);
+    } catch (e) {
+      debugDumpApp();
+      rethrow;
+    }
   });
 }

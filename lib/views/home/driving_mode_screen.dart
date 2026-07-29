@@ -50,7 +50,7 @@ class DrivingModeScreen extends StatelessWidget {
                     Opacity(
                       opacity: 0.3,
                       child: CustomImageWidget(
-                        url: song.coverArt,
+                        imageUrl: song.coverArt,
                         width: double.infinity,
                         height: double.infinity,
                         fit: BoxFit.cover,
