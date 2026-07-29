@@ -81,20 +81,30 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
   Future<void> playSong(Song song, String streamUrl) async {
     try {
-      mediaItem.add(MediaItem(
+      final item = MediaItem(
         id: song.id,
         album: song.album,
         title: song.title,
         artist: song.artist,
         duration: Duration(seconds: song.duration),
         artUri: song.coverArt.isNotEmpty ? (song.coverArt.startsWith('http') ? Uri.parse(song.coverArt) : Uri.file(song.coverArt)) : null,
-      ));
+      );
+      mediaItem.add(item);
 
       if (streamUrl.startsWith('/') || streamUrl.startsWith('file://')) {
         final path = streamUrl.startsWith('file://') ? streamUrl.replaceFirst('file://', '') : streamUrl;
-        await _player.setFilePath(path);
+        await _player.setAudioSource(AudioSource.file(path, tag: item));
       } else {
-        await _player.setUrl(streamUrl);
+        await _player.setAudioSource(
+          AudioSource.uri(
+            Uri.parse(streamUrl),
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': '*/*',
+            },
+            tag: item,
+          ),
+        );
       }
       await _player.play();
     } catch (e) {
