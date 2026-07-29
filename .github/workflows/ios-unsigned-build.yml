@@ -73,6 +73,19 @@ jobs:
           # CRITICAL: Pseudo-sign the binary so it doesn't get Killed: 9
           ldid -S Payload/Runner.app/Runner
           
+          # Sign all embedded frameworks
+          find Payload/Runner.app/Frameworks -name "*.framework" -type d | while read framework; do
+            framework_name=$(basename "$framework" .framework)
+            if [ -f "$framework/$framework_name" ]; then
+              ldid -S "$framework/$framework_name"
+            fi
+          done
+          
+          # Sign any dylibs
+          find Payload/Runner.app -name "*.dylib" -type f | while read dylib; do
+            ldid -S "$dylib"
+          done
+          
           zip -r IT-Feels.ipa Payload
 
       - name: Upload IPA
