@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - it-feels-branch
+      - feature/backend-proxy-migration
 
 jobs:
   build-ios:
