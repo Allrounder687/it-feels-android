@@ -240,8 +240,8 @@ class SettingsScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Category 4: SoundBound Proxy Engine
-              _buildSectionHeader(context, "🌐 SoundBound Backend Engine"),
+              // Category 4: FEELS Cloud Proxy Engine
+              _buildSectionHeader(context, "🌐 FEELS Cloud Proxy Engine"),
               const SizedBox(height: 8),
 
               SwitchListTile.adaptive(

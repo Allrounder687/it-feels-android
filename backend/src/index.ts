@@ -18,7 +18,7 @@ app.get('/health', (c) => {
   });
 });
 
-// Sources Directory (SoundBound manifest compatibility)
+// Sources Directory (Dynamic source manifest compatibility)
 app.get('/api/v1/sources', (c) => {
   return c.json([
     {
