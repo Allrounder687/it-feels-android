@@ -124,7 +124,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
                 // Main Content View per selected Tab
                 Expanded(
-                  child: _buildTabContent(homeProvider, playerProvider, downloadProvider, customPlaylistProvider, trending, playlists),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 900),
+                      child: _buildTabContent(homeProvider, playerProvider, downloadProvider, customPlaylistProvider, trending, playlists),
+                    ),
+                  ),
                 ),
 
                 SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
@@ -159,8 +164,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
       return GridView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 180,
           childAspectRatio: 0.85,
           crossAxisSpacing: 14,
           mainAxisSpacing: 14,

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:it_feels_music/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -76,6 +77,121 @@ class _HomeScreenState extends State<HomeScreen> {
     return "Late Night Vibes";
   }
 
+  Widget _buildHeroBanner(BuildContext context, Song heroSong, AudioPlayerProvider player) {
+    return Container(
+      height: 280,
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: context.themeInvertedTextColor.withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          )
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: heroSong.coverArt.isNotEmpty
+                  ? CustomImageWidget(imageUrl: heroSong.coverArt, fit: BoxFit.cover)
+                  : Container(color: context.themeSurfaceColor),
+            ),
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                child: Container(
+                  color: Colors.black.withValues(alpha: 0.4),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: SizedBox(
+                      width: 216,
+                      height: 216,
+                      child: heroSong.coverArt.isNotEmpty
+                          ? CustomImageWidget(imageUrl: heroSong.coverArt, fit: BoxFit.cover)
+                          : Container(color: context.themeSurfaceColor),
+                    ),
+                  ),
+                  const SizedBox(width: 32),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "FEATURED",
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.5,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          heroSong.title,
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 42,
+                            fontWeight: FontWeight.w800,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          heroSong.artist,
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () => player.playSong(heroSong, queue: [heroSong], index: 0),
+                          icon: const Icon(Icons.play_arrow_rounded, color: Colors.black),
+                          label: Text(
+                            "Play Now",
+                            style: GoogleFonts.inter(
+                              color: Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
   Widget _buildPlaylistCarousel(BuildContext context, String title, List<Playlist> playlists) {
     if (playlists.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
     return SliverToBoxAdapter(
@@ -153,17 +269,24 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          SizedBox(
-            height: 220, // 3 rows of songs
-            child: GridView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 0.25,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 12,
-              ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final isWide = screenWidth >= 600;
+              final crossAxisCount = isWide ? 4 : 3;
+              final carouselHeight = isWide ? 290.0 : 220.0;
+              
+              return SizedBox(
+                height: carouselHeight,
+                child: GridView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: 0.25,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 12,
+                  ),
               itemCount: songs.length > 15 ? 15 : songs.length,
               itemBuilder: (context, index) {
                 final song = songs[index];
@@ -201,7 +324,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               },
-            ),
+            );
+            },
           ),
           const SizedBox(height: 16),
         ],
@@ -300,6 +424,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+                // Tablet Hero Banner
+                if (MediaQuery.of(context).size.width >= 700 && activeSongs.isNotEmpty && selectedCat == "For You")
+                  SliverToBoxAdapter(
+                    child: _buildHeroBanner(context, activeSongs.first, playerProvider),
+                  ),
 
                 if (homeProvider.isLoading && activeSongs.isEmpty && selectedCat != "For You")
                   const SliverToBoxAdapter(

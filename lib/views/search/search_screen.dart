@@ -134,11 +134,14 @@ class _SearchScreenState extends State<SearchScreen> {
 
                 // Search Results List
                 Expanded(
-                  child: searchProvider.isSearching
-                      ? const Center(
-                          child: CircularProgressIndicator(color: AppColors.midnightAccent),
-                        )
-                      : _searchController.text.isEmpty
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 900),
+                      child: searchProvider.isSearching
+                          ? const Center(
+                              child: CircularProgressIndicator(color: AppColors.midnightAccent),
+                            )
+                          : _searchController.text.isEmpty
                           ? Center(
                               child: Text(
                                 "Search for tracks, artists, albums, or playlists",
@@ -401,6 +404,8 @@ class _SearchScreenState extends State<SearchScreen> {
                                 SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
                               ],
                             ),
+                    ),
+                  ),
                 ),
               ],
             ),

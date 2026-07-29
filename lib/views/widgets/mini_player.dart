@@ -1,6 +1,7 @@
 import 'package:it_feels_music/views/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'animated_play_pause_button.dart';
 import '../../providers/audio_player_provider.dart';
@@ -27,20 +28,24 @@ class MiniPlayer extends StatelessWidget {
         final bottomInset = MediaQuery.of(context).viewPadding.bottom;
         return Padding(
           padding: EdgeInsets.only(bottom: bottomInset),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            height: 72,
-            decoration: BoxDecoration(
-              color: playerProvider.themeSurfaceColor.withValues(alpha: 0.96),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: context.themeInvertedTextColor.withValues(alpha: 0.45),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                height: 72,
+                decoration: BoxDecoration(
+                  color: playerProvider.themeSurfaceColor.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.themeInvertedTextColor.withValues(alpha: 0.45),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                 ),
-              ],
-            ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Stack(
@@ -172,6 +177,8 @@ class MiniPlayer extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+            ),
             ),
           ),
         );

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -201,112 +202,223 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
 
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
-      body: Stack(
-        children: [
-          // Indexed Active Screen
-          IndexedStack(
-            index: _currentTab,
-            children: screens,
-          ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWideScreen = constraints.maxWidth >= 600;
 
-          // Floating MiniPlayer + Bottom Navigation Bar Overlay
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: SafeArea(
-              bottom: true,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Import Progress Banner
-                  const ImportProgressBanner(),
-                  
-                  // Mini Player Pill
-                  MiniPlayer(onTap: _openFullPlayer),
-  
-                  // Floating Bottom Navigation Bar Pill Container
-                  Container(
-                    height: 76,
-                    margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
-                    decoration: BoxDecoration(
-                      color: context.themeSurfaceColor.withValues(alpha: 0.95),
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.themeInvertedTextColor.withValues(alpha: 0.4),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
+          if (isWideScreen) {
+            return Row(
+              children: [
+                // Floating Side Navigation Pill for Wide Screens
+                SafeArea(
+                  right: false,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(32),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                      child: Container(
+                        width: 96,
+                        margin: const EdgeInsets.only(left: 12, top: 12, bottom: 12),
+                        decoration: BoxDecoration(
+                          color: context.themeSurfaceColor.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(32),
+                          boxShadow: [
+                            BoxShadow(
+                              color: context.themeInvertedTextColor.withValues(alpha: 0.2),
+                              blurRadius: 20,
+                              offset: const Offset(8, 0),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _buildNavItem(0, Icons.home_rounded, "Home"),
-                        _buildNavItem(1, Icons.search_rounded, "Search"),
-                        _buildNavItem(2, Icons.library_music_rounded, "Library"),
+                        _buildNavItem(0, Icons.home_rounded, "Home", isVertical: true),
+                        const SizedBox(height: 24),
+                        _buildNavItem(1, Icons.search_rounded, "Search", isVertical: true),
+                        const SizedBox(height: 24),
+                        _buildNavItem(2, Icons.library_music_rounded, "Library", isVertical: true),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    final isSelected = _currentTab == index;
-    return Consumer<AudioPlayerProvider>(
-      builder: (context, playerProvider, child) {
-        return Expanded(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              setState(() {
-                _currentTab = index;
-              });
-            },
-            child: Center(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.midnightPill : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      icon,
-                      color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor,
-                      size: 32,
-                    ),
-                    if (isSelected) ...[
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            color: context.themeTextColor,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
+                // Main Content
+                Expanded(
+                  child: Stack(
+                    children: [
+                      // Indexed Active Screen
+                      IndexedStack(
+                        index: _currentTab,
+                        children: screens,
+                      ),
+                      // Floating MiniPlayer Overlay
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: SafeArea(
+                          bottom: true,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Import Progress Banner
+                              const ImportProgressBanner(),
+                              // Mini Player Pill
+                              MiniPlayer(onTap: _openFullPlayer),
+                            ],
                           ),
                         ),
                       ),
                     ],
-                  ],
+                  ),
+                ),
+              ],
+            );
+          }
+
+          // Mobile View
+          return Stack(
+            children: [
+              // Indexed Active Screen
+              IndexedStack(
+                index: _currentTab,
+                children: screens,
+              ),
+
+              // Floating MiniPlayer + Bottom Navigation Bar Overlay
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: SafeArea(
+                  bottom: true,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Import Progress Banner
+                      const ImportProgressBanner(),
+                      
+                      // Mini Player Pill
+                      MiniPlayer(onTap: _openFullPlayer),
+      
+                      // Floating Bottom Navigation Bar Pill Container
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(32),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                          child: Container(
+                            height: 76,
+                            margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+                            decoration: BoxDecoration(
+                              color: context.themeSurfaceColor.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(32),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: context.themeInvertedTextColor.withValues(alpha: 0.4),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildNavItem(0, Icons.home_rounded, "Home"),
+                                _buildNavItem(1, Icons.search_rounded, "Search"),
+                                _buildNavItem(2, Icons.library_music_rounded, "Library"),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, String label, {bool isVertical = false}) {
+    final isSelected = _currentTab == index;
+    return Consumer<AudioPlayerProvider>(
+      builder: (context, playerProvider, child) {
+        final content = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            setState(() {
+              _currentTab = index;
+            });
+          },
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: EdgeInsets.symmetric(
+                horizontal: isVertical ? 12 : 20,
+                vertical: isVertical ? 16 : 16,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.midnightPill : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: isVertical
+                  ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          icon,
+                          color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor,
+                          size: 32,
+                        ),
+                        if (isSelected) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: context.themeTextColor,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ],
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          icon,
+                          color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor,
+                          size: 32,
+                        ),
+                        if (isSelected) ...[
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                color: context.themeTextColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
             ),
           ),
         );
+        return isVertical ? content : Expanded(child: content);
       },
     );
   }

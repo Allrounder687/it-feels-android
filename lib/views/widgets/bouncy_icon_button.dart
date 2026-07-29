@@ -25,10 +25,11 @@ class _BouncyIconButtonState extends State<BouncyIconButton> with SingleTickerPr
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 100),
+      duration: const Duration(milliseconds: 75),
+      reverseDuration: const Duration(milliseconds: 150),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.8).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.75).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic, reverseCurve: Curves.elasticOut),
     );
   }
 
