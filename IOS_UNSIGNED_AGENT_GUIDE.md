@@ -37,9 +37,13 @@ Instead, use this exact GitHub Actions bash sequence:
           cd ..
 ```
 
-## 2. Preventing Instant Crashes (`Killed: 9`)
+## 2. CI/CD Packaging & Delivery (`Killed: 9` Prevention & TrollStore)
 A purely unsigned binary will be killed instantly by the iOS kernel on launch, even on a jailbroken device, because it lacks entitlements.
 You **must** pseudo-sign the executable using `ldid` before zipping the `.ipa`.
+
+### Auto-Deployment via TrollStore & GitHub Releases
+To provide a 1-tap install experience for jailbroken users, you **MUST** configure the CI workflow to publish the raw `.ipa` to a GitHub Release and generate a `trollstore://install` link. Zipped artifacts are unacceptable.
+Add a step to generate a QR Code in `$GITHUB_STEP_SUMMARY` and upload the IPA using `softprops/action-gh-release@v2`.
 
 ```yaml
       - name: Install ldid
@@ -120,6 +124,7 @@ Unlike Android, iOS will suspend/kill your app the exact second it goes to the b
 </dict>
 ```
 - **Local Downloaded Audio (`just_audio`)**: iOS `AVPlayer` will fail to parse raw absolute paths like `/var/mobile/Containers/...`. If playing local downloaded files with `just_audio`, you **MUST** ensure the string uses the `file://` scheme or is explicitly passed to `setFilePath()` instead of `setUrl()`.
+- **AudioPipeline Crash**: You **MUST** conditionally strip out any `AudioPipeline(androidAudioEffects: [...])` when running on iOS using `!kIsWeb && Platform.isAndroid`. Otherwise, `just_audio` will silently abort `AVPlayer` initialization and permanently stall playback at `00:00` for all audio.
 
 ### WebRTC / Blackboard / Calling
 WebRTC and calling features require strict permissions. The app will crash if these are missing when requested:
@@ -143,3 +148,9 @@ When building unsigned release IPAs, the Xcode linker aggressively strips symbol
 When porting an Android app to iOS, the iOS specific metadata is often neglected and must be updated explicitly.
 - **App Name**: The iOS app name is controlled by `CFBundleDisplayName` and `CFBundleName` in `ios/Runner/Info.plist`. You **MUST** update these fields to match the app's branding, otherwise it will default to the generic Xcode project name (e.g., `Runner` or `pixel_player_saavn`).
 - **App Icon**: You **MUST** ensure `ios: true` is set under the `flutter_launcher_icons` block in `pubspec.yaml`, and manually run `dart run flutter_launcher_icons` to generate the `AppIcon.appiconset` for iOS. Otherwise, the app will deploy with the default Flutter logo.
+
+## 9. Swift Package Manager (SPM) Conflicts
+Starting with Flutter 3.44, SPM is the default for iOS. Some older plugins (like `isar_flutter_libs`) will throw a warning: *"The following plugins do not support Swift Package Manager for ios"*.
+- You **MUST NOT** globally disable SPM in `pubspec.yaml` (`disable-swift-package-manager: true`) to suppress this warning.
+- Doing so will instantly break the compilation of modern plugins (like `receive_sharing_intent`) that strictly rely on SPM.
+- You must tolerate the CocoaPods fallback warning for legacy plugins.
