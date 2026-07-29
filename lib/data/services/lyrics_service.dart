@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../core/utils/hinglish_transliterator.dart';
 import '../../core/utils/lrc_parser.dart';
 import '../models/song_model.dart';
-import 'backend_api_service.dart';
+import '../../services/backend_api_service.dart';
 
 import 'package:string_similarity/string_similarity.dart';
 
