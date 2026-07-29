@@ -16,6 +16,8 @@ class LyricsProvider extends ChangeNotifier {
 
   String? _loadedSongId;
   int _activeIndex = -1;
+  int _syncOffsetMs = 350; // Default +350ms compensation for audio buffer latency
+  String _fontFamily = 'Plus Jakarta Sans'; // Sleek modern lyrics font
   final ItemScrollController _itemScrollController = ItemScrollController();
 
   LyricsProvider({required this.lyricsService});
@@ -26,10 +28,27 @@ class LyricsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get lyricsNotFound => _lyricsNotFound;
   int get activeIndex => _activeIndex;
+  int get syncOffsetMs => _syncOffsetMs;
+  String get fontFamily => _fontFamily;
   ItemScrollController get itemScrollController => _itemScrollController;
 
   void setMode(LyricsMode newMode) {
     _mode = newMode;
+    notifyListeners();
+  }
+
+  void setFontFamily(String font) {
+    _fontFamily = font;
+    notifyListeners();
+  }
+
+  void adjustSyncOffset(int deltaMs) {
+    _syncOffsetMs = (_syncOffsetMs + deltaMs).clamp(-2000, 2000);
+    notifyListeners();
+  }
+
+  void resetSyncOffset() {
+    _syncOffsetMs = 350;
     notifyListeners();
   }
 
@@ -99,8 +118,12 @@ class LyricsProvider extends ChangeNotifier {
   int getActiveLineIndex(Duration position) {
     if (_lyricsResult == null || !_lyricsResult!.hasSynced) return -1;
     final lines = _lyricsResult!.syncedLyrics;
+    
+    // Apply sync offset compensation to eliminate audio buffer latency lag
+    final adjustedPosition = position + Duration(milliseconds: _syncOffsetMs);
+
     for (int i = lines.length - 1; i >= 0; i--) {
-      if (position >= lines[i].time) {
+      if (adjustedPosition >= lines[i].time) {
         return i;
       }
     }

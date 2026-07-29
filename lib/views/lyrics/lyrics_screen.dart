@@ -30,9 +30,9 @@ class LyricsScreen extends StatelessWidget {
           body: SafeArea(
             child: Column(
               children: [
-                // Top Navigation Bar (Back Arrow, Title, Toggle Pill)
+                // Top Navigation Bar (Back Arrow, Title, Options)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -47,15 +47,7 @@ class LyricsScreen extends StatelessWidget {
                         ),
                         onPressed: () => Navigator.pop(context),
                       ),
-                      Text(
-                        "Lyrics",
-                        style: GoogleFonts.outfit(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: context.themeTextColor,
-                        ),
-                      ),
-
+                      
                       // Synced vs Static Mode Pill
                       Container(
                         padding: const EdgeInsets.all(4),
@@ -68,7 +60,7 @@ class LyricsScreen extends StatelessWidget {
                             GestureDetector(
                               onTap: () => lyricsProvider.setMode(LyricsMode.synced),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                                 decoration: BoxDecoration(
                                   color: lyricsProvider.mode == LyricsMode.synced
                                       ? context.themeAccentColor
@@ -90,7 +82,7 @@ class LyricsScreen extends StatelessWidget {
                             GestureDetector(
                               onTap: () => lyricsProvider.setMode(LyricsMode.static),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                                 decoration: BoxDecoration(
                                   color: lyricsProvider.mode == LyricsMode.static
                                       ? context.themeAccentColor
@@ -112,9 +104,77 @@ class LyricsScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+
+                      // Font Selector Popup Menu
+                      PopupMenuButton<String>(
+                        icon: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: AppColors.midnightPill,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.text_fields, color: context.themeTextColor, size: 20),
+                        ),
+                        onSelected: (font) => lyricsProvider.setFontFamily(font),
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'Plus Jakarta Sans',
+                            child: Text('Plus Jakarta Sans (Modern)', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+                          ),
+                          PopupMenuItem(
+                            value: 'Syne',
+                            child: Text('Syne (Bold Display)', style: GoogleFonts.syne(fontWeight: FontWeight.w700)),
+                          ),
+                          PopupMenuItem(
+                            value: 'Space Grotesk',
+                            child: Text('Space Grotesk (Cyber Tech)', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700)),
+                          ),
+                          PopupMenuItem(
+                            value: 'Outfit',
+                            child: Text('Outfit (Geometric)', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
+
+                // Timing Offset Compensation Bar (Sleek Micro Pill)
+                if (lyricsProvider.mode == LyricsMode.synced && lyricsProvider.result.hasSynced)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: context.themeCardColor.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: context.themeMutedTextColor.withValues(alpha: 0.15), width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () => lyricsProvider.adjustSyncOffset(-100),
+                            child: Icon(Icons.remove_circle_outline, size: 16, color: context.themeMutedTextColor),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Sync Offset: ${lyricsProvider.syncOffsetMs >= 0 ? '+' : ''}${lyricsProvider.syncOffsetMs}ms",
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: context.themeMutedTextColor,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => lyricsProvider.adjustSyncOffset(100),
+                            child: Icon(Icons.add_circle_outline, size: 16, color: context.themeMutedTextColor),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                 // Main Lyrics View Container
                 Expanded(
@@ -137,18 +197,19 @@ class LyricsScreen extends StatelessWidget {
                                   child: AnimatedDefaultTextStyle(
                                     duration: const Duration(milliseconds: 300),
                                     curve: Curves.easeOutCubic,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: isActive ? 30 : 22,
+                                    style: _getLyricsTextStyle(
+                                      lyricsProvider.fontFamily,
+                                      fontSize: isActive ? 28 : 21,
                                       fontWeight: isActive ? FontWeight.w900 : FontWeight.w500,
                                       color: isActive
                                           ? context.themeTextColor
-                                          : context.themeTextColor.withValues(alpha: 0.4),
-                                      height: 1.3,
+                                          : context.themeTextColor.withValues(alpha: 0.35),
+                                      height: 1.35,
                                       shadows: isActive
                                           ? [
                                               BoxShadow(
-                                                color: AppColors.midnightAccent.withValues(alpha: 0.6),
-                                                blurRadius: 16,
+                                                color: AppColors.midnightAccent.withValues(alpha: 0.5),
+                                                blurRadius: 18,
                                                 offset: const Offset(0, 4),
                                               )
                                             ]
@@ -179,7 +240,8 @@ class LyricsScreen extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
                               child: Text(
                                 lyricsProvider.result.staticLyrics ?? "Oopsies! 🙈 The lyrics for this track are playing hide and seek.",
-                                style: GoogleFonts.outfit(
+                                style: _getLyricsTextStyle(
+                                  lyricsProvider.fontFamily,
                                   fontSize: 22,
                                   fontWeight: FontWeight.w600,
                                   color: context.themeMutedTextColor,
@@ -271,5 +333,26 @@ class LyricsScreen extends StatelessWidget {
         );
       },
     );
+  }
+
+  TextStyle _getLyricsTextStyle(
+    String font, {
+    required double fontSize,
+    required FontWeight fontWeight,
+    required Color color,
+    double? height,
+    List<Shadow>? shadows,
+  }) {
+    switch (font) {
+      case 'Syne':
+        return GoogleFonts.syne(fontSize: fontSize, fontWeight: fontWeight, color: color, height: height, shadows: shadows);
+      case 'Space Grotesk':
+        return GoogleFonts.spaceGrotesk(fontSize: fontSize, fontWeight: fontWeight, color: color, height: height, shadows: shadows);
+      case 'Outfit':
+        return GoogleFonts.outfit(fontSize: fontSize, fontWeight: fontWeight, color: color, height: height, shadows: shadows);
+      case 'Plus Jakarta Sans':
+      default:
+        return GoogleFonts.plusJakartaSans(fontSize: fontSize, fontWeight: fontWeight, color: color, height: height, shadows: shadows);
+    }
   }
 }

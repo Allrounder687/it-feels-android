@@ -8,6 +8,8 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - **FEELS Cloud Proxy Engine**: Integrated lightweight Cloudflare Workers / Node.js backend proxy support. Decouples stream URL decryption, multi-source track search, and lyrics extraction from mobile APK binaries into zero-downtime serverless edge functions.
 - **Musixmatch Lyrics Integration**: Added Musixmatch API as secondary fallback provider in Cloudflare Worker lyrics pipeline for synced and plain text lyrics.
 - **Zero-Cognitive-Overload Search Badges**: Added micro provider pills (`[SAAVN]`, `[YOUTUBE]`, `[SPOTIFY]`) in Search result tiles for instant source transparency.
+- **Premium Lyrics Typography**: Upgraded lyrics screen font to **Plus Jakarta Sans** (with on-the-fly font selector for Syne, Space Grotesk, and Outfit).
+- **Synced Lyrics Buffer Compensation**: Integrated `+350ms` default audio buffer latency lead compensation with live timing offset control pill (`-[100ms]` / `+[100ms]`) to eliminate lyrics timing lag.
 - **Backend Settings Controls**: Added toggle in Settings to switch seamlessly between direct client-side scraping and Serverless Cloud Proxy mode, with custom endpoint URL configuration.
 - **Modular Cloudflare Worker Backend**: Created standalone TypeScript project under `backend/` powered by Hono.js for serverless deployment.
 
