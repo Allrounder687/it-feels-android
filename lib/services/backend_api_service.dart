@@ -273,6 +273,24 @@ class BackendApiService {
     return fallbackRes;
   }
 
+  // IMPORTANT: Paste your Render URL here once it's deployed (e.g. 'https://it-feels-yt-proxy.onrender.com')
+  static String ytDlpBackendUrl = 'https://it-feels-android.onrender.com'; 
+  
+  static Future<Map<String, dynamic>> _fetchFromYtDlpBackend(String videoId) async {
+    if (ytDlpBackendUrl.isEmpty) return {'title': 'Music Video', 'streams': []};
+    try {
+      final cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
+      final uri = Uri.parse('$ytDlpBackendUrl/api/streams?videoId=$cleanId');
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] yt-dlp backend error: $e');
+    }
+    return {'title': 'Music Video', 'streams': []};
+  }
+
   /// Client-side direct stream fallback using youtube_explode_dart
   static Future<Map<String, dynamic>> _directYoutubeExplodeStreamFallback(String videoId, {String? query}) async {
     debugPrint('[BackendApiService] _directYoutubeExplodeStreamFallback called with videoId=$videoId, query=$query');
@@ -289,11 +307,20 @@ class BackendApiService {
           return {'title': 'Music Video', 'streams': []};
         }
       }
+      
+      // If the yt-dlp proxy is configured, prioritize it for 4K video streams!
+      if (ytDlpBackendUrl.isNotEmpty) {
+        final ytDlpData = await _fetchFromYtDlpBackend(cleanId);
+        if (ytDlpData['streams'] != null && (ytDlpData['streams'] as List).isNotEmpty) {
+          debugPrint('[BackendApiService] Successfully fetched 4K streams from yt-dlp proxy!');
+          return ytDlpData;
+        }
+      }
 
       final manifest = await _yt.videos.streamsClient.getManifest(cleanId);
       final videoInfo = await _yt.videos.get(cleanId);
       
-      // We ONLY use muxed streams. YouTube heavily protects raw videoOnly (1080p/4K) DASH streams
+      // Fallback: We ONLY use muxed streams. YouTube heavily protects raw videoOnly (1080p/4K) DASH streams
       // with strict Proof-of-Origin (PO Tokens) and Range tracking which triggers an unpreventable 403 on ExoPlayer.
       final allVideoStreams = manifest.muxed.toList();
       if (allVideoStreams.isNotEmpty) {
