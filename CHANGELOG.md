@@ -5,6 +5,9 @@ All notable changes to **IT Feels Music** will be documented in this file.
 ## [2.6.0] - Unreleased (Phase 3: Listen Together)
 
 ### Added
+- **Firestore Cloud Sync:** Built `CloudSyncService` to securely push local Isar `Song` favorites to Cloud Firestore. 
+- **Real-Time Database Listeners:** Integrated bi-directional Firestore snapshot listeners that instantly merge cloud state into the local Isar database.
+- **Dependency Injection & Tests:** Added DI to `CloudSyncService` and verified offline/online hybrid merge logic using `fake_cloud_firestore` unit tests.
 - **Magic Auth Flow:** Implemented a unified Email/Password Glassmorphic Bottom Sheet (`AuthBottomSheet`) ensuring zero cognitive overload without forcing logins on startup.
 - **Anti-Enumeration Security:** Architected the `AuthProvider` to use a highly secure exception-catching flow (handling `user-not-found` & `invalid-credential`) to bypass modern Firebase Email Enumeration protections.
 - **Auth Unit Tests:** Built 7 comprehensive Mocktail unit tests in `auth_provider_test.dart` to verify the state machine mathematically.

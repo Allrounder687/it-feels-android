@@ -98,6 +98,14 @@ class DatabaseService {
         .findAll();
   }
 
+  Future<List<Song>> getAllFavorites() async {
+    return await _isar.songs
+        .filter()
+        .isFavoriteEqualTo(true)
+        .sortByAddedAtDesc()
+        .findAll();
+  }
+
   Future<List<Song>> getDownloadedSongs() async {
     return await _isar.songs
         .filter()

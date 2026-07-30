@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
+import '../services/cloud_sync_service.dart';
 
 enum AuthViewState { emailInput, loginPassword, signupPassword, loading, authenticated }
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
+  final CloudSyncService _cloudSyncService = CloudSyncService();
   
   AuthViewState _viewState = AuthViewState.emailInput;
   String _email = '';
@@ -21,8 +23,10 @@ class AuthProvider extends ChangeNotifier {
     _authService.userStream.listen((user) {
       if (user != null) {
         _viewState = AuthViewState.authenticated;
+        _cloudSyncService.initializeSync(user);
       } else {
         _viewState = AuthViewState.emailInput;
+        _cloudSyncService.stopSync();
       }
       notifyListeners();
     });
