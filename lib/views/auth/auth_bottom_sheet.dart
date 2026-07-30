@@ -164,6 +164,8 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
                   : () {
                       if (authProvider.viewState == AuthViewState.emailInput) {
                         authProvider.submitEmail(_emailController.text);
+                      } else if (authProvider.viewState == AuthViewState.emailVerificationPending) {
+                        authProvider.checkVerificationStatus();
                       } else {
                         authProvider.submitPassword(_passwordController.text);
                       }
@@ -191,6 +193,12 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
                     ),
             ),
             const SizedBox(height: 16),
+            
+            if (authProvider.viewState == AuthViewState.emailVerificationPending)
+              TextButton(
+                onPressed: () => authProvider.resendVerificationEmail(),
+                child: const Text('Resend Verification Link'),
+              ),
             
             // Google Sign-In Button
             if (authProvider.viewState == AuthViewState.emailInput) ...[
@@ -243,6 +251,8 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
         return 'Welcome Back';
       case AuthViewState.signupPassword:
         return 'Create Account';
+      case AuthViewState.emailVerificationPending:
+        return 'Verify Your Email';
       case AuthViewState.loading:
       case AuthViewState.authenticated:
         return 'Authenticating...';
@@ -257,6 +267,8 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
         return 'Enter your password to continue.';
       case AuthViewState.signupPassword:
         return 'Create a secure password to protect your library.';
+      case AuthViewState.emailVerificationPending:
+        return 'We sent a verification link to your email. Click it to activate your account.';
       default:
         return '';
     }
@@ -270,6 +282,8 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
         return 'Log In';
       case AuthViewState.signupPassword:
         return 'Create Account';
+      case AuthViewState.emailVerificationPending:
+        return 'I\'ve Verified My Email';
       default:
         return '...';
     }

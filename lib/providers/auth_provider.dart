@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/cloud_sync_service.dart';
 
-enum AuthViewState { emailInput, loginPassword, signupPassword, loading, authenticated }
+enum AuthViewState { emailInput, loginPassword, signupPassword, loading, emailVerificationPending, authenticated }
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
@@ -24,8 +24,16 @@ class AuthProvider extends ChangeNotifier {
         _cloudSyncService = cloudSyncService ?? CloudSyncService() {
     _authService.userStream.listen((user) {
       if (user != null) {
-        _viewState = AuthViewState.authenticated;
-        _cloudSyncService.initializeSync(user);
+        // If it's a password provider and email is not verified, require verification.
+        final isPasswordProvider = user.providerData.any((info) => info.providerId == 'password');
+        
+        if (isPasswordProvider && !user.emailVerified) {
+          _viewState = AuthViewState.emailVerificationPending;
+          _cloudSyncService.stopSync();
+        } else {
+          _viewState = AuthViewState.authenticated;
+          _cloudSyncService.initializeSync(user);
+        }
       } else {
         _viewState = AuthViewState.emailInput;
         _cloudSyncService.stopSync();
@@ -125,6 +133,34 @@ class AuthProvider extends ChangeNotifier {
       _viewState = previousState;
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<void> checkVerificationStatus() async {
+    try {
+      await _authService.reloadUser();
+      final user = _authService.currentUser;
+      if (user != null && user.emailVerified) {
+        _viewState = AuthViewState.authenticated;
+        _cloudSyncService.initializeSync(user);
+      } else {
+        _errorMessage = 'Email not verified yet. Please check your inbox.';
+      }
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to check verification status.';
+      notifyListeners();
+    }
+  }
+
+  Future<void> resendVerificationEmail() async {
+    try {
+      await _authService.resendVerificationEmail();
+      _errorMessage = 'Verification email resent successfully!';
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = 'Failed to resend verification email. Please try again later.';
+      notifyListeners();
     }
   }
 

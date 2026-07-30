@@ -44,12 +44,30 @@ class AuthService {
   // Sign Up
   Future<UserCredential?> signUpWithEmail(String email, String password) async {
     try {
-      return await _auth.createUserWithEmailAndPassword(
+      final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      if (credential.user != null && !credential.user!.emailVerified) {
+        await credential.user!.sendEmailVerification();
+      }
+      return credential;
     } catch (e) {
       rethrow;
+    }
+  }
+
+  // Reload current user to update emailVerified status
+  Future<void> reloadUser() async {
+    if (_auth.currentUser != null) {
+      await _auth.currentUser!.reload();
+    }
+  }
+
+  // Resend Verification Email
+  Future<void> resendVerificationEmail() async {
+    if (_auth.currentUser != null && !_auth.currentUser!.emailVerified) {
+      await _auth.currentUser!.sendEmailVerification();
     }
   }
 
