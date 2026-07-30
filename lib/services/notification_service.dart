@@ -1,0 +1,71 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Handle background messages here if needed
+  debugPrint("Handling a background message: ${message.messageId}");
+}
+
+class NotificationService {
+  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<void> initialize() async {
+    if (kIsWeb) return;
+
+    // Request permissions
+    NotificationSettings settings = await _messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      debugPrint('User granted permission for notifications');
+      await _saveTokenToDatabase();
+
+      // Listen for token refreshes
+      _messaging.onTokenRefresh.listen((token) async {
+        await _updateToken(token);
+      });
+    }
+
+    // Foreground message handler
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('Got a message whilst in the foreground!');
+      debugPrint('Message data: ${message.data}');
+      if (message.notification != null) {
+        debugPrint('Message also contained a notification: ${message.notification}');
+      }
+    });
+
+    // Background message handler registration
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  }
+
+  Future<void> _saveTokenToDatabase() async {
+    try {
+      String? token = await _messaging.getToken();
+      if (token != null) {
+        await _updateToken(token);
+      }
+    } catch (e) {
+      debugPrint("Failed to get FCM token: $e");
+    }
+  }
+
+  Future<void> _updateToken(String token) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        await _firestore.collection('users').doc(user.uid).set({
+          'fcmTokens': FieldValue.arrayUnion([token])
+        }, SetOptions(merge: true));
+      } catch (e) {
+        debugPrint("Failed to save FCM token to Firestore: $e");
+      }
+    }
+  }
+}

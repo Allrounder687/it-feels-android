@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
+import '../../providers/subscription_provider.dart';
+import '../paywall/paywall_bottom_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class AudioSettingsScreen extends StatefulWidget {
@@ -140,7 +142,16 @@ class _AudioSettingsScreenState extends State<AudioSettingsScreen> {
             SwitchListTile(
               title: Text("Enable DSP Engine", style: GoogleFonts.inter(color: context.themeTextColor)),
               value: audioProvider.isDspEngineEnabled,
-              onChanged: (val) => audioProvider.setDspEngine(val),
+              onChanged: (val) {
+                if (val) {
+                  final sub = Provider.of<SubscriptionProvider>(context, listen: false);
+                  if (!sub.isPremium) {
+                    PaywallBottomSheet.show(context, featureName: "DSP Engine");
+                    return;
+                  }
+                }
+                audioProvider.setDspEngine(val);
+              },
               activeColor: context.themeAccentColor,
               tileColor: context.themeTextColor.withOpacity(0.05),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

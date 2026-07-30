@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/video_player_provider.dart';
+import '../../providers/subscription_provider.dart';
+import '../paywall/paywall_bottom_sheet.dart';
 import '../lyrics/lyrics_screen.dart';
 import '../room/room_bottom_sheet.dart';
 import '../widgets/bouncy_icon_button.dart';
@@ -444,12 +446,17 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                             ),
                           ),
                           const SizedBox(width: 10),
-                          GestureDetector(
+                          InkWell(
                             onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const LyricsScreen()),
-                              );
+                              final sub = Provider.of<SubscriptionProvider>(context, listen: false);
+                              if (sub.isPremium) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const LyricsScreen()),
+                                );
+                              } else {
+                                PaywallBottomSheet.show(context, featureName: "Lyrics");
+                              }
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

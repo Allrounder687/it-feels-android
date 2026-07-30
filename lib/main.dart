@@ -22,6 +22,8 @@ import 'providers/ai_settings_provider.dart';
 import 'providers/profile_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/video_player_provider.dart';
+import 'providers/subscription_provider.dart';
+import 'services/notification_service.dart';
 import 'views/main_navigation_wrapper.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
@@ -36,6 +38,9 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   await Permission.notification.request();
+
+  final notificationService = NotificationService();
+  await notificationService.initialize();
 
   final session = await AudioSession.instance;
   await session.configure(const AudioSessionConfiguration.music());
@@ -111,6 +116,9 @@ class PixelPlayerSaavnApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => VideoPlayerProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SubscriptionProvider(),
         ),
       ],
       child: DynamicColorBuilder(

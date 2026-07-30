@@ -19,7 +19,10 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - **Fast-Resume Video Optimization:** Built a short-circuit in `VideoPlayerProvider` that instantly resumes cached streams when quickly switching back and forth between "Song" and "Video" without destroying native video controllers.
 - **Client-Side Video Resolution Fallback:** Integrated `youtube_explode_dart` on the client side to silently search and resolve the exact 11-character YouTube ID for the current track to bypass Cloudflare proxy rate limits.
 - **Official Video Prioritization:** Upgraded the YouTube search algorithm to automatically append `"official music video"` to ensure users get the actual music video rather than unofficial fan-made lyric videos.
-
+- **Monetization & Subscriptions:** Integrated `purchases_flutter` (RevenueCat) to gate premium features (Lyrics, DSP Engine) behind a zero-cognitive-overload Glassmorphic Paywall (`PaywallBottomSheet`).
+- **Custom Coupon Engine:** Built a Firestore-backed custom promo code redemption system allowing admins to issue custom string coupons (e.g., "FEELSFREE") that override local `isPremium` states.
+- **Push Notifications (FCM):** Configured `firebase_messaging` with a new `NotificationService` that handles permission requests, background handlers, and securely stores APNs/FCM tokens in the user's Firestore document.
+- **Transactional Emails:** Expanded the Cloudflare Proxy Engine (`backend/src/index.ts`) with a lightweight `/api/v1/send-email` endpoint using Resend's REST API to facilitate onboarding and receipt emails without inflating the client binary.
 ### Fixed
 - **iOS Google Sign-In Crash:** Fixed a crash on iOS by properly configuring the `CFBundleURLTypes` and `REVERSED_CLIENT_ID` inside `ios/Runner/Info.plist`.
 - **Listen Together Infinite Loading:** Resolved an issue where creating or joining a room would spin infinitely on Android and iOS due to hanging Firebase RTDB operations by implementing network timeouts and strict try/catch error boundaries in the UI.

@@ -42,6 +42,45 @@ app.get('/health', (c) => {
   });
 });
 
+// Email Service (Resend)
+app.post('/api/v1/send-email', async (c) => {
+  try {
+    if (!c.env.RESEND_API_KEY) {
+      return c.json({ error: 'Configuration Error', message: 'RESEND_API_KEY is not configured on the server.' }, 500);
+    }
+
+    const body = await c.req.json();
+    const { to, subject, html } = body;
+
+    if (!to || !subject || !html) {
+      return c.json({ error: 'Bad Request', message: 'Missing required fields: to, subject, or html' }, 400);
+    }
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${c.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'IT Feels Music <hello@it-feels.com>',
+        to: [to],
+        subject: subject,
+        html: html
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return c.json({ error: 'Email Failed', details: data }, response.status);
+    }
+
+    return c.json({ success: true, id: data.id });
+  } catch (error: any) {
+    return c.json({ error: 'Internal Server Error', message: error.message }, 500);
+  }
+});
+
 // Sources Directory (Dynamic source manifest registry)
 app.get('/api/v1/sources', (c) => {
   return c.json([
