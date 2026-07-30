@@ -295,13 +295,19 @@ class _LyricsScreenState extends State<LyricsScreen> {
                                   fontSize: 13,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              WavySeekBar(
-                                position: playerProvider.position,
-                                duration: playerProvider.duration,
-                                activeColor: AppColors.midnightAccent,
-                                inactiveColor: context.themeTextColor24,
-                                onSeek: (pos) => playerProvider.seek(pos),
+                               StreamBuilder<Duration>(
+                                stream: playerProvider.audioHandler.player.positionStream,
+                                initialData: playerProvider.position,
+                                builder: (context, snapshot) {
+                                  final currentPos = snapshot.data ?? playerProvider.position;
+                                  return WavySeekBar(
+                                    position: currentPos,
+                                    duration: playerProvider.duration,
+                                    activeColor: AppColors.midnightAccent,
+                                    inactiveColor: context.themeTextColor24,
+                                    onSeek: (pos) => playerProvider.seek(pos),
+                                  );
+                                },
                               ),
                             ],
                           ),

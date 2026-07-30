@@ -528,8 +528,6 @@ class AudioPlayerProvider extends ChangeNotifier {
         _lastSyncedSecond = pos.inSeconds;
         _roomService.updateRoomState(_currentRoomId!, _currentSong!.id, pos, _isPlaying);
       }
-
-      notifyListeners();
     });
 
     audioHandler.player.durationStream.listen((dur) {

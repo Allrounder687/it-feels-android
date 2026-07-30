@@ -536,32 +536,39 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                         );
                       }
 
-                      return Column(
-                        children: [
-                          WavySeekBar(
-                            position: playerProvider.position,
-                            duration: playerProvider.duration,
-                            activeColor: accentColor,
-                            inactiveColor: context.themeTextColor24,
-                            onSeek: (newPos) => playerProvider.seek(newPos),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  _formatDuration(playerProvider.position),
-                                  style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                      return StreamBuilder<Duration>(
+                        stream: playerProvider.audioHandler.player.positionStream,
+                        initialData: playerProvider.position,
+                        builder: (context, snapshot) {
+                          final currentPos = snapshot.data ?? playerProvider.position;
+                          return Column(
+                            children: [
+                              WavySeekBar(
+                                position: currentPos,
+                                duration: playerProvider.duration,
+                                activeColor: accentColor,
+                                inactiveColor: context.themeTextColor24,
+                                onSeek: (newPos) => playerProvider.seek(newPos),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      _formatDuration(currentPos),
+                                      style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                                    ),
+                                    Text(
+                                      _formatDuration(playerProvider.duration),
+                                      style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                                    ),
+                                  ],
                                 ),
-                                Text(
-                                  _formatDuration(playerProvider.duration),
-                                  style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                              ),
+                            ],
+                          );
+                        },
                       );
                     }
 

@@ -246,6 +246,8 @@ class StorageService {
     bool? useProxyBackend,
     String? proxyUrl,
     bool? enableMusicVideos,
+    bool? useVideoAudioSource,
+    bool? isDataSaverEnabled,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_wifiQualityKey, wifiQuality);
@@ -258,6 +260,8 @@ class StorageService {
     if (useProxyBackend != null) await prefs.setBool('use_proxy_backend', useProxyBackend);
     if (proxyUrl != null) await prefs.setString('proxy_url', proxyUrl);
     if (enableMusicVideos != null) await prefs.setBool('enable_music_videos', enableMusicVideos);
+    if (useVideoAudioSource != null) await prefs.setBool('use_video_audio_source', useVideoAudioSource);
+    if (isDataSaverEnabled != null) await prefs.setBool('is_data_saver_enabled', isDataSaverEnabled);
   }
 
   static Future<Map<String, dynamic>> loadSettings() async {
@@ -273,6 +277,8 @@ class StorageService {
       'useProxyBackend': prefs.getBool('use_proxy_backend') ?? false,
       'proxyUrl': prefs.getString('proxy_url') ?? 'https://it-feels-proxy.cleverfox687.workers.dev',
       'enableMusicVideos': prefs.getBool('enable_music_videos') ?? false,
+      'useVideoAudioSource': prefs.getBool('use_video_audio_source') ?? false,
+      'isDataSaverEnabled': prefs.getBool('is_data_saver_enabled') ?? false,
     };
   }
 

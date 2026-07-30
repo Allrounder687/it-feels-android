@@ -55,13 +55,23 @@ class MiniPlayer extends StatelessWidget {
                     left: 0,
                     right: 0,
                     top: 0,
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 2.5,
-                      backgroundColor: context.themeTextColor12,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        playerProvider.themeAccentColor,
-                      ),
+                    child: StreamBuilder<Duration>(
+                      stream: playerProvider.audioHandler.player.positionStream,
+                      initialData: playerProvider.position,
+                      builder: (context, snapshot) {
+                        final pos = snapshot.data ?? playerProvider.position;
+                        final progress = (playerProvider.duration.inMilliseconds > 0)
+                            ? (pos.inMilliseconds / playerProvider.duration.inMilliseconds).clamp(0.0, 1.0)
+                            : 0.0;
+                        return LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 2.5,
+                          backgroundColor: context.themeTextColor12,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            playerProvider.themeAccentColor,
+                          ),
+                        );
+                      },
                     ),
                   ),
 

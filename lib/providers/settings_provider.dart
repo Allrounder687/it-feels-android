@@ -25,16 +25,6 @@ class SettingsProvider extends ChangeNotifier {
   String get mobileQuality => _mobileQuality;
   String get downloadQuality => _downloadQuality;
   String get theme => _theme;
-  bool _isDataSaverEnabled = false;
-
-  SettingsProvider() {
-    _loadSettings();
-  }
-
-  String get wifiQuality => _wifiQuality;
-  String get mobileQuality => _mobileQuality;
-  String get downloadQuality => _downloadQuality;
-  String get theme => _theme;
   String get defaultCategory => _defaultCategory;
   String get customDownloadPath => _customDownloadPath;
   bool get enableAndroidAuto => _enableAndroidAuto;
@@ -140,20 +130,20 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   Future<void> _save() async {
-    await StorageService.saveSettings({
-      'wifiQuality': _wifiQuality,
-      'mobileQuality': _mobileQuality,
-      'downloadQuality': _downloadQuality,
-      'theme': _theme,
-      'customDownloadPath': _customDownloadPath,
-      'enableAndroidAuto': _enableAndroidAuto,
-      'hapticsMode': _hapticsMode,
-      'useProxyBackend': _useProxyBackend,
-      'proxyUrl': _proxyUrl,
-      'enableMusicVideos': _enableMusicVideos,
-      'useVideoAudioSource': _useVideoAudioSource,
-      'isDataSaverEnabled': _isDataSaverEnabled,
-    });
+    await StorageService.saveSettings(
+      wifiQuality: _wifiQuality,
+      mobileQuality: _mobileQuality,
+      downloadQuality: _downloadQuality,
+      theme: _theme,
+      customDownloadPath: _customDownloadPath,
+      enableAndroidAuto: _enableAndroidAuto,
+      hapticsMode: _hapticsMode,
+      useProxyBackend: _useProxyBackend,
+      proxyUrl: _proxyUrl,
+      enableMusicVideos: _enableMusicVideos,
+      useVideoAudioSource: _useVideoAudioSource,
+      isDataSaverEnabled: _isDataSaverEnabled,
+    );
     notifyListeners();
   }
 }
