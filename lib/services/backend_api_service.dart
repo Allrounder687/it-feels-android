@@ -183,13 +183,15 @@ class BackendApiService {
 
   /// Fetch MP4 Video Streams with Age Restriction Bypass
   static Future<Map<String, dynamic>> getVideoStreams(String videoId, {String? query}) async {
+    debugPrint('[BackendApiService] getVideoStreams called with videoId=$videoId, query=$query');
     String actualVideoId = videoId;
     
     // Client-side resolution for Saavn searches
-    if (videoId.startsWith('search:') || (query != null && query.isNotEmpty && !videoId.startsWith('youtube:'))) {
+    String cleanId = actualVideoId.contains(':') ? actualVideoId.split(':')[1] : actualVideoId;
+    if (actualVideoId.startsWith('search:') || (query != null && query.isNotEmpty && cleanId.length != 11)) {
       final yt = YoutubeExplode();
       try {
-        final searchQuery = query ?? videoId.replaceFirst('search:', '');
+        final searchQuery = query ?? actualVideoId.replaceFirst('search:', '');
         final searchResults = await yt.search.search(searchQuery);
         if (searchResults.isNotEmpty) {
           actualVideoId = 'youtube:${searchResults.first.id.value}';
@@ -233,12 +235,13 @@ class BackendApiService {
 
   /// Client-side direct stream fallback using youtube_explode_dart
   static Future<Map<String, dynamic>> _directYoutubeExplodeStreamFallback(String videoId, {String? query}) async {
+    debugPrint('[BackendApiService] _directYoutubeExplodeStreamFallback called with videoId=$videoId, query=$query');
     final yt = YoutubeExplode();
     try {
       String cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
       
       // We still keep this fallback just in case the initial resolution failed
-      if (cleanId.isEmpty || videoId.startsWith('search:')) {
+      if (cleanId.isEmpty || videoId.startsWith('search:') || cleanId.length != 11) {
         final searchQuery = query ?? videoId.replaceFirst('search:', '');
         final searchResults = await yt.search.search(searchQuery);
         if (searchResults.isNotEmpty) {
@@ -476,12 +479,13 @@ class BackendApiService {
   }
   /// Fetch Related Videos for 'Up Next' Queue
   static Future<List<Map<String, dynamic>>> getRelatedVideos(String videoId, {String? query}) async {
+    debugPrint('[BackendApiService] getRelatedVideos called with videoId=$videoId, query=$query');
     String cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
     final yt = YoutubeExplode();
     final List<Map<String, dynamic>> videos = [];
     
     try {
-      if (videoId.startsWith('search:') || cleanId.isEmpty) {
+      if (videoId.startsWith('search:') || cleanId.isEmpty || cleanId.length != 11) {
         final searchQuery = query ?? videoId.replaceFirst('search:', '');
         final searchResults = await yt.search.search(searchQuery);
         if (searchResults.isNotEmpty) {
