@@ -126,7 +126,7 @@ class Song {
     final cleanAlbum = StringUtils.cleanText(albumTitle.toString());
 
     return Song(
-      id: id.startsWith('saavn:') ? id : 'saavn:$id',
+      id: (id.startsWith('saavn:') || id.startsWith('youtube:')) ? id : 'saavn:$id',
       saavnId: saavnId,
       title: cleanTitle,
       artist: cleanArtist,

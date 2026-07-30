@@ -221,7 +221,7 @@ class BackendApiService {
     String actualVideoId = videoId;
     
     // Client-side resolution for Saavn searches
-    String cleanId = actualVideoId.contains(':') ? actualVideoId.split(':')[1] : actualVideoId;
+    String cleanId = actualVideoId.contains(':') ? actualVideoId.split(':').last : actualVideoId;
     if (actualVideoId.startsWith('search:') || (query != null && query.isNotEmpty && cleanId.length != 11)) {
       try {
         final searchQuery = query ?? actualVideoId.replaceFirst('search:', '');
@@ -246,7 +246,8 @@ class BackendApiService {
       }
 
       // 2. PIPED API FAST FAILOVER: High-speed, zero-cost public Piped instances with auto-failover
-      final pipedData = await _fetchFromPipedApi(cleanId);
+      final updatedCleanId = actualVideoId.contains(':') ? actualVideoId.split(':').last : actualVideoId;
+      final pipedData = await _fetchFromPipedApi(updatedCleanId);
       if (pipedData['streams'] != null && (pipedData['streams'] as List).isNotEmpty) {
         debugPrint('[BackendApiService] Successfully fetched streams from Piped API network!');
         _videoStreamCache[cacheKey] = pipedData;
@@ -366,7 +367,7 @@ class BackendApiService {
   static Future<Map<String, dynamic>> _fetchFromYtDlpBackend(String videoId) async {
     if (ytDlpBackendUrl.isEmpty) return {'title': 'Music Video', 'streams': []};
     
-    final cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
+    final cleanId = videoId.contains(':') ? videoId.split(':').last : videoId;
     final uri = Uri.parse('$ytDlpBackendUrl/api/streams?videoId=$cleanId');
     
     int retries = 3;
