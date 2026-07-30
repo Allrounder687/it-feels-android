@@ -20,14 +20,21 @@ import 'providers/search_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/ai_settings_provider.dart';
 import 'providers/profile_provider.dart';
+import 'providers/auth_provider.dart';
 import 'providers/video_player_provider.dart';
 import 'views/main_navigation_wrapper.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 late AudioPlayerHandler _audioHandler;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   await Permission.notification.request();
 
   final session = await AudioSession.instance;
@@ -98,6 +105,9 @@ class PixelPlayerSaavnApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => ProfileProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(),
         ),
         ChangeNotifierProvider(
           create: (_) => VideoPlayerProvider(),

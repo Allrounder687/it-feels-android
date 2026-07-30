@@ -3,7 +3,11 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  cloud_firestore
   dynamic_color
+  firebase_auth
+  firebase_core
+  firebase_database
   isar_flutter_libs
   permission_handler_windows
   screen_brightness_windows

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "871513419979",
+    "project_id": "it-feels",
+    "storage_bucket": "it-feels.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:871513419979:android:09cf99d8f828f51edcab4e",
+        "android_client_info": {
+          "package_name": "com.itfeels.music"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "871513419979-dvkqt7sue206nbhl02igldnpl51cffig.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBs3YpqQXYA4xUHYeV9ZzrkvypVr2alXn0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "871513419979-dvkqt7sue206nbhl02igldnpl51cffig.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

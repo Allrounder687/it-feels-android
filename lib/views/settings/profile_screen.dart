@@ -4,9 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../providers/profile_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../data/services/local_audio_service.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'stats_screen.dart';
+import '../auth/auth_bottom_sheet.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -233,6 +235,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+            // Cloud Sync Auth Button
+            Consumer<AuthProvider>(
+              builder: (context, auth, _) {
+                final isAuth = auth.isAuthenticated;
+                return SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      if (isAuth) {
+                        // In Phase 3 step 3, this will handle sync logic. For now just show logout option.
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            backgroundColor: context.themeSurfaceColor,
+                            title: const Text('Account'),
+                            content: Text('Logged in as ${auth.currentUser?.email}'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Close'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  auth.signOut();
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+                              ),
+                            ],
+                          ),
+                        );
+                      } else {
+                        AuthBottomSheet.show(context);
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: isAuth ? Colors.green : context.themeAccentColor, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(isAuth ? Icons.cloud_done : Icons.cloud_off, 
+                             color: isAuth ? Colors.green : context.themeTextColor),
+                        const SizedBox(width: 8),
+                        Text(
+                          isAuth ? "Cloud Sync Active" : "Enable Cloud Sync",
+                          style: GoogleFonts.inter(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: context.themeTextColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),

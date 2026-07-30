@@ -2,6 +2,16 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
+## [2.6.0] - Unreleased (Phase 3: Listen Together)
+
+### Added
+- **Magic Auth Flow:** Implemented a unified Email/Password Glassmorphic Bottom Sheet (`AuthBottomSheet`) ensuring zero cognitive overload without forcing logins on startup.
+- **Anti-Enumeration Security:** Architected the `AuthProvider` to use a highly secure exception-catching flow (handling `user-not-found` & `invalid-credential`) to bypass modern Firebase Email Enumeration protections.
+- **Auth Unit Tests:** Built 7 comprehensive Mocktail unit tests in `auth_provider_test.dart` to verify the state machine mathematically.
+- **Firebase Core Initialization:** Configured `flutterfire_cli` across all 5 desktop and mobile platforms (Android, iOS, macOS, Windows, Web) in preparation for Realtime Database syncing and Cloud Firestore.
+
+---
+
 ## [2.5.0] - 2026-07-29
 
 ### Added
