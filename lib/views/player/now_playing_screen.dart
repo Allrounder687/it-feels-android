@@ -47,7 +47,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
         currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}',
         currentSong.title,
         currentSong.artist,
-        query: '${currentSong.title} ${currentSong.artist}',
+        query: '${currentSong.title} ${currentSong.artist} official music video',
         startPosition: position,
       );
     } else {

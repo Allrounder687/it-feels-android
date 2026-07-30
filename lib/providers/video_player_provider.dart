@@ -42,6 +42,17 @@ class VideoPlayerProvider extends ChangeNotifier {
 
   /// Plays a video
   Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition}) async {
+    if (currentVideoId == videoId && videoController != null && videoController!.value.isInitialized) {
+      // Fast resume without reloading network streams
+      isVideoActive = true;
+      if (startPosition != null) {
+        await videoController!.seekTo(startPosition);
+      }
+      await videoController!.play();
+      notifyListeners();
+      return;
+    }
+
     // Reset state
     isLoading = true;
     isVideoActive = true;
