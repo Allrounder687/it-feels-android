@@ -20,6 +20,7 @@ class VideoPlayerProvider extends ChangeNotifier {
   List<Map<String, dynamic>> streams = [];
   String selectedQuality = '720p'; // Default
   List<Map<String, dynamic>> relatedVideos = [];
+  VoidCallback? onVideoStarted;
 
   double _volume = 0.5;
   double _brightness = 0.5;
@@ -148,11 +149,12 @@ class VideoPlayerProvider extends ChangeNotifier {
     }
     
     if (wasPlaying) {
-      videoController!.play();
+      await videoController!.play();
     }
 
     isLoading = false;
     notifyListeners();
+    onVideoStarted?.call();
   }
 
   /// Change video quality

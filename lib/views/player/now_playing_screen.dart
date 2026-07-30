@@ -59,6 +59,14 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
         }
       }
       
+      videoProvider.onVideoStarted = () {
+        if (_isVideoMode && !settingsProvider.useVideoAudioSource) {
+          if (!audioProvider.isPlaying) {
+            audioProvider.play();
+          }
+        }
+      };
+
       videoProvider.playVideo(
         currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}',
         currentSong.title,
