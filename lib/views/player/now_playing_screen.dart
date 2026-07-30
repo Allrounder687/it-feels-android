@@ -980,24 +980,36 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                     }
 
                     // Mobile Layout
-                    return Column(
-                      children: [
-                        topAppBar,
-                        const Spacer(),
-                        albumArt,
-                        const Spacer(),
-                        songInfo,
-                        const SizedBox(height: 16),
-                        actionPills,
-                        const SizedBox(height: 16),
-                        buildProgress(),
-                        const SizedBox(height: 8),
-                        primaryControls,
-                        const SizedBox(height: 16),
-                        secondaryControls,
-                        const Spacer(),
-                        bottomDragHandle,
-                      ],
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          physics: const ClampingScrollPhysics(),
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                            child: IntrinsicHeight(
+                              child: Column(
+                                children: [
+                                  topAppBar,
+                                  const Spacer(),
+                                  albumArt,
+                                  const Spacer(),
+                                  songInfo,
+                                  const SizedBox(height: 12),
+                                  actionPills,
+                                  const SizedBox(height: 12),
+                                  buildProgress(),
+                                  const SizedBox(height: 6),
+                                  primaryControls,
+                                  const SizedBox(height: 12),
+                                  secondaryControls,
+                                  const Spacer(),
+                                  bottomDragHandle,
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
