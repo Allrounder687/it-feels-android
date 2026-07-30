@@ -4,14 +4,15 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import '../services/subscription_service.dart';
 
 class SubscriptionProvider extends ChangeNotifier {
-  final SubscriptionService _service = SubscriptionService();
+  final SubscriptionService _service;
   bool _isPremium = false;
   bool _isLoading = true;
 
   bool get isPremium => _isPremium;
   bool get isLoading => _isLoading;
 
-  SubscriptionProvider() {
+  SubscriptionProvider({SubscriptionService? service}) 
+      : _service = service ?? SubscriptionService() {
     _init();
   }
 

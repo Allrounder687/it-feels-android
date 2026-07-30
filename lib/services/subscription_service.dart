@@ -9,7 +9,10 @@ class SubscriptionService {
   static const _googleApiKey = 'GOOGLE_API_KEY_HERE';
   static const entitlementId = 'premium';
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  SubscriptionService({FirebaseFirestore? firestore}) 
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Future<void> initialize(String? currentUserId) async {
     if (kIsWeb) return; // Purchases not supported on web
@@ -87,8 +90,8 @@ class SubscriptionService {
 
   Future<bool> purchasePackage(Package package) async {
     try {
-      final customerInfo = await Purchases.purchasePackage(package);
-      return customerInfo.entitlements.all[entitlementId]?.isActive == true;
+      final result = await Purchases.purchasePackage(package);
+      return result.customerInfo.entitlements.all[entitlementId]?.isActive == true;
     } catch (e) {
       debugPrint("Purchase Error: $e");
       return false;
