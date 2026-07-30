@@ -297,7 +297,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                                 child: Icon(Icons.directions_car_filled_rounded, color: context.themeTextColor, size: 24),
                               ),
                               onPressed: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => const DrivingModeScreen()));
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => DrivingModeScreen()));
                               },
                               tooltip: 'Driving Mode',
                             ),
