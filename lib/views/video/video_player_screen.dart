@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
@@ -22,13 +24,53 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   bool _showControls = true;
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
+  bool _isFullscreen = false;
+  Timer? _hideTimer;
   
   // Variables for gesture tracking
   double? _dragStartX;
   double? _dragStartY;
   
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    if (_isFullscreen) {
+      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+    super.dispose();
+  }
+
+  void _startHideTimer() {
+    _hideTimer?.cancel();
+    _hideTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted && _showControls) {
+        setState(() => _showControls = false);
+      }
+    });
+  }
+
   void _toggleControls() {
     setState(() => _showControls = !_showControls);
+    if (_showControls) _startHideTimer();
+  }
+
+  void _toggleFullscreen() {
+    setState(() {
+      _isFullscreen = !_isFullscreen;
+    });
+    if (_isFullscreen) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    } else {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
   }
 
   void _onVerticalDragStart(DragStartDetails details) {
@@ -135,21 +177,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     final videoProvider = Provider.of<VideoPlayerProvider>(context);
     final topInset = MediaQuery.of(context).viewPadding.top;
 
-    return Material(
-      color: context.themeBackgroundColor,
-      child: Column(
-        children: [
-          // The Video Player Area (16:9 Aspect Ratio)
-          SafeArea(
-            bottom: false,
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Stack(
-                children: [
+    Widget playerArea = Stack(
+      children: [
                   // Video or Loading State
                   GestureDetector(
                     onTap: _toggleControls,
                     onDoubleTapDown: (details) {
+                      _startHideTimer();
                       final screenWidth = MediaQuery.of(context).size.width;
                       if (details.globalPosition.dx < screenWidth / 2) {
                         videoProvider.seek(const Duration(seconds: -10));
@@ -200,21 +234,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                   // Quality Selector
                                   if (videoProvider.streams.isNotEmpty)
                                     PopupMenuButton<String>(
-                                      icon: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white24,
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          videoProvider.selectedQuality,
-                                          style: GoogleFonts.outfit(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
+                                      icon: const Icon(Icons.settings, color: Colors.white, size: 28),
                                       onSelected: (q) => videoProvider.changeQuality(q),
                                       itemBuilder: (context) => videoProvider.streams.map((s) => PopupMenuItem<String>(
                                         value: s['quality'],
@@ -232,11 +252,15 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                 IconButton(
                                   iconSize: 36,
                                   icon: const Icon(Icons.replay_10, color: Colors.white),
-                                  onPressed: () => videoProvider.seek(const Duration(seconds: -10)),
+                                  onPressed: () {
+                                    _startHideTimer();
+                                    videoProvider.seek(const Duration(seconds: -10));
+                                  },
                                 ),
                                 const SizedBox(width: 32),
                                 GestureDetector(
                                   onTap: () {
+                                    _startHideTimer();
                                     if (videoProvider.videoController != null) {
                                       videoProvider.videoController!.value.isPlaying
                                           ? videoProvider.videoController!.pause()
@@ -262,7 +286,10 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                 IconButton(
                                   iconSize: 36,
                                   icon: const Icon(Icons.forward_10, color: Colors.white),
-                                  onPressed: () => videoProvider.seek(const Duration(seconds: 10)),
+                                  onPressed: () {
+                                    _startHideTimer();
+                                    videoProvider.seek(const Duration(seconds: 10));
+                                  },
                                 ),
                               ],
                             ),
@@ -305,6 +332,16 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                                               _formatDuration(value.duration),
                                               style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
                                             ),
+                                            IconButton(
+                                              icon: Icon(
+                                                _isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                                                color: Colors.white,
+                                              ),
+                                              onPressed: () {
+                                                _startHideTimer();
+                                                _toggleFullscreen();
+                                              },
+                                            ),
                                           ],
                                         );
                                       },
@@ -316,15 +353,30 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         ),
                       ),
                     ),
-                ],
-              ),
-            ),
-          ),
+      ],
+    );
 
-          // Metadata & Up Next List (Scrollable)
-          Expanded(
-            child: CustomScrollView(
-              slivers: [
+    if (!_isFullscreen) {
+      playerArea = SafeArea(
+        bottom: false,
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: playerArea,
+        ),
+      );
+    } else {
+      playerArea = Expanded(child: playerArea);
+    }
+
+    return Material(
+      color: _isFullscreen ? Colors.black : context.themeBackgroundColor,
+      child: Column(
+        children: [
+          playerArea,
+          if (!_isFullscreen)
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:miniplayer/miniplayer.dart';
 import '../../providers/video_player_provider.dart';
+import 'package:video_player/video_player.dart';
 import 'video_player_screen.dart';
 
 class VideoMiniplayer extends StatelessWidget {
@@ -34,12 +35,34 @@ class VideoMiniplayer extends StatelessWidget {
               color: Theme.of(context).scaffoldBackgroundColor,
               child: Row(
                 children: [
+                  if (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
+                    Container(
+                      height: 60,
+                      width: 100,
+                      margin: const EdgeInsets.all(4),
+                      color: Colors.black,
+                      child: IgnorePointer(
+                        child: VideoPlayer(videoProvider.videoController!),
+                      ),
+                    ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       videoProvider.currentTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
+                  ),
+                  IconButton(
+                    icon: Icon((videoProvider.videoController?.value.isPlaying ?? false) ? Icons.pause : Icons.play_arrow),
+                    onPressed: () {
+                      if (videoProvider.videoController != null) {
+                        videoProvider.videoController!.value.isPlaying
+                            ? videoProvider.videoController!.pause()
+                            : videoProvider.videoController!.play();
+                      }
+                    },
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),

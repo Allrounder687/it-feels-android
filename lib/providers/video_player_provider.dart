@@ -118,8 +118,17 @@ class VideoPlayerProvider extends ChangeNotifier {
     );
     
     selectedQuality = selectedStream['quality'];
+    final streamUrl = selectedStream['url'] as String;
+    final formatHint = streamUrl.contains('.m3u8') ? VideoFormat.hls : VideoFormat.other;
     
-    videoController = VideoPlayerController.networkUrl(Uri.parse(selectedStream['url']));
+    videoController = VideoPlayerController.networkUrl(
+      Uri.parse(streamUrl),
+      formatHint: formatHint,
+      httpHeaders: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Connection': 'keep-alive',
+      },
+    );
     await videoController!.initialize();
     
     if (previousPosition != Duration.zero) {
