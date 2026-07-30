@@ -45,6 +45,28 @@ class SettingsScreen extends StatelessWidget {
               _buildSectionHeader(context, "🎵 Audio & Streaming Quality"),
               const SizedBox(height: 8),
 
+              SwitchListTile.adaptive(
+                title: Text(
+                  "Data Saver Mode",
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold,
+                    color: context.themeTextColor,
+                  ),
+                ),
+                subtitle: Text(
+                  settings.isDataSaverEnabled
+                      ? "Active: Audio quality reduced to 64kbps & low bandwidth mode active"
+                      : "Reduces data usage by streaming at low quality and conserving network data",
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: context.themeMutedTextColor,
+                  ),
+                ),
+                value: settings.isDataSaverEnabled,
+                activeColor: context.themeAccentColor,
+                onChanged: (val) => settings.setDataSaverEnabled(val),
+              ),
+
               _buildSelectableTile(
                 context: context,
                 title: "Wi-Fi Streaming Quality",

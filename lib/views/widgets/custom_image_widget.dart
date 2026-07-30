@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
+import '../../providers/settings_provider.dart';
 
 class CustomImageWidget extends StatelessWidget {
   final String imageUrl;
@@ -21,9 +23,18 @@ class CustomImageWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (imageUrl.isEmpty) return const SizedBox();
-    if (imageUrl.startsWith('http')) {
+    
+    String finalUrl = imageUrl;
+    try {
+      final settings = Provider.of<SettingsProvider>(context, listen: false);
+      if (settings.isDataSaverEnabled) {
+        finalUrl = finalUrl.replaceAll('500x500', '150x150');
+      }
+    } catch (_) {}
+
+    if (finalUrl.startsWith('http')) {
       return CachedNetworkImage(
-        imageUrl: imageUrl,
+        imageUrl: finalUrl,
         fit: fit,
         width: width,
         height: height,

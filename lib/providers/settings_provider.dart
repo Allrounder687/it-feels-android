@@ -15,6 +15,17 @@ class SettingsProvider extends ChangeNotifier {
   String _proxyUrl = 'https://it-feels-proxy.cleverfox687.workers.dev';
   bool _enableMusicVideos = false;
   bool _useVideoAudioSource = false; // Default: keep high quality audio from music player when in video mode
+  bool _isDataSaverEnabled = false;
+
+  SettingsProvider() {
+    _loadSettings();
+  }
+
+  String get wifiQuality => _wifiQuality;
+  String get mobileQuality => _mobileQuality;
+  String get downloadQuality => _downloadQuality;
+  String get theme => _theme;
+  bool _isDataSaverEnabled = false;
 
   SettingsProvider() {
     _loadSettings();
@@ -32,6 +43,7 @@ class SettingsProvider extends ChangeNotifier {
   String get proxyUrl => _proxyUrl;
   bool get enableMusicVideos => _enableMusicVideos;
   bool get useVideoAudioSource => _useVideoAudioSource;
+  bool get isDataSaverEnabled => _isDataSaverEnabled;
 
   Future<void> _loadSettings() async {
     final settings = await StorageService.loadSettings();
@@ -46,6 +58,7 @@ class SettingsProvider extends ChangeNotifier {
     _proxyUrl = settings['proxyUrl'] ?? _proxyUrl;
     _enableMusicVideos = settings['enableMusicVideos'] == true;
     _useVideoAudioSource = settings['useVideoAudioSource'] == true;
+    _isDataSaverEnabled = settings['isDataSaverEnabled'] == true;
     
     BackendApiService.useProxyBackend = _useProxyBackend;
     BackendApiService.baseUrl = _proxyUrl;
@@ -117,6 +130,15 @@ class SettingsProvider extends ChangeNotifier {
     _save();
   }
 
+  void setDataSaverEnabled(bool value) {
+    _isDataSaverEnabled = value;
+    if (value) {
+      _wifiQuality = '64 kbps (Low)';
+      _mobileQuality = '64 kbps (Low)';
+    }
+    _save();
+  }
+
   Future<void> _save() async {
     await StorageService.saveSettings({
       'wifiQuality': _wifiQuality,
@@ -130,6 +152,7 @@ class SettingsProvider extends ChangeNotifier {
       'proxyUrl': _proxyUrl,
       'enableMusicVideos': _enableMusicVideos,
       'useVideoAudioSource': _useVideoAudioSource,
+      'isDataSaverEnabled': _isDataSaverEnabled,
     });
     notifyListeners();
   }

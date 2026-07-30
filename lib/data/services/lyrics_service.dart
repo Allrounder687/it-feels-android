@@ -26,8 +26,25 @@ class LyricsService {
     'Accept': 'application/json',
   };
 
+  final Map<String, LyricsResult> _lyricsCache = {};
+
+  /// Check if lyrics are already cached
+  bool isLyricsCached(String songId) => _lyricsCache.containsKey(songId);
+
+  /// Preload lyrics into cache asynchronously
+  Future<void> preloadLyrics(Song song) async {
+    if (_lyricsCache.containsKey(song.id)) return;
+    try {
+      final res = await fetchLyrics(song);
+      _lyricsCache[song.id] = res;
+    } catch (_) {}
+  }
+
   /// Fetch lyrics for a song (Proxy API -> LRCLIB / Saavn Fallback)
   Future<LyricsResult> fetchLyrics(Song song, {Function(String)? onError}) async {
+    if (_lyricsCache.containsKey(song.id)) {
+      return _lyricsCache[song.id]!;
+    }
     // 0. Try Backend Proxy API if enabled
     if (BackendApiService.useProxyBackend) {
       try {
@@ -57,10 +74,12 @@ class LyricsService {
               : null;
 
           if (parsedSynced.isNotEmpty || staticText != null) {
-            return LyricsResult(
+            final res = LyricsResult(
               staticLyrics: staticText,
               syncedLyrics: parsedSynced,
             );
+            _lyricsCache[song.id] = res;
+            return res;
           }
         }
       } catch (e) {
@@ -145,10 +164,12 @@ class LyricsService {
       debugPrint('[LyricsService] LRCLIB synced lyrics error: $e');
     }
 
-    return LyricsResult(
+    final res = LyricsResult(
       staticLyrics: staticLrc,
       syncedLyrics: syncedLrc,
     );
+    _lyricsCache[song.id] = res;
+    return res;
   }
 
   static String _cleanText(String input) {

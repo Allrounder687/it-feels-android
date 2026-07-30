@@ -15,6 +15,7 @@ import '../data/services/music_api_service.dart';
 import '../services/storage_service.dart';
 import '../services/room_service.dart';
 import '../services/backend_api_service.dart';
+import '../data/services/lyrics_service.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
@@ -30,6 +31,7 @@ enum AppThemeMode {
 class AudioPlayerProvider extends ChangeNotifier {
   final AudioPlayerHandler audioHandler;
   final MusicApiService apiService;
+  final LyricsService _lyricsService = LyricsService();
 
   Song? _currentSong;
   List<Song> _queue = [];
@@ -541,6 +543,7 @@ class AudioPlayerProvider extends ChangeNotifier {
   Future<void> playSong(Song song, {List<Song>? queue, int index = 0, BuildContext? context}) async {
     _currentSong = song;
     _hasSentTelemetryForCurrentSong = false;
+    _preloadQueueLyrics();
 
     if (queue != null && queue.isNotEmpty) {
       _queue = List.from(queue);
@@ -847,5 +850,19 @@ class AudioPlayerProvider extends ChangeNotifier {
     _currentRoomId = null;
     _isHost = false;
     notifyListeners();
+  }
+
+  void _preloadQueueLyrics() {
+    if (_currentSong != null) {
+      _lyricsService.preloadLyrics(_currentSong!);
+    }
+    if (_queue.isNotEmpty && _currentIndex >= 0) {
+      if (_currentIndex + 1 < _queue.length) {
+        _lyricsService.preloadLyrics(_queue[_currentIndex + 1]);
+      }
+      if (_currentIndex + 2 < _queue.length) {
+        _lyricsService.preloadLyrics(_queue[_currentIndex + 2]);
+      }
+    }
   }
 }
