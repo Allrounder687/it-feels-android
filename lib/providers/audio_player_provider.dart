@@ -616,6 +616,14 @@ class AudioPlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> play() async {
+    await audioHandler.play();
+  }
+
+  Future<void> pause() async {
+    await audioHandler.pause();
+  }
+
   Future<void> togglePlayPause() async {
     if (_currentSong == null) return;
     triggerHaptic(heavy: true);
