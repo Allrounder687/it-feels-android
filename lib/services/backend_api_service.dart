@@ -293,11 +293,9 @@ class BackendApiService {
       final manifest = await _yt.videos.streamsClient.getManifest(cleanId);
       final videoInfo = await _yt.videos.get(cleanId);
       
-      // Now that LocalStreamProxy securely strips ExoPlayer headers, we can safely include
-      // high-quality videoOnly streams (1080p, 1440p, 4K) without triggering YouTube's 403 block.
-      final allVideoStreams = [...manifest.muxed, ...manifest.videoOnly]
-          .where((s) => s.container.name == 'mp4')
-          .toList();
+      // We ONLY use muxed streams. YouTube heavily protects raw videoOnly (1080p/4K) DASH streams
+      // with strict Proof-of-Origin (PO Tokens) and Range tracking which triggers an unpreventable 403 on ExoPlayer.
+      final allVideoStreams = manifest.muxed.toList();
       if (allVideoStreams.isNotEmpty) {
         final Map<String, Map<String, dynamic>> uniqueQualities = {};
         for (var s in allVideoStreams) {
