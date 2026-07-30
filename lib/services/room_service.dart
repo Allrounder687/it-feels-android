@@ -2,11 +2,15 @@ import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
 import '../data/models/song_model.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class RoomService {
   final FirebaseDatabase _rtdb;
 
-  RoomService({FirebaseDatabase? rtdb}) : _rtdb = rtdb ?? FirebaseDatabase.instance;
+  RoomService({FirebaseDatabase? rtdb}) : _rtdb = rtdb ?? FirebaseDatabase.instanceFor(
+    app: Firebase.app(), 
+    databaseURL: Firebase.app().options.databaseURL,
+  );
   
   // Create a new Listen Together Room
   Future<String> createRoom(String hostId, Song currentSong, Duration position, bool isPlaying) async {
