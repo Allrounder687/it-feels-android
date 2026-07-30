@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../data/models/song_model.dart';
 import '../core/utils/des_decryptor.dart';
 
@@ -120,14 +121,49 @@ class BackendApiService {
       final response = await http.get(uri).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return {
-          'title': data['title'] ?? 'Music Video',
-          'streams': data['streams'] ?? [],
-          'audioUrl': data['audioUrl'] ?? '',
-        };
+        final List streamsList = data['streams'] ?? [];
+        if (streamsList.isNotEmpty) {
+          return {
+            'title': data['title'] ?? 'Music Video',
+            'streams': streamsList,
+            'audioUrl': data['audioUrl'] ?? '',
+          };
+        }
       }
     } catch (e) {
       debugPrint('[BackendApiService] getVideoStreams error: $e');
+    }
+    
+    // Direct youtube_explode_dart client fallback
+    return _directYoutubeExplodeStreamFallback(videoId);
+  }
+
+  /// Client-side direct stream fallback using youtube_explode_dart
+  static Future<Map<String, dynamic>> _directYoutubeExplodeStreamFallback(String videoId) async {
+    final cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
+    final yt = YoutubeExplode();
+    try {
+      final manifest = await yt.videos.streamsClient.getManifest(cleanId);
+      final videoInfo = await yt.videos.get(cleanId);
+      
+      final muxedStreams = manifest.muxed;
+      if (muxedStreams.isNotEmpty) {
+        final streamsList = muxedStreams.map((s) => {
+          'quality': s.videoQuality.name,
+          'url': s.url.toString(),
+          'hasAudio': true,
+        }).toList();
+        
+        return {
+          'title': videoInfo.title,
+          'streams': streamsList,
+          'audioUrl': manifest.audioOnly.withHighestBitrate().url.toString(),
+        };
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] YoutubeExplode fallback error: $e');
+    } finally {
+      yt.close();
     }
     return {'title': 'Music Video', 'streams': []};
   }
@@ -332,5 +368,55 @@ class BackendApiService {
       return results.map((e) => Song.fromJson(e)).toList();
     }
     return [];
+  }
+  /// Fetch Related Videos for 'Up Next' Queue
+  static Future<List<Map<String, dynamic>>> getRelatedVideos(String videoId) async {
+    final cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
+    final yt = YoutubeExplode();
+    final List<Map<String, dynamic>> videos = [];
+    
+    try {
+      final related = await yt.videos.getRelatedVideos(VideoId(cleanId));
+      if (related != null) {
+        for (final video in related) {
+          videos.add({
+            'id': 'youtube:${video.id.value}',
+            'title': video.title,
+            'uploader': video.author,
+            'duration': video.duration?.inSeconds ?? 0,
+            'thumbnail': video.thumbnails.highResUrl,
+            'views': '${_formatViews(video.viewCount)} views',
+            'uploadedAt': '', // Not always provided by related API
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] getRelatedVideos error: $e');
+    } finally {
+      yt.close();
+    }
+    return videos;
+  }
+
+  /// Helper to format view counts
+  static String _formatViews(int views) {
+    if (views >= 1000000000) return '${(views / 1000000000).toStringAsFixed(1)}B';
+    if (views >= 1000000) return '${(views / 1000000).toStringAsFixed(1)}M';
+    if (views >= 1000) return '${(views / 1000).toStringAsFixed(1)}K';
+    return views.toString();
+  }
+
+  /// Fetch Channel Avatar URL
+  static Future<String?> getChannelAvatar(String channelId) async {
+    final yt = YoutubeExplode();
+    try {
+      final channel = await yt.channels.get(ChannelId(channelId));
+      return channel.logoUrl;
+    } catch (e) {
+      debugPrint('[BackendApiService] getChannelAvatar error: $e');
+      return null;
+    } finally {
+      yt.close();
+    }
   }
 }

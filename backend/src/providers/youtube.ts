@@ -183,11 +183,11 @@ export class YoutubeProvider {
   }
 
   /**
-   * Get Trending Music & Video Items (Direct InnerTube Search Execution)
+   * Get Trending Music & Video Items (Direct InnerTube Browse Execution)
    */
   static async getTrendingVideos(limit = 20): Promise<VideoItem[]> {
     try {
-      const url = `https://www.youtube.com/youtubei/v1/search`;
+      const url = `https://www.youtube.com/youtubei/v1/browse`;
       const body = {
         context: {
           client: {
@@ -197,7 +197,7 @@ export class YoutubeProvider {
             gl: 'US',
           },
         },
-        query: 'music videos',
+        browseId: 'FEtrending',
       };
 
       const response = await fetch(url, {
@@ -212,7 +212,7 @@ export class YoutubeProvider {
         if (extracted.length > 0) return extracted;
       }
     } catch (e) {
-      console.error('getTrendingVideos InnerTube search failed:', e);
+      console.error('getTrendingVideos InnerTube browse failed:', e);
     }
     return [];
   }

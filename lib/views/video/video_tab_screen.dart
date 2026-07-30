@@ -219,23 +219,44 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.only(left: 20, right: 20, bottom: 160 + MediaQuery.of(context).viewPadding.bottom),
-      itemCount: videos.length,
-      itemBuilder: (context, index) {
-        final video = videos[index];
-        final videoId = video['id']?.toString() ?? '';
-        final title = video['title']?.toString() ?? 'Video';
-        final uploader = video['uploader']?.toString() ?? 'YouTube Creator';
-        final thumbnail = video['thumbnail']?.toString() ?? '';
-        final views = video['views']?.toString() ?? '';
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int crossAxisCount = 1;
+        if (constraints.maxWidth > 900) {
+          crossAxisCount = 3;
+        } else if (constraints.maxWidth > 600) {
+          crossAxisCount = 2;
+        }
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Material(
-            color: context.themeCardColor.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(20),
-            child: InkWell(
+        return ListView.builder(
+          padding: EdgeInsets.only(left: 20, right: 20, bottom: 160 + MediaQuery.of(context).viewPadding.bottom),
+          itemCount: (videos.length / crossAxisCount).ceil(),
+          itemBuilder: (context, rowIndex) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: List.generate(crossAxisCount, (colIndex) {
+                final index = rowIndex * crossAxisCount + colIndex;
+                if (index >= videos.length) {
+                  return const Expanded(child: SizedBox());
+                }
+
+                final video = videos[index];
+                final videoId = video['id']?.toString() ?? '';
+                final title = video['title']?.toString() ?? 'Video';
+                final uploader = video['uploader']?.toString() ?? 'YouTube Creator';
+                final thumbnail = video['thumbnail']?.toString() ?? '';
+                final views = video['views']?.toString() ?? '';
+
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: 16,
+                      right: colIndex < crossAxisCount - 1 ? 16 : 0,
+                    ),
+                    child: Material(
+                      color: context.themeCardColor.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(20),
+                      child: InkWell(
               borderRadius: BorderRadius.circular(20),
               onTap: () {
                 Navigator.push(
@@ -347,10 +368,10 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
+                );
+              }),
+            );
+          },
         );
       },
     );
@@ -366,22 +387,43 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.only(left: 20, right: 20, bottom: 160 + MediaQuery.of(context).viewPadding.bottom),
-      itemCount: _offlineVideos.length,
-      itemBuilder: (context, index) {
-        final video = _offlineVideos[index];
-        final videoId = video['id']?.toString() ?? '';
-        final title = video['title']?.toString() ?? 'Downloaded Video';
-        final uploader = video['uploader']?.toString() ?? 'Offline Video';
-        final localPath = video['localPath']?.toString() ?? '';
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int crossAxisCount = 1;
+        if (constraints.maxWidth > 900) {
+          crossAxisCount = 3;
+        } else if (constraints.maxWidth > 600) {
+          crossAxisCount = 2;
+        }
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Material(
-            color: context.themeCardColor.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(16),
-            child: ListTile(
+        return ListView.builder(
+          padding: EdgeInsets.only(left: 20, right: 20, bottom: 160 + MediaQuery.of(context).viewPadding.bottom),
+          itemCount: (_offlineVideos.length / crossAxisCount).ceil(),
+          itemBuilder: (context, rowIndex) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: List.generate(crossAxisCount, (colIndex) {
+                final index = rowIndex * crossAxisCount + colIndex;
+                if (index >= _offlineVideos.length) {
+                  return const Expanded(child: SizedBox());
+                }
+
+                final video = _offlineVideos[index];
+                final videoId = video['id']?.toString() ?? '';
+                final title = video['title']?.toString() ?? 'Downloaded Video';
+                final uploader = video['uploader']?.toString() ?? 'Offline Video';
+                final localPath = video['localPath']?.toString() ?? '';
+
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: 12,
+                      right: colIndex < crossAxisCount - 1 ? 16 : 0,
+                    ),
+                    child: Material(
+                      color: context.themeCardColor.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(16),
+                      child: ListTile(
               leading: CircleAvatar(
                 backgroundColor: AppColors.midnightAccent.withValues(alpha: 0.2),
                 child: const Icon(Icons.download_done, color: AppColors.midnightAccent),
@@ -422,7 +464,11 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
                 }
               },
             ),
-          ),
+                  ),
+                );
+              }),
+            );
+          },
         );
       },
     );
