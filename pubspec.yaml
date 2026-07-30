@@ -74,6 +74,7 @@ dependencies:
   google_sign_in: ^6.2.2
   purchases_flutter: ^10.6.0
   firebase_messaging: ^16.4.3
+  razorpay_flutter: ^1.4.5
 
 
 

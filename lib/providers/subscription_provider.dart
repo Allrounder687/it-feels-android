@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../services/subscription_service.dart';
+import '../services/razorpay_service.dart';
 
 class SubscriptionProvider extends ChangeNotifier {
+  // CONFIG TOGGLE: Set to true to bypass RevenueCat and use Razorpay (Direct Distribution)
+  static const bool useDirectDistribution = true;
+
   final SubscriptionService _service;
+  final RazorpayService _razorpayService = RazorpayService();
+  
   bool _isPremium = false;
   bool _isLoading = true;
 
@@ -84,5 +90,25 @@ class SubscriptionProvider extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
     return success;
+  }
+
+  Future<bool> purchaseRazorpay(int amountInRupees, int durationDays) async {
+    _isLoading = true;
+    notifyListeners();
+    
+    final success = await _razorpayService.checkout(amountInRupees, durationDays);
+    if (success) {
+      _isPremium = true;
+    }
+    
+    _isLoading = false;
+    notifyListeners();
+    return success;
+  }
+
+  @override
+  void dispose() {
+    _razorpayService.dispose();
+    super.dispose();
   }
 }

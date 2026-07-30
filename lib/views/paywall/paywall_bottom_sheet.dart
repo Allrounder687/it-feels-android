@@ -41,6 +41,18 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
     }
   }
 
+  Future<void> _purchaseRazorpay(BuildContext context, int amount, int days) async {
+    final subProvider = Provider.of<SubscriptionProvider>(context, listen: false);
+    final success = await subProvider.purchaseRazorpay(amount, days);
+    if (success && mounted) {
+      Navigator.pop(context);
+    } else if (mounted && !subProvider.isPremium) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment failed or was cancelled.')),
+      );
+    }
+  }
+
   Future<void> _redeem(BuildContext context) async {
     if (_couponController.text.trim().isEmpty) return;
     final subProvider = Provider.of<SubscriptionProvider>(context, listen: false);
@@ -99,7 +111,57 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
             const SizedBox(height: 32),
             if (subProvider.isLoading)
               const CircularProgressIndicator(color: AppColors.midnightAccent)
-            else ...[
+            else if (SubscriptionProvider.useDirectDistribution) ...[
+              // Razorpay Direct UPI UI
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: ElevatedButton(
+                  onPressed: () => _purchaseRazorpay(context, 599, 180),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.midnightPrimary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.payment, size: 20),
+                      SizedBox(width: 8),
+                      Text("6 Months for ₹599 (via UPI)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: ElevatedButton(
+                  onPressed: () => _purchaseRazorpay(context, 999, 365),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.midnightPrimary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.stars, size: 20),
+                      SizedBox(width: 8),
+                      Text("1 Year for ₹999 (Best Value)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Includes a 14-day unlimited trial. Cancel anytime.",
+                style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.5)),
+              ),
+            ] else ...[
+              // RevenueCat UI
               FutureBuilder<List<Package>>(
                 future: subProvider.getPackages(),
                 builder: (context, snapshot) {
@@ -128,7 +190,8 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                   );
                 },
               ),
-              const SizedBox(height: 16),
+            ],
+            const SizedBox(height: 16),
               TextButton(
                 onPressed: () => setState(() => _showCouponField = !_showCouponField),
                 child: Text("Have a custom coupon code?", style: TextStyle(color: Colors.white.withOpacity(0.5))),

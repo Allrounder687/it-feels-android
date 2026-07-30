@@ -13,6 +13,8 @@ type Bindings = {
   ANTHROPIC_API_KEY?: string;
   GEMINI_API_KEY?: string;
   RESEND_API_KEY?: string;
+  RAZORPAY_KEY_ID?: string;
+  RAZORPAY_KEY_SECRET?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -76,6 +78,44 @@ app.post('/api/v1/send-email', async (c) => {
     }
 
     return c.json({ success: true, id: data.id });
+  } catch (error: any) {
+    return c.json({ error: 'Internal Server Error', message: error.message }, 500);
+  }
+});
+
+// Razorpay Order Generation
+app.post('/api/v1/razorpay/order', async (c) => {
+  try {
+    if (!c.env.RAZORPAY_KEY_ID || !c.env.RAZORPAY_KEY_SECRET) {
+      return c.json({ error: 'Configuration Error', message: 'Razorpay keys not configured' }, 500);
+    }
+
+    const body = await c.req.json();
+    const { amount, currency = 'INR', receipt } = body;
+
+    if (!amount) {
+      return c.json({ error: 'Bad Request', message: 'Amount is required (in paise)' }, 400);
+    }
+
+    const response = await fetch('https://api.razorpay.com/v1/orders', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic ' + btoa(`${c.env.RAZORPAY_KEY_ID}:${c.env.RAZORPAY_KEY_SECRET}`)
+      },
+      body: JSON.stringify({
+        amount,
+        currency,
+        receipt: receipt || `rcpt_${Date.now()}`
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return c.json({ error: 'Razorpay Error', details: data }, response.status);
+    }
+
+    return c.json(data);
   } catch (error: any) {
     return c.json({ error: 'Internal Server Error', message: error.message }, 500);
   }
