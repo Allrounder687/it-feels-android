@@ -182,9 +182,17 @@ class BackendApiService {
   }
 
   /// Fetch MP4 Video Streams with Age Restriction Bypass
-  static Future<Map<String, dynamic>> getVideoStreams(String videoId) async {
+  static Future<Map<String, dynamic>> getVideoStreams(String videoId, {String? query}) async {
     try {
-      final uri = Uri.parse('$baseUrl/api/v1/video').replace(queryParameters: {'id': videoId});
+      final queryParams = <String, String>{};
+      if (videoId.isNotEmpty && !videoId.startsWith('search:')) {
+        queryParams['id'] = videoId;
+      }
+      if (query != null && query.isNotEmpty) {
+        queryParams['query'] = query;
+      }
+
+      final uri = Uri.parse('$baseUrl/api/v1/video').replace(queryParameters: queryParams);
       final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -202,14 +210,25 @@ class BackendApiService {
     }
     
     // Direct youtube_explode_dart client fallback
-    return _directYoutubeExplodeStreamFallback(videoId);
+    return _directYoutubeExplodeStreamFallback(videoId, query: query);
   }
 
   /// Client-side direct stream fallback using youtube_explode_dart
-  static Future<Map<String, dynamic>> _directYoutubeExplodeStreamFallback(String videoId) async {
-    final cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
+  static Future<Map<String, dynamic>> _directYoutubeExplodeStreamFallback(String videoId, {String? query}) async {
     final yt = YoutubeExplode();
     try {
+      String cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
+      
+      if (videoId.startsWith('search:') || (query != null && query.isNotEmpty && cleanId.isEmpty)) {
+        final searchQuery = query ?? videoId.replaceFirst('search:', '');
+        final searchResults = await yt.search.search(searchQuery);
+        if (searchResults.isNotEmpty) {
+          cleanId = searchResults.first.id.value;
+        } else {
+          return {'title': 'Music Video', 'streams': []};
+        }
+      }
+
       final manifest = await yt.videos.streamsClient.getManifest(cleanId);
       final videoInfo = await yt.videos.get(cleanId);
       

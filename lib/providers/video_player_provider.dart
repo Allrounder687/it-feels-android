@@ -42,7 +42,7 @@ class VideoPlayerProvider extends ChangeNotifier {
   }
 
   /// Plays a video and initializes the Miniplayer
-  Future<void> playVideo(String videoId, String title, String uploader, {String? localPath}) async {
+  Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query}) async {
     // Reset state
     isLoading = true;
     isVideoActive = true;
@@ -70,7 +70,7 @@ class VideoPlayerProvider extends ChangeNotifier {
 
     // Fetch streams and related videos in parallel
     final results = await Future.wait([
-      BackendApiService.getVideoStreams(videoId),
+      BackendApiService.getVideoStreams(videoId, query: query),
       BackendApiService.getRelatedVideos(videoId),
     ]);
 

@@ -141,46 +141,7 @@ class NowPlayingScreen extends StatelessWidget {
                                 );
                               },
                             ),
-                            IconButton(
-                              icon: Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: surfaceColor,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: isDownloading
-                                    ? SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: context.themeTextColor),
-                                      )
-                                    : Icon(
-                                        isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
-                                        color: isDown ? accentColor : context.themeTextColor,
-                                        size: 24,
-                                      ),
-                              ),
-                              onPressed: () async {
-                                if (isDown) {
-                                  await downloadProvider.removeDownload(currentSong);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text("Removed ${currentSong.title} from downloads")),
-                                    );
-                                  }
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("Downloading ${currentSong.title}...")),
-                                  );
-                                  final ok = await downloadProvider.downloadSong(currentSong);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(ok ? "Downloaded ${currentSong.title}" : "Download failed")),
-                                    );
-                                  }
-                                }
-                              },
-                            ),
+                            // Removed redundant download icon from top app bar to fix layout overflow
                             if (settingsProvider.enableMusicVideos)
                               IconButton(
                                 icon: Container(
@@ -194,9 +155,10 @@ class NowPlayingScreen extends StatelessWidget {
                                 ),
                                 onPressed: () {
                                   Provider.of<VideoPlayerProvider>(context, listen: false).playVideo(
-                                    currentSong.id.contains(':') ? currentSong.id : 'youtube:${currentSong.saavnId}',
+                                    currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}', // Use search marker if it's a saavn ID
                                     currentSong.title,
                                     currentSong.artist,
+                                    query: '${currentSong.title} ${currentSong.artist}',
                                   );
                                   Navigator.push(
                                     context,
