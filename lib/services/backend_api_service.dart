@@ -10,6 +10,13 @@ class BackendApiService {
   static String baseUrl = 'https://it-feels-proxy.cleverfox687.workers.dev'; 
   static bool useProxyBackend = false; // Toggle to switch between direct & proxy mode
   static final Map<String, Map<String, dynamic>> _videoStreamCache = {};
+  static final YoutubeExplode _yt = YoutubeExplode();
+
+  static String cleanSearchQuery(String title, String artist) {
+    final cleanTitle = title.replaceAll(RegExp(r'\s*\([^)]*\)'), '').replaceAll(RegExp(r'\s*\[[^\]]*\]'), '').trim();
+    final mainArtist = artist.split(',').first.trim();
+    return '$cleanTitle $mainArtist official music video'.trim();
+  }
 
   static const Map<String, String> _proxyHeaders = {
     'X-Feels-Secret': 'development_secret_123',
@@ -186,7 +193,7 @@ class BackendApiService {
   static Future<void> preloadVideoStreams(Song song) async {
     if (song.id.isEmpty) return;
     final videoId = song.id.contains(':') ? song.id : 'search:${song.id}';
-    final query = '${song.title} ${song.artist} official music video';
+    final query = cleanSearchQuery(song.title, song.artist);
     final cacheKey = '$videoId|$query';
     if (_videoStreamCache.containsKey(cacheKey)) return;
 
@@ -211,17 +218,14 @@ class BackendApiService {
     // Client-side resolution for Saavn searches
     String cleanId = actualVideoId.contains(':') ? actualVideoId.split(':')[1] : actualVideoId;
     if (actualVideoId.startsWith('search:') || (query != null && query.isNotEmpty && cleanId.length != 11)) {
-      final yt = YoutubeExplode();
       try {
         final searchQuery = query ?? actualVideoId.replaceFirst('search:', '');
-        final searchResults = await yt.search.search(searchQuery);
+        final searchResults = await _yt.search.search(searchQuery);
         if (searchResults.isNotEmpty) {
           actualVideoId = 'youtube:${searchResults.first.id.value}';
         }
       } catch (e) {
         debugPrint('[BackendApiService] Client-side search resolution failed: $e');
-      } finally {
-        yt.close();
       }
     }
 
@@ -264,14 +268,13 @@ class BackendApiService {
   /// Client-side direct stream fallback using youtube_explode_dart
   static Future<Map<String, dynamic>> _directYoutubeExplodeStreamFallback(String videoId, {String? query}) async {
     debugPrint('[BackendApiService] _directYoutubeExplodeStreamFallback called with videoId=$videoId, query=$query');
-    final yt = YoutubeExplode();
     try {
       String cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
       
       // We still keep this fallback just in case the initial resolution failed
       if (cleanId.isEmpty || videoId.startsWith('search:') || cleanId.length != 11) {
         final searchQuery = query ?? videoId.replaceFirst('search:', '');
-        final searchResults = await yt.search.search(searchQuery);
+        final searchResults = await _yt.search.search(searchQuery);
         if (searchResults.isNotEmpty) {
           cleanId = searchResults.first.id.value;
         } else {
@@ -279,8 +282,8 @@ class BackendApiService {
         }
       }
 
-      final manifest = await yt.videos.streamsClient.getManifest(cleanId);
-      final videoInfo = await yt.videos.get(cleanId);
+      final manifest = await _yt.videos.streamsClient.getManifest(cleanId);
+      final videoInfo = await _yt.videos.get(cleanId);
       
       final muxedStreams = manifest.muxed;
       if (muxedStreams.isNotEmpty) {
@@ -298,8 +301,6 @@ class BackendApiService {
       }
     } catch (e) {
       debugPrint('[BackendApiService] YoutubeExplode fallback error: $e');
-    } finally {
-      yt.close();
     }
     return {'title': 'Music Video', 'streams': []};
   }
