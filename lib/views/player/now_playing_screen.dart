@@ -18,6 +18,7 @@ import 'queue_bottom_sheet.dart';
 import 'sleep_timer_sheet.dart';
 import '../widgets/animated_play_pause_button.dart';
 import 'fullscreen_video_screen.dart';
+import '../home/driving_mode_screen.dart';
 import 'package:video_player/video_player.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
