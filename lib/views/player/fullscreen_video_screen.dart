@@ -294,6 +294,7 @@ class _FullscreenVideoScreenState extends State<FullscreenVideoScreen> {
                                 Container(
                                   width: 72,
                                   height: 72,
+                                  alignment: Alignment.center,
                                   decoration: BoxDecoration(
                                     color: context.themeAccentColor,
                                     shape: BoxShape.circle,

@@ -32,12 +32,12 @@ class LocalStreamProxy {
           final methodToUse = isHeadRequest ? 'GET' : request.method;
           final clientReq = http.Request(methodToUse, Uri.parse(_currentStreamUrl!));
           
-          // Forward essential headers from ExoPlayer
-          request.headers.forEach((key, values) {
-            if (key.toLowerCase() != 'host' && key.toLowerCase() != 'user-agent') {
-              clientReq.headers[key] = values.join(', ');
-            }
-          });
+          // STRICTLY ONLY forward Range header. YouTube will 403 if it sees ExoPlayer's other headers
+          // (like Icy-MetaData, Connection, Accept-Encoding) on high-quality videoOnly streams.
+          final rangeHeader = request.headers.value('range');
+          if (rangeHeader != null) {
+            clientReq.headers['range'] = rangeHeader;
+          }
           
           if (isHeadRequest) {
             clientReq.headers['range'] = 'bytes=0-0';
@@ -45,6 +45,7 @@ class LocalStreamProxy {
           
           // Add spoofed mobile headers to satisfy YouTube's anti-bot system
           clientReq.headers['User-Agent'] = 'Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36';
+          clientReq.headers['Referer'] = 'https://www.youtube.com/';
           
           final client = http.Client();
           final streamedRes = await client.send(clientReq);

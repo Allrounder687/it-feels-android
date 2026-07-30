@@ -293,9 +293,11 @@ class BackendApiService {
       final manifest = await _yt.videos.streamsClient.getManifest(cleanId);
       final videoInfo = await _yt.videos.get(cleanId);
       
-      // We ONLY use muxed streams. YouTube blocks raw videoOnly (1080p/4K) streams
-      // with a 403 Forbidden on Android due to missing PO Tokens.
-      final allVideoStreams = manifest.muxed.toList();
+      // Now that LocalStreamProxy securely strips ExoPlayer headers, we can safely include
+      // high-quality videoOnly streams (1080p, 1440p, 4K) without triggering YouTube's 403 block.
+      final allVideoStreams = [...manifest.muxed, ...manifest.videoOnly]
+          .where((s) => s.container.name == 'mp4')
+          .toList();
       if (allVideoStreams.isNotEmpty) {
         final Map<String, Map<String, dynamic>> uniqueQualities = {};
         for (var s in allVideoStreams) {
