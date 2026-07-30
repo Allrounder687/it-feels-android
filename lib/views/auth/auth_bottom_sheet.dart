@@ -191,6 +191,44 @@ class _AuthBottomSheetState extends State<AuthBottomSheet> {
                     ),
             ),
             const SizedBox(height: 16),
+            
+            // Google Sign-In Button
+            if (authProvider.viewState == AuthViewState.emailInput) ...[
+              const Center(
+                child: Text(
+                  'OR',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: authProvider.viewState == AuthViewState.loading
+                    ? null
+                    : () => authProvider.signInWithGoogle(),
+                icon: Image.network(
+                  'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
+                  height: 24,
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, color: Colors.blue),
+                ),
+                label: const Text(
+                  'Continue with Google',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.themeTextColor,
+                  side: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
           ],
         ),
       ),

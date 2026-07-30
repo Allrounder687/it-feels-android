@@ -100,6 +100,34 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> signInWithGoogle() async {
+    final previousState = _viewState;
+    _viewState = AuthViewState.loading;
+    _errorMessage = '';
+    notifyListeners();
+
+    try {
+      final credential = await _authService.signInWithGoogle();
+      if (credential == null) {
+        // User canceled the login
+        _viewState = previousState;
+        notifyListeners();
+        return false;
+      }
+      return true;
+    } on FirebaseAuthException catch (e) {
+      _errorMessage = e.message ?? 'Google Sign-In failed';
+      _viewState = previousState;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'An unexpected error occurred';
+      _viewState = previousState;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> signOut() async {
     await _authService.signOut();
   }
