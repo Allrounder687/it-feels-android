@@ -61,6 +61,9 @@ void main() {
     when(() => mockLyrics.lyricsNotFound).thenReturn(true);
     when(() => mockLyrics.mode).thenReturn(LyricsMode.synced);
     when(() => mockLyrics.activeIndex).thenReturn(-1);
+    when(() => mockLyrics.activeIndex).thenReturn(-1);
+    when(() => mockLyrics.fontFamily).thenReturn('Inter');
+    when(() => mockLyrics.syncOffsetMs).thenReturn(0);
     when(() => mockLyrics.result).thenReturn(LyricsResult());
     when(() => mockLyrics.itemScrollController).thenReturn(mockScroll);
     when(() => mockScroll.isAttached).thenReturn(true);

@@ -4,8 +4,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:it_feels_music/providers/auth_provider.dart';
 import 'package:it_feels_music/services/auth_service.dart';
+import 'package:it_feels_music/services/cloud_sync_service.dart';
 
 class MockAuthService extends Mock implements AuthService {}
+class MockCloudSyncService extends Mock implements CloudSyncService {}
 class MockUser extends Mock implements User {}
 class MockUserCredential extends Mock implements UserCredential {}
 class FakeFirebaseAuthException extends Fake implements FirebaseAuthException {
@@ -18,17 +20,22 @@ class FakeFirebaseAuthException extends Fake implements FirebaseAuthException {
 
 void main() {
   late MockAuthService mockAuthService;
+  late MockCloudSyncService mockCloudSyncService;
   late AuthProvider authProvider;
   late StreamController<User?> userStreamController;
 
   setUp(() {
     mockAuthService = MockAuthService();
+    mockCloudSyncService = MockCloudSyncService();
     userStreamController = StreamController<User?>();
     
     when(() => mockAuthService.userStream).thenAnswer((_) => userStreamController.stream);
     when(() => mockAuthService.currentUser).thenReturn(null);
 
-    authProvider = AuthProvider(authService: mockAuthService);
+    authProvider = AuthProvider(
+      authService: mockAuthService,
+      cloudSyncService: mockCloudSyncService,
+    );
   });
 
   tearDown(() {

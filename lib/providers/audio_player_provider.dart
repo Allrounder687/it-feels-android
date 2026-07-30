@@ -14,6 +14,7 @@ import '../data/services/audio_player_handler.dart';
 import '../data/services/music_api_service.dart';
 import '../services/storage_service.dart';
 import '../services/room_service.dart';
+import '../services/backend_api_service.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 

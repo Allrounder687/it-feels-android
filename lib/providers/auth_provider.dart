@@ -7,7 +7,7 @@ enum AuthViewState { emailInput, loginPassword, signupPassword, loading, authent
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
-  final CloudSyncService _cloudSyncService = CloudSyncService();
+  final CloudSyncService _cloudSyncService;
   
   AuthViewState _viewState = AuthViewState.emailInput;
   String _email = '';
@@ -19,7 +19,9 @@ class AuthProvider extends ChangeNotifier {
   User? get currentUser => _authService.currentUser;
   bool get isAuthenticated => currentUser != null;
 
-  AuthProvider({AuthService? authService}) : _authService = authService ?? AuthService() {
+  AuthProvider({AuthService? authService, CloudSyncService? cloudSyncService}) 
+      : _authService = authService ?? AuthService(),
+        _cloudSyncService = cloudSyncService ?? CloudSyncService() {
     _authService.userStream.listen((user) {
       if (user != null) {
         _viewState = AuthViewState.authenticated;
