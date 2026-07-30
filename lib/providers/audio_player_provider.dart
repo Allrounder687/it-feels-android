@@ -536,18 +536,6 @@ class AudioPlayerProvider extends ChangeNotifier {
         notifyListeners();
       }
     });
-
-    audioHandler.player.currentIndexStream.listen((idx) {
-      if (idx != null && idx >= 0 && idx < _queue.length) {
-        if (_currentIndex != idx) {
-          _currentIndex = idx;
-          _currentSong = _queue[idx];
-          _hasSentTelemetryForCurrentSong = false;
-          _preloadQueueLyricsAndMedia();
-          notifyListeners();
-        }
-      }
-    });
   }
 
   Future<void> playSong(Song song, {List<Song>? queue, int index = 0, BuildContext? context}) async {
@@ -557,10 +545,15 @@ class AudioPlayerProvider extends ChangeNotifier {
 
     if (queue != null && queue.isNotEmpty) {
       _queue = List.from(queue);
-      _currentIndex = index >= 0 && index < _queue.length ? index : 0;
+      final foundIndex = _queue.indexWhere((s) => s.id == song.id || (s.title.toLowerCase() == song.title.toLowerCase() && s.artist.toLowerCase() == song.artist.toLowerCase()));
+      if (foundIndex != -1) {
+        _currentIndex = foundIndex;
+      } else {
+        _currentIndex = index >= 0 && index < _queue.length ? index : 0;
+      }
       _saveMemory();
     } else {
-      final existingIndex = _queue.indexWhere((s) => s.id == song.id || (s.title == song.title && s.artist == song.artist));
+      final existingIndex = _queue.indexWhere((s) => s.id == song.id || (s.title.toLowerCase() == song.title.toLowerCase() && s.artist.toLowerCase() == song.artist.toLowerCase()));
       if (existingIndex != -1) {
         _currentIndex = existingIndex;
       } else {
