@@ -23,7 +23,7 @@ class RoomService {
       'positionMs': position.inMilliseconds,
       'isPlaying': isPlaying,
       'timestamp': ServerValue.timestamp,
-    });
+    }).timeout(const Duration(seconds: 10));
     
     // Auto-cleanup on disconnect
     roomRef.onDisconnect().remove();
@@ -38,7 +38,7 @@ class RoomService {
       'positionMs': position.inMilliseconds,
       'isPlaying': isPlaying,
       'timestamp': ServerValue.timestamp,
-    });
+    }).timeout(const Duration(seconds: 10));
   }
 
   // Listen to room state (called by guests)

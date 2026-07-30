@@ -40,9 +40,18 @@ class _RoomBottomSheetState extends State<RoomBottomSheet> {
     final audioProvider = Provider.of<AudioPlayerProvider>(context, listen: false);
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await audioProvider.startBroadcasting(user.uid);
+      try {
+        await audioProvider.startBroadcasting(user.uid);
+      } catch (e) {
+        debugPrint('Error starting broadcast: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to create room: $e')),
+          );
+        }
+      }
     }
-    setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _joinSession() async {
@@ -51,9 +60,19 @@ class _RoomBottomSheetState extends State<RoomBottomSheet> {
     
     setState(() => _isLoading = true);
     final audioProvider = Provider.of<AudioPlayerProvider>(context, listen: false);
-    await audioProvider.joinSession(pin);
-    setState(() => _isLoading = false);
-    if (mounted) Navigator.pop(context);
+    try {
+      await audioProvider.joinSession(pin);
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      debugPrint('Error joining session: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to join room: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override

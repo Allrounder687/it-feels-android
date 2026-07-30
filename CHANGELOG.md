@@ -16,6 +16,8 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - **Firebase Core Initialization:** Configured `flutterfire_cli` across all 5 desktop and mobile platforms (Android, iOS, macOS, Windows, Web) in preparation for Realtime Database syncing and Cloud Firestore.
 
 ### Fixed
+- **iOS Google Sign-In Crash:** Fixed a crash on iOS by properly configuring the `CFBundleURLTypes` and `REVERSED_CLIENT_ID` inside `ios/Runner/Info.plist`.
+- **Listen Together Infinite Loading:** Resolved an issue where creating or joining a room would spin infinitely on Android and iOS due to hanging Firebase RTDB operations by implementing network timeouts and strict try/catch error boundaries in the UI.
 - **iOS Build Failure:** Bumped `IPHONEOS_DEPLOYMENT_TARGET` to `15.0` in `project.pbxproj` to resolve Firebase SDK minimum version requirements and fix GitHub Action CI failures.
 ---
 
