@@ -5,7 +5,6 @@ import 'package:miniplayer/miniplayer.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
 import '../services/backend_api_service.dart';
-import '../services/local_stream_proxy.dart';
 
 class VideoPlayerProvider extends ChangeNotifier {
   VideoPlayerController? videoController;
@@ -139,14 +138,10 @@ class VideoPlayerProvider extends ChangeNotifier {
     final streamUrl = selectedStream['url'] as String;
     final formatHint = streamUrl.contains('.m3u8') ? VideoFormat.hls : VideoFormat.other;
     
-    // Route YouTube streams through local proxy to bypass ExoPlayer 403 / Header stripping
-    final proxiedUrl = await LocalStreamProxy.getProxyUrl(streamUrl);
-    
     videoController = VideoPlayerController.networkUrl(
-      Uri.parse(proxiedUrl),
+      Uri.parse(streamUrl),
       formatHint: formatHint,
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-      // We still pass headers in case it's not proxied, though the proxy overrides them anyway
       httpHeaders: {
         'User-Agent': 'Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
         'Referer': 'https://www.youtube.com/',
