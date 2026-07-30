@@ -6,7 +6,8 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/theme_ext.dart';
 import '../../services/backend_api_service.dart';
 import '../../services/storage_service.dart';
-import 'video_player_screen.dart';
+import 'package:provider/provider.dart';
+import '../../providers/video_player_provider.dart';
 
 class VideoTabScreen extends StatefulWidget {
   const VideoTabScreen({super.key});
@@ -22,12 +23,30 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
   List<Map<String, dynamic>> _trendingVideos = [];
   List<Map<String, dynamic>> _searchResults = [];
   List<Map<String, dynamic>> _offlineVideos = [];
+  final ScrollController _scrollController = ScrollController();
   int _selectedCategoryIndex = 0; // 0: Trending, 1: Search, 2: Downloads
 
   @override
   void initState() {
     super.initState();
     _loadTrendingAndOffline();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      if (!_isLoading && !_isSearching) {
+        // Here we would implement fetching the next page.
+        // For now, since the API lacks pagination tokens, this is a placeholder.
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTrendingAndOffline() async {
@@ -69,6 +88,17 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
       }
     } catch (e) {
       if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
+  void _onCategoryTapped(int index, String? query) {
+    setState(() => _selectedCategoryIndex = index);
+    if (query != null) {
+      _searchController.text = query;
+      _searchVideos(query);
+    } else if (index == 0) {
+      _searchController.clear();
+      _loadTrendingAndOffline();
     }
   }
 
@@ -159,11 +189,19 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  _buildCategoryPill(0, "🔥 Trending"),
+                  _buildCategoryPill(0, "🔥 Trending", query: null),
                   const SizedBox(width: 8),
-                  _buildCategoryPill(1, "🔍 Search Results"),
+                  _buildCategoryPill(1, "🔍 Search", query: null),
                   const SizedBox(width: 8),
-                  _buildCategoryPill(2, "📥 Offline Videos (${_offlineVideos.length})"),
+                  _buildCategoryPill(2, "📥 Offline", query: null),
+                  const SizedBox(width: 8),
+                  _buildCategoryPill(3, "💻 Tech", query: "Technology reviews"),
+                  const SizedBox(width: 8),
+                  _buildCategoryPill(4, "🎮 Gaming", query: "Gaming let's play"),
+                  const SizedBox(width: 8),
+                  _buildCategoryPill(5, "🎵 Music", query: "Music videos"),
+                  const SizedBox(width: 8),
+                  _buildCategoryPill(6, "🎙️ Podcasts", query: "Podcasts"),
                 ],
               ),
             ),
@@ -176,7 +214,7 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
                   ? const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent))
                   : _selectedCategoryIndex == 2
                       ? _buildOfflineVideosList()
-                      : _selectedCategoryIndex == 1
+                      : (_selectedCategoryIndex == 1 || _selectedCategoryIndex >= 3)
                           ? _buildVideoGrid(_searchResults, emptyMessage: "No video search results found")
                           : _buildVideoGrid(_trendingVideos, emptyMessage: "No trending videos available"),
             ),
@@ -186,10 +224,10 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
     );
   }
 
-  Widget _buildCategoryPill(int index, String label) {
+  Widget _buildCategoryPill(int index, String label, {String? query}) {
     final isSelected = _selectedCategoryIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => _selectedCategoryIndex = index),
+      onTap: () => _onCategoryTapped(index, query),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -229,6 +267,7 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
         }
 
         return ListView.builder(
+          controller: _scrollController,
           padding: EdgeInsets.only(left: 20, right: 20, bottom: 160 + MediaQuery.of(context).viewPadding.bottom),
           itemCount: (videos.length / crossAxisCount).ceil(),
           itemBuilder: (context, rowIndex) {
@@ -259,16 +298,7 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
                       child: InkWell(
               borderRadius: BorderRadius.circular(20),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => VideoPlayerScreen(
-                      videoId: videoId,
-                      title: title,
-                      uploader: uploader,
-                    ),
-                  ),
-                );
+                Provider.of<VideoPlayerProvider>(context, listen: false).playVideo(videoId, title, uploader);
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,7 +398,12 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
                       ],
                     ),
                   ),
-                );
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
               }),
             );
           },
@@ -397,6 +432,7 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
         }
 
         return ListView.builder(
+          controller: _scrollController,
           padding: EdgeInsets.only(left: 20, right: 20, bottom: 160 + MediaQuery.of(context).viewPadding.bottom),
           itemCount: (_offlineVideos.length / crossAxisCount).ceil(),
           itemBuilder: (context, rowIndex) {
@@ -450,22 +486,22 @@ class _VideoTabScreenState extends State<VideoTabScreen> {
               ),
               onTap: () {
                 if (localPath.isNotEmpty && File(localPath).existsSync()) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => VideoPlayerScreen(
-                        videoId: videoId,
-                        title: title,
-                        uploader: uploader,
-                        initialUrl: localPath,
-                      ),
-                    ),
+                  Provider.of<VideoPlayerProvider>(context, listen: false).playVideo(
+                    videoId, 
+                    title, 
+                    uploader, 
+                    localPath: localPath
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Video file not found. It may have been deleted.')),
                   );
                 }
               },
             ),
-                  ),
-                );
+          ),
+        ),
+      );
               }),
             );
           },
