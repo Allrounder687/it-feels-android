@@ -44,30 +44,28 @@ jobs:
 
       - name: Build iOS without Code Signing
         run: |
-          # 1. Generate Podfile (ignore code sign errors)
-          flutter build ios --release --no-codesign || true
-          
-          # 2. Inject Code Signing overrides into Podfile
-          cat << 'EOF' > patch_podfile.rb
-          require 'fileutils'
-          content = File.read('ios/Podfile')
-          new_content = content.gsub(/flutter_additional_ios_build_settings\(target\)/, "flutter_additional_ios_build_settings(target)\n      target.build_configurations.each do |config|\n        config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'\n        config.build_settings['CODE_SIGNING_REQUIRED'] = 'NO'\n        config.build_settings['CODE_SIGN_IDENTITY'] = '-'\n        config.build_settings['EXPANDED_CODE_SIGN_IDENTITY'] = '-'\n        config.build_settings['DEAD_CODE_STRIPPING'] = 'NO'\n        config.build_settings['STRIP_INSTALLED_PRODUCT'] = 'NO'\n      end")
-          File.write('ios/Podfile', new_content)
-          EOF
-          ruby patch_podfile.rb
-          
-          # 3. Install Pods
+          # 1. Ensure xcconfig contains DEVELOPMENT_TEAM & Code Signing overrides
+          echo "DEVELOPMENT_TEAM=A1B2C3D4E5" >> ios/Flutter/Release.xcconfig
+          echo "CODE_SIGNING_ALLOWED=NO" >> ios/Flutter/Release.xcconfig
+          echo "CODE_SIGNING_REQUIRED=NO" >> ios/Flutter/Release.xcconfig
+          echo "CODE_SIGN_IDENTITY=" >> ios/Flutter/Release.xcconfig
+          echo "EXPANDED_CODE_SIGN_IDENTITY=" >> ios/Flutter/Release.xcconfig
+
+          # 2. Install CocoaPods dependencies
           cd ios
           pod install
           cd ..
           
-          # 4. Generate AOT (ignore code sign errors)
-          flutter build ios --release --no-codesign || true
-          
-          # 5. Native Xcode Build (Force signing disabled)
-          cd ios
-          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build
-          cd ..
+          # 3. Build Release iOS app without code signing
+          flutter build ios --release --no-codesign
+
+          # 4. Fallback Native Xcode Build if needed
+          if [ ! -d "build/ios/iphoneos/Runner.app" ]; then
+            cd ios
+            xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos -destination generic/platform=iOS CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="A1B2C3D4E5" build
+            cd ..
+          fi
+
 
       - name: Install ldid
         env:
