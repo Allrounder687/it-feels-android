@@ -18,6 +18,7 @@ class MusicApiService {
   final Map<String, dynamic> _homepageCache = {};
   final Map<String, dynamic> _playlistCache = {};
   final Map<String, dynamic> _albumCache = {};
+  final Map<String, String> _streamUrlCache = {};
   static const Duration _cacheDuration = Duration(minutes: 10);
   DateTime _homepageCacheExpiry = DateTime.now();
   final Map<String, DateTime> _playlistCacheExpiries = {};
@@ -401,13 +402,29 @@ class MusicApiService {
     }
   }
 
+  /// Preload stream URL into cache asynchronously
+  Future<void> preloadStreamUrl(Song song) async {
+    if (song.id.isEmpty || _streamUrlCache.containsKey(song.id)) return;
+    try {
+      final url = await getStreamUrl(song);
+      if (url != null) {
+        _streamUrlCache[song.id] = url;
+      }
+    } catch (_) {}
+  }
+
   /// Resolve streamable 320kbps audio URL for a song
   Future<String?> getStreamUrl(Song song, {Function(String message)? onError}) async {
+    if (_streamUrlCache.containsKey(song.id)) {
+      return _streamUrlCache[song.id];
+    }
+
     try {
       // 0. Try Backend Proxy API if enabled
       if (BackendApiService.useProxyBackend) {
         final proxyStreamUrl = await BackendApiService.getStreamUrl(song);
         if (proxyStreamUrl != null && proxyStreamUrl.isNotEmpty) {
+          _streamUrlCache[song.id] = proxyStreamUrl;
           return proxyStreamUrl;
         }
       }
@@ -444,6 +461,7 @@ class MusicApiService {
       final finalUrl = DesDecryptor.get320kbpsUrl(decrypted);
 
       if (finalUrl != null) {
+        _streamUrlCache[song.id] = finalUrl;
         return finalUrl;
       }
     } catch (e) {

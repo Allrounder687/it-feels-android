@@ -31,6 +31,7 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - **Lifetime Coupon "FAMILY":** Added special coupon code `FAMILY` to instantly unlock lifetime premium entitlements.
 - **Tablet Video Aspect Ratio:** Fixed iPad/Android tablet video container rendering by wrapping video stream in responsive `AspectRatio(16/9)`.
 - **In-Memory Lyrics Caching & Queue Preloading:** Integrated an in-memory `_lyricsCache` in `LyricsService` and added queue preloading in `AudioPlayerProvider` to pre-fetch lyrics for current and upcoming tracks in the queue, achieving instant (0ms) lyrics loading.
+- **3-Song Stream & Lyrics Auto-Preloader:** Wired `currentIndexStream` in `AudioPlayerProvider` and added `_streamUrlCache` to `MusicApiService` to automatically pre-resolve stream URLs and lyrics for the next 3 songs in queue whenever a track starts or auto-advances naturally.
 - **Data Saver Mode:** Added a dedicated **Data Saver Mode** setting in `SettingsProvider` and `SettingsScreen` that forces 64kbps audio streaming quality and automatically downsamples image URL requests (from 500x500 to 150x150) to reduce network bandwidth usage by up to 80%.
 ### Fixed
 - **iOS Google Sign-In Crash:** Fixed a crash on iOS by properly configuring the `CFBundleURLTypes` and `REVERSED_CLIENT_ID` inside `ios/Runner/Info.plist`.

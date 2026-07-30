@@ -538,12 +538,24 @@ class AudioPlayerProvider extends ChangeNotifier {
         notifyListeners();
       }
     });
+
+    audioHandler.player.currentIndexStream.listen((idx) {
+      if (idx != null && idx >= 0 && idx < _queue.length) {
+        if (_currentIndex != idx) {
+          _currentIndex = idx;
+          _currentSong = _queue[idx];
+          _hasSentTelemetryForCurrentSong = false;
+          _preloadQueueLyricsAndMedia();
+          notifyListeners();
+        }
+      }
+    });
   }
 
   Future<void> playSong(Song song, {List<Song>? queue, int index = 0, BuildContext? context}) async {
     _currentSong = song;
     _hasSentTelemetryForCurrentSong = false;
-    _preloadQueueLyrics();
+    _preloadQueueLyricsAndMedia();
 
     if (queue != null && queue.isNotEmpty) {
       _queue = List.from(queue);
@@ -852,16 +864,18 @@ class AudioPlayerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _preloadQueueLyrics() {
+  void _preloadQueueLyricsAndMedia() {
     if (_currentSong != null) {
       _lyricsService.preloadLyrics(_currentSong!);
     }
     if (_queue.isNotEmpty && _currentIndex >= 0) {
-      if (_currentIndex + 1 < _queue.length) {
-        _lyricsService.preloadLyrics(_queue[_currentIndex + 1]);
-      }
-      if (_currentIndex + 2 < _queue.length) {
-        _lyricsService.preloadLyrics(_queue[_currentIndex + 2]);
+      for (int offset = 1; offset <= 3; offset++) {
+        final idx = _currentIndex + offset;
+        if (idx < _queue.length) {
+          final nextSong = _queue[idx];
+          _lyricsService.preloadLyrics(nextSong);
+          apiService.preloadStreamUrl(nextSong);
+        }
       }
     }
   }
