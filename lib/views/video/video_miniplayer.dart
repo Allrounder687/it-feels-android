@@ -13,16 +13,20 @@ class VideoMiniplayer extends StatelessWidget {
     final videoProvider = Provider.of<VideoPlayerProvider>(context);
 
     if (!videoProvider.isVideoActive) {
+      return const SizedBox.shrink();
+    }
+
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     
+    final maxHeight = MediaQuery.of(context).size.height;
     final minHeight = isLandscape 
-        ? MediaQuery.of(context).size.height
+        ? maxHeight - 1.0 
         : 80.0 + MediaQuery.of(context).padding.bottom + 80.0; // Above bottom nav
 
     return Miniplayer(
       controller: videoProvider.miniplayerController,
       minHeight: minHeight,
-      maxHeight: MediaQuery.of(context).size.height,
+      maxHeight: maxHeight,
       builder: (height, percentage) {
         final isMinimized = percentage < 0.2 && !isLandscape;
 
@@ -55,16 +59,20 @@ class VideoMiniplayer extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w500),
                     ),
                   ),
-                  IconButton(
-                    icon: Icon((videoProvider.videoController?.value.isPlaying ?? false) ? Icons.pause : Icons.play_arrow),
-                    onPressed: () {
-                      if (videoProvider.videoController != null) {
-                        videoProvider.videoController!.value.isPlaying
-                            ? videoProvider.videoController!.pause()
-                            : videoProvider.videoController!.play();
-                      }
-                    },
-                  ),
+                  if (videoProvider.videoController != null)
+                    ValueListenableBuilder<VideoPlayerValue>(
+                      valueListenable: videoProvider.videoController!,
+                      builder: (context, value, child) {
+                        return IconButton(
+                          icon: Icon(value.isPlaying ? Icons.pause : Icons.play_arrow),
+                          onPressed: () {
+                            value.isPlaying
+                                ? videoProvider.videoController!.pause()
+                                : videoProvider.videoController!.play();
+                          },
+                        );
+                      },
+                    ),
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: () => videoProvider.closeVideo(),

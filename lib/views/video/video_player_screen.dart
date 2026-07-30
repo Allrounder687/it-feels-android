@@ -32,6 +32,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
   double? _dragStartY;
   
   @override
+  void initState() {
+    super.initState();
+    _startHideTimer();
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _isFullscreen = MediaQuery.of(context).orientation == Orientation.landscape;

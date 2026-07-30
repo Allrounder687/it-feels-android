@@ -300,13 +300,17 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
                 children: screens,
               ),
 
+              // Video Miniplayer Overlay (Behind the Bottom Nav Bar)
+              const VideoMiniplayer(),
+
               // Floating MiniPlayer + Bottom Navigation Bar Overlay
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: SafeArea(
-                  bottom: true,
+              if (MediaQuery.of(context).orientation == Orientation.portrait)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: SafeArea(
+                    bottom: true,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -315,6 +319,9 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
                       
                       // Mini Player Pill
                       MiniPlayer(onTap: _openFullPlayer),
+      
+                      // We moved VideoMiniplayer behind the Bottom Nav in the stack
+                      // so the tabs are tappable and overlay the transparent part of PiP.
       
                       // Floating Bottom Navigation Bar Pill Container
                       ClipRRect(
@@ -351,8 +358,6 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
                   ),
                 ),
               ),
-              // Video Miniplayer Overlay (Highest Z-Index)
-              const VideoMiniplayer(),
             ],
           );
         },
