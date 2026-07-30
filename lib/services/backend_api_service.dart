@@ -205,10 +205,15 @@ class BackendApiService {
     } catch (_) {}
   }
 
-  /// Fetch MP4 Video Streams with Age Restriction Bypass
-  static Future<Map<String, dynamic>> getVideoStreams(String videoId, {String? query}) async {
+  /// Clear cached streams for a specific video ID
+  static void clearVideoStreamCache(String videoId) {
+    _videoStreamCache.removeWhere((key, value) => key.startsWith('$videoId|'));
+  }
+
+  /// Get Video Streams
+  static Future<Map<String, dynamic>> getVideoStreams(String videoId, {String? query, bool bypassCache = false}) async {
     final cacheKey = '$videoId|${query ?? ""}';
-    if (_videoStreamCache.containsKey(cacheKey)) {
+    if (!bypassCache && _videoStreamCache.containsKey(cacheKey)) {
       return _videoStreamCache[cacheKey]!;
     }
 

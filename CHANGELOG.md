@@ -47,6 +47,7 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - **8-Character Saavn ID Exception Fix:** Discovered and fixed an edge case where 8-character Saavn IDs (e.g. `_uKO18JI`) were slipping past the YouTube URL validator. Added a strict `cleanId.length != 11` check to guarantee any non-YouTube ID triggers a silent search.
 - **iOS Build Failure:** Bumped `IPHONEOS_DEPLOYMENT_TARGET` to `15.0` in `project.pbxproj` to resolve Firebase SDK minimum version requirements and fix GitHub Action CI failures.
 - **iOS Unsigned GitHub Actions Build:** Fixed GitHub Actions workflow (#30564530892) failure (exit code 65) by configuring `DEVELOPMENT_TEAM` placeholder, `CODE_SIGNING_ALLOWED=NO` overrides in `Release.xcconfig`, `Debug.xcconfig`, `project.pbxproj`, and committing `ios/Podfile` with a `post_install` code signing override hook.
+- **YouTube Expired Stream 403 Auto-Recovery:** Implemented dynamic self-healing in `VideoPlayerProvider` to detect expired YouTube stream signatures (HTTP 403 Forbidden), clear the local cache, fetch fresh video URLs, and resume playback seamlessly.
 ---
 
 ## [2.5.0] - 2026-07-29

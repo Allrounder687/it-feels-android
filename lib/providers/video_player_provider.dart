@@ -24,6 +24,7 @@ class VideoPlayerProvider extends ChangeNotifier {
 
   double _volume = 0.5;
   double _brightness = 0.5;
+  bool _isRecovering = false;
 
   VideoPlayerProvider() {
     _initSystemControls();
@@ -145,7 +146,26 @@ class VideoPlayerProvider extends ChangeNotifier {
         'Connection': 'keep-alive',
       },
     );
-    await videoController!.initialize();
+    
+    try {
+      await videoController!.initialize();
+    } catch (e) {
+      debugPrint('[VideoPlayerProvider] Error initializing video stream: $e');
+      if (e.toString().contains('403') || e.toString().contains('Response code: 403')) {
+        await _handleVideoPlaybackError(previousPosition, wasPlaying);
+        return;
+      }
+    }
+
+    videoController!.addListener(() {
+      if (videoController != null && videoController!.value.hasError) {
+        final err = videoController!.value.errorDescription;
+        if (err != null && (err.contains('403') || err.contains('Response code: 403'))) {
+          _handleVideoPlaybackError(videoController!.value.position, videoController!.value.isPlaying);
+        }
+      }
+    });
+
     await videoController!.setVolume(isMuted ? 0.0 : 1.0);
     
     if (previousPosition != Duration.zero) {
@@ -159,6 +179,28 @@ class VideoPlayerProvider extends ChangeNotifier {
     isLoading = false;
     notifyListeners();
     onVideoStarted?.call();
+  }
+
+  /// Self-healing auto recovery for expired stream links (403 Forbidden)
+  Future<void> _handleVideoPlaybackError(Duration position, bool wasPlaying) async {
+    if (_isRecovering) return;
+    _isRecovering = true;
+    
+    debugPrint('[VideoPlayerProvider] Expired stream (403 Forbidden) detected. Auto-recovering URL...');
+    try {
+      BackendApiService.clearVideoStreamCache(currentVideoId);
+      final freshData = await BackendApiService.getVideoStreams(currentVideoId, bypassCache: true);
+      streams = List<Map<String, dynamic>>.from(freshData['streams'] ?? []);
+      
+      if (streams.isNotEmpty) {
+        _isRecovering = false;
+        await _initializeStreamForQuality(selectedQuality, startPosition: position);
+      }
+    } catch (e) {
+      debugPrint('[VideoPlayerProvider] Auto-recovery failed: $e');
+    } finally {
+      _isRecovering = false;
+    }
   }
 
   /// Change video quality
