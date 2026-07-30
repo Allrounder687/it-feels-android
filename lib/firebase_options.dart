@@ -46,6 +46,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '871513419979',
     projectId: 'it-feels',
     authDomain: 'it-feels.firebaseapp.com',
+    databaseURL: 'https://it-feels-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'it-feels.firebasestorage.app',
     measurementId: 'G-3V8VKQK10M',
   );
@@ -55,6 +56,7 @@ class DefaultFirebaseOptions {
     appId: '1:871513419979:android:09cf99d8f828f51edcab4e',
     messagingSenderId: '871513419979',
     projectId: 'it-feels',
+    databaseURL: 'https://it-feels-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'it-feels.firebasestorage.app',
   );
 
@@ -63,6 +65,7 @@ class DefaultFirebaseOptions {
     appId: '1:871513419979:ios:4e2edbe14ef3f5cbdcab4e',
     messagingSenderId: '871513419979',
     projectId: 'it-feels',
+    databaseURL: 'https://it-feels-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'it-feels.firebasestorage.app',
     iosClientId: '871513419979-0116coptppjehfnkjeogq5s4bmdv7184.apps.googleusercontent.com',
     iosBundleId: 'com.itfeels.music',
@@ -73,6 +76,7 @@ class DefaultFirebaseOptions {
     appId: '1:871513419979:ios:2c1d2929c216f080dcab4e',
     messagingSenderId: '871513419979',
     projectId: 'it-feels',
+    databaseURL: 'https://it-feels-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'it-feels.firebasestorage.app',
     iosClientId: '871513419979-iue97ao88vmd7eqbjmvb8sc585ollhqj.apps.googleusercontent.com',
     iosBundleId: 'com.pixelplayer.saavn.pixelPlayerSaavn',
@@ -84,6 +88,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '871513419979',
     projectId: 'it-feels',
     authDomain: 'it-feels.firebaseapp.com',
+    databaseURL: 'https://it-feels-default-rtdb.asia-southeast1.firebasedatabase.app',
     storageBucket: 'it-feels.firebasestorage.app',
     measurementId: 'G-FWN1NHL61X',
   );

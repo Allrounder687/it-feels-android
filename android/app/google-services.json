@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "871513419979",
+    "firebase_url": "https://it-feels-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "it-feels",
     "storage_bucket": "it-feels.firebasestorage.app"
   },
@@ -13,6 +14,14 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "871513419979-s079nt05u3k3eotgavp4ksf0hl4hclr7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.itfeels.music",
+            "certificate_hash": "ddd5e6a2a0bc5f50895e5bb934c5e591a0f3aac3"
+          }
+        },
         {
           "client_id": "871513419979-dvkqt7sue206nbhl02igldnpl51cffig.apps.googleusercontent.com",
           "client_type": 3
@@ -29,6 +38,13 @@
             {
               "client_id": "871513419979-dvkqt7sue206nbhl02igldnpl51cffig.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "871513419979-0116coptppjehfnkjeogq5s4bmdv7184.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.itfeels.music"
+              }
             }
           ]
         }
