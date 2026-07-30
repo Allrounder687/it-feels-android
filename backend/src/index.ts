@@ -22,6 +22,50 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Enable CORS for mobile app access
 app.use('*', cors());
 
+// Root Landing Page (Satisfies Razorpay "Business Website" requirement)
+app.get('/', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>IT Feels Music - Download App</title>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f0f13; color: white; text-align: center; padding: 50px; }
+        .container { max-width: 600px; margin: 0 auto; background: #1a1a20; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { color: #fff; margin-bottom: 10px; font-size: 2.5em; }
+        p { color: #aaa; margin-bottom: 30px; font-size: 1.1em; line-height: 1.6; }
+        a.download-btn { display: inline-block; background-color: #ff3b30; color: white; padding: 15px 30px; text-decoration: none; border-radius: 30px; font-weight: bold; font-size: 1.2em; transition: 0.3s; }
+        a.download-btn:hover { background-color: #ff453a; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255, 59, 48, 0.4); }
+        .footer { margin-top: 40px; font-size: 0.9em; color: #666; }
+        .footer a { color: #888; text-decoration: none; margin: 0 10px; }
+        .footer a:hover { color: #fff; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>IT Feels Music</h1>
+        <p>The ultimate ad-free, high-res music streaming experience. Sync your vibes, connect with friends, and discover new tracks daily.</p>
+        <a href="https://drive.google.com/file/d/16vBse2q81ZKg_YY50Dw7IDUeNSnMpRao/view" class="download-btn" target="_blank">Download for Android</a>
+        
+        <div class="footer">
+          <p>© 2026 IT Feels Music. All rights reserved.</p>
+          <p>
+            <a href="/privacy">Privacy Policy</a> | 
+            <a href="/terms">Terms of Service</a>
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
+// Basic Privacy & Terms Pages for KYC
+app.get('/privacy', (c) => c.html('<body style="background:#0f0f13;color:white;font-family:sans-serif;padding:40px;max-width:800px;margin:auto;"><h1>Privacy Policy</h1><p>We respect your privacy. No data is sold to third parties.</p></body>'));
+app.get('/terms', (c) => c.html('<body style="background:#0f0f13;color:white;font-family:sans-serif;padding:40px;max-width:800px;margin:auto;"><h1>Terms of Service</h1><p>By using IT Feels, you agree to play good music.</p></body>'));
+
 // API Security Middleware
 app.use('/api/*', async (c, next) => {
   const secret = c.req.header('X-Feels-Secret');
@@ -505,7 +549,7 @@ app.post('/api/v1/email/welcome', async (c) => {
 
     if (!res.ok) {
       const errorText = await res.text();
-      throw new Error(\`Resend API error: \${res.status} \${errorText}\`);
+      throw new Error(`Resend API error: ${res.status} ${errorText}`);
     }
 
     const data = await res.json();

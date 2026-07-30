@@ -109,8 +109,26 @@ class SubscriptionService {
   }
 
   Future<bool> redeemCustomCoupon(String uid, String code) async {
+    final cleanCode = code.trim().toUpperCase();
+    
+    // Special Lifetime Coupon "FAMILY"
+    if (cleanCode == 'FAMILY') {
+      try {
+        final expiresAt = DateTime.now().add(const Duration(days: 36500)); // Lifetime
+        await _firestore.collection('users').doc(uid).collection('entitlements').doc('premium').set({
+          'isActive': true,
+          'expiresAt': Timestamp.fromDate(expiresAt),
+          'grantedBy': 'FAMILY',
+        });
+        return true;
+      } catch (e) {
+        debugPrint("Error granting FAMILY coupon: $e");
+        return false;
+      }
+    }
+
     try {
-      final couponQuery = await _firestore.collection('coupons').where('code', isEqualTo: code).limit(1).get();
+      final couponQuery = await _firestore.collection('coupons').where('code', isEqualTo: cleanCode).limit(1).get();
       if (couponQuery.docs.isEmpty) return false;
 
       final coupon = couponQuery.docs.first;
@@ -122,7 +140,7 @@ class SubscriptionService {
       await _firestore.collection('users').doc(uid).collection('entitlements').doc('premium').set({
         'isActive': true,
         'expiresAt': Timestamp.fromDate(expiresAt),
-        'grantedBy': code,
+        'grantedBy': cleanCode,
       });
       return true;
     } catch (e) {

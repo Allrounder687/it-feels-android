@@ -10,8 +10,7 @@ class RazorpayService {
   final Razorpay _razorpay = Razorpay();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
-  // TODO: Replace with your actual backend URL where the Cloudflare Proxy is hosted
-  static const String _backendUrl = 'https://api.your-cloudflare-worker.workers.dev';
+  static const String _backendUrl = 'https://it-feels-proxy.cleverfox687.workers.dev';
   
   Completer<bool>? _paymentCompleter;
   int _pendingDurationDays = 30;
@@ -54,7 +53,7 @@ class RazorpayService {
 
       // 2. Open Razorpay Checkout
       var options = {
-        'key': 'rzp_test_placeholder', // TODO: Add public key or fetch from backend
+        'key': 'rzp_test_TJlcmhW8KS7SsX', // Test Key
         'amount': amountInRupees * 100,
         'name': 'IT Feels Music Premium',
         'order_id': orderId,

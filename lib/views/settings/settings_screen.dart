@@ -98,6 +98,27 @@ class SettingsScreen extends StatelessWidget {
                   );
                 },
               ),
+              SwitchListTile.adaptive(
+                title: Text(
+                  "Use Video Audio Source",
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    color: context.themeTextColor,
+                  ),
+                ),
+                subtitle: Text(
+                  settings.useVideoAudioSource
+                      ? "Switches audio to YouTube video stream in Video mode"
+                      : "Keeps high-quality music player audio playing during Video mode",
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: context.themeMutedTextColor,
+                  ),
+                ),
+                value: settings.useVideoAudioSource,
+                activeColor: context.themeAccentColor,
+                onChanged: (val) => settings.setUseVideoAudioSource(val),
+              ),
 
               const SizedBox(height: 24),
 

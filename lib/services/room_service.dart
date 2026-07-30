@@ -16,6 +16,7 @@ class RoomService {
   Future<String> createRoom(String hostId, Song currentSong, Duration position, bool isPlaying) async {
     final roomId = _generateRoomCode();
     final roomRef = _rtdb.ref('rooms/$roomId');
+    await roomRef.keepSynced(true);
     
     await roomRef.set({
       'hostId': hostId,
@@ -47,7 +48,9 @@ class RoomService {
 
   // Listen to room state (called by guests)
   Stream<DatabaseEvent> listenToRoom(String roomId) {
-    return _rtdb.ref('rooms/$roomId').onValue;
+    final ref = _rtdb.ref('rooms/$roomId');
+    ref.keepSynced(true);
+    return ref.onValue;
   }
 
   // End room

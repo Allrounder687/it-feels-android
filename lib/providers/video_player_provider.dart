@@ -11,6 +11,7 @@ class VideoPlayerProvider extends ChangeNotifier {
   
   bool isVideoActive = false;
   bool isLoading = false;
+  bool isMuted = false;
   
   String currentVideoId = '';
   String currentTitle = '';
@@ -140,6 +141,7 @@ class VideoPlayerProvider extends ChangeNotifier {
       },
     );
     await videoController!.initialize();
+    await videoController!.setVolume(isMuted ? 0.0 : 1.0);
     
     if (previousPosition != Duration.zero) {
       await videoController!.seekTo(previousPosition);
@@ -192,6 +194,12 @@ class VideoPlayerProvider extends ChangeNotifier {
     videoController?.pause();
     videoController?.dispose();
     videoController = null;
+    notifyListeners();
+  }
+
+  void setMuted(bool mute) {
+    isMuted = mute;
+    videoController?.setVolume(mute ? 0.0 : 1.0);
     notifyListeners();
   }
 

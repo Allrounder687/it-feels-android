@@ -23,6 +23,13 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - **Custom Coupon Engine:** Built a Firestore-backed custom promo code redemption system allowing admins to issue custom string coupons (e.g., "FEELSFREE") that override local `isPremium` states.
 - **Push Notifications (FCM):** Configured `firebase_messaging` with a new `NotificationService` that handles permission requests, background handlers, and securely stores APNs/FCM tokens in the user's Firestore document.
 - **Transactional Emails:** Expanded the Cloudflare Proxy Engine (`backend/src/index.ts`) with a lightweight `/api/v1/send-email` endpoint using Resend's REST API to facilitate onboarding and receipt emails without inflating the client binary.
+- **Listen Together Auth & State Notices:** Added clear user feedback in `RoomBottomSheet` informing users if they need to log in or start playing a song before broadcasting.
+- **Listen Together Background Sync (`keepSynced`):** Enabled `keepSynced(true)` on Firebase RTDB room references so guest phones remain synchronized in real-time even when locked or minimized in the background.
+- **Hybrid High-Quality Audio in Video Mode:** Retained 320kbps/FLAC music player audio when switching to Video mode by default while muting video player audio. Added "Use Video Audio Source" toggle setting in Settings.
+- **Lyrics Mid-Song Auto-Scroll:** Implemented automatic scrolling to active lyric line upon opening `LyricsScreen` mid-song.
+- **Seamless Lyrics Font Cycling:** Transformed font selection button into a direct touch handler (`cycleFont()`) that cycles fonts cleanly without toasts or popups.
+- **Lifetime Coupon "FAMILY":** Added special coupon code `FAMILY` to instantly unlock lifetime premium entitlements.
+- **Tablet Video Aspect Ratio:** Fixed iPad/Android tablet video container rendering by wrapping video stream in responsive `AspectRatio(16/9)`.
 ### Fixed
 - **iOS Google Sign-In Crash:** Fixed a crash on iOS by properly configuring the `CFBundleURLTypes` and `REVERSED_CLIENT_ID` inside `ios/Runner/Info.plist`.
 - **Listen Together Infinite Loading:** Resolved an issue where creating or joining a room would spin infinitely on Android and iOS due to hanging Firebase RTDB operations by implementing network timeouts and strict try/catch error boundaries in the UI.

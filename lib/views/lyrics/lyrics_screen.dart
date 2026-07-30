@@ -11,8 +11,26 @@ import '../widgets/wavy_seek_bar.dart';
 import 'lyrics_share_dialog.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
-class LyricsScreen extends StatelessWidget {
+class LyricsScreen extends StatefulWidget {
   const LyricsScreen({super.key});
+
+  @override
+  State<LyricsScreen> createState() => _LyricsScreenState();
+}
+
+class _LyricsScreenState extends State<LyricsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final lyricsProvider = Provider.of<LyricsProvider>(context, listen: false);
+      final playerProvider = Provider.of<AudioPlayerProvider>(context, listen: false);
+      if (playerProvider.currentSong != null) {
+        lyricsProvider.loadLyricsIfNeeded(playerProvider.currentSong!, playerProvider.position);
+        lyricsProvider.scrollToActiveIndex(force: true);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,8 +123,8 @@ class LyricsScreen extends StatelessWidget {
                         ),
                       ),
 
-                      // Font Selector Popup Menu
-                      PopupMenuButton<String>(
+                      // Font Selector Button (Cycle Fonts directly upon pressing without popups or toasts)
+                      IconButton(
                         icon: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: const BoxDecoration(
@@ -115,25 +133,7 @@ class LyricsScreen extends StatelessWidget {
                           ),
                           child: Icon(Icons.text_fields, color: context.themeTextColor, size: 20),
                         ),
-                        onSelected: (font) => lyricsProvider.setFontFamily(font),
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'Plus Jakarta Sans',
-                            child: Text('Plus Jakarta Sans (Modern)', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
-                          ),
-                          PopupMenuItem(
-                            value: 'Syne',
-                            child: Text('Syne (Bold Display)', style: GoogleFonts.syne(fontWeight: FontWeight.w700)),
-                          ),
-                          PopupMenuItem(
-                            value: 'Space Grotesk',
-                            child: Text('Space Grotesk (Cyber Tech)', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w700)),
-                          ),
-                          PopupMenuItem(
-                            value: 'Outfit',
-                            child: Text('Outfit (Geometric)', style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
-                          ),
-                        ],
+                        onPressed: () => lyricsProvider.cycleFont(),
                       ),
                     ],
                   ),

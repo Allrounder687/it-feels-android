@@ -20,6 +20,7 @@ void main() {
     mockOnDisconnect = MockOnDisconnect();
 
     when(() => mockDb.ref(any())).thenReturn(mockRef);
+    when(() => mockRef.keepSynced(any())).thenAnswer((_) async {});
     when(() => mockRef.onDisconnect()).thenReturn(mockOnDisconnect);
     when(() => mockOnDisconnect.remove()).thenAnswer((_) async {});
 

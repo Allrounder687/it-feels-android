@@ -6,6 +6,7 @@ import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/video_player_provider.dart';
 import '../../providers/subscription_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../paywall/paywall_bottom_sheet.dart';
 import '../lyrics/lyrics_screen.dart';
 import '../room/room_bottom_sheet.dart';
@@ -31,7 +32,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
 
 
 
-  Future<void> _toggleMode(bool toVideo, AudioPlayerProvider audioProvider, VideoPlayerProvider videoProvider) async {
+  Future<void> _toggleMode(bool toVideo, AudioPlayerProvider audioProvider, VideoPlayerProvider videoProvider, SettingsProvider settingsProvider) async {
     if (_isVideoMode == toVideo) return;
     final currentSong = audioProvider.currentSong;
     if (currentSong == null) return;
@@ -43,7 +44,15 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
     if (toVideo) {
       // Switching to video
       final position = audioProvider.position;
-      audioProvider.audioHandler.pause();
+      final useVideoAudio = settingsProvider.useVideoAudioSource;
+      
+      if (useVideoAudio) {
+        audioProvider.audioHandler.pause();
+        videoProvider.setMuted(false);
+      } else {
+        // Keep high quality audio playing from music player!
+        videoProvider.setMuted(true);
+      }
       
       videoProvider.playVideo(
         currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}',
@@ -57,7 +66,9 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
       final position = videoProvider.videoController?.value.position ?? Duration.zero;
       videoProvider.videoController?.pause();
       audioProvider.seek(position);
-      audioProvider.audioHandler.play();
+      if (!audioProvider.isPlaying) {
+        audioProvider.audioHandler.play();
+      }
     }
   }
 
@@ -128,53 +139,58 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                           icon: Icon(Icons.keyboard_arrow_down_rounded, color: context.themeTextColor, size: 32),
                           onPressed: () => Navigator.pop(context),
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: surfaceColor,
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              GestureDetector(
-                                onTap: () => _toggleMode(false, playerProvider, videoProvider),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: !_isVideoMode ? accentColor : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    'Song',
-                                    style: GoogleFonts.inter(
-                                      color: !_isVideoMode ? context.themeInvertedTextColor : context.themeMutedTextColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
+                        Builder(
+                          builder: (context) {
+                            final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+                            return Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: surfaceColor,
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () => _toggleMode(false, playerProvider, videoProvider, settingsProvider),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: !_isVideoMode ? accentColor : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        'Song',
+                                        style: GoogleFonts.inter(
+                                          color: !_isVideoMode ? context.themeInvertedTextColor : context.themeMutedTextColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () => _toggleMode(true, playerProvider, videoProvider),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: _isVideoMode ? accentColor : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    'Video',
-                                    style: GoogleFonts.inter(
-                                      color: _isVideoMode ? context.themeInvertedTextColor : context.themeMutedTextColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
+                                  GestureDetector(
+                                    onTap: () => _toggleMode(true, playerProvider, videoProvider, settingsProvider),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: _isVideoMode ? accentColor : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text(
+                                        'Video',
+                                        style: GoogleFonts.inter(
+                                          color: _isVideoMode ? context.themeInvertedTextColor : context.themeMutedTextColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
                         Row(
                           children: [
@@ -246,24 +262,24 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                         return FadeTransition(opacity: animation, child: child);
                       },
                       child: _isVideoMode 
-                        ? Container(
-                            key: const ValueKey('video_player'),
-                            width: constraints.maxWidth,
-                            height: constraints.maxWidth * (9/16),
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: videoProvider.isLoading 
-                                ? Center(child: CircularProgressIndicator(color: accentColor))
-                                : videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized
-                                  ? AspectRatio(
-                                      aspectRatio: videoProvider.videoController!.value.aspectRatio,
-                                      child: VideoPlayer(videoProvider.videoController!),
-                                    )
-                                  : Center(child: Text('Video unavailable', style: GoogleFonts.inter(color: Colors.white))),
+                        ? AspectRatio(
+                            aspectRatio: (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
+                                ? videoProvider.videoController!.value.aspectRatio
+                                : 16 / 9,
+                            child: Container(
+                              key: const ValueKey('video_player'),
+                              decoration: BoxDecoration(
+                                color: Colors.black,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: videoProvider.isLoading 
+                                  ? Center(child: CircularProgressIndicator(color: accentColor))
+                                  : videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized
+                                    ? VideoPlayer(videoProvider.videoController!)
+                                    : Center(child: Text('Video unavailable', style: GoogleFonts.inter(color: Colors.white))),
+                              ),
                             ),
                           )
                         : Stack(

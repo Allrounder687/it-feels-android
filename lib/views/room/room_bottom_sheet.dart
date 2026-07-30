@@ -124,10 +124,73 @@ class _RoomBottomSheetState extends State<RoomBottomSheet> {
   }
 
   Widget _buildHostView(AudioPlayerProvider audioProvider) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const Icon(Icons.account_circle_outlined, size: 48, color: Colors.amber),
+            const SizedBox(height: 12),
+            const Text(
+              "Account Required",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "For Listen Together to work, users need to be logged in.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (audioProvider.currentSong == null) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const Icon(Icons.music_off_rounded, size: 48, color: Colors.amber),
+            const SizedBox(height: 12),
+            const Text(
+              "No Track Playing",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Play a song first before starting a broadcast room.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            ),
+          ],
+        ),
+      );
+    }
+
     final roomId = audioProvider.currentRoomId;
     
     if (roomId == null) {
-      return const Text("Failed to create room.", style: TextStyle(color: Colors.white));
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const Icon(Icons.error_outline_rounded, size: 48, color: Colors.redAccent),
+            const SizedBox(height: 12),
+            const Text(
+              "Unable to Create Room",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Please check your internet connection and try again.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withOpacity(0.7)),
+            ),
+          ],
+        ),
+      );
     }
 
     return Column(

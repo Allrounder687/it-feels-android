@@ -37,6 +37,20 @@ class LyricsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  static const List<String> availableFonts = [
+    'Plus Jakarta Sans',
+    'Syne',
+    'Space Grotesk',
+    'Outfit',
+  ];
+
+  void cycleFont() {
+    final currentIndex = availableFonts.indexOf(_fontFamily);
+    final nextIndex = (currentIndex + 1) % availableFonts.length;
+    _fontFamily = availableFonts[nextIndex];
+    notifyListeners();
+  }
+
   void setFontFamily(String font) {
     _fontFamily = font;
     notifyListeners();
@@ -77,18 +91,20 @@ class LyricsProvider extends ChangeNotifier {
         _activeIndex = newIndex;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           notifyListeners();
+          scrollToActiveIndex();
         });
-
-        // Autoscroll to active line
-        if (_itemScrollController.isAttached && _activeIndex >= 0) {
-          _itemScrollController.scrollTo(
-            index: _activeIndex,
-            alignment: 0.5,
-            duration: const Duration(milliseconds: 400),
-            curve: Curves.easeOutCubic,
-          );
-        }
       }
+    }
+  }
+
+  void scrollToActiveIndex({bool force = false}) {
+    if (_itemScrollController.isAttached && _activeIndex >= 0) {
+      _itemScrollController.scrollTo(
+        index: _activeIndex,
+        alignment: 0.5,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+      );
     }
   }
 

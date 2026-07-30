@@ -70,6 +70,7 @@ class AudioPlayerProvider extends ChangeNotifier {
   String? _currentRoomId;
   bool _isHost = false;
   StreamSubscription<DatabaseEvent>? _roomSubscription;
+  int _lastSyncedSecond = -1;
 
   String? get currentRoomId => _currentRoomId;
   bool get isHost => _isHost;
@@ -520,8 +521,9 @@ class AudioPlayerProvider extends ChangeNotifier {
         BackendApiService.sendTelemetryPlay(_currentSong!);
       }
 
-      // Sync Host position every few seconds
-      if (_currentRoomId != null && _isHost && _currentSong != null && _isPlaying && pos.inSeconds % 5 == 0) {
+      // Sync Host position every 5 seconds
+      if (_currentRoomId != null && _isHost && _currentSong != null && _isPlaying && pos.inSeconds % 5 == 0 && _lastSyncedSecond != pos.inSeconds) {
+        _lastSyncedSecond = pos.inSeconds;
         _roomService.updateRoomState(_currentRoomId!, _currentSong!.id, pos, _isPlaying);
       }
 

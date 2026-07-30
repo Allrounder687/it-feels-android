@@ -14,6 +14,7 @@ class SettingsProvider extends ChangeNotifier {
   bool _useProxyBackend = false;
   String _proxyUrl = 'https://it-feels-proxy.cleverfox687.workers.dev';
   bool _enableMusicVideos = false;
+  bool _useVideoAudioSource = false; // Default: keep high quality audio from music player when in video mode
 
   SettingsProvider() {
     _loadSettings();
@@ -30,6 +31,7 @@ class SettingsProvider extends ChangeNotifier {
   bool get useProxyBackend => _useProxyBackend;
   String get proxyUrl => _proxyUrl;
   bool get enableMusicVideos => _enableMusicVideos;
+  bool get useVideoAudioSource => _useVideoAudioSource;
 
   Future<void> _loadSettings() async {
     final settings = await StorageService.loadSettings();
@@ -43,6 +45,7 @@ class SettingsProvider extends ChangeNotifier {
     _useProxyBackend = settings['useProxyBackend'] == true;
     _proxyUrl = settings['proxyUrl'] ?? _proxyUrl;
     _enableMusicVideos = settings['enableMusicVideos'] == true;
+    _useVideoAudioSource = settings['useVideoAudioSource'] == true;
     
     BackendApiService.useProxyBackend = _useProxyBackend;
     BackendApiService.baseUrl = _proxyUrl;
@@ -109,19 +112,25 @@ class SettingsProvider extends ChangeNotifier {
     _save();
   }
 
-  void _save() {
-    StorageService.saveSettings(
-      wifiQuality: _wifiQuality,
-      mobileQuality: _mobileQuality,
-      downloadQuality: _downloadQuality,
-      theme: _theme,
-      customDownloadPath: _customDownloadPath,
-      enableAndroidAuto: _enableAndroidAuto,
-      hapticsMode: _hapticsMode,
-      useProxyBackend: _useProxyBackend,
-      proxyUrl: _proxyUrl,
-      enableMusicVideos: _enableMusicVideos,
-    );
+  void setUseVideoAudioSource(bool value) {
+    _useVideoAudioSource = value;
+    _save();
+  }
+
+  Future<void> _save() async {
+    await StorageService.saveSettings({
+      'wifiQuality': _wifiQuality,
+      'mobileQuality': _mobileQuality,
+      'downloadQuality': _downloadQuality,
+      'theme': _theme,
+      'customDownloadPath': _customDownloadPath,
+      'enableAndroidAuto': _enableAndroidAuto,
+      'hapticsMode': _hapticsMode,
+      'useProxyBackend': _useProxyBackend,
+      'proxyUrl': _proxyUrl,
+      'enableMusicVideos': _enableMusicVideos,
+      'useVideoAudioSource': _useVideoAudioSource,
+    });
     notifyListeners();
   }
 }

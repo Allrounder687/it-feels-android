@@ -46,6 +46,16 @@ void main() {
       expect(doc.data()!['grantedBy'], 'FEELS2026');
     });
 
+    test('redeemCustomCoupon FAMILY unlocks lifetime premium without requiring pre-created Firestore doc', () async {
+      final success = await subscriptionService.redeemCustomCoupon('user_family', 'FAMILY');
+      expect(success, isTrue);
+
+      final doc = await fakeFirestore.collection('users').doc('user_family').collection('entitlements').doc('premium').get();
+      expect(doc.exists, isTrue);
+      expect(doc.data()!['isActive'], isTrue);
+      expect(doc.data()!['grantedBy'], 'FAMILY');
+    });
+
     test('checkPremiumStatus returns true if Firestore entitlement is valid', () async {
       // Add a valid entitlement to the user
       final expiresAt = DateTime.now().add(const Duration(days: 10));

@@ -228,7 +228,6 @@ class _PaywallBottomSheetState extends State<PaywallBottomSheet> {
                 )
               ]
             ],
-          ],
         ),
       ),
     );

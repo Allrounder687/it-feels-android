@@ -3,6 +3,11 @@ This file tracks major technical decisions, features implemented, and architectu
 
 ## Latest Agent Iteration
 - **Unified Media Player Architecture:** Replaced the clunky floating Miniplayer package with a unified `NowPlayingScreen` featuring a native YouTube Music-style `[ Song | Video ]` toggle switch.
+- **Listen Together Lock Screen Persistence & Clear Notices:** Added `keepSynced(true)` to Firebase Realtime Database room references for seamless background/lock-screen sync. Added user notices for auth and active track states.
+- **Hybrid High-Quality Sound in Video Mode:** Retained 320kbps/FLAC music player audio when switching to Video mode by default (muting video audio) with a new toggle in Settings ("Use Video Audio Source").
+- **Mid-Song Lyrics Auto-Scroll & Seamless Font Cycling:** Added immediate auto-scrolling to current track line on lyrics screen open, and updated font selection to cycle smoothly without popups or toasts.
+- **Lifetime Coupon "FAMILY":** Configured special coupon `FAMILY` to instantly grant lifetime premium status.
+- **Tablet Video Aspect Ratio Fix:** Wrapped wide layout video player in responsive `AspectRatio(16/9)` container for iPads and Android tablets.
 - **Fast-Resume & Hardware Decoder Fix:** Implemented a highly optimized `ValueListenableBuilder` pipeline to instantly swap between audio and video modes without destroying native Android `VideoPlayerController` buffers, permanently eliminating `I/CCodecConfig (BAD_INDEX)` crashes and 60fps seekbar freezing.
 - **Robust Edge Fallbacks:** Hardened `BackendApiService` with client-side `youtube_explode_dart` search fallbacks, enforcing strict 11-character constraints to automatically bypass Saavn IDs and automatically appending "official music video" to YouTube search queries.
 - **Cloudflare Edge Acceleration:** Deployed Phase 1 Cloudflare Worker enhancements including KV caching for zero-latency multi-source searches and lyrics lookups, a dynamic Image Proxy cache for CDN acceleration, and robust API Abuse Prevention via the `X-Feels-Secret` HTTP header.
