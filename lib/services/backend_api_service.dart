@@ -235,6 +235,17 @@ class BackendApiService {
     }
 
     try {
+      // FAST PATH: If we have the 4K yt-dlp Render proxy configured, use it IMMEDIATELY.
+      // This bypasses the 8-second wait for the Cloudflare worker, giving instant 4K playback.
+      if (ytDlpBackendUrl.isNotEmpty) {
+        final ytDlpData = await _fetchFromYtDlpBackend(actualVideoId);
+        if (ytDlpData['streams'] != null && (ytDlpData['streams'] as List).isNotEmpty) {
+          debugPrint('[BackendApiService] Successfully fetched streams directly from Render yt-dlp proxy!');
+          _videoStreamCache[cacheKey] = ytDlpData;
+          return ytDlpData;
+        }
+      }
+
       final queryParams = <String, String>{};
       if (actualVideoId.isNotEmpty && !actualVideoId.startsWith('search:')) {
         queryParams['id'] = actualVideoId;
@@ -247,7 +258,7 @@ class BackendApiService {
       }
 
       final uri = Uri.parse('$baseUrl/api/v1/video').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
+      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 45));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List streamsList = data['streams'] ?? [];
@@ -278,16 +289,31 @@ class BackendApiService {
   
   static Future<Map<String, dynamic>> _fetchFromYtDlpBackend(String videoId) async {
     if (ytDlpBackendUrl.isEmpty) return {'title': 'Music Video', 'streams': []};
-    try {
-      final cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
-      final uri = Uri.parse('$ytDlpBackendUrl/api/streams?videoId=$cleanId');
-      final response = await http.get(uri).timeout(const Duration(seconds: 15));
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
+    
+    final cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
+    final uri = Uri.parse('$ytDlpBackendUrl/api/streams?videoId=$cleanId');
+    
+    int retries = 3;
+    int delaySeconds = 5;
+    
+    for (int i = 0; i < retries; i++) {
+      try {
+        final response = await http.get(uri).timeout(const Duration(seconds: 60));
+        if (response.statusCode == 200) {
+          return json.decode(response.body);
+        } else {
+          debugPrint('[BackendApiService] yt-dlp backend non-200 response: ${response.statusCode}');
+        }
+      } catch (e) {
+        debugPrint('[BackendApiService] yt-dlp backend error (attempt ${i+1}/$retries): $e');
+        if (i < retries - 1) {
+          await Future.delayed(Duration(seconds: delaySeconds));
+          delaySeconds *= 2; // Exponential backoff: 5s, 10s, 20s
+          continue;
+        }
       }
-    } catch (e) {
-      debugPrint('[BackendApiService] yt-dlp backend error: $e');
     }
+    
     return {'title': 'Music Video', 'streams': []};
   }
 
