@@ -15,6 +15,8 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - **Auth Unit Tests:** Built 7 comprehensive Mocktail unit tests in `auth_provider_test.dart` to verify the state machine mathematically.
 - **Firebase Core Initialization:** Configured `flutterfire_cli` across all 5 desktop and mobile platforms (Android, iOS, macOS, Windows, Web) in preparation for Realtime Database syncing and Cloud Firestore.
 
+### Fixed
+- **iOS Build Failure:** Bumped `IPHONEOS_DEPLOYMENT_TARGET` to `15.0` in `project.pbxproj` to resolve Firebase SDK minimum version requirements and fix GitHub Action CI failures.
 ---
 
 ## [2.5.0] - 2026-07-29
