@@ -865,6 +865,7 @@ class AudioPlayerProvider extends ChangeNotifier {
   void _preloadQueueLyricsAndMedia() {
     if (_currentSong != null) {
       _lyricsService.preloadLyrics(_currentSong!);
+      BackendApiService.preloadVideoStreams(_currentSong!);
     }
     if (_queue.isNotEmpty && _currentIndex >= 0) {
       for (int offset = 1; offset <= 3; offset++) {
@@ -873,6 +874,9 @@ class AudioPlayerProvider extends ChangeNotifier {
           final nextSong = _queue[idx];
           _lyricsService.preloadLyrics(nextSong);
           apiService.preloadStreamUrl(nextSong);
+          if (offset <= 2) {
+            BackendApiService.preloadVideoStreams(nextSong);
+          }
         }
       }
     }

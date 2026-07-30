@@ -9,6 +9,7 @@ class BackendApiService {
   // Configurable proxy base URL (defaults to user's live Cloudflare Worker URL)
   static String baseUrl = 'https://it-feels-proxy.cleverfox687.workers.dev'; 
   static bool useProxyBackend = false; // Toggle to switch between direct & proxy mode
+  static final Map<String, Map<String, dynamic>> _videoStreamCache = {};
 
   static const Map<String, String> _proxyHeaders = {
     'X-Feels-Secret': 'development_secret_123',
@@ -181,8 +182,29 @@ class BackendApiService {
     }
   }
 
+  /// Preload MP4 video stream data for a song
+  static Future<void> preloadVideoStreams(Song song) async {
+    if (song.id.isEmpty) return;
+    final videoId = song.id.contains(':') ? song.id : 'search:${song.id}';
+    final query = '${song.title} ${song.artist} official music video';
+    final cacheKey = '$videoId|$query';
+    if (_videoStreamCache.containsKey(cacheKey)) return;
+
+    try {
+      final result = await getVideoStreams(videoId, query: query);
+      if (result.isNotEmpty && result['streams'] != null && (result['streams'] as List).isNotEmpty) {
+        _videoStreamCache[cacheKey] = result;
+      }
+    } catch (_) {}
+  }
+
   /// Fetch MP4 Video Streams with Age Restriction Bypass
   static Future<Map<String, dynamic>> getVideoStreams(String videoId, {String? query}) async {
+    final cacheKey = '$videoId|${query ?? ""}';
+    if (_videoStreamCache.containsKey(cacheKey)) {
+      return _videoStreamCache[cacheKey]!;
+    }
+
     debugPrint('[BackendApiService] getVideoStreams called with videoId=$videoId, query=$query');
     String actualVideoId = videoId;
     
@@ -218,11 +240,13 @@ class BackendApiService {
         final data = json.decode(response.body);
         final List streamsList = data['streams'] ?? [];
         if (streamsList.isNotEmpty) {
-          return {
+          final res = {
             'title': data['title'] ?? 'Music Video',
             'streams': streamsList,
             'audioUrl': data['audioUrl'] ?? '',
           };
+          _videoStreamCache[cacheKey] = res;
+          return res;
         }
       }
     } catch (e) {
@@ -230,7 +254,11 @@ class BackendApiService {
     }
     
     // Direct youtube_explode_dart client fallback
-    return _directYoutubeExplodeStreamFallback(videoId, query: query);
+    final fallbackRes = await _directYoutubeExplodeStreamFallback(videoId, query: query);
+    if (fallbackRes.isNotEmpty && fallbackRes['streams'] != null && (fallbackRes['streams'] as List).isNotEmpty) {
+      _videoStreamCache[cacheKey] = fallbackRes;
+    }
+    return fallbackRes;
   }
 
   /// Client-side direct stream fallback using youtube_explode_dart
