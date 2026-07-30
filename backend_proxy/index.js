@@ -12,6 +12,10 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'it-feels-yt-proxy' });
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 app.get('/api/streams', async (req, res) => {
   const { videoId } = req.query;
   

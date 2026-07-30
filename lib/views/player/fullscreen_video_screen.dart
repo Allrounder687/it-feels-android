@@ -160,7 +160,17 @@ class _FullscreenVideoScreenState extends State<FullscreenVideoScreen> {
                         child: VideoPlayer(ctrl),
                       )
                     : videoProvider.isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(color: Colors.white),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Extracting Secure 4K Stream...',
+                              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+                            ),
+                          ],
+                        )
                       : Text(
                           'Video unavailable',
                           style: GoogleFonts.inter(color: Colors.white70, fontSize: 16),
