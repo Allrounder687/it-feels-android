@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/auth_service.dart';
 import '../services/cloud_sync_service.dart';
+import '../services/backend_api_service.dart';
 
 enum AuthViewState { emailInput, loginPassword, signupPassword, loading, emailVerificationPending, authenticated }
 
@@ -143,6 +144,10 @@ class AuthProvider extends ChangeNotifier {
       if (user != null && user.emailVerified) {
         _viewState = AuthViewState.authenticated;
         _cloudSyncService.initializeSync(user);
+        if (user.email != null) {
+          // Fire and forget welcome email
+          BackendApiService.sendWelcomeEmail(user.email!);
+        }
       } else {
         _errorMessage = 'Email not verified yet. Please check your inbox.';
       }

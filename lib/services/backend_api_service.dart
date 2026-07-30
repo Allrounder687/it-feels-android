@@ -145,6 +145,23 @@ class BackendApiService {
     return null;
   }
 
+  /// Welcome Email (Resend)
+  static Future<bool> sendWelcomeEmail(String email) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/email/welcome');
+      final response = await http.post(
+        uri,
+        headers: {..._proxyHeaders, 'Content-Type': 'application/json'},
+        body: json.encode({'email': email}),
+      ).timeout(const Duration(seconds: 15));
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('[BackendApiService] Welcome Email Error: $e');
+      return false;
+    }
+  }
+
   /// Telemetry Play Event Tracker
   static Future<void> sendTelemetryPlay(Song song) async {
     try {

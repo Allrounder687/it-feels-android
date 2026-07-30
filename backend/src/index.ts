@@ -12,6 +12,7 @@ type Bindings = {
   OPENAI_API_KEY?: string;
   ANTHROPIC_API_KEY?: string;
   GEMINI_API_KEY?: string;
+  RESEND_API_KEY?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -380,6 +381,56 @@ app.post('/api/v1/ai/action', async (c) => {
     }
     
     return c.json({ success: true, result });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
+  }
+});
+
+// Welcome Email Route (via Resend)
+app.post('/api/v1/email/welcome', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any));
+  const { email } = body;
+  
+  if (!email) {
+    return c.json({ error: 'Missing email address' }, 400);
+  }
+
+  const apiKey = c.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return c.json({ error: 'Resend API key not configured on server' }, 500);
+  }
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'IT Feels <noreply@itfeels.in>',
+        to: email,
+        subject: '🎧 You passed the vibe check. Welcome to IT Feels!',
+        html: `
+          <div style="font-family: sans-serif; color: #333; line-height: 1.6;">
+            <h2>Hey there,</h2>
+            <p>We see you. You've got good taste.</p>
+            <p>Your account is officially locked in, which means your playlists are safe, your vibe is secure, and the cloud sync is ready to roll.</p>
+            <p>Welcome to <strong>IT Feels</strong>. Turn the volume up.</p>
+            <br/>
+            <p>Keep it playing,<br/><strong>The IT Feels Team ✌️</strong></p>
+          </div>
+        `,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(\`Resend API error: \${res.status} \${errorText}\`);
+    }
+
+    const data = await res.json();
+    return c.json({ success: true, data });
   } catch (e: any) {
     return c.json({ success: false, error: e.message }, 500);
   }
