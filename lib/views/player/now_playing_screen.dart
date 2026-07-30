@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
 import '../../providers/lyrics_provider.dart';
+import '../../providers/video_player_provider.dart';
 import '../lyrics/lyrics_screen.dart';
 import '../room/room_bottom_sheet.dart';
 import '../widgets/bouncy_icon_button.dart';
@@ -192,14 +193,15 @@ class NowPlayingScreen extends StatelessWidget {
                                   child: Icon(Icons.video_library_rounded, color: accentColor, size: 24),
                                 ),
                                 onPressed: () {
+                                  Provider.of<VideoPlayerProvider>(context, listen: false).playVideo(
+                                    currentSong.id.contains(':') ? currentSong.id : 'youtube:${currentSong.saavnId}',
+                                    currentSong.title,
+                                    currentSong.artist,
+                                  );
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => VideoPlayerScreen(
-                                        videoId: currentSong.id.contains(':') ? currentSong.id : 'youtube:${currentSong.saavnId}',
-                                        title: currentSong.title,
-                                        uploader: currentSong.artist,
-                                      ),
+                                      builder: (_) => const VideoPlayerScreen(),
                                     ),
                                   );
                                 },

@@ -40,7 +40,7 @@ android {
             manifestPlaceholders["appName"] = "It Feels"
         }
         getByName("debug") {
-            applicationIdSuffix = ".debug"
+            applicationIdSuffix = ""
             manifestPlaceholders["appName"] = "It Feels (Debug)"
         }
         getByName("profile") {

@@ -30,7 +30,11 @@ class VideoPlayerProvider extends ChangeNotifier {
 
   Future<void> _initSystemControls() async {
     try {
-      _volume = await VolumeController().getVolume();
+      _volume = await VolumeController.instance.getVolume();
+    } catch (_) {
+      _volume = 0.5;
+    }
+    try {
       _brightness = await ScreenBrightness().current;
     } catch (e) {
       debugPrint('[VideoPlayerProvider] Error initializing system controls: $e');
@@ -71,7 +75,7 @@ class VideoPlayerProvider extends ChangeNotifier {
     ]);
 
     final streamData = results[0] as Map<String, dynamic>;
-    relatedVideos = List<Map<String, dynamic>>.from(results[1] ?? []);
+    relatedVideos = List<Map<String, dynamic>>.from((results[1] as Iterable?) ?? []);
     
     streams = List<Map<String, dynamic>>.from(streamData['streams'] ?? []);
     
@@ -147,15 +151,20 @@ class VideoPlayerProvider extends ChangeNotifier {
   void adjustVolume(double delta) {
     _volume += delta;
     _volume = _volume.clamp(0.0, 1.0);
-    VolumeController().setVolume(_volume);
+    try {
+      VolumeController.instance.setVolume(_volume);
+    } catch (_) {}
   }
 
   /// Seek forward/backward
   void seek(Duration duration) {
     if (videoController == null) return;
     final currentPos = videoController!.value.position;
-    final targetPos = currentPos + duration;
-    videoController!.seekTo(targetPos.clamp(Duration.zero, videoController!.value.duration));
+    var targetPos = currentPos + duration;
+    var maxDur = videoController!.value.duration;
+    if (targetPos < Duration.zero) targetPos = Duration.zero;
+    if (targetPos > maxDur) targetPos = maxDur;
+    videoController!.seekTo(targetPos);
   }
 
   /// Close the video player
