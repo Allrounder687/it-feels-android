@@ -47,11 +47,15 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
       final useVideoAudio = settingsProvider.useVideoAudioSource;
       
       if (useVideoAudio) {
-        audioProvider.audioHandler.pause();
+        audioProvider.pause();
         videoProvider.setMuted(false);
       } else {
         // Keep high quality audio playing from music player!
         videoProvider.setMuted(true);
+        audioProvider.seek(position);
+        if (!audioProvider.isPlaying) {
+          audioProvider.play();
+        }
       }
       
       videoProvider.playVideo(
@@ -67,7 +71,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
       videoProvider.videoController?.pause();
       audioProvider.seek(position);
       if (!audioProvider.isPlaying) {
-        audioProvider.audioHandler.play();
+        audioProvider.play();
       }
     }
   }
@@ -512,7 +516,13 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                                   duration: value.duration,
                                   activeColor: accentColor,
                                   inactiveColor: context.themeTextColor24,
-                                  onSeek: (newPos) => videoProvider.videoController?.seekTo(newPos),
+                                  onSeek: (newPos) {
+                                    videoProvider.videoController?.seekTo(newPos);
+                                    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+                                    if (!settingsProvider.useVideoAudioSource) {
+                                      playerProvider.seek(newPos);
+                                    }
+                                  },
                                 ),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -585,9 +595,14 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                           BouncyIconButton(
                             child: Icon(Icons.replay_10_rounded, color: context.themeMutedTextColor, size: isWide ? 32 : 28),
                             onPressed: () {
+                              final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
                               if (_isVideoMode) {
                                 final pos = videoProvider.videoController?.value.position ?? Duration.zero;
-                                videoProvider.videoController?.seekTo(pos - const Duration(seconds: 10));
+                                final newPos = pos - const Duration(seconds: 10);
+                                videoProvider.videoController?.seekTo(newPos);
+                                if (!settingsProvider.useVideoAudioSource) {
+                                  playerProvider.seek(newPos);
+                                }
                               } else {
                                 playerProvider.seekBackward();
                               }
@@ -601,12 +616,23 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                           ),
                           BouncyIconButton(
                             onPressed: () {
+                              final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
                               if (_isVideoMode) {
                                 final ctrl = videoProvider.videoController;
                                 if (ctrl != null) {
-                                  ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
-                                  // trigger rebuild for icon
-                                  setState((){});
+                                  if (ctrl.value.isPlaying) {
+                                    ctrl.pause();
+                                    if (!settingsProvider.useVideoAudioSource) {
+                                      playerProvider.pause();
+                                    }
+                                  } else {
+                                    ctrl.play();
+                                    if (!settingsProvider.useVideoAudioSource) {
+                                      playerProvider.seek(ctrl.value.position);
+                                      playerProvider.play();
+                                    }
+                                  }
+                                  setState(() {});
                                 }
                               } else {
                                 playerProvider.togglePlayPause();
@@ -625,10 +651,22 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                                 ? ValueListenableBuilder<VideoPlayerValue>(
                                     valueListenable: videoProvider.videoController!,
                                     builder: (context, value, child) {
+                                      final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
                                       return AnimatedPlayPauseButton(
                                         isPlaying: value.isPlaying,
                                         onPressed: () {
-                                          value.isPlaying ? videoProvider.videoController!.pause() : videoProvider.videoController!.play();
+                                          if (value.isPlaying) {
+                                            videoProvider.videoController!.pause();
+                                            if (!settingsProvider.useVideoAudioSource) {
+                                              playerProvider.pause();
+                                            }
+                                          } else {
+                                            videoProvider.videoController!.play();
+                                            if (!settingsProvider.useVideoAudioSource) {
+                                              playerProvider.seek(value.position);
+                                              playerProvider.play();
+                                            }
+                                          }
                                         },
                                         color: context.themeInvertedTextColor,
                                         size: isWide ? 44 : 38,
@@ -652,9 +690,14 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                           BouncyIconButton(
                             child: Icon(Icons.forward_10_rounded, color: context.themeMutedTextColor, size: isWide ? 32 : 28),
                             onPressed: () {
+                              final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
                               if (_isVideoMode) {
                                 final pos = videoProvider.videoController?.value.position ?? Duration.zero;
-                                videoProvider.videoController?.seekTo(pos + const Duration(seconds: 10));
+                                final newPos = pos + const Duration(seconds: 10);
+                                videoProvider.videoController?.seekTo(newPos);
+                                if (!settingsProvider.useVideoAudioSource) {
+                                  playerProvider.seek(newPos);
+                                }
                               } else {
                                 playerProvider.seekForward();
                               }
