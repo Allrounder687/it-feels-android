@@ -34,15 +34,20 @@ late AudioPlayerHandler _audioHandler;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  }
-  await Permission.notification.request();
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+    await Permission.notification.request();
 
-  final notificationService = NotificationService();
-  await notificationService.initialize();
+    final notificationService = NotificationService();
+    await notificationService.initialize();
+  } catch (e) {
+    debugPrint("Firebase/Notification initialization failed: $e");
+  }
+
 
   final session = await AudioSession.instance;
   await session.configure(const AudioSessionConfiguration.music());
