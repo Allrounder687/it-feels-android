@@ -14,10 +14,17 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - **Anti-Enumeration Security:** Architected the `AuthProvider` to use a highly secure exception-catching flow (handling `user-not-found` & `invalid-credential`) to bypass modern Firebase Email Enumeration protections.
 - **Auth Unit Tests:** Built 7 comprehensive Mocktail unit tests in `auth_provider_test.dart` to verify the state machine mathematically.
 - **Firebase Core Initialization:** Configured `flutterfire_cli` across all 5 desktop and mobile platforms (Android, iOS, macOS, Windows, Web) in preparation for Realtime Database syncing and Cloud Firestore.
+- **Unified Media Player UI:** Removed the clunky floating Miniplayer package. The `NowPlayingScreen` now natively supports playing videos directly inside the album art container, with a seamless top `[ Song | Video ]` toggle switch just like YouTube Music.
+- **Real-Time Seekbar Optimization:** Wrapped `WavySeekBar`, timestamps, and animated `Play/Pause` icons inside `ValueListenableBuilder`s wired directly to the native video engine for smooth 60fps seekbar updates in Video Mode without redrawing the entire screen.
+- **Fast-Resume Video Optimization:** Built a short-circuit in `VideoPlayerProvider` that instantly resumes cached streams when quickly switching back and forth between "Song" and "Video" without destroying native video controllers.
+- **Client-Side Video Resolution Fallback:** Integrated `youtube_explode_dart` on the client side to silently search and resolve the exact 11-character YouTube ID for the current track to bypass Cloudflare proxy rate limits.
+- **Official Video Prioritization:** Upgraded the YouTube search algorithm to automatically append `"official music video"` to ensure users get the actual music video rather than unofficial fan-made lyric videos.
 
 ### Fixed
 - **iOS Google Sign-In Crash:** Fixed a crash on iOS by properly configuring the `CFBundleURLTypes` and `REVERSED_CLIENT_ID` inside `ios/Runner/Info.plist`.
 - **Listen Together Infinite Loading:** Resolved an issue where creating or joining a room would spin infinitely on Android and iOS due to hanging Firebase RTDB operations by implementing network timeouts and strict try/catch error boundaries in the UI.
+- **MediaCodec Hardware Decoder Crash:** Resolved native Android `I/CCodecConfig (BAD_INDEX)` hardware decoder crashes by preventing rapid allocation and deallocation of `VideoPlayerController` buffers when rapidly toggling between Song and Video modes.
+- **8-Character Saavn ID Exception Fix:** Discovered and fixed an edge case where 8-character Saavn IDs (e.g. `_uKO18JI`) were slipping past the YouTube URL validator. Added a strict `cleanId.length != 11` check to guarantee any non-YouTube ID triggers a silent search.
 - **iOS Build Failure:** Bumped `IPHONEOS_DEPLOYMENT_TARGET` to `15.0` in `project.pbxproj` to resolve Firebase SDK minimum version requirements and fix GitHub Action CI failures.
 ---
 

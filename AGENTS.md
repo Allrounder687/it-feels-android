@@ -2,6 +2,9 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Unified Media Player Architecture:** Replaced the clunky floating Miniplayer package with a unified `NowPlayingScreen` featuring a native YouTube Music-style `[ Song | Video ]` toggle switch.
+- **Fast-Resume & Hardware Decoder Fix:** Implemented a highly optimized `ValueListenableBuilder` pipeline to instantly swap between audio and video modes without destroying native Android `VideoPlayerController` buffers, permanently eliminating `I/CCodecConfig (BAD_INDEX)` crashes and 60fps seekbar freezing.
+- **Robust Edge Fallbacks:** Hardened `BackendApiService` with client-side `youtube_explode_dart` search fallbacks, enforcing strict 11-character constraints to automatically bypass Saavn IDs and automatically appending "official music video" to YouTube search queries.
 - **Cloudflare Edge Acceleration:** Deployed Phase 1 Cloudflare Worker enhancements including KV caching for zero-latency multi-source searches and lyrics lookups, a dynamic Image Proxy cache for CDN acceleration, and robust API Abuse Prevention via the `X-Feels-Secret` HTTP header.
 - **Model Updates for IT Feels AI Provider:** Upgraded ChatGPT to `gpt-5.6-luna`, Claude to `claude-haiku-4-5-20251001`, and Gemini to `gemini-3.5-flash-lite` to ensure the absolute lowest possible API costs while maintaining 2026-level performance.
 - **Backend E2E Validation:** Created a standalone native Node.js testing harness (`npm run test`) for the Cloudflare Worker to rapidly iterate on AI prompts, KV caching, and multi-source scraping APIs completely isolated from the Flutter app.
