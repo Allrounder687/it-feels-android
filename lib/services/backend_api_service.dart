@@ -293,7 +293,9 @@ class BackendApiService {
       final manifest = await _yt.videos.streamsClient.getManifest(cleanId);
       final videoInfo = await _yt.videos.get(cleanId);
       
-      final allVideoStreams = [...manifest.videoOnly, ...manifest.muxed];
+      final allVideoStreams = [...manifest.muxed, ...manifest.videoOnly]
+          .where((s) => s.container.name == 'mp4')
+          .toList();
       if (allVideoStreams.isNotEmpty) {
         final Map<String, Map<String, dynamic>> uniqueQualities = {};
         for (var s in allVideoStreams) {
