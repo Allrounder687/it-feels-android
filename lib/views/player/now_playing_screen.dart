@@ -981,36 +981,33 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                     }
 
                     // Mobile Layout
-                    return LayoutBuilder(
-                      builder: (context, constraints) {
-                        return SingleChildScrollView(
-                          physics: const ClampingScrollPhysics(),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                            child: IntrinsicHeight(
-                              child: Column(
-                                children: [
-                                  topAppBar,
-                                  const Spacer(),
-                                  albumArt,
-                                  const Spacer(),
-                                  songInfo,
-                                  const SizedBox(height: 12),
-                                  actionPills,
-                                  const SizedBox(height: 12),
-                                  buildProgress(),
-                                  const SizedBox(height: 6),
-                                  primaryControls,
-                                  const SizedBox(height: 12),
-                                  secondaryControls,
-                                  const Spacer(),
-                                  bottomDragHandle,
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                    final screenHeight = MediaQuery.of(context).size.height;
+                    final dynamicSpacer = SizedBox(height: screenHeight * 0.02);
+
+                    return SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            topAppBar,
+                            dynamicSpacer,
+                            albumArt,
+                            dynamicSpacer,
+                            songInfo,
+                            const SizedBox(height: 12),
+                            actionPills,
+                            const SizedBox(height: 12),
+                            buildProgress(),
+                            const SizedBox(height: 6),
+                            primaryControls,
+                            const SizedBox(height: 12),
+                            secondaryControls,
+                            dynamicSpacer,
+                            bottomDragHandle,
+                          ],
+                        ),
+                      ),
                     );
                   },
                 ),
