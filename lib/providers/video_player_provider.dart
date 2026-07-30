@@ -64,6 +64,7 @@ class VideoPlayerProvider extends ChangeNotifier {
     currentUploader = uploader;
     streams = [];
     relatedVideos = [];
+    _recoveryAttempts = 0;
     notifyListeners();
 
     if (localPath != null && localPath.isNotEmpty) {
@@ -141,10 +142,6 @@ class VideoPlayerProvider extends ChangeNotifier {
       Uri.parse(streamUrl),
       formatHint: formatHint,
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-      httpHeaders: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Connection': 'keep-alive',
-      },
     );
     
     try {
@@ -181,12 +178,20 @@ class VideoPlayerProvider extends ChangeNotifier {
     onVideoStarted?.call();
   }
 
+  int _recoveryAttempts = 0;
+
   /// Self-healing auto recovery for expired stream links (403 Forbidden)
   Future<void> _handleVideoPlaybackError(Duration position, bool wasPlaying) async {
     if (_isRecovering) return;
-    _isRecovering = true;
+    if (_recoveryAttempts >= 2) {
+      debugPrint('[VideoPlayerProvider] Max recovery attempts reached. Stopping auto-recovery.');
+      return;
+    }
     
-    debugPrint('[VideoPlayerProvider] Expired stream (403 Forbidden) detected. Auto-recovering URL...');
+    _isRecovering = true;
+    _recoveryAttempts++;
+    
+    debugPrint('[VideoPlayerProvider] Expired stream (403 Forbidden) detected. Auto-recovering URL... Attempt: $_recoveryAttempts');
     try {
       BackendApiService.clearVideoStreamCache(currentVideoId);
       final freshData = await BackendApiService.getVideoStreams(currentVideoId, bypassCache: true);

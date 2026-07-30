@@ -242,6 +242,9 @@ class BackendApiService {
       if (query != null && query.isNotEmpty) {
         queryParams['query'] = query;
       }
+      if (bypassCache) {
+        queryParams['bypassCache'] = 'true';
+      }
 
       final uri = Uri.parse('$baseUrl/api/v1/video').replace(queryParameters: queryParams);
       final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));

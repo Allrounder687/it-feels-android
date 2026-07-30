@@ -385,6 +385,25 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                                           children: [
                                             GestureDetector(
                                               onTap: () {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Downloading video for ${currentSong.title}...'),
+                                                    behavior: SnackBarBehavior.floating,
+                                                  ),
+                                                );
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black.withOpacity(0.65),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(Icons.file_download_rounded, color: Colors.white, size: 16),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            GestureDetector(
+                                              onTap: () {
                                                 _showQualityPickerBottomSheet(context, videoProvider);
                                               },
                                               child: Container(
