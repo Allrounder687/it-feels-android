@@ -99,7 +99,10 @@ class VideoPlayerProvider extends ChangeNotifier {
   Future<void> _initPlayerWithFile(String localPath, {Duration? startPosition}) async {
     try {
       await videoController?.dispose();
-      videoController = VideoPlayerController.file(File(localPath));
+      videoController = VideoPlayerController.file(
+        File(localPath),
+        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      );
       await videoController!.initialize();
       if (startPosition != null) {
         await videoController!.seekTo(startPosition);
@@ -136,6 +139,7 @@ class VideoPlayerProvider extends ChangeNotifier {
     videoController = VideoPlayerController.networkUrl(
       Uri.parse(streamUrl),
       formatHint: formatHint,
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
       httpHeaders: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Connection': 'keep-alive',
