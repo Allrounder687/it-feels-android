@@ -285,18 +285,34 @@ class BackendApiService {
       final manifest = await _yt.videos.streamsClient.getManifest(cleanId);
       final videoInfo = await _yt.videos.get(cleanId);
       
-      final muxedStreams = manifest.muxed;
-      if (muxedStreams.isNotEmpty) {
-        final streamsList = muxedStreams.map((s) => {
-          'quality': s.videoQuality.name,
-          'url': s.url.toString(),
-          'hasAudio': true,
-        }).toList();
+      final allVideoStreams = [...manifest.videoOnly, ...manifest.muxed];
+      if (allVideoStreams.isNotEmpty) {
+        final Map<String, Map<String, dynamic>> uniqueQualities = {};
+        for (var s in allVideoStreams) {
+          final label = s.qualityLabel.isNotEmpty ? s.qualityLabel : s.videoQuality.name;
+          String formattedQuality = label.toLowerCase();
+          if (formattedQuality.contains('2160')) formattedQuality = '2160p (4K)';
+          else if (formattedQuality.contains('1440')) formattedQuality = '1440p (2K)';
+          else if (formattedQuality.contains('1080')) formattedQuality = '1080p';
+          else if (formattedQuality.contains('720')) formattedQuality = '720p';
+          else if (formattedQuality.contains('480')) formattedQuality = '480p';
+          else if (formattedQuality.contains('360')) formattedQuality = '360p';
+          else if (formattedQuality.contains('240')) formattedQuality = '240p';
+          else if (formattedQuality.contains('144')) formattedQuality = '144p';
+          
+          if (!uniqueQualities.containsKey(formattedQuality)) {
+            uniqueQualities[formattedQuality] = {
+              'quality': formattedQuality,
+              'url': s.url.toString(),
+              'hasAudio': s is MuxedStreamInfo,
+            };
+          }
+        }
         
         return {
           'title': videoInfo.title,
-          'streams': streamsList,
-          'audioUrl': manifest.audioOnly.withHighestBitrate().url.toString(),
+          'streams': uniqueQualities.values.toList(),
+          'audioUrl': manifest.audioOnly.isNotEmpty ? manifest.audioOnly.withHighestBitrate().url.toString() : '',
         };
       }
     } catch (e) {

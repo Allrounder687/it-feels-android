@@ -92,15 +92,18 @@ class LyricsService {
 
     // 1. Try Music API static lyrics
     try {
-      final saavnUrl = Uri.parse(
-          '$_saavnBaseUrl?__call=lyrics.getLyrics&_format=json&ctx=web6dot0&api_version=4&lyrics_id=${song.saavnId}');
-      final response = await http.get(saavnUrl, headers: _headers);
+      final saavnId = song.saavnId.isNotEmpty ? song.saavnId : (song.id.startsWith('saavn:') ? song.id.split(':')[1] : song.id);
+      if (saavnId.isNotEmpty && saavnId.length > 3 && !saavnId.startsWith('youtube:')) {
+        final saavnUrl = Uri.parse(
+            '$_saavnBaseUrl?__call=lyrics.getLyrics&_format=json&ctx=web6dot0&api_version=4&lyrics_id=$saavnId');
+        final response = await http.get(saavnUrl, headers: _headers).timeout(const Duration(seconds: 5));
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['lyrics'] != null) {
-          final rawStatic = _cleanText(data['lyrics'].toString());
-          staticLrc = HinglishTransliterator.transliterate(rawStatic);
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['lyrics'] != null) {
+            final rawStatic = _cleanText(data['lyrics'].toString());
+            staticLrc = HinglishTransliterator.transliterate(rawStatic);
+          }
         }
       }
     } catch (e) {
@@ -110,10 +113,13 @@ class LyricsService {
 
     // 2. Try LRCLIB for synced LRC lyrics
     try {
-      final query = '${song.artist} ${song.title}'.trim();
+      final cleanTitle = song.title.replaceAll(RegExp(r'\s*\([^)]*\)'), '').replaceAll(RegExp(r'\s*\[[^\]]*\]'), '').trim();
+      final cleanArtist = song.artist.split(',').first.split('&').first.trim();
+      final query = '$cleanArtist $cleanTitle'.trim();
+      
       final lrclibUrl = Uri.parse(
           'https://lrclib.net/api/search?q=${Uri.encodeComponent(query)}');
-      final response = await http.get(lrclibUrl);
+      final response = await http.get(lrclibUrl).timeout(const Duration(seconds: 6));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -124,17 +130,17 @@ class LyricsService {
             final artistName = item['artistName']?.toString() ?? '';
             
             // Clean strings for comparison
-            final cleanTrack = trackName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-            final cleanSongTitle = song.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-            final cleanArtist = artistName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-            final cleanSongArtist = song.artist.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+            final targetTrack = trackName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+            final targetSongTitle = cleanTitle.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+            final targetArtist = artistName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+            final targetSongArtist = cleanArtist.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
 
             // Calculate similarity
-            final titleSimilarity = cleanTrack.similarityTo(cleanSongTitle);
-            final artistSimilarity = cleanArtist.similarityTo(cleanSongArtist);
+            final titleSimilarity = targetTrack.similarityTo(targetSongTitle);
+            final artistSimilarity = targetArtist.similarityTo(targetSongArtist);
 
             // Skip if the result is completely unrelated to our song
-            if (titleSimilarity < 0.4 && artistSimilarity < 0.3) {
+            if (titleSimilarity < 0.3 && artistSimilarity < 0.2) {
               continue;
             }
 

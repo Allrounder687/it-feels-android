@@ -16,8 +16,8 @@ import '../widgets/song_options_sheet.dart';
 import '../widgets/wavy_seek_bar.dart';
 import 'queue_bottom_sheet.dart';
 import 'sleep_timer_sheet.dart';
-import '../home/driving_mode_screen.dart';
 import '../widgets/animated_play_pause_button.dart';
+import 'fullscreen_video_screen.dart';
 import 'package:video_player/video_player.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
@@ -30,6 +30,7 @@ class NowPlayingScreen extends StatefulWidget {
 
 class _NowPlayingScreenState extends State<NowPlayingScreen> {
   bool _isVideoMode = false;
+  String? _lastPlayedSongId;
 
 
 
@@ -91,6 +92,74 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
     return '$minutes:$seconds';
   }
 
+  void _showQualityPickerBottomSheet(BuildContext context, VideoPlayerProvider videoProvider) {
+    if (videoProvider.streams.isEmpty) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.themeSurfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.hd_rounded, color: context.themeTextColor, size: 24),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Select Video Quality',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: context.themeTextColor,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: videoProvider.streams.length,
+                  itemBuilder: (context, index) {
+                    final stream = videoProvider.streams[index];
+                    final quality = stream['quality'] as String;
+                    final isSelected = quality == videoProvider.selectedQuality;
+
+                    return ListTile(
+                      dense: true,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      tileColor: isSelected ? context.themeAccentColor.withOpacity(0.15) : Colors.transparent,
+                      title: Text(
+                        quality,
+                        style: GoogleFonts.inter(
+                          color: isSelected ? context.themeAccentColor : context.themeTextColor,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 16,
+                        ),
+                      ),
+                      trailing: isSelected ? Icon(Icons.check_circle_rounded, color: context.themeAccentColor) : null,
+                      onTap: () {
+                        videoProvider.changeQuality(quality);
+                        Navigator.pop(context);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer3<AudioPlayerProvider, DownloadProvider, VideoPlayerProvider>(
@@ -111,6 +180,16 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
               ),
             ),
           );
+        }
+
+        if (_isVideoMode && currentSong.id != _lastPlayedSongId) {
+          _lastPlayedSongId = currentSong.id;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+              _toggleMode(true, playerProvider, videoProvider, settingsProvider);
+            }
+          });
         }
 
         final isFav = playerProvider.isFavorite(currentSong.id);
@@ -287,11 +366,62 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
-                                child: videoProvider.isLoading 
-                                  ? Center(child: CircularProgressIndicator(color: accentColor))
-                                  : videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized
-                                    ? VideoPlayer(videoProvider.videoController!)
-                                    : Center(child: Text('Video unavailable', style: GoogleFonts.inter(color: Colors.white))),
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: videoProvider.isLoading 
+                                        ? Center(child: CircularProgressIndicator(color: accentColor))
+                                        : videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized
+                                          ? VideoPlayer(videoProvider.videoController!)
+                                          : Center(child: Text('Video unavailable', style: GoogleFonts.inter(color: Colors.white))),
+                                    ),
+                                    if (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
+                                      Positioned(
+                                        right: 8,
+                                        bottom: 8,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            GestureDetector(
+                                              onTap: () {
+                                                _showQualityPickerBottomSheet(context, videoProvider);
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black.withOpacity(0.65),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  videoProvider.selectedQuality,
+                                                  style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            GestureDetector(
+                                              onTap: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (_) => FullscreenVideoScreen(song: currentSong),
+                                                  ),
+                                                );
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.black.withOpacity(0.65),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 20),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
                           )
@@ -620,7 +750,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                           BouncyIconButton(
                             child: Icon(Icons.skip_previous_rounded, color: context.themeTextColor, size: isWide ? 42 : 36),
                             onPressed: () {
-                              if (!_isVideoMode) playerProvider.skipToPrevious();
+                              playerProvider.skipToPrevious();
                             },
                           ),
                           BouncyIconButton(
@@ -693,7 +823,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                           BouncyIconButton(
                             child: Icon(Icons.skip_next_rounded, color: context.themeTextColor, size: isWide ? 42 : 36),
                             onPressed: () {
-                              if (!_isVideoMode) playerProvider.skipToNext();
+                              playerProvider.skipToNext();
                             },
                           ),
                           BouncyIconButton(
