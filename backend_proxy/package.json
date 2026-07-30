@@ -1,0 +1,14 @@
+{
+  "name": "it-feels-yt-proxy",
+  "version": "1.0.0",
+  "description": "yt-dlp proxy for IT Feels",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "youtube-dl-exec": "^2.5.3"
+  }
+}
