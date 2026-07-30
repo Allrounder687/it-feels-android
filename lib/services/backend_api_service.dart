@@ -296,11 +296,14 @@ class BackendApiService {
   static String ytDlpBackendUrl = 'https://it-feels-android.onrender.com';
 
   static final List<String> _pipedInstances = [
-    'https://pipedapi.kavin.rocks',
     'https://pipedapi.adminforge.de',
-    'https://pipedapi.reallyaweso.me',
     'https://pipedapi.tokhmi.xyz',
+    'https://pipedapi.palmo.fr',
+    'https://pipedapi.drgns.space',
+    'https://pipedapi.kavin.rocks',
+    'https://pipedapi.reallyaweso.me',
     'https://api.piped.privacydev.net',
+    'https://pipedapi.mha.fi',
   ];
 
   /// Piped API Multi-Instance Failover Engine
