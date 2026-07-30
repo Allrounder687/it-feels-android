@@ -477,40 +477,70 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                       ),
                     );
 
-                    
-                    final activePosition = _isVideoMode ? (videoProvider.videoController?.value.position ?? Duration.zero) : playerProvider.position;
-                    final activeDuration = _isVideoMode ? (videoProvider.videoController?.value.duration ?? Duration.zero) : playerProvider.duration;
+                    Widget buildProgress() {
+                      if (_isVideoMode && videoProvider.videoController != null) {
+                        return ValueListenableBuilder<VideoPlayerValue>(
+                          valueListenable: videoProvider.videoController!,
+                          builder: (context, value, child) {
+                            return Column(
+                              children: [
+                                WavySeekBar(
+                                  position: value.position,
+                                  duration: value.duration,
+                                  activeColor: accentColor,
+                                  inactiveColor: context.themeTextColor24,
+                                  onSeek: (newPos) => videoProvider.videoController?.seekTo(newPos),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _formatDuration(value.position),
+                                        style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                                      ),
+                                      Text(
+                                        _formatDuration(value.duration),
+                                        style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      }
 
-                    final seekBar = WavySeekBar(
-                      position: activePosition,
-                      duration: activeDuration,
-                      activeColor: accentColor,
-                      inactiveColor: context.themeTextColor24,
-                      onSeek: (newPos) {
-                        if (_isVideoMode) {
-                          videoProvider.videoController?.seekTo(newPos);
-                        } else {
-                          playerProvider.seek(newPos);
-                        }
-                      },
-                    );
-
-                    final timeStamps = Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      return Column(
                         children: [
-                          Text(
-                            _formatDuration(activePosition),
-                            style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                          WavySeekBar(
+                            position: playerProvider.position,
+                            duration: playerProvider.duration,
+                            activeColor: accentColor,
+                            inactiveColor: context.themeTextColor24,
+                            onSeek: (newPos) => playerProvider.seek(newPos),
                           ),
-                          Text(
-                            _formatDuration(activeDuration),
-                            style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatDuration(playerProvider.position),
+                                  style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                                ),
+                                Text(
+                                  _formatDuration(playerProvider.duration),
+                                  style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
-                      ),
-                    );
+                      );
+                    }
 
                     final primaryControls = Container(
                       height: isWide ? 90 : 80,
@@ -561,22 +591,26 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                                 color: accentColor,
                                 shape: BoxShape.circle,
                               ),
-                              child: AnimatedPlayPauseButton(
-                                isPlaying: _isVideoMode ? (videoProvider.videoController?.value.isPlaying ?? false) : playerProvider.isPlaying,
-                                onPressed: () {
-                                  if (_isVideoMode) {
-                                    final ctrl = videoProvider.videoController;
-                                    if (ctrl != null) {
-                                      ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
-                                      setState((){});
+                              child: _isVideoMode && videoProvider.videoController != null
+                                ? ValueListenableBuilder<VideoPlayerValue>(
+                                    valueListenable: videoProvider.videoController!,
+                                    builder: (context, value, child) {
+                                      return AnimatedPlayPauseButton(
+                                        isPlaying: value.isPlaying,
+                                        onPressed: () {
+                                          value.isPlaying ? videoProvider.videoController!.pause() : videoProvider.videoController!.play();
+                                        },
+                                        color: context.themeInvertedTextColor,
+                                        size: isWide ? 44 : 38,
+                                      );
                                     }
-                                  } else {
-                                    playerProvider.togglePlayPause();
-                                  }
-                                },
-                                color: context.themeInvertedTextColor,
-                                size: isWide ? 44 : 38,
-                              ),
+                                  )
+                                : AnimatedPlayPauseButton(
+                                    isPlaying: playerProvider.isPlaying,
+                                    onPressed: () => playerProvider.togglePlayPause(),
+                                    color: context.themeInvertedTextColor,
+                                    size: isWide ? 44 : 38,
+                                  ),
                             ),
                           ),
                           BouncyIconButton(
@@ -744,10 +778,9 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                         songInfo,
                         const SizedBox(height: 16),
                         actionPills,
-                        const SizedBox(height: 18),
-                        seekBar,
-                        timeStamps,
                         const SizedBox(height: 16),
+                        buildProgress(),
+                        const SizedBox(height: 8),
                         primaryControls,
                         const SizedBox(height: 16),
                         secondaryControls,
