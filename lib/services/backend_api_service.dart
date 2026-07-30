@@ -235,8 +235,7 @@ class BackendApiService {
     }
 
     try {
-      // FAST PATH: If we have the 4K yt-dlp Render proxy configured, use it IMMEDIATELY.
-      // This bypasses the 8-second wait for the Cloudflare worker, giving instant 4K playback.
+      // 1. FAST PATH: If we have the 4K yt-dlp Render proxy configured, try it first.
       if (ytDlpBackendUrl.isNotEmpty) {
         final ytDlpData = await _fetchFromYtDlpBackend(actualVideoId);
         if (ytDlpData['streams'] != null && (ytDlpData['streams'] as List).isNotEmpty) {
@@ -246,6 +245,15 @@ class BackendApiService {
         }
       }
 
+      // 2. PIPED API FAST FAILOVER: High-speed, zero-cost public Piped instances with auto-failover
+      final pipedData = await _fetchFromPipedApi(cleanId);
+      if (pipedData['streams'] != null && (pipedData['streams'] as List).isNotEmpty) {
+        debugPrint('[BackendApiService] Successfully fetched streams from Piped API network!');
+        _videoStreamCache[cacheKey] = pipedData;
+        return pipedData;
+      }
+
+      // 3. CLOUDFLARE WORKER API
       final queryParams = <String, String>{};
       if (actualVideoId.isNotEmpty && !actualVideoId.startsWith('search:')) {
         queryParams['id'] = actualVideoId;
@@ -258,7 +266,7 @@ class BackendApiService {
       }
 
       final uri = Uri.parse('$baseUrl/api/v1/video').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 45));
+      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List streamsList = data['streams'] ?? [];
@@ -276,7 +284,7 @@ class BackendApiService {
       debugPrint('[BackendApiService] getVideoStreams error: $e');
     }
     
-    // Direct youtube_explode_dart client fallback
+    // 4. Direct fallback
     final fallbackRes = await _directYoutubeExplodeStreamFallback(videoId, query: query);
     if (fallbackRes.isNotEmpty && fallbackRes['streams'] != null && (fallbackRes['streams'] as List).isNotEmpty) {
       _videoStreamCache[cacheKey] = fallbackRes;
@@ -285,7 +293,72 @@ class BackendApiService {
   }
 
   // IMPORTANT: Paste your Render URL here once it's deployed (e.g. 'https://it-feels-yt-proxy.onrender.com')
-  static String ytDlpBackendUrl = 'https://it-feels-android.onrender.com'; 
+  static String ytDlpBackendUrl = 'https://it-feels-android.onrender.com';
+
+  static final List<String> _pipedInstances = [
+    'https://pipedapi.kavin.rocks',
+    'https://pipedapi.adminforge.de',
+    'https://pipedapi.reallyaweso.me',
+    'https://pipedapi.tokhmi.xyz',
+    'https://api.piped.privacydev.net',
+  ];
+
+  /// Piped API Multi-Instance Failover Engine
+  static Future<Map<String, dynamic>> _fetchFromPipedApi(String videoId) async {
+    final cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
+    if (cleanId.isEmpty || cleanId.length != 11) {
+      return {'title': 'Music Video', 'streams': []};
+    }
+
+    for (final instance in _pipedInstances) {
+      try {
+        final uri = Uri.parse('$instance/streams/$cleanId');
+        final response = await http.get(uri).timeout(const Duration(seconds: 6));
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final title = data['title'] ?? 'Music Video';
+          final videoStreams = data['videoStreams'] as List? ?? [];
+          final audioStreams = data['audioStreams'] as List? ?? [];
+
+          final Map<String, Map<String, dynamic>> uniqueQualities = {};
+          for (var stream in videoStreams) {
+            final qualityLabel = stream['quality']?.toString() ?? (stream['height'] != null ? '${stream['height']}p' : null);
+            final url = stream['url']?.toString();
+            if (qualityLabel != null && url != null) {
+              final formattedQuality = qualityLabel.contains('p') ? qualityLabel : '${qualityLabel}p';
+              if (!uniqueQualities.containsKey(formattedQuality)) {
+                uniqueQualities[formattedQuality] = {
+                  'quality': formattedQuality,
+                  'url': url,
+                  'mimeType': stream['mimeType'] ?? '',
+                  'videoOnly': stream['videoOnly'] ?? false,
+                };
+              }
+            }
+          }
+
+          String audioUrl = '';
+          if (audioStreams.isNotEmpty) {
+            audioUrl = audioStreams.first['url']?.toString() ?? '';
+          }
+
+          if (uniqueQualities.isNotEmpty) {
+            debugPrint('[BackendApiService] Successfully resolved streams via Piped instance: $instance');
+            return {
+              'title': title,
+              'streams': uniqueQualities.values.toList(),
+              'audioUrl': audioUrl,
+            };
+          }
+        }
+      } catch (e) {
+        debugPrint('[BackendApiService] Piped instance ($instance) failed: $e');
+        continue; // Failover to next public instance
+      }
+    }
+
+    return {'title': 'Music Video', 'streams': []};
+  } 
   
   static Future<Map<String, dynamic>> _fetchFromYtDlpBackend(String videoId) async {
     if (ytDlpBackendUrl.isEmpty) return {'title': 'Music Video', 'streams': []};
