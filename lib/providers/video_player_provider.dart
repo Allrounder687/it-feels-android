@@ -8,7 +8,6 @@ import '../services/backend_api_service.dart';
 
 class VideoPlayerProvider extends ChangeNotifier {
   VideoPlayerController? videoController;
-  final MiniplayerController miniplayerController = MiniplayerController();
   
   bool isVideoActive = false;
   bool isLoading = false;
@@ -41,8 +40,8 @@ class VideoPlayerProvider extends ChangeNotifier {
     }
   }
 
-  /// Plays a video and initializes the Miniplayer
-  Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query}) async {
+  /// Plays a video
+  Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition}) async {
     // Reset state
     isLoading = true;
     isVideoActive = true;
@@ -53,12 +52,9 @@ class VideoPlayerProvider extends ChangeNotifier {
     relatedVideos = [];
     notifyListeners();
 
-    // Expand the miniplayer
-    miniplayerController.animateToHeight(state: PanelState.MAX);
-
     if (localPath != null && localPath.isNotEmpty) {
       // Offline Playback
-      await _initPlayerWithFile(localPath);
+      await _initPlayerWithFile(localPath, startPosition: startPosition);
       final results = await Future.wait([
         BackendApiService.getRelatedVideos(videoId),
       ]);
@@ -71,7 +67,7 @@ class VideoPlayerProvider extends ChangeNotifier {
     // Fetch streams and related videos in parallel
     final results = await Future.wait([
       BackendApiService.getVideoStreams(videoId, query: query),
-      BackendApiService.getRelatedVideos(videoId),
+      BackendApiService.getRelatedVideos(videoId, query: query),
     ]);
 
     final streamData = results[0] as Map<String, dynamic>;
@@ -80,18 +76,21 @@ class VideoPlayerProvider extends ChangeNotifier {
     streams = List<Map<String, dynamic>>.from(streamData['streams'] ?? []);
     
     if (streams.isNotEmpty) {
-      _initializeStreamForQuality(selectedQuality);
+      _initializeStreamForQuality(selectedQuality, startPosition: startPosition);
     } else {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> _initPlayerWithFile(String localPath) async {
+  Future<void> _initPlayerWithFile(String localPath, {Duration? startPosition}) async {
     try {
       await videoController?.dispose();
       videoController = VideoPlayerController.file(File(localPath));
       await videoController!.initialize();
+      if (startPosition != null) {
+        await videoController!.seekTo(startPosition);
+      }
       await videoController!.play();
     } catch (e) {
       debugPrint('[VideoPlayerProvider] Error playing offline file: $e');
@@ -99,13 +98,13 @@ class VideoPlayerProvider extends ChangeNotifier {
   }
 
   /// Initialize video controller for a specific quality
-  Future<void> _initializeStreamForQuality(String targetQuality) async {
+  Future<void> _initializeStreamForQuality(String targetQuality, {Duration? startPosition}) async {
     if (streams.isEmpty) return;
 
     isLoading = true;
     notifyListeners();
 
-    final previousPosition = videoController?.value.position ?? Duration.zero;
+    final previousPosition = startPosition ?? videoController?.value.position ?? Duration.zero;
     final wasPlaying = videoController?.value.isPlaying ?? true;
 
     // Dispose old controller

@@ -18,11 +18,50 @@ import 'sleep_timer_sheet.dart';
 import '../home/driving_mode_screen.dart';
 import '../widgets/animated_play_pause_button.dart';
 import '../../providers/settings_provider.dart';
-import '../video/video_player_screen.dart';
+import 'package:video_player/video_player.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
-class NowPlayingScreen extends StatelessWidget {
+class NowPlayingScreen extends StatefulWidget {
   const NowPlayingScreen({super.key});
+
+  @override
+  State<NowPlayingScreen> createState() => _NowPlayingScreenState();
+}
+
+class _NowPlayingScreenState extends State<NowPlayingScreen> {
+  bool _isVideoMode = false;
+
+
+
+  Future<void> _toggleMode(bool toVideo, AudioPlayerProvider audioProvider, VideoPlayerProvider videoProvider) async {
+    if (_isVideoMode == toVideo) return;
+    final currentSong = audioProvider.currentSong;
+    if (currentSong == null) return;
+
+    setState(() {
+      _isVideoMode = toVideo;
+    });
+
+    if (toVideo) {
+      // Switching to video
+      final position = audioProvider.position;
+      audioProvider.pause();
+      
+      videoProvider.playVideo(
+        currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}',
+        currentSong.title,
+        currentSong.artist,
+        query: '${currentSong.title} ${currentSong.artist}',
+        startPosition: position,
+      );
+    } else {
+      // Switching to audio
+      final position = videoProvider.videoController?.value.position ?? Duration.zero;
+      videoProvider.videoController?.pause();
+      audioProvider.seek(position);
+      audioProvider.play();
+    }
+  }
 
   String _formatDuration(Duration d) {
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -32,8 +71,9 @@ class NowPlayingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<AudioPlayerProvider, DownloadProvider>(
-      builder: (context, playerProvider, downloadProvider, child) {
+    return Consumer3<AudioPlayerProvider, DownloadProvider, VideoPlayerProvider>(
+      builder: (context, playerProvider, downloadProvider, videoProvider, child) {
+
         final currentSong = playerProvider.currentSong;
         final bgColor = playerProvider.themeBackgroundColor;
         final surfaceColor = playerProvider.themeSurfaceColor;
@@ -91,12 +131,52 @@ class NowPlayingScreen extends StatelessWidget {
                           icon: Icon(Icons.keyboard_arrow_down_rounded, color: context.themeTextColor, size: 32),
                           onPressed: () => Navigator.pop(context),
                         ),
-                        Text(
-                          "Now Playing",
-                          style: GoogleFonts.inter(
-                            color: context.themeTextColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: surfaceColor,
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: () => _toggleMode(false, playerProvider, videoProvider),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: !_isVideoMode ? accentColor : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    'Song',
+                                    style: GoogleFonts.inter(
+                                      color: !_isVideoMode ? context.themeInvertedTextColor : context.themeMutedTextColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => _toggleMode(true, playerProvider, videoProvider),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: _isVideoMode ? accentColor : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    'Video',
+                                    style: GoogleFonts.inter(
+                                      color: _isVideoMode ? context.themeInvertedTextColor : context.themeMutedTextColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         Row(
@@ -142,32 +222,7 @@ class NowPlayingScreen extends StatelessWidget {
                               },
                             ),
                             // Removed redundant download icon from top app bar to fix layout overflow
-                            if (settingsProvider.enableMusicVideos)
-                              IconButton(
-                                icon: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: accentColor.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: accentColor.withValues(alpha: 0.4)),
-                                  ),
-                                  child: Icon(Icons.video_library_rounded, color: accentColor, size: 24),
-                                ),
-                                onPressed: () {
-                                  Provider.of<VideoPlayerProvider>(context, listen: false).playVideo(
-                                    currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}', // Use search marker if it's a saavn ID
-                                    currentSong.title,
-                                    currentSong.artist,
-                                    query: '${currentSong.title} ${currentSong.artist}',
-                                  );
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const VideoPlayerScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
+
                             IconButton(
                               icon: Container(
                                 padding: const EdgeInsets.all(10),
@@ -186,43 +241,73 @@ class NowPlayingScreen extends StatelessWidget {
                       ],
                     );
 
-                    final albumArt = Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Positioned.fill(
-                          child: PulseGlowBackground(
-                            color: accentColor,
-                            isPlaying: playerProvider.isPlaying,
-                          ),
-                        ),
-                        Hero(
-                          tag: 'cover_${currentSong.id}',
-                          child: Container(
-                            width: artSize,
-                            height: artSize,
+                    final albumArt = AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 400),
+                      switchInCurve: Curves.easeInOut,
+                      switchOutCurve: Curves.easeInOut,
+                      transitionBuilder: (Widget child, Animation<double> animation) {
+                        return FadeTransition(opacity: animation, child: child);
+                      },
+                      child: _isVideoMode 
+                        ? Container(
+                            key: const ValueKey('video_player'),
+                            width: constraints.maxWidth,
+                            height: constraints.maxWidth * (9/16),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(isWide ? 40 : 28),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: context.themeInvertedTextColor.withValues(alpha: 0.5),
-                                  blurRadius: isWide ? 50 : 30,
-                                  offset: Offset(0, isWide ? 25 : 15),
-                                ),
-                              ],
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(isWide ? 40 : 28),
-                              child: currentSong.coverArt.isNotEmpty
-                                  ? CustomImageWidget(
-                                      imageUrl: currentSong.coverArt,
-                                      fit: BoxFit.cover,
-                                      errorWidget: (context, url, error) => Container(color: surfaceColor),
+                              borderRadius: BorderRadius.circular(16),
+                              child: videoProvider.isLoading 
+                                ? Center(child: CircularProgressIndicator(color: accentColor))
+                                : videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized
+                                  ? AspectRatio(
+                                      aspectRatio: videoProvider.videoController!.value.aspectRatio,
+                                      child: VideoPlayer(videoProvider.videoController!),
                                     )
-                                  : Container(color: surfaceColor),
+                                  : Center(child: Text('Video unavailable', style: GoogleFonts.inter(color: Colors.white))),
                             ),
+                          )
+                        : Stack(
+                            key: const ValueKey('audio_art'),
+                            alignment: Alignment.center,
+                            children: [
+                              Positioned.fill(
+                                child: PulseGlowBackground(
+                                  color: accentColor,
+                                  isPlaying: playerProvider.isPlaying,
+                                ),
+                              ),
+                              Hero(
+                                tag: 'cover_${currentSong.id}',
+                                child: Container(
+                                  width: artSize,
+                                  height: artSize,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(isWide ? 40 : 28),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: context.themeInvertedTextColor.withValues(alpha: 0.5),
+                                        blurRadius: isWide ? 50 : 30,
+                                        offset: Offset(0, isWide ? 25 : 15),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(isWide ? 40 : 28),
+                                    child: currentSong.coverArt.isNotEmpty
+                                        ? CustomImageWidget(
+                                            imageUrl: currentSong.coverArt,
+                                            fit: BoxFit.cover,
+                                            errorWidget: (context, url, error) => Container(color: surfaceColor),
+                                          )
+                                        : Container(color: surfaceColor),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
                     );
 
                     final songInfo = Align(
@@ -397,12 +482,22 @@ class NowPlayingScreen extends StatelessWidget {
                       ),
                     );
 
+                    
+                    final activePosition = _isVideoMode ? (videoProvider.videoController?.value.position ?? Duration.zero) : playerProvider.position;
+                    final activeDuration = _isVideoMode ? (videoProvider.videoController?.value.duration ?? Duration.zero) : playerProvider.duration;
+
                     final seekBar = WavySeekBar(
-                      position: playerProvider.position,
-                      duration: playerProvider.duration,
+                      position: activePosition,
+                      duration: activeDuration,
                       activeColor: accentColor,
                       inactiveColor: context.themeTextColor24,
-                      onSeek: (newPos) => playerProvider.seek(newPos),
+                      onSeek: (newPos) {
+                        if (_isVideoMode) {
+                          videoProvider.videoController?.seekTo(newPos);
+                        } else {
+                          playerProvider.seek(newPos);
+                        }
+                      },
                     );
 
                     final timeStamps = Padding(
@@ -411,11 +506,11 @@ class NowPlayingScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            _formatDuration(playerProvider.position),
+                            _formatDuration(activePosition),
                             style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                           ),
                           Text(
-                            _formatDuration(playerProvider.duration),
+                            _formatDuration(activeDuration),
                             style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                           ),
                         ],
@@ -434,14 +529,34 @@ class NowPlayingScreen extends StatelessWidget {
                         children: [
                           BouncyIconButton(
                             child: Icon(Icons.replay_10_rounded, color: context.themeMutedTextColor, size: isWide ? 32 : 28),
-                            onPressed: () => playerProvider.seekBackward(),
+                            onPressed: () {
+                              if (_isVideoMode) {
+                                final pos = videoProvider.videoController?.value.position ?? Duration.zero;
+                                videoProvider.videoController?.seekTo(pos - const Duration(seconds: 10));
+                              } else {
+                                playerProvider.seekBackward();
+                              }
+                            },
                           ),
                           BouncyIconButton(
                             child: Icon(Icons.skip_previous_rounded, color: context.themeTextColor, size: isWide ? 42 : 36),
-                            onPressed: () => playerProvider.skipToPrevious(),
+                            onPressed: () {
+                              if (!_isVideoMode) playerProvider.skipToPrevious();
+                            },
                           ),
                           BouncyIconButton(
-                            onPressed: () => playerProvider.togglePlayPause(),
+                            onPressed: () {
+                              if (_isVideoMode) {
+                                final ctrl = videoProvider.videoController;
+                                if (ctrl != null) {
+                                  ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
+                                  // trigger rebuild for icon
+                                  setState((){});
+                                }
+                              } else {
+                                playerProvider.togglePlayPause();
+                              }
+                            },
                             padding: EdgeInsets.zero,
                             child: Container(
                               width: isWide ? 72 : 62,
@@ -452,8 +567,18 @@ class NowPlayingScreen extends StatelessWidget {
                                 shape: BoxShape.circle,
                               ),
                               child: AnimatedPlayPauseButton(
-                                isPlaying: playerProvider.isPlaying,
-                                onPressed: () => playerProvider.togglePlayPause(),
+                                isPlaying: _isVideoMode ? (videoProvider.videoController?.value.isPlaying ?? false) : playerProvider.isPlaying,
+                                onPressed: () {
+                                  if (_isVideoMode) {
+                                    final ctrl = videoProvider.videoController;
+                                    if (ctrl != null) {
+                                      ctrl.value.isPlaying ? ctrl.pause() : ctrl.play();
+                                      setState((){});
+                                    }
+                                  } else {
+                                    playerProvider.togglePlayPause();
+                                  }
+                                },
                                 color: context.themeInvertedTextColor,
                                 size: isWide ? 44 : 38,
                               ),
@@ -461,11 +586,20 @@ class NowPlayingScreen extends StatelessWidget {
                           ),
                           BouncyIconButton(
                             child: Icon(Icons.skip_next_rounded, color: context.themeTextColor, size: isWide ? 42 : 36),
-                            onPressed: () => playerProvider.skipToNext(),
+                            onPressed: () {
+                              if (!_isVideoMode) playerProvider.skipToNext();
+                            },
                           ),
                           BouncyIconButton(
                             child: Icon(Icons.forward_10_rounded, color: context.themeMutedTextColor, size: isWide ? 32 : 28),
-                            onPressed: () => playerProvider.seekForward(),
+                            onPressed: () {
+                              if (_isVideoMode) {
+                                final pos = videoProvider.videoController?.value.position ?? Duration.zero;
+                                videoProvider.videoController?.seekTo(pos + const Duration(seconds: 10));
+                              } else {
+                                playerProvider.seekForward();
+                              }
+                            },
                           ),
                         ],
                       ),

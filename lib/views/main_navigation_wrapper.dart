@@ -19,7 +19,6 @@ import 'library/library_screen.dart';
 import 'player/now_playing_screen.dart';
 import 'search/search_screen.dart';
 import 'widgets/mini_player.dart';
-import 'video/video_miniplayer.dart';
 import 'widgets/import_progress_banner.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
@@ -282,8 +281,6 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
                           ),
                         ),
                       ),
-                      // Video Miniplayer Overlay (Highest Z-Index)
-                      const VideoMiniplayer(),
                     ],
                   ),
                 ),
@@ -299,9 +296,6 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> with Widg
                 index: _currentTab < screens.length ? _currentTab : 0,
                 children: screens,
               ),
-
-              // Video Miniplayer Overlay (Behind the Bottom Nav Bar)
-              const VideoMiniplayer(),
 
               // Floating MiniPlayer + Bottom Navigation Bar Overlay
               if (MediaQuery.of(context).orientation == Orientation.portrait)
