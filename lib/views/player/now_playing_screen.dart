@@ -6,7 +6,9 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
+import '../../providers/lyrics_provider.dart';
 import '../lyrics/lyrics_screen.dart';
+import '../room/room_bottom_sheet.dart';
 import '../widgets/bouncy_icon_button.dart';
 import '../widgets/song_options_sheet.dart';
 import '../widgets/wavy_seek_bar.dart';
@@ -510,6 +512,25 @@ class NowPlayingScreen extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          BouncyIconButton(
+                            child: Icon(
+                              Icons.cell_tower_rounded, 
+                              color: playerProvider.isInRoom ? Colors.greenAccent : context.themeMutedTextColor, 
+                              size: 24,
+                            ),
+                            onPressed: () {
+                              if (playerProvider.isInRoom && playerProvider.isHost) {
+                                RoomBottomSheet.show(context, isHost: true);
+                              } else if (!playerProvider.isInRoom) {
+                                RoomBottomSheet.show(context, isHost: true);
+                              } else {
+                                // Guest trying to broadcast? 
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('You are already listening to a broadcast.'))
+                                );
+                              }
+                            },
+                          ),
                           BouncyIconButton(
                             child: Icon(
                               Icons.shuffle_rounded, 

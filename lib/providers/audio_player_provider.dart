@@ -13,6 +13,8 @@ import '../data/models/song_model.dart';
 import '../data/services/audio_player_handler.dart';
 import '../data/services/music_api_service.dart';
 import '../services/storage_service.dart';
+import '../services/room_service.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 enum AppThemeMode {
@@ -61,6 +63,16 @@ class AudioPlayerProvider extends ChangeNotifier {
   bool _uiHapticsEnabled = true;
   bool _audioSyncHapticsEnabled = false;
   Timer? _audioSyncHapticTimer;
+
+  // Listen Together State
+  final RoomService _roomService = RoomService();
+  String? _currentRoomId;
+  bool _isHost = false;
+  StreamSubscription<DatabaseEvent>? _roomSubscription;
+
+  String? get currentRoomId => _currentRoomId;
+  bool get isHost => _isHost;
+  bool get isInRoom => _currentRoomId != null;
 
   AudioPlayerProvider({
     required this.audioHandler,
@@ -469,7 +481,10 @@ class AudioPlayerProvider extends ChangeNotifier {
         } else if (_isRepeat) {
           await seek(Duration.zero);
           await audioHandler.play();
-        } else if (_queue.isNotEmpty) {
+        } else if (_queue.isNotEmpty && _isHost == false || (_isHost && _currentRoomId != null) || _currentRoomId == null) {
+           // Wait, if guest, don't auto-skip. Let host control it.
+           if (_currentRoomId != null && !_isHost) return;
+           
           if (_currentIndex == _queue.length - 1 && _isAutoplayEnabled) {
             // Reached the end of the queue, fetch similar songs!
             final current = _queue[_currentIndex];
@@ -487,6 +502,11 @@ class AudioPlayerProvider extends ChangeNotifier {
           await skipToNext();
         }
       }
+      
+      // Sync to room if host
+      if (_currentRoomId != null && _isHost && _currentSong != null) {
+        _roomService.updateRoomState(_currentRoomId!, _currentSong!.id, _position, _isPlaying);
+      }
       notifyListeners();
     });
 
@@ -497,6 +517,11 @@ class AudioPlayerProvider extends ChangeNotifier {
       if (!_hasSentTelemetryForCurrentSong && _currentSong != null && pos.inSeconds >= 30) {
         _hasSentTelemetryForCurrentSong = true;
         BackendApiService.sendTelemetryPlay(_currentSong!);
+      }
+
+      // Sync Host position every few seconds
+      if (_currentRoomId != null && _isHost && _currentSong != null && _isPlaying && pos.inSeconds % 5 == 0) {
+        _roomService.updateRoomState(_currentRoomId!, _currentSong!.id, pos, _isPlaying);
       }
 
       notifyListeners();
@@ -742,5 +767,82 @@ class AudioPlayerProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('Error updating home widget: $e');
     }
+  }
+
+  // --- Listen Together Room Controls ---
+  Future<String?> startBroadcasting(String uid) async {
+    if (_currentSong == null) return null;
+    final roomId = await _roomService.createRoom(uid, _currentSong!, _position, _isPlaying);
+    _currentRoomId = roomId;
+    _isHost = true;
+    notifyListeners();
+    return roomId;
+  }
+
+  Future<void> joinSession(String roomId) async {
+    _currentRoomId = roomId;
+    _isHost = false;
+    notifyListeners();
+    
+    _roomSubscription?.cancel();
+    _roomSubscription = _roomService.listenToRoom(roomId).listen((event) async {
+      if (event.snapshot.value == null) {
+        leaveSession(); // Room closed
+        return;
+      }
+      
+      final data = Map<String, dynamic>.from(event.snapshot.value as Map);
+      final songId = data['songId']?.toString();
+      final isPlaying = data['isPlaying'] as bool? ?? false;
+      final positionMs = data['positionMs'] as int? ?? 0;
+      
+      // If song changed
+      if (songId != null && (_currentSong == null || _currentSong!.id != songId)) {
+        // Find in local queue or fetch from network (mock fetching for now by checking queue)
+        final inQueue = _queue.cast<Song?>().firstWhere((s) => s?.id == songId, orElse: () => null);
+        if (inQueue != null) {
+          await playSong(inQueue, queue: _queue);
+        } else {
+          // If we had apiService.getSongById we'd call it here
+          // For now, construct a dummy to sync playback if not in queue
+          final dummy = Song(
+            id: songId, 
+            saavnId: data['saavnId'] ?? songId,
+            title: data['title'] ?? 'Host Track', 
+            artist: data['artist'] ?? 'Unknown',
+            album: data['coverArt'] ?? 'Unknown',
+            coverArt: data['coverArt'] ?? '', 
+            duration: 0, 
+            addedAt: DateTime.now()
+          );
+          await playSong(dummy);
+        }
+      }
+      
+      // Sync Position if drift is > 2 seconds
+      final diff = (_position.inMilliseconds - positionMs).abs();
+      if (diff > 2000) {
+        await seek(Duration(milliseconds: positionMs));
+      }
+      
+      // Sync Playback State
+      if (isPlaying != _isPlaying) {
+        if (isPlaying) {
+          await audioHandler.play();
+        } else {
+          await audioHandler.pause();
+        }
+      }
+    });
+  }
+
+  void leaveSession() {
+    if (_isHost && _currentRoomId != null) {
+      _roomService.endRoom(_currentRoomId!);
+    }
+    _roomSubscription?.cancel();
+    _currentRoomId = null;
+    _isHost = false;
+    notifyListeners();
   }
 }

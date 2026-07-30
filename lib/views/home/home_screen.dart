@@ -20,6 +20,7 @@ import '../ai/ask_ai_screen.dart';
 import '../widgets/song_options_sheet.dart';
 import '../../providers/profile_provider.dart';
 import 'smart_recommendations_row.dart';
+import '../room/room_bottom_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -396,6 +397,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                   },
                                 ),
                               ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.cell_tower_rounded, 
+                                color: playerProvider.isInRoom ? Colors.greenAccent : context.themeTextColor, 
+                                size: 22
+                              ),
+                              onPressed: () => RoomBottomSheet.show(context, isHost: false),
+                              tooltip: 'Listen Together',
                             ),
                             IconButton(
                               icon: Icon(Icons.settings_outlined, color: context.themeTextColor, size: 22),
