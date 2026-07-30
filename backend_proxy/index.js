@@ -34,6 +34,7 @@ app.get('/api/streams', async (req, res) => {
       preferFreeFormats: true,
       youtubeSkipDashManifest: true,
       impersonate: 'chrome',
+      socketTimeout: 30, // Prevent infinite network hanging
     });
     
     // Process formats

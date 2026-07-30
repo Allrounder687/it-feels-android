@@ -1,7 +1,7 @@
-FROM node:18-alpine
+FROM node:20-slim
 
-# Install Python and FFmpeg (required for yt-dlp)
-RUN apk add --no-cache python3 ffmpeg
+# Install Python and FFmpeg (required for yt-dlp to process cipher/formats)
+RUN apt-get update && apt-get install -y python3 ffmpeg && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/app
 
