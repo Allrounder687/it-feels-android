@@ -5,3 +5,8 @@ compatibility_date = "2024-03-01"
 [vars]
 ENVIRONMENT = "production"
 DEFAULT_AUDIO_QUALITY = "320kbps"
+API_SECRET = "development_secret_123"
+
+[[kv_namespaces]]
+binding = "SEARCH_CACHE"
+id = "3cc3e8229403480a8aba34a1f1750550"

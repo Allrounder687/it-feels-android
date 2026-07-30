@@ -162,3 +162,10 @@ requirements.txt
 /assets/generated/
 /assets/downloads/
 /assets/cache/
+
+# ===============================
+# Cloudflare Worker Specifics
+# ===============================
+.wrangler/
+.dev.vars
+

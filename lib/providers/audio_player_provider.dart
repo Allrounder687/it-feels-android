@@ -36,6 +36,7 @@ class AudioPlayerProvider extends ChangeNotifier {
   bool _isShuffle = false;
   bool _isRepeat = false;
   List<Song> _favoriteSongs = [];
+  bool _hasSentTelemetryForCurrentSong = false;
 
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
@@ -491,6 +492,13 @@ class AudioPlayerProvider extends ChangeNotifier {
 
     audioHandler.player.positionStream.listen((pos) {
       _position = pos;
+      
+      // Telemetry: Fire event if song has played for 30 seconds naturally
+      if (!_hasSentTelemetryForCurrentSong && _currentSong != null && pos.inSeconds >= 30) {
+        _hasSentTelemetryForCurrentSong = true;
+        BackendApiService.sendTelemetryPlay(_currentSong!);
+      }
+
       notifyListeners();
     });
 
@@ -504,6 +512,7 @@ class AudioPlayerProvider extends ChangeNotifier {
 
   Future<void> playSong(Song song, {List<Song>? queue, int index = 0, BuildContext? context}) async {
     _currentSong = song;
+    _hasSentTelemetryForCurrentSong = false;
 
     if (queue != null && queue.isNotEmpty) {
       _queue = List.from(queue);

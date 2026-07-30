@@ -1,8 +1,8 @@
-# IT Feels Music  🎵
+# IT Feels Music  🎵
 
-A premium, modern Flutter Android music application built with the design aesthetics of **IT Feels Music** and powered by the **Jio API**.
+A premium, modern Flutter Android music application built with the design aesthetics of **IT Feels Music** and powered by the **FEELS Cloud Proxy Engine**.
 
-![IT Feels Music  Banner](https://img.shields.io/badge/IT Feels Music-%20Edition-FF4081?style=for-the-badge&logo=flutter)
+![IT Feels Music Banner](https://img.shields.io/badge/IT%20Feels%20Music-Edition-FF4081?style=for-the-badge&logo=flutter)
 ![Version](https://img.shields.io/badge/Version-2.3.7-blue?style=for-the-badge)
 ![Flutter Version](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter)
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android)
@@ -15,13 +15,14 @@ A premium, modern Flutter Android music application built with the design aesthe
 - **IT Feels Music UI Aesthetics**: High-contrast dark themes (Burgundy `#220F19` & Midnight Blue `#090D16`), organic artwork bubble collages (`HeroCollage`), display typography (`Outfit` & `Inter`), and custom squiggly progress bars (`WavySeekBar`).
 - **Zero Cognitive Overload UX**: Graceful empty states, smooth animated transitions on all player controls, and broadened hit areas for an effortless navigation experience.
 - **Spotify-like Search Engine**: Typo-tolerant, instantaneous Full-Text Search using a native Isar database and normalized `searchVector` logic.
-|- **Multi-Provider Smart Playlist Engine:** Leverages three production-ready LLM backends (ChatGPT `gpt-5-mini`, Claude Haiku 4.5, Gemini 2.5 Flash) for playlist generation with fallback auto-selection based on provider availability and cost efficiency.
+- **Multi-Provider Smart Playlist Engine:** Leverages three highly cost-efficient 2026 LLM backend proxies (ChatGPT `gpt-5.6-luna`, Claude `haiku-4-5-20251001`, Gemini `3.5-flash-lite`) for playlist generation, fully protected and routed via the Cloudflare Edge.
+- **Backend E2E Validation:** Ships with a standalone native Node.js testing harness (`npm run test`) for the Cloudflare Worker to rapidly iterate on AI prompts and KV caching without needing the mobile client.
 - **Curated Moods & Charts**: Dedicated dynamic tabs for curated mood playlists (with English/Hindi toggle) and top global streaming charts.
 - **Hidden Songs Manager**: Full control over your feed with the ability to hide unwanted songs and manage them via a dedicated privacy setting.
 - **Fully Populated Library Tabs**: Real dynamic data for `SONGS`, `FAVORITES`, `DOWNLOADS`, `ALBUMS`, `ARTIST`, and `PLAYLISTS`.
 - **Offline Download Manager**: Full `DownloadService` allowing users to download 320kbps audio streams (`.mp3`/`.mp4`) and cover art to local device storage (`path_provider`) for offline playback.
 - **Full Artist Discography (`ArtistDetailScreen`)**: Artist search (e.g., "Atif Aslam", "Arijit Singh") displays verified artist cards with avatar image, top songs, and discography albums & singles grid.
-- **Jio 320kbps High Quality Audio**: Real-time DES-ECB link decryption and 320kbps AAC/MP4 stream URL resolution (`DesDecryptor`).
+- **Cloud-Powered High Quality Audio**: Real-time DES-ECB link decryption and 320kbps AAC/MP4 stream URL resolution (`DesDecryptor`).
 - **30pt High-Contrast Synced Lyrics**: Devanagari-to-Romanized transliteration (`HinglishTransliterator`) with enlarged 30pt bold active line autoscroll, interactive tap-to-seek playback, and smooth scale transitions.
 - **Categorized Audio Quality & Settings**: Dedicated `SettingsScreen` for Wi-Fi streaming quality (`320 kbps` / `160 kbps`), mobile data quality, download quality, storage management, and theme selection.
 - **Hero Artwork Transitions & Persistent MiniPlayer**: Seamless morphing of album cover art and persistent MiniPlayer visibility across all internal app routes.
@@ -90,3 +91,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **TrollStore iPad Support:** Correctly formatted QR codes for 1-tap installation via iOS/iPadOS camera.
 - **Flawless Playback Cache:** Robust JSON fallback mechanisms that guarantee Recently Played and Queue states resume flawlessly even after hard restarts.
 - **Tablet & Large Screen UI:** Added dynamic side-by-side player layouts, Hero Banners, and authentic glassmorphism for a stunning tablet experience.
+- **Cloudflare Edge Acceleration:** Deployed Phase 1 Cloudflare Worker enhancements including KV caching for zero-latency searches/lyrics, a dynamic Image Proxy cache for CDN acceleration, and robust API Abuse Prevention via the `X-Feels-Secret` HTTP header.

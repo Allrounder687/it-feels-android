@@ -10,6 +10,10 @@ class BackendApiService {
   static String baseUrl = 'https://it-feels-proxy.cleverfox687.workers.dev'; 
   static bool useProxyBackend = false; // Toggle to switch between direct & proxy mode
 
+  static const Map<String, String> _proxyHeaders = {
+    'X-Feels-Secret': 'development_secret_123',
+  };
+
   /// Search tracks across multi-source backend proxy
   static Future<List<Song>> search(String query, {int page = 1, int limit = 20}) async {
     if (!useProxyBackend) {
@@ -25,7 +29,7 @@ class BackendApiService {
         'provider': 'saavn',
       });
 
-      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['results'] is List) {
@@ -67,7 +71,7 @@ class BackendApiService {
         });
       }
 
-      final response = await http.get(uri).timeout(const Duration(seconds: 5));
+      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['streamUrl'] != null) {
@@ -96,7 +100,7 @@ class BackendApiService {
         if (duration != null && duration > 0) 'duration': duration.toString(),
       });
 
-      final response = await http.get(uri).timeout(const Duration(seconds: 6));
+      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['lyrics'] != null) {
@@ -114,11 +118,57 @@ class BackendApiService {
     return null;
   }
 
+  /// AI Edge Action Proxy
+  static Future<Map<String, dynamic>?> performAiAction({
+    required String provider,
+    required String action,
+    required Map<String, dynamic> payload,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/ai/action');
+      final response = await http.post(
+        uri,
+        headers: {..._proxyHeaders, 'Content-Type': 'application/json'},
+        body: json.encode({
+          'provider': provider,
+          'action': action,
+          'payload': payload,
+        }),
+      ).timeout(const Duration(seconds: 25));
+      
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] AI Action Error: $e');
+    }
+    return null;
+  }
+
+  /// Telemetry Play Event Tracker
+  static Future<void> sendTelemetryPlay(Song song) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/telemetry/play');
+      await http.post(
+        uri,
+        headers: {..._proxyHeaders, 'Content-Type': 'application/json'},
+        body: json.encode({
+          'songId': song.id,
+          'title': song.title,
+          'artist': song.artist,
+          'coverArt': song.coverArt,
+        }),
+      ).timeout(const Duration(seconds: 5));
+    } catch (e) {
+      debugPrint('[BackendApiService] Telemetry Play Error: $e');
+    }
+  }
+
   /// Fetch MP4 Video Streams with Age Restriction Bypass
   static Future<Map<String, dynamic>> getVideoStreams(String videoId) async {
     try {
       final uri = Uri.parse('$baseUrl/api/v1/video').replace(queryParameters: {'id': videoId});
-      final response = await http.get(uri).timeout(const Duration(seconds: 8));
+      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List streamsList = data['streams'] ?? [];
@@ -172,7 +222,7 @@ class BackendApiService {
   static Future<List<Map<String, dynamic>>> searchVideos(String query) async {
     try {
       final uri = Uri.parse('$baseUrl/api/v1/videos/search').replace(queryParameters: {'query': query});
-      final response = await http.get(uri).timeout(const Duration(seconds: 6));
+      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List list = data['videos'] ?? [];
@@ -192,7 +242,7 @@ class BackendApiService {
   static Future<List<Map<String, dynamic>>> getTrendingVideos() async {
     try {
       final uri = Uri.parse('$baseUrl/api/v1/videos/trending');
-      final response = await http.get(uri).timeout(const Duration(seconds: 6));
+      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List list = data['videos'] ?? [];
@@ -376,7 +426,8 @@ class BackendApiService {
     final List<Map<String, dynamic>> videos = [];
     
     try {
-      final related = await yt.videos.getRelatedVideos(VideoId(cleanId));
+      final targetVideo = await yt.videos.get(VideoId(cleanId));
+      final related = await yt.videos.getRelatedVideos(targetVideo);
       if (related != null) {
         for (final video in related) {
           videos.add({
@@ -385,7 +436,7 @@ class BackendApiService {
             'uploader': video.author,
             'duration': video.duration?.inSeconds ?? 0,
             'thumbnail': video.thumbnails.highResUrl,
-            'views': '${_formatViews(video.viewCount)} views',
+            'views': '${_formatViews(video.engagement.viewCount)} views',
             'uploadedAt': '', // Not always provided by related API
           });
         }

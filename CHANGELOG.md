@@ -6,6 +6,9 @@ All notable changes to **IT Feels Music** will be documented in this file.
 
 ### Added
 - **FEELS Cloud Proxy Engine**: Integrated lightweight Cloudflare Workers / Node.js backend proxy support. Decouples stream URL decryption, multi-source track search, and lyrics extraction from mobile APK binaries into zero-downtime serverless edge functions.
+  - **Edge Caching via KV**: Added intelligent Cloudflare KV caching for the Search and Lyrics API endpoints, resulting in blazing fast zero-latency responses for repeated global queries.
+  - **API Abuse Prevention**: Implemented a global security middleware requiring an `X-Feels-Secret` header on all proxy routes to protect the backend from external scrapers.
+  - **Dynamic Image Proxy**: Added a dedicated endpoint to fetch and cache album artwork efficiently using Cloudflare's global CDN capabilities, saving user bandwidth.
 - **Musixmatch Lyrics Integration**: Added Musixmatch API as secondary fallback provider in Cloudflare Worker lyrics pipeline for synced and plain text lyrics.
 - **Zero-Cognitive-Overload Search Badges**: Added micro provider pills (`[SAAVN]`, `[YOUTUBE]`, `[SPOTIFY]`) in Search result tiles for instant source transparency.
 - **Premium Lyrics Typography**: Upgraded lyrics screen font to **Plus Jakarta Sans** (with on-the-fly font selector for Syne, Space Grotesk, and Outfit).
@@ -74,14 +77,12 @@ All notable changes to **IT Feels Music** will be documented in this file.
 ### Fixed
 - **AI Initialization Bug**: Fixed an edge case in `AIService` where the early exit `_isInitialized` check prevented dynamic swapping of AI providers when API keys were entered post-startup, trapping the app in Mock mode.
 - **Auto AI Selection**: Rewrote "Auto" provider logic to intelligently skip `MockAIProvider` and actively lock onto the first configured real AI provider (ChatGPT, Gemini, or Claude).
-- **Edge-to-Edge System Navigation**: Wrapped the floating Bottom Navigation Bar overlay in a `SafeArea` to prevent the Android OS navigation gesture pill / 3-button layout from clipping and hiding the custom UI.
-
----
-
-## [2.3.1] - 2026-07-27
-
-### Added
-|- **AI Model Upgrades:** ChatGPT upgraded to `gpt-5-mini-2025-08-07`, Claude Haiku to `claude-haiku-4-5-20251001`, and Gemini to `gemini-2.5-flash` for lower-cost, higher-performance playlist generation (see `lib/core/ai/providers/`).
+- **Cloudflare Edge Engine (Phase 1 & 2):** Deployed a robust Cloudflare Worker proxy that intercepts multi-source searches (Saavn, YouTube, Spotify) and securely caches them via KV storage for instant load times across all clients. The Edge Proxy now fully manages all AI Prompts & API keys.
+- **Model Updates for IT Feels AI Provider:** Upgraded the AI proxy backend to use the absolute most cost-efficient budget models for mid-2026:
+  - ChatGPT: Migrated to `gpt-5.6-luna` (OpenAI's lowest-cost GPT-5.6 series model).
+  - Claude: Migrated to `claude-haiku-4-5-20251001` (Anthropic's cheapest high-speed tier).
+  - Gemini: Migrated to `gemini-3.5-flash-lite` (Google's latest low-latency budget model).
+- **Backend E2E Test Suite:** Created a comprehensive `npm run test` harness to validate all KV caching, proxy routing, and real-time AI capabilities without needing to boot the Flutter app.
 
 ---
 

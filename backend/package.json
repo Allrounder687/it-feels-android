@@ -5,7 +5,8 @@
   "main": "src/index.ts",
   "scripts": {
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy --minify"
+    "deploy": "wrangler deploy --minify",
+    "test": "node test.js"
   },
   "dependencies": {
     "hono": "^4.0.0",

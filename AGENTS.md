@@ -2,7 +2,9 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
-|- **Model Updates for IT Feels AI Provider:** Upgraded ChatGPT from `gpt-4o-mini` → `gpt-5-mini-2025-08-07`, Claude from `claude-3-5-haiku-20241022` → `claude-haiku-4-5-20251001`, and Gemini from `gemini-1.5-flash` → `gemini-2.5-flash` for significantly better price/performance ratios in playlist generation features.
+- **Cloudflare Edge Acceleration:** Deployed Phase 1 Cloudflare Worker enhancements including KV caching for zero-latency multi-source searches and lyrics lookups, a dynamic Image Proxy cache for CDN acceleration, and robust API Abuse Prevention via the `X-Feels-Secret` HTTP header.
+- **Model Updates for IT Feels AI Provider:** Upgraded ChatGPT to `gpt-5.6-luna`, Claude to `claude-haiku-4-5-20251001`, and Gemini to `gemini-3.5-flash-lite` to ensure the absolute lowest possible API costs while maintaining 2026-level performance.
+- **Backend E2E Validation:** Created a standalone native Node.js testing harness (`npm run test`) for the Cloudflare Worker to rapidly iterate on AI prompts, KV caching, and multi-source scraping APIs completely isolated from the Flutter app.
 - **Audiophile DSP Integration:** Implemented toggle controls for AndroidEqualizer and AndroidLoudnessEnhancer within Settings, bypassing complex manual slider UX for zero cognitive overload.
 - **Bitrate Badges:** Enhanced Now Playing screen to dynamically show LOSSLESS, HIGH-RES, or 320 KBPS badges by parsing the media stream extension.
 - **CDN Token Expiry Handling:** Fixed `just_audio` 00:00 bug by aggressively stripping `encryptedMediaUrl` before saving to local database. This prevents restoring ephemeral Jio CDN links and forces fresh API resolution on playback resume.

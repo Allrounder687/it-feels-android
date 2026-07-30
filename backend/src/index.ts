@@ -6,10 +6,27 @@ import { SpotifyProvider } from './providers/spotify';
 import { LrcLibProvider } from './providers/lrclib';
 import { MusixmatchProvider } from './providers/musixmatch';
 
-const app = new Hono();
+type Bindings = {
+  SEARCH_CACHE: KVNamespace;
+  API_SECRET: string;
+  OPENAI_API_KEY?: string;
+  ANTHROPIC_API_KEY?: string;
+  GEMINI_API_KEY?: string;
+};
+
+const app = new Hono<{ Bindings: Bindings }>();
 
 // Enable CORS for mobile app access
 app.use('*', cors());
+
+// API Security Middleware
+app.use('/api/*', async (c, next) => {
+  const secret = c.req.header('X-Feels-Secret');
+  if (c.env.API_SECRET && secret !== c.env.API_SECRET) {
+    return c.json({ error: 'Unauthorized', message: 'Invalid or missing API secret' }, 401);
+  }
+  await next();
+});
 
 // Health Check
 app.get('/health', (c) => {
@@ -88,20 +105,32 @@ app.get('/api/v1/search', async (c) => {
     return c.json({ error: 'Query parameter is required' }, 400);
   }
 
+  const cacheKey = `search:${provider}:${query}:${page}:${limit}`;
+  const cached = await c.env.SEARCH_CACHE.get(cacheKey, 'json');
+  if (cached) {
+    return c.json(cached);
+  }
+
   try {
     if (provider === 'saavn') {
       const results = await SaavnProvider.search(query, page, limit);
-      return c.json({ success: true, query, provider: 'saavn', results });
+      const res = { success: true, query, provider: 'saavn', results };
+      c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 86400 }));
+      return c.json(res);
     }
 
     if (provider === 'youtube') {
       const results = await YoutubeProvider.search(query, limit);
-      return c.json({ success: true, query, provider: 'youtube', results });
+      const res = { success: true, query, provider: 'youtube', results };
+      c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 86400 }));
+      return c.json(res);
     }
 
     if (provider === 'spotify') {
       const results = await SpotifyProvider.search(query, limit);
-      return c.json({ success: true, query, provider: 'spotify', results });
+      const res = { success: true, query, provider: 'spotify', results };
+      c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 86400 }));
+      return c.json(res);
     }
 
     // Default: 'all' -> Query Saavn, YouTube, and Spotify in parallel
@@ -117,13 +146,15 @@ app.get('/api/v1/search', async (c) => {
 
     const combined = [...saavnList, ...ytList, ...spotifyList];
 
-    return c.json({
+    const res = {
       success: true,
       query,
       provider: 'all',
       totalCount: combined.length,
       results: combined,
-    });
+    };
+    c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 86400 }));
+    return c.json(res);
   } catch (e: any) {
     return c.json({ error: 'Search failed', details: e.message }, 500);
   }
@@ -261,6 +292,12 @@ app.get('/api/v1/lyrics', async (c) => {
     return c.json({ error: 'track and artist parameters are required' }, 400);
   }
 
+  const cacheKey = `lyrics:${track}:${artist}:${album || ''}:${duration}`;
+  const cached = await c.env.SEARCH_CACHE.get(cacheKey, 'json');
+  if (cached) {
+    return c.json(cached);
+  }
+
   try {
     // 1. Try LrcLib primary
     let lyrics = await LrcLibProvider.getLyrics(track, artist, album, duration);
@@ -275,10 +312,113 @@ app.get('/api/v1/lyrics', async (c) => {
       return c.json({ success: false, message: 'Lyrics not found' }, 404);
     }
 
-    return c.json({ success: true, lyrics });
+    const res = { success: true, lyrics };
+    // Cache lyrics for 7 days
+    c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 604800 }));
+    return c.json(res);
   } catch (e: any) {
     return c.json({ error: 'Lyrics fetch failed', details: e.message }, 500);
   }
+});
+
+// Image Proxy Route (Caches images at the edge via Cloudflare CDN)
+app.get('/api/v1/image-proxy', async (c) => {
+  const url = c.req.query('url');
+  
+  if (!url) {
+    return c.json({ error: 'url parameter is required' }, 400);
+  }
+
+  try {
+    const imageRes = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      },
+    });
+
+    if (!imageRes.ok) {
+      return c.json({ error: 'Failed to fetch image' }, imageRes.status as any);
+    }
+
+    // Set aggressive cache headers to cache the binary data at the edge
+    c.header('Cache-Control', 'public, max-age=31536000, immutable');
+    c.header('Content-Type', imageRes.headers.get('Content-Type') || 'image/jpeg');
+
+    return c.body(imageRes.body);
+  } catch (e: any) {
+    return c.json({ error: 'Image proxy failed', details: e.message }, 500);
+  }
+});
+
+// AI Proxy Route
+app.post('/api/v1/ai/action', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any));
+  const { provider, action, payload } = body;
+  
+  if (!provider || !action || !payload) {
+    return c.json({ error: 'Missing provider, action, or payload' }, 400);
+  }
+
+  try {
+    const { handleOpenAIAction, handleClaudeAction, handleGeminiAction } = await import('./ai');
+    let result: any = null;
+    
+    if (provider === 'chatgpt') {
+      const apiKey = c.env.OPENAI_API_KEY;
+      if (!apiKey) throw new Error('OPENAI_API_KEY missing');
+      result = await handleOpenAIAction(apiKey, action, payload);
+    } else if (provider === 'claude') {
+      const apiKey = c.env.ANTHROPIC_API_KEY;
+      if (!apiKey) throw new Error('ANTHROPIC_API_KEY missing');
+      result = await handleClaudeAction(apiKey, action, payload);
+    } else if (provider === 'gemini') {
+      const apiKey = c.env.GEMINI_API_KEY;
+      if (!apiKey) throw new Error('GEMINI_API_KEY missing');
+      result = await handleGeminiAction(apiKey, action, payload);
+    } else {
+      throw new Error('Unsupported provider');
+    }
+    
+    return c.json({ success: true, result });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
+  }
+});
+
+// Telemetry Play Event Route
+app.post('/api/v1/telemetry/play', async (c) => {
+  const body = await c.req.json().catch(() => ({} as any));
+  const { songId, title, artist, coverArt } = body;
+  
+  if (!songId) return c.json({ error: 'Missing songId' }, 400);
+
+  const today = new Date().toISOString().split('T')[0];
+  const chartKey = `chart:${today}`;
+
+  c.executionCtx.waitUntil((async () => {
+    let chart = await c.env.SEARCH_CACHE.get(chartKey, 'json') as any || {};
+    if (!chart[songId]) {
+      chart[songId] = { count: 0, title, artist, coverArt };
+    }
+    chart[songId].count += 1;
+    await c.env.SEARCH_CACHE.put(chartKey, JSON.stringify(chart), { expirationTtl: 86400 * 7 });
+  })());
+
+  return c.json({ success: true });
+});
+
+// Telemetry Trending Charts Route
+app.get('/api/v1/charts/trending', async (c) => {
+  const today = new Date().toISOString().split('T')[0];
+  const chartKey = `chart:${today}`;
+  let chart = await c.env.SEARCH_CACHE.get(chartKey, 'json') as any || {};
+  
+  const trending = Object.entries(chart)
+    .map(([id, data]: any) => ({ id, ...data }))
+    .sort((a: any, b: any) => b.count - a.count)
+    .slice(0, 50);
+
+  return c.json({ success: true, trending });
 });
 
 export default app;
