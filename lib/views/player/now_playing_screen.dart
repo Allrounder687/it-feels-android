@@ -1,12 +1,9 @@
 import 'package:it_feels_music/views/widgets/custom_image_widget.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../../core/theme/app_colors.dart';
 import '../../providers/audio_player_provider.dart';
 import '../../providers/download_provider.dart';
-import '../../providers/lyrics_provider.dart';
 import '../../providers/video_player_provider.dart';
 import '../lyrics/lyrics_screen.dart';
 import '../room/room_bottom_sheet.dart';
@@ -17,7 +14,6 @@ import 'queue_bottom_sheet.dart';
 import 'sleep_timer_sheet.dart';
 import '../home/driving_mode_screen.dart';
 import '../widgets/animated_play_pause_button.dart';
-import '../../providers/settings_provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
@@ -45,7 +41,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
     if (toVideo) {
       // Switching to video
       final position = audioProvider.position;
-      audioProvider.pause();
+      audioProvider.audioHandler.pause();
       
       videoProvider.playVideo(
         currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}',
@@ -59,7 +55,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
       final position = videoProvider.videoController?.value.position ?? Duration.zero;
       videoProvider.videoController?.pause();
       audioProvider.seek(position);
-      audioProvider.play();
+      audioProvider.audioHandler.play();
     }
   }
 
@@ -94,7 +90,6 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
         final isFav = playerProvider.isFavorite(currentSong.id);
         final isDown = downloadProvider.isDownloaded(currentSong.id);
         final isDownloading = downloadProvider.isDownloading(currentSong.id);
-        final settingsProvider = Provider.of<SettingsProvider>(context);
 
         return Scaffold(
           backgroundColor: bgColor,
