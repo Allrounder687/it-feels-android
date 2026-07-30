@@ -28,12 +28,19 @@ class LocalStreamProxy {
             return;
           }
 
-          final clientReq = http.Request('GET', Uri.parse(_currentStreamUrl!));
+          final isHeadRequest = request.method.toUpperCase() == 'HEAD';
+          final methodToUse = isHeadRequest ? 'GET' : request.method;
+          final clientReq = http.Request(methodToUse, Uri.parse(_currentStreamUrl!));
           
-          // Forward the essential Range header from ExoPlayer
-          final rangeHeader = request.headers.value('range');
-          if (rangeHeader != null) {
-            clientReq.headers['range'] = rangeHeader;
+          // Forward essential headers from ExoPlayer
+          request.headers.forEach((key, values) {
+            if (key.toLowerCase() != 'host' && key.toLowerCase() != 'user-agent') {
+              clientReq.headers[key] = values.join(', ');
+            }
+          });
+          
+          if (isHeadRequest) {
+            clientReq.headers['range'] = 'bytes=0-0';
           }
           
           // Add spoofed mobile headers to satisfy YouTube's anti-bot system
@@ -46,15 +53,26 @@ class LocalStreamProxy {
           
           // Forward response headers back to ExoPlayer
           streamedRes.headers.forEach((key, value) {
-            // Avoid setting restricted HTTP/2 headers on dart HttpServer
             if (key.toLowerCase() != 'transfer-encoding' && key.toLowerCase() != 'content-encoding') {
               try {
-                request.response.headers.set(key, value);
+                // If it was a HEAD request converted to a 0-0 GET, we need to fix Content-Range to look like Content-Length
+                if (isHeadRequest && key.toLowerCase() == 'content-range') {
+                  final parts = value.split('/');
+                  if (parts.length == 2) {
+                    request.response.headers.set('Content-Length', parts[1]);
+                  }
+                } else {
+                  request.response.headers.set(key, value);
+                }
               } catch (_) {}
             }
           });
           
-          await streamedRes.stream.pipe(request.response);
+          if (isHeadRequest) {
+            await request.response.close();
+          } else {
+            await streamedRes.stream.pipe(request.response);
+          }
         } catch (e) {
           debugPrint('[LocalStreamProxy] Error serving request: $e');
           try {
