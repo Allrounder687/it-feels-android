@@ -13,17 +13,18 @@ class VideoMiniplayer extends StatelessWidget {
     final videoProvider = Provider.of<VideoPlayerProvider>(context);
 
     if (!videoProvider.isVideoActive) {
-      return const SizedBox.shrink();
-    }
-
-    final minHeight = 80.0 + MediaQuery.of(context).padding.bottom + 80.0; // Above bottom nav
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    
+    final minHeight = isLandscape 
+        ? MediaQuery.of(context).size.height
+        : 80.0 + MediaQuery.of(context).padding.bottom + 80.0; // Above bottom nav
 
     return Miniplayer(
       controller: videoProvider.miniplayerController,
       minHeight: minHeight,
       maxHeight: MediaQuery.of(context).size.height,
       builder: (height, percentage) {
-        final isMinimized = percentage < 0.2;
+        final isMinimized = percentage < 0.2 && !isLandscape;
 
         if (isMinimized) {
           // Minimized PiP Player
