@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:it_feels_music/services/subscription_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -8,6 +9,7 @@ void main() {
   late SubscriptionService subscriptionService;
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     fakeFirestore = FakeFirebaseFirestore();
     subscriptionService = SubscriptionService(firestore: fakeFirestore);
   });
