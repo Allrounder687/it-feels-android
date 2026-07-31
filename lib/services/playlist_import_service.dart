@@ -1,3 +1,4 @@
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:it_feels_music/features/library/custom_playlist_provider.dart';

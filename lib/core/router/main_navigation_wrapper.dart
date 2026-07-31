@@ -155,7 +155,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                         Navigator.pop(context);
                         PlaylistImportService().startBackgroundImport(
                           url, 
-                          ref.read(customPlaylistProvider.notifier), 
+                          ref.read(customPlaylistProvider), 
                           MusicApiService()
                         );
                       },

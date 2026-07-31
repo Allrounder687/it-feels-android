@@ -394,7 +394,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 
-  void _showCreatePlaylistDialog(BuildContext context, CustomPlaylistProvider provider) {
+  void _showCreatePlaylistDialog(BuildContext context, CustomPlaylistState provider) {
     final TextEditingController controller = TextEditingController();
     showDialog(
       context: context,
