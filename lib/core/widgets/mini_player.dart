@@ -55,7 +55,7 @@ class MiniPlayer extends ConsumerWidget {
                     right: 0,
                     top: 0,
                     child: StreamBuilder<Duration>(
-                      stream: playerProvider.audioHandler.player.positionStream,
+                      stream: ref.read(audioPlayerProvider.notifier).audioHandler.player.positionStream,
                       initialData: playerProvider.position,
                       builder: (context, snapshot) {
                         final pos = snapshot.data ?? playerProvider.position;

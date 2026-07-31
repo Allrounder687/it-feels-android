@@ -67,6 +67,8 @@ class AudioPlayerState {
   // Autoplay & Crossfade
   final bool isAutoplayEnabled;
   final double crossfadeDuration;
+  final double playbackSpeed;
+  final double playbackPitch;
 
   const AudioPlayerState({
     this.currentSong,
@@ -97,6 +99,8 @@ class AudioPlayerState {
     this.isHost = false,
     this.isAutoplayEnabled = true,
     this.crossfadeDuration = 0.0,
+    this.playbackSpeed = 1.0,
+    this.playbackPitch = 1.0,
   });
 
   bool get isInRoom => currentRoomId != null;
@@ -218,6 +222,8 @@ class AudioPlayerState {
     bool? isHost,
     bool? isAutoplayEnabled,
     double? crossfadeDuration,
+    double? playbackSpeed,
+    double? playbackPitch,
   }) {
     return AudioPlayerState(
       currentSong: clearCurrentSong ? null : (currentSong ?? this.currentSong),
@@ -248,6 +254,8 @@ class AudioPlayerState {
       isHost: isHost ?? this.isHost,
       isAutoplayEnabled: isAutoplayEnabled ?? this.isAutoplayEnabled,
       crossfadeDuration: crossfadeDuration ?? this.crossfadeDuration,
+      playbackSpeed: playbackSpeed ?? this.playbackSpeed,
+      playbackPitch: playbackPitch ?? this.playbackPitch,
     );
   }
 }
@@ -531,6 +539,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Future<void> setPlaybackSpeed(double speed) async {
     try {
       await audioHandler.player.setSpeed(speed);
+      state = state.copyWith(playbackSpeed: speed);
       _saveAudioSettings();
     } catch (e) {
       debugPrint("Error setting Speed: $e");
@@ -540,6 +549,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Future<void> setPlaybackPitch(double pitch) async {
     try {
       await audioHandler.player.setPitch(pitch);
+      state = state.copyWith(playbackPitch: pitch);
       _saveAudioSettings();
     } catch (e) {
       debugPrint("Error setting Pitch: $e");

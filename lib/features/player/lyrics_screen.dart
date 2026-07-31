@@ -298,7 +298,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                                 ),
                               ),
                                StreamBuilder<Duration>(
-                                stream: playerProvLocal.audioHandler.player.positionStream,
+                                stream: ref.read(audioPlayerProvider.notifier).audioHandler.player.positionStream,
                                 initialData: playerProvLocal.position,
                                 builder: (context, snapshot) {
                                   final currentPos = snapshot.data ?? playerProvLocal.position;
@@ -317,7 +317,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                         const SizedBox(width: 12),
 
                         GestureDetector(
-                          onTap: () => playerProvLocal.togglePlayPause(),
+                          onTap: () => ref.read(audioPlayerProvider.notifier).togglePlayPause(),
                           child: Container(
                             width: 40,
                             height: 40,

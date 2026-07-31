@@ -69,7 +69,7 @@ class QueueBottomSheet extends ConsumerWidget {
                     Switch(
                       value: playerProvider.isAutoplayEnabled,
                       onChanged: (val) {
-                        playerProvider.toggleAutoplay();
+                        ref.read(audioPlayerProvider.notifier).toggleAutoplay();
                       },
                       activeThumbColor: playerProvider.themeAccentColor,
                     ),

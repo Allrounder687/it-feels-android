@@ -131,7 +131,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                           ),
                           onTap: () {
-                            audioProvider.playSong(song, queue: _topSongs, index: index);
+                            ref.read(audioPlayerProvider.notifier).playSong(song, queue: _topSongs, index: index);
                           },
                         );
                       },

@@ -96,7 +96,7 @@ class SleepTimerSheet extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimerOption(BuildContext context, AudioPlayerProvider provider, String title, Duration duration) {
+  Widget _buildTimerOption(BuildContext context, AudioPlayerState provider, String title, Duration duration) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       title: Text(
