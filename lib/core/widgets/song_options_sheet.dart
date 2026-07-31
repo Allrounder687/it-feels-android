@@ -266,7 +266,7 @@ class SongOptionsSheet extends ConsumerWidget {
                   content: Text("Hidden: ${song.title}"),
                   action: SnackBarAction(
                     label: "UNDO",
-                    onPressed: () => hiddenProv.unhideSong(song.id),
+                    onPressed: () => ref.read(hiddenSongsProvider.notifier).unhideSong(song.id),
                   ),
                 ),
               );
