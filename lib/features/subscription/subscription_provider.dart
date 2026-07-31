@@ -37,11 +37,30 @@ class SubscriptionProvider extends ChangeNotifier {
     });
     
     // Listen to RevenueCat updates
-    Purchases.addCustomerInfoUpdateListener((customerInfo) {
-      final isActive = customerInfo.entitlements.all[SubscriptionService.entitlementId]?.isActive == true;
-      if (_isPremium != isActive) {
-        _isPremium = isActive;
-        notifyListeners();
+    Purchases.addCustomerInfoUpdateListener((customerInfo) async {
+      final isRCActive = customerInfo.entitlements.all[SubscriptionService.entitlementId]?.isActive == true;
+      
+      if (isRCActive) {
+        if (!_isPremium) {
+          _isPremium = true;
+          notifyListeners();
+        }
+      } else {
+        // RevenueCat says no premium, but they might have a Firestore custom coupon
+        // So we re-verify via the backend before downgrading them.
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final isFirestoreActive = await _service.checkPremiumStatus(user.uid);
+          if (_isPremium != isFirestoreActive) {
+            _isPremium = isFirestoreActive;
+            notifyListeners();
+          }
+        } else {
+          if (_isPremium) {
+            _isPremium = false;
+            notifyListeners();
+          }
+        }
       }
     });
   }

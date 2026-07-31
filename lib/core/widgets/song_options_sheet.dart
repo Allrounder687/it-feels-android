@@ -42,8 +42,11 @@ class SongOptionsSheet extends ConsumerWidget {
     final isDown = downloadProv.isDownloaded(song.id);
     final isDownloading = downloadProv.isDownloading(song.id);
 
+    final hasActiveSong = playerProv.currentSong != null;
+    final bottomPadding = hasActiveSong ? 118.0 : 28.0;
+
     return Container(
-      padding: const EdgeInsets.only(top: 16, bottom: 28, left: 20, right: 20),
+      padding: EdgeInsets.only(top: 16, bottom: bottomPadding, left: 20, right: 20),
       decoration: BoxDecoration(
         color: context.themeSurfaceColor,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),

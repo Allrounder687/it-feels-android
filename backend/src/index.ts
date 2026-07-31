@@ -780,7 +780,42 @@ app.get('/api/v1/saavn/artist', async (c) => {
 // 1. Fetch Native Home Feed (Playlists, Trending, Imports)
 app.get('/api/v1/native/home', async (c) => {
   try {
-    const feed = await NativeDatabaseProvider.getHomeFeed(c.env.SEARCH_CACHE);
+    let feed = await NativeDatabaseProvider.getHomeFeed(c.env.SEARCH_CACHE);
+    
+    // Background Learning Engine (JIT Home Feed Seeding)
+    if (!feed.sections || feed.sections.length === 0) {
+      console.log('[NativeHome] Feed empty. JIT seeding from Saavn Home...');
+      const saavnHome = await SaavnProvider.getHomePage();
+      
+      const tracksToSeed: any[] = [];
+      for (const section of saavnHome.sections || []) {
+        if (section.items) {
+          for (const item of section.items) {
+            if (item.type === 'song' && item.streamUrl && item.streamUrl.trim() !== '') {
+              tracksToSeed.push({
+                id: `native:${item.id.replace('saavn:', '')}`,
+                title: item.title,
+                artist: item.artist,
+                album: item.album || 'Unknown Album',
+                albumArtUrl: item.coverArt,
+                durationSeconds: item.duration || 0,
+                streamUrl: item.streamUrl,
+                releaseYear: (item.year || 0).toString(),
+                type: 'song',
+                origin: 'JIT-Home-Migration'
+              });
+            }
+          }
+        }
+      }
+      
+      if (tracksToSeed.length > 0) {
+        await NativeDatabaseProvider.addSongsBatch(c.env.SEARCH_CACHE, tracksToSeed);
+        console.log(`[NativeHome] JIT Seeded ${tracksToSeed.length} tracks.`);
+        feed = await NativeDatabaseProvider.getHomeFeed(c.env.SEARCH_CACHE);
+      }
+    }
+    
     return c.json(feed);
   } catch (e: any) {
     return c.json({ error: 'Native home fetch failed', details: (e as Error).message }, 500);
@@ -791,7 +826,38 @@ app.get('/api/v1/native/home', async (c) => {
 app.get('/api/v1/native/search', async (c) => {
   const query = c.req.query('query') || '';
   try {
-    const results = await NativeDatabaseProvider.searchSongs(c.env.SEARCH_CACHE, query);
+    let results = await NativeDatabaseProvider.searchSongs(c.env.SEARCH_CACHE, query);
+    
+    // Background Learning Engine (JIT Search Seeding)
+    if (results.length === 0 && query.trim() !== '') {
+      console.log(`[NativeSearch] JIT Seeding for query: ${query}`);
+      const saavnResults = await SaavnProvider.search(query, 1, 15);
+      const tracksToSeed: any[] = [];
+      
+      for (const track of saavnResults) {
+        if (track.streamUrl && track.streamUrl.trim() !== '') {
+          tracksToSeed.push({
+            id: `native:${track.id.replace('saavn:', '')}`,
+            title: track.title,
+            artist: track.artist,
+            album: track.album || 'Unknown Album',
+            albumArtUrl: track.coverArt,
+            durationSeconds: track.duration || 0,
+            streamUrl: track.streamUrl,
+            releaseYear: (track.year || 0).toString(),
+            type: 'song',
+            origin: 'JIT-Search-Migration'
+          });
+        }
+      }
+      
+      if (tracksToSeed.length > 0) {
+        await NativeDatabaseProvider.addSongsBatch(c.env.SEARCH_CACHE, tracksToSeed);
+        console.log(`[NativeSearch] JIT Seeded ${tracksToSeed.length} tracks.`);
+        results = tracksToSeed; 
+      }
+    }
+
     return c.json({ success: true, query, totalCount: results.length, results });
   } catch (e: any) {
     return c.json({ error: 'Native search failed', details: (e as Error).message }, 500);

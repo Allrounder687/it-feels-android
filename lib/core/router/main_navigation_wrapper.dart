@@ -110,9 +110,12 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
+        return Consumer(builder: (context, ref, child) {
+          final hasActiveSong = ref.watch(audioPlayerProvider).currentSong != null;
+          final bottomPadding = 24.0 + (hasActiveSong ? 90.0 : 0.0);
+          return Padding(
+            padding: EdgeInsets.only(top: 24, left: 24, right: 24, bottom: bottomPadding),
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.playlist_add, size: 48, color: AppColors.midnightAccent),
@@ -155,12 +158,11 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                       },
                       child: Text('Import Now', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
                     ),
-                  ),
-                ],
               ),
             ],
           ),
         );
+        });
       },
     );
   }

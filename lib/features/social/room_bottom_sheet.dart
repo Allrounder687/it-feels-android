@@ -82,12 +82,14 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final audioProvider = ref.watch(audioPlayerProvider);
+    final hasActiveSong = audioProvider.currentSong != null;
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom + (hasActiveSong ? 130.0 : 40.0);
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
       child: Container(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+          bottom: bottomPadding,
           top: 40,
           left: 24,
           right: 24,

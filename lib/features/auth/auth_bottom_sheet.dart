@@ -52,9 +52,12 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
       });
     }
 
+    final hasActiveSong = ref.watch(audioPlayerProvider).currentSong != null;
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom + (hasActiveSong ? 90.0 : 0.0);
+
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: bottomPadding,
       ),
       child: Container(
         decoration: BoxDecoration(

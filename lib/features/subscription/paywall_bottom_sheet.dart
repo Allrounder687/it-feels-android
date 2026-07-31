@@ -70,12 +70,14 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final subProvider = ref.watch(subscriptionProvider);
+    final hasActiveSong = ref.watch(audioPlayerProvider).currentSong != null;
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom + (hasActiveSong ? 130.0 : 40.0);
     
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
       child: Container(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+          bottom: bottomPadding,
           top: 40,
           left: 24,
           right: 24,
