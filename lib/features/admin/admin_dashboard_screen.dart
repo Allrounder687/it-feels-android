@@ -75,6 +75,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ),
         actions: [
           IconButton(
+            icon: Icon(Icons.people_alt, color: context.themeTextColor),
+            onPressed: () => _showSocialAnnouncementDialog(context),
+            tooltip: 'Set Social Announcement',
+          ),
+          IconButton(
             icon: Icon(Icons.campaign, color: context.themeTextColor),
             onPressed: () => _showBroadcastDialog(context),
             tooltip: 'Send Global Broadcast',
@@ -440,6 +445,54 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text("Cancel", style: TextStyle(color: context.themeMutedTextColor)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showSocialAnnouncementDialog(BuildContext context) {
+    final TextEditingController messageController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: context.themeSurfaceColor,
+          title: Text("Set Social Announcement", style: TextStyle(color: context.themeTextColor)),
+          content: TextField(
+            controller: messageController,
+            style: TextStyle(color: context.themeTextColor),
+            maxLines: 3,
+            decoration: InputDecoration(
+              hintText: 'Enter announcement (leave blank to clear)',
+              hintStyle: TextStyle(color: context.themeMutedTextColor),
+              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.themeMutedTextColor)),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amberAccent),
+              onPressed: () async {
+                final msg = messageController.text.trim();
+                await FirebaseFirestore.instance.collection('client_config').doc('social').set({
+                  'announcement': msg,
+                  'timestamp': FieldValue.serverTimestamp(),
+                }, SetOptions(merge: true));
+                
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Social Announcement updated!')),
+                  );
+                }
+              },
+              child: Text("Update", style: TextStyle(color: context.themeInvertedTextColor)),
             ),
           ],
         );

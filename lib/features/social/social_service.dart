@@ -36,6 +36,40 @@ class SocialService {
     }
   }
 
+  // Add a friend via Username or Email or UID
+  Future<bool> addFriendByQuery(String query) async {
+    final user = _auth.currentUser;
+    if (user == null || query.isEmpty) return false;
+    
+    query = query.trim().toLowerCase();
+    
+    try {
+      // If it looks like a UID (length > 20 and no @), try direct UID add
+      if (query.length > 20 && !query.contains('@')) {
+        return await addFriendByUid(query);
+      }
+      
+      QuerySnapshot snapshot;
+      if (query.contains('@') && !query.startsWith('@')) {
+        // Looks like an email
+        snapshot = await _firestore.collection('users').where('email', isEqualTo: query).limit(1).get();
+      } else {
+        // Looks like a username
+        if (!query.startsWith('@')) query = '@$query';
+        snapshot = await _firestore.collection('users').where('username', isEqualTo: query).limit(1).get();
+      }
+
+      if (snapshot.docs.isNotEmpty) {
+        return await addFriendByUid(snapshot.docs.first.id);
+      }
+      
+      return false; // User not found
+    } catch (e) {
+      debugPrint("Error finding friend by query: $e");
+      return false;
+    }
+  }
+
   // Get friends list stream
   Stream<DocumentSnapshot> getFriendsStream() {
     final user = _auth.currentUser;

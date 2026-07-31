@@ -48,7 +48,7 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
             controller: uidController,
             style: TextStyle(color: context.themeTextColor),
             decoration: InputDecoration(
-              hintText: "Enter Friend's UID",
+              hintText: "Enter Email, @username, or UID",
               hintStyle: TextStyle(color: context.themeMutedTextColor),
               enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: context.themeMutedTextColor)),
             ),
@@ -60,13 +60,13 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
             ),
             ElevatedButton(
               onPressed: () async {
-                final uid = uidController.text.trim();
-                if (uid.isNotEmpty) {
-                  final success = await _socialService.addFriendByUid(uid);
+                final query = uidController.text.trim();
+                if (query.isNotEmpty) {
+                  final success = await _socialService.addFriendByQuery(query);
                   if (mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(success ? "Friend added successfully! 🎉" : "Failed to add friend. Check UID.")),
+                      SnackBar(content: Text(success ? "Friend added successfully! 🎉" : "Failed to find user. Check your entry.")),
                     );
                   }
                 }
@@ -231,37 +231,83 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
   Widget _buildFriendsTab() {
     return Column(
       children: [
+        // Admin Pinned Announcement
+        StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance.collection('client_config').doc('social').snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData && snapshot.data!.exists) {
+              final data = snapshot.data!.data() as Map<String, dynamic>?;
+              final announcement = data?['announcement'] as String?;
+              if (announcement != null && announcement.isNotEmpty) {
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amberAccent.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amberAccent),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.campaign_rounded, color: Colors.amberAccent),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          announcement,
+                          style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w500, fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+        
+        // Share My ID Widget
         Padding(
           padding: const EdgeInsets.all(16),
-          child: InkWell(
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: myUid));
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("UID copied to clipboard!")));
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: context.themeSurfaceColor,
+          child: StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance.collection('users').doc(myUid).snapshots(),
+            builder: (context, snapshot) {
+              String myUsername = "Loading...";
+              if (snapshot.hasData && snapshot.data!.exists) {
+                myUsername = (snapshot.data!.data() as Map<String, dynamic>)['username'] ?? 'No Username';
+              }
+              return InkWell(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: myUsername));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("$myUsername copied to clipboard!")));
+                },
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.midnightAccent.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.copy_rounded, color: AppColors.midnightAccent),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Your Unique ID", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
-                        Text(myUid, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      ],
-                    ),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.themeSurfaceColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.midnightAccent.withValues(alpha: 0.3)),
                   ),
-                ],
-              ),
-            ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.copy_rounded, color: AppColors.midnightAccent),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Your Handle", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
+                            Text("$myUsername • UID: $myUid", style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
           ),
         ),
         Expanded(

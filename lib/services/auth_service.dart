@@ -112,9 +112,14 @@ class AuthService {
       final snapshot = await docRef.get();
       
       if (!snapshot.exists) {
+        // Auto-generate a default username based on email
+        String baseName = user.isAnonymous ? 'guest' : (user.email?.split('@')[0] ?? 'user');
+        String generatedUsername = '@${baseName}_${user.uid.substring(0, 4)}'.toLowerCase();
+        
         await docRef.set({
           'email': user.isAnonymous ? 'Guest User' : user.email,
           'uid': user.uid,
+          'username': generatedUsername,
           'isAnonymous': user.isAnonymous,
           'createdAt': FieldValue.serverTimestamp(),
           'lastLogin': FieldValue.serverTimestamp(),
@@ -123,11 +128,24 @@ class AuthService {
           'isBanned': false,
         });
       } else {
-        await docRef.update({
-          'email': user.isAnonymous ? 'Guest User' : user.email,
-          'isAnonymous': user.isAnonymous,
-          'lastLogin': FieldValue.serverTimestamp(),
-        });
+        // Generate a username for existing users if they don't have one
+        Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>? ?? {};
+        if (!data.containsKey('username')) {
+          String baseName = user.isAnonymous ? 'guest' : (user.email?.split('@')[0] ?? 'user');
+          String generatedUsername = '@${baseName}_${user.uid.substring(0, 4)}'.toLowerCase();
+          await docRef.update({
+            'username': generatedUsername,
+            'email': user.isAnonymous ? 'Guest User' : user.email,
+            'isAnonymous': user.isAnonymous,
+            'lastLogin': FieldValue.serverTimestamp(),
+          });
+        } else {
+          await docRef.update({
+            'email': user.isAnonymous ? 'Guest User' : user.email,
+            'isAnonymous': user.isAnonymous,
+            'lastLogin': FieldValue.serverTimestamp(),
+          });
+        }
       }
     } catch (e) {
       print('Error syncing user to Firestore: $e');
