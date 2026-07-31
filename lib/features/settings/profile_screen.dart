@@ -46,7 +46,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _saveProfile() {
     final profile = ref.read(profileProvider);
-    profile.updateProfile(name: _nameController.text.trim(), avatar: _avatarPath);
+    ref.read(profileProvider.notifier).updateProfile(name: _nameController.text.trim(), avatar: _avatarPath);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(

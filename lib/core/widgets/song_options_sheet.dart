@@ -260,7 +260,7 @@ class SongOptionsSheet extends ConsumerWidget {
             title: "Hide Song",
             onTap: () {
               Navigator.pop(context);
-              hiddenProv.hideSong(song);
+              ref.read(hiddenSongsProvider.notifier).hideSong(song);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text("Hidden: ${song.title}"),

@@ -63,7 +63,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
         final currentSong = player.currentSong;
         if (currentSong != null && currentSong.id != _lastLoggedSong?.id) {
           _lastLoggedSong = currentSong;
-          history.logSong(currentSong);
+          ref.read(listeningHistoryProvider.notifier).logSong(currentSong);
         }
       });
       

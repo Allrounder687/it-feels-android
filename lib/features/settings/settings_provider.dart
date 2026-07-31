@@ -1,149 +1,199 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 
-class SettingsProvider extends ChangeNotifier {
-  String _wifiQuality = '320 kbps (Very High)';
-  String _mobileQuality = '160 kbps (High)';
-  String _downloadQuality = '320 kbps (Very High)';
-  String _theme = 'System (Material You)';
-  String _defaultCategory = 'Bollywood';
-  String _customDownloadPath = '';
-  bool _enableAndroidAuto = false;
-  String _hapticsMode = 'Off'; // Off, UI Only, Audio Sync
-  bool _useProxyBackend = false;
-  String _proxyUrl = 'https://it-feels-proxy.cleverfox687.workers.dev';
-  bool _enableMusicVideos = false;
-  bool _useVideoAudioSource = false; // Default: keep high quality audio from music player when in video mode
-  bool _isDataSaverEnabled = false;
+@immutable
+class SettingsState {
+  final String wifiQuality;
+  final String mobileQuality;
+  final String downloadQuality;
+  final String theme;
+  final String defaultCategory;
+  final String customDownloadPath;
+  final bool enableAndroidAuto;
+  final String hapticsMode;
+  final bool useProxyBackend;
+  final String proxyUrl;
+  final bool enableMusicVideos;
+  final bool useVideoAudioSource;
+  final bool isDataSaverEnabled;
 
-  SettingsProvider() {
-    _loadSettings();
+  const SettingsState({
+    this.wifiQuality = '320 kbps (Very High)',
+    this.mobileQuality = '160 kbps (High)',
+    this.downloadQuality = '320 kbps (Very High)',
+    this.theme = 'System (Material You)',
+    this.defaultCategory = 'Bollywood',
+    this.customDownloadPath = '',
+    this.enableAndroidAuto = false,
+    this.hapticsMode = 'Off',
+    this.useProxyBackend = false,
+    this.proxyUrl = 'https://it-feels-proxy.cleverfox687.workers.dev',
+    this.enableMusicVideos = false,
+    this.useVideoAudioSource = false,
+    this.isDataSaverEnabled = false,
+  });
+
+  SettingsState copyWith({
+    String? wifiQuality,
+    String? mobileQuality,
+    String? downloadQuality,
+    String? theme,
+    String? defaultCategory,
+    String? customDownloadPath,
+    bool? enableAndroidAuto,
+    String? hapticsMode,
+    bool? useProxyBackend,
+    String? proxyUrl,
+    bool? enableMusicVideos,
+    bool? useVideoAudioSource,
+    bool? isDataSaverEnabled,
+  }) {
+    return SettingsState(
+      wifiQuality: wifiQuality ?? this.wifiQuality,
+      mobileQuality: mobileQuality ?? this.mobileQuality,
+      downloadQuality: downloadQuality ?? this.downloadQuality,
+      theme: theme ?? this.theme,
+      defaultCategory: defaultCategory ?? this.defaultCategory,
+      customDownloadPath: customDownloadPath ?? this.customDownloadPath,
+      enableAndroidAuto: enableAndroidAuto ?? this.enableAndroidAuto,
+      hapticsMode: hapticsMode ?? this.hapticsMode,
+      useProxyBackend: useProxyBackend ?? this.useProxyBackend,
+      proxyUrl: proxyUrl ?? this.proxyUrl,
+      enableMusicVideos: enableMusicVideos ?? this.enableMusicVideos,
+      useVideoAudioSource: useVideoAudioSource ?? this.useVideoAudioSource,
+      isDataSaverEnabled: isDataSaverEnabled ?? this.isDataSaverEnabled,
+    );
   }
+}
 
-  String get wifiQuality => _wifiQuality;
-  String get mobileQuality => _mobileQuality;
-  String get downloadQuality => _downloadQuality;
-  String get theme => _theme;
-  String get defaultCategory => _defaultCategory;
-  String get customDownloadPath => _customDownloadPath;
-  bool get enableAndroidAuto => _enableAndroidAuto;
-  String get hapticsMode => _hapticsMode;
-  bool get useProxyBackend => _useProxyBackend;
-  String get proxyUrl => _proxyUrl;
-  bool get enableMusicVideos => _enableMusicVideos;
-  bool get useVideoAudioSource => _useVideoAudioSource;
-  bool get isDataSaverEnabled => _isDataSaverEnabled;
+class SettingsNotifier extends Notifier<SettingsState> {
+  @override
+  SettingsState build() {
+    _loadSettings();
+    return const SettingsState();
+  }
 
   Future<void> _loadSettings() async {
     final settings = await StorageService.loadSettings();
-    _wifiQuality = settings['wifiQuality'] ?? _wifiQuality;
-    _mobileQuality = settings['mobileQuality'] ?? _mobileQuality;
-    _downloadQuality = settings['downloadQuality'] ?? _downloadQuality;
-    _theme = settings['theme'] ?? _theme;
-    _customDownloadPath = settings['customDownloadPath'] ?? _customDownloadPath;
-    _enableAndroidAuto = settings['enableAndroidAuto'] ?? _enableAndroidAuto;
-    _hapticsMode = settings['hapticsMode'] ?? _hapticsMode;
-    _useProxyBackend = settings['useProxyBackend'] == true;
-    _proxyUrl = settings['proxyUrl'] ?? _proxyUrl;
-    _enableMusicVideos = settings['enableMusicVideos'] == true;
-    _useVideoAudioSource = settings['useVideoAudioSource'] == true;
-    _isDataSaverEnabled = settings['isDataSaverEnabled'] == true;
-    
-    BackendApiService.useProxyBackend = _useProxyBackend;
-    BackendApiService.baseUrl = _proxyUrl;
-    
-    _defaultCategory = await StorageService.loadDefaultCategory();
-    notifyListeners();
+    final defaultCat = await StorageService.loadDefaultCategory();
+
+    final useProxy = settings['useProxyBackend'] == true;
+    final proxyUrlVal = settings['proxyUrl'] ?? 'https://it-feels-proxy.cleverfox687.workers.dev';
+
+    BackendApiService.useProxyBackend = useProxy;
+    BackendApiService.baseUrl = proxyUrlVal;
+
+    state = state.copyWith(
+      wifiQuality: settings['wifiQuality'],
+      mobileQuality: settings['mobileQuality'],
+      downloadQuality: settings['downloadQuality'],
+      theme: settings['theme'],
+      customDownloadPath: settings['customDownloadPath'],
+      enableAndroidAuto: settings['enableAndroidAuto'],
+      hapticsMode: settings['hapticsMode'],
+      useProxyBackend: useProxy,
+      proxyUrl: proxyUrlVal,
+      enableMusicVideos: settings['enableMusicVideos'] == true,
+      useVideoAudioSource: settings['useVideoAudioSource'] == true,
+      isDataSaverEnabled: settings['isDataSaverEnabled'] == true,
+      defaultCategory: defaultCat,
+    );
   }
 
   void setWifiQuality(String quality) {
-    _wifiQuality = quality;
+    state = state.copyWith(wifiQuality: quality);
     _save();
   }
 
   void setMobileQuality(String quality) {
-    _mobileQuality = quality;
+    state = state.copyWith(mobileQuality: quality);
     _save();
   }
 
   void setDownloadQuality(String quality) {
-    _downloadQuality = quality;
+    state = state.copyWith(downloadQuality: quality);
     _save();
   }
 
   void setTheme(String newTheme) {
-    _theme = newTheme;
+    state = state.copyWith(theme: newTheme);
     _save();
   }
 
   void setDefaultCategory(String category) {
-    _defaultCategory = category;
+    state = state.copyWith(defaultCategory: category);
     StorageService.saveDefaultCategory(category);
-    notifyListeners();
   }
 
   void setCustomDownloadPath(String path) {
-    _customDownloadPath = path;
+    state = state.copyWith(customDownloadPath: path);
     _save();
   }
 
   void setEnableAndroidAuto(bool enable) {
-    _enableAndroidAuto = enable;
+    state = state.copyWith(enableAndroidAuto: enable);
     _save();
   }
 
   void setHapticsMode(String mode) {
-    _hapticsMode = mode;
+    state = state.copyWith(hapticsMode: mode);
     _save();
   }
 
   void setUseProxyBackend(bool enable) {
-    _useProxyBackend = enable;
     BackendApiService.useProxyBackend = enable;
+    state = state.copyWith(useProxyBackend: enable);
     _save();
   }
 
   void setProxyUrl(String url) {
-    _proxyUrl = url;
     BackendApiService.baseUrl = url;
+    state = state.copyWith(proxyUrl: url);
     _save();
   }
 
   void setEnableMusicVideos(bool enable) {
-    _enableMusicVideos = enable;
+    state = state.copyWith(enableMusicVideos: enable);
     _save();
   }
 
   void setUseVideoAudioSource(bool value) {
-    _useVideoAudioSource = value;
+    state = state.copyWith(useVideoAudioSource: value);
     _save();
   }
 
   void setDataSaverEnabled(bool value) {
-    _isDataSaverEnabled = value;
     if (value) {
-      _wifiQuality = '64 kbps (Low)';
-      _mobileQuality = '64 kbps (Low)';
+      state = state.copyWith(
+        isDataSaverEnabled: true,
+        wifiQuality: '64 kbps (Low)',
+        mobileQuality: '64 kbps (Low)',
+      );
+    } else {
+      state = state.copyWith(isDataSaverEnabled: false);
     }
     _save();
   }
 
   Future<void> _save() async {
     await StorageService.saveSettings(
-      wifiQuality: _wifiQuality,
-      mobileQuality: _mobileQuality,
-      downloadQuality: _downloadQuality,
-      theme: _theme,
-      customDownloadPath: _customDownloadPath,
-      enableAndroidAuto: _enableAndroidAuto,
-      hapticsMode: _hapticsMode,
-      useProxyBackend: _useProxyBackend,
-      proxyUrl: _proxyUrl,
-      enableMusicVideos: _enableMusicVideos,
-      useVideoAudioSource: _useVideoAudioSource,
-      isDataSaverEnabled: _isDataSaverEnabled,
+      wifiQuality: state.wifiQuality,
+      mobileQuality: state.mobileQuality,
+      downloadQuality: state.downloadQuality,
+      theme: state.theme,
+      customDownloadPath: state.customDownloadPath,
+      enableAndroidAuto: state.enableAndroidAuto,
+      hapticsMode: state.hapticsMode,
+      useProxyBackend: state.useProxyBackend,
+      proxyUrl: state.proxyUrl,
+      enableMusicVideos: state.enableMusicVideos,
+      useVideoAudioSource: state.useVideoAudioSource,
+      isDataSaverEnabled: state.isDataSaverEnabled,
     );
-    notifyListeners();
   }
 }
+
+// Backward compatibility alias for legacy code referencing SettingsProvider
+typedef SettingsProvider = SettingsNotifier;

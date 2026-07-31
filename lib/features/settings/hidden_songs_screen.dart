@@ -66,7 +66,7 @@ class HiddenSongsScreen extends ConsumerWidget {
                         foregroundColor: context.themeAccentColor,
                       ),
                       onPressed: () {
-                        provider.unhideSong(song.id);
+                        ref.read(hiddenSongsProvider.notifier).unhideSong(song.id);
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Song restored")),
                         );

@@ -64,7 +64,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 value: settings.isDataSaverEnabled,
                 activeColor: context.themeAccentColor,
-                onChanged: (val) => settings.setDataSaverEnabled(val),
+                onChanged: (val) => ref.read(settingsProvider.notifier).setDataSaverEnabled(val),
               ),
 
               _buildSelectableTile(
@@ -78,7 +78,7 @@ class SettingsScreen extends ConsumerWidget {
                   "64 kbps (Low)",
                 ],
                 currentValue: settings.wifiQuality,
-                onSelected: (val) => settings.setWifiQuality(val),
+                onSelected: (val) => ref.read(settingsProvider.notifier).setWifiQuality(val),
               ),
               _buildSelectableTile(
                 context: context,
@@ -91,7 +91,7 @@ class SettingsScreen extends ConsumerWidget {
                   "64 kbps (Low)",
                 ],
                 currentValue: settings.mobileQuality,
-                onSelected: (val) => settings.setMobileQuality(val),
+                onSelected: (val) => ref.read(settingsProvider.notifier).setMobileQuality(val),
               ),
               _buildSelectableTile(
                 context: context,
@@ -103,7 +103,7 @@ class SettingsScreen extends ConsumerWidget {
                   "96 kbps (Medium)",
                 ],
                 currentValue: settings.downloadQuality,
-                onSelected: (val) => settings.setDownloadQuality(val),
+                onSelected: (val) => ref.read(settingsProvider.notifier).setDownloadQuality(val),
               ),
 
               _buildActionTile(
@@ -139,7 +139,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 value: settings.useVideoAudioSource,
                 activeColor: context.themeAccentColor,
-                onChanged: (val) => settings.setUseVideoAudioSource(val),
+                onChanged: (val) => ref.read(settingsProvider.notifier).setUseVideoAudioSource(val),
               ),
 
               const SizedBox(height: 24),
@@ -166,7 +166,7 @@ class SettingsScreen extends ConsumerWidget {
                   "Albums",
                 ],
                 currentValue: settings.defaultCategory,
-                onSelected: (val) => settings.setDefaultCategory(val),
+                onSelected: (val) => ref.read(settingsProvider.notifier).setDefaultCategory(val),
               ),
 
               _buildActionTile(
@@ -201,7 +201,7 @@ class SettingsScreen extends ConsumerWidget {
                   String? selectedDirectory = await FilePicker.platform
                       .getDirectoryPath();
                   if (selectedDirectory != null) {
-                    settings.setCustomDownloadPath(selectedDirectory);
+                    ref.read(settingsProvider.notifier).setCustomDownloadPath(selectedDirectory);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -308,7 +308,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 onChanged: (val) {
-                  settings.setUseProxyBackend(val);
+                  ref.read(settingsProvider.notifier).setUseProxyBackend(val);
                 },
               ),
 
@@ -333,7 +333,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 onChanged: (val) {
-                  settings.setEnableMusicVideos(val);
+                  ref.read(settingsProvider.notifier).setEnableMusicVideos(val);
                 },
               ),
 
@@ -373,7 +373,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   );
                   if (newUrl != null && newUrl.isNotEmpty) {
-                    settings.setProxyUrl(newUrl);
+                    ref.read(settingsProvider.notifier).setProxyUrl(newUrl);
                   }
                 },
               ),
@@ -398,7 +398,7 @@ class SettingsScreen extends ConsumerWidget {
                 ],
                 currentValue: settings.theme,
                 onSelected: (val) {
-                  settings.setTheme(val);
+                  ref.read(settingsProvider.notifier).setTheme(val);
                   final player = ref.read(audioPlayerProvider);
                   if (val == "System (Material You)") {
                     player.setAppThemeMode(AppThemeMode.materialYou);
@@ -489,10 +489,10 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     );
                     if (confirm == true) {
-                      settings.setEnableAndroidAuto(true);
+                      ref.read(settingsProvider.notifier).setEnableAndroidAuto(true);
                     }
                   } else {
-                    settings.setEnableAndroidAuto(false);
+                    ref.read(settingsProvider.notifier).setEnableAndroidAuto(false);
                   }
                 },
               ),
@@ -504,7 +504,7 @@ class SettingsScreen extends ConsumerWidget {
                 options: ["Off", "UI Only", "Audio Sync"],
                 currentValue: settings.hapticsMode,
                 onSelected: (val) {
-                  settings.setHapticsMode(val);
+                  ref.read(settingsProvider.notifier).setHapticsMode(val);
                   if (val == "Audio Sync") {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(

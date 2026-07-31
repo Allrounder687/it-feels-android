@@ -19,17 +19,9 @@ import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/subscription/subscription_provider.dart';
 
 // -------------------------------------------------------------------------
-// RIVERPOD BRIDGE LAYER
-// -------------------------------------------------------------------------
-// This file serves as a temporary bridge to convert the legacy 
-// ChangeNotifierProviders into Riverpod format during Phase 4 migration.
-// Eventually, these ChangeNotifiers will be destroyed and rewritten as 
-// strictly immutable Notifiers.
+// RIVERPOD ARCHITECTURE LAYER
 // -------------------------------------------------------------------------
 
-// We use an UnimplementedError placeholder here because audioPlayer requires
-// the global AudioPlayerHandler which is asynchronously initialized in main.dart.
-// We will explicitly override this in ProviderScope in main.dart.
 final audioPlayerProvider = ChangeNotifierProvider<AudioPlayerProvider>((ref) {
   throw UnimplementedError('audioPlayerProvider must be overridden in ProviderScope');
 });
@@ -38,12 +30,16 @@ final downloadProvider = ChangeNotifierProvider<DownloadProvider>((ref) => Downl
 final homeProvider = ChangeNotifierProvider<HomeProvider>((ref) => HomeProvider(apiService: locator<MusicApiService>()));
 final searchProvider = ChangeNotifierProvider<SearchProvider>((ref) => SearchProvider(apiService: locator<MusicApiService>()));
 final lyricsProvider = ChangeNotifierProvider<LyricsProvider>((ref) => LyricsProvider(lyricsService: locator<LyricsService>()));
-final settingsProvider = ChangeNotifierProvider<SettingsProvider>((ref) => SettingsProvider());
-final hiddenSongsProvider = ChangeNotifierProvider<HiddenSongsProvider>((ref) => HiddenSongsProvider());
+
+// Group 1: Immutable Notifiers
+final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(SettingsNotifier.new);
+final hiddenSongsProvider = NotifierProvider<HiddenSongsNotifier, HiddenSongsState>(HiddenSongsNotifier.new);
+final listeningHistoryProvider = NotifierProvider<ListeningHistoryNotifier, ListeningHistoryState>(ListeningHistoryNotifier.new);
+final profileProvider = NotifierProvider<ProfileNotifier, ProfileState>(ProfileNotifier.new);
+
+// Remaining Bridge Providers
 final customPlaylistProvider = ChangeNotifierProvider<CustomPlaylistProvider>((ref) => CustomPlaylistProvider());
-final listeningHistoryProvider = ChangeNotifierProvider<ListeningHistoryProvider>((ref) => ListeningHistoryProvider());
 final aiSettingsProvider = ChangeNotifierProvider<AISettingsProvider>((ref) => AISettingsProvider());
-final profileProvider = ChangeNotifierProvider<ProfileProvider>((ref) => ProfileProvider());
 final authProvider = ChangeNotifierProvider<AuthProvider>((ref) => AuthProvider());
 final videoPlayerProvider = ChangeNotifierProvider<VideoPlayerProvider>((ref) => VideoPlayerProvider());
 final subscriptionProvider = ChangeNotifierProvider<SubscriptionProvider>((ref) => SubscriptionProvider());

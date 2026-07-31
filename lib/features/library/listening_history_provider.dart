@@ -1,67 +1,76 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/services/database_service.dart';
 
-class ListeningHistoryProvider extends ChangeNotifier {
-  Map<String, int> _artistCounts = {};
-  List<Song> _recentlyPlayed = [];
+@immutable
+class ListeningHistoryState {
+  final Map<String, int> artistCounts;
+  final List<Song> recentlyPlayed;
 
-  ListeningHistoryProvider() {
-    _init();
-  }
-
-  Map<String, int> get artistCounts => _artistCounts;
-  List<Song> get recentlyPlayed => _recentlyPlayed;
-
-  Future<void> _init() async {
-    _artistCounts = await StorageService.loadListeningHistory();
-    _recentlyPlayed = await StorageService.loadRecentlyPlayed();
-    notifyListeners();
-  }
-
-  void logSong(Song song) {
-    if (song.artist.isEmpty || song.artist == 'Unknown Artist') return;
-
-    // Log to Isar for advanced stats
-    DatabaseService().incrementPlayCount(song);
-
-    // 1. Update Recently Played
-    // Remove if already exists to move to top
-    _recentlyPlayed.removeWhere((s) => s.id == song.id);
-    _recentlyPlayed.insert(0, song);
-    
-    // Keep only last 30 songs
-    if (_recentlyPlayed.length > 30) {
-      _recentlyPlayed = _recentlyPlayed.sublist(0, 30);
-    }
-    
-    StorageService.saveRecentlyPlayed(_recentlyPlayed);
-
-    // 2. Update Artist Counts
-    // Handle multiple artists separated by commas
-    final artists = song.artist.split(',').map((a) => a.trim()).where((a) => a.isNotEmpty).toList();
-    for (var artist in artists) {
-      if (_artistCounts.containsKey(artist)) {
-        _artistCounts[artist] = _artistCounts[artist]! + 1;
-      } else {
-        _artistCounts[artist] = 1;
-      }
-    }
-    
-    StorageService.saveListeningHistory(_artistCounts);
-    notifyListeners();
-  }
+  const ListeningHistoryState({
+    this.artistCounts = const {},
+    this.recentlyPlayed = const [],
+  });
 
   List<String> getTopArtists({int limit = 3}) {
-    if (_artistCounts.isEmpty) return [];
+    if (artistCounts.isEmpty) return [];
     
-    var sortedKeys = _artistCounts.keys.toList(growable: false)
-      ..sort((k1, k2) => _artistCounts[k2]!.compareTo(_artistCounts[k1]!));
+    var sortedKeys = artistCounts.keys.toList(growable: false)
+      ..sort((k1, k2) => artistCounts[k2]!.compareTo(artistCounts[k1]!));
       
     if (sortedKeys.length > limit) {
       return sortedKeys.sublist(0, limit);
     }
     return sortedKeys;
   }
+
+  ListeningHistoryState copyWith({
+    Map<String, int>? artistCounts,
+    List<Song>? recentlyPlayed,
+  }) {
+    return ListeningHistoryState(
+      artistCounts: artistCounts ?? this.artistCounts,
+      recentlyPlayed: recentlyPlayed ?? this.recentlyPlayed,
+    );
+  }
 }
+
+class ListeningHistoryNotifier extends Notifier<ListeningHistoryState> {
+  @override
+  ListeningHistoryState build() {
+    _init();
+    return const ListeningHistoryState();
+  }
+
+  Future<void> _init() async {
+    final counts = await StorageService.loadListeningHistory();
+    final recent = await StorageService.loadRecentlyPlayed();
+    state = state.copyWith(artistCounts: counts, recentlyPlayed: recent);
+  }
+
+  void logSong(Song song) {
+    if (song.artist.isEmpty || song.artist == 'Unknown Artist') return;
+
+    DatabaseService().incrementPlayCount(song);
+
+    final recent = List<Song>.from(state.recentlyPlayed);
+    recent.removeWhere((s) => s.id == song.id);
+    recent.insert(0, song);
+    
+    final updatedRecent = recent.length > 30 ? recent.sublist(0, 30) : recent;
+    StorageService.saveRecentlyPlayed(updatedRecent);
+
+    final counts = Map<String, int>.from(state.artistCounts);
+    final artists = song.artist.split(',').map((a) => a.trim()).where((a) => a.isNotEmpty).toList();
+    for (var artist in artists) {
+      counts[artist] = (counts[artist] ?? 0) + 1;
+    }
+    
+    StorageService.saveListeningHistory(counts);
+    state = state.copyWith(artistCounts: counts, recentlyPlayed: updatedRecent);
+  }
+}
+
+typedef ListeningHistoryProvider = ListeningHistoryNotifier;
