@@ -8,6 +8,8 @@ import 'package:it_feels_music/data/services/local_audio_service.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/settings/stats_screen.dart';
 import 'package:it_feels_music/features/auth/auth_bottom_sheet.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:it_feels_music/data/models/badge_model.dart';
 import 'package:it_feels_music/features/admin/admin_dashboard_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -188,6 +190,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ),
             ),
             
+            // TROPHY CASE
+            Consumer(builder: (context, ref, _) {
+              final user = ref.watch(authProvider).currentUser;
+              if (user != null) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 32, bottom: 16),
+                  child: _buildTrophyCase(user.uid),
+                );
+              }
+              return const SizedBox.shrink();
+            }),
+
             // ADMIN DASHBOARD BUTTON (Only visible to owner)
             if (ref.watch(authProvider).currentUser?.email == 'syedfaixalmajeed@gmail.com') ...[
               const SizedBox(height: 16),
@@ -348,6 +362,108 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildTrophyCase(String uid) {
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('users').doc(uid).snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || !snapshot.data!.exists) return const SizedBox.shrink();
+        
+        final data = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+        final badgesList = (data['badges'] as List<dynamic>?)?.cast<String>() ?? [];
+        
+        if (badgesList.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.military_tech, color: Colors.amber, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  "Trophy Case",
+                  style: GoogleFonts.outfit(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: context.themeTextColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 120,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: badgesList.length,
+                itemBuilder: (context, index) {
+                  final badgeId = badgesList[index];
+                  final badge = BadgeModel.getById(badgeId);
+                  if (badge == null) return const SizedBox.shrink();
+                  
+                  return GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          backgroundColor: context.themeSurfaceColor,
+                          title: Text(badge.name, style: GoogleFonts.outfit(color: context.themeTextColor, fontWeight: FontWeight.bold)),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.asset(badge.imagePath, height: 100, width: 100),
+                              const SizedBox(height: 16),
+                              Text(badge.description, style: GoogleFonts.inter(color: context.themeMutedTextColor), textAlign: TextAlign.center),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context), child: Text("Awesome", style: TextStyle(color: context.themeAccentColor))),
+                          ],
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 100,
+                      margin: const EdgeInsets.only(right: 16),
+                      decoration: BoxDecoration(
+                        color: context.themeCardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: context.themeAccentColor.withValues(alpha: 0.5), width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.themeAccentColor.withValues(alpha: 0.2),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(badge.imagePath, height: 50, width: 50, fit: BoxFit.cover),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                            child: Text(
+                              badge.name,
+                              style: GoogleFonts.inter(color: context.themeTextColor, fontSize: 11, fontWeight: FontWeight.w700),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:it_feels_music/data/models/badge_model.dart';
 
 enum AdminFilter { all, online, premium, banned }
 
@@ -287,6 +288,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
+                          icon: const Icon(Icons.emoji_events, color: Colors.orangeAccent),
+                          onPressed: () => _showGrantBadgeDialog(context, uid, email),
+                          tooltip: 'Grant Badge',
+                        ),
+                        IconButton(
                           icon: Icon(
                             isPremium ? Icons.star : Icons.star_border, 
                             color: isPremium ? Colors.amber : Colors.grey
@@ -368,6 +374,76 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           },
         ),
       ),
+    );
+  }
+
+  void _showGrantBadgeDialog(BuildContext context, String uid, String email) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: context.themeSurfaceColor,
+          title: Text("Grant Badge to $email", style: TextStyle(color: context.themeTextColor, fontSize: 18)),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: BadgeModel.allBadges.length,
+              itemBuilder: (context, index) {
+                final badge = BadgeModel.allBadges[index];
+                return GestureDetector(
+                  onTap: () async {
+                    Navigator.pop(context);
+                    try {
+                      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+                        'badges': FieldValue.arrayUnion([badge.id])
+                      }, SetOptions(merge: true));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Granted ${badge.name}!')),
+                        );
+                      }
+                    } catch (e) {
+                      debugPrint('Failed to grant badge: $e');
+                    }
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: context.themeCardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: context.themeAccentColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(badge.imagePath, height: 60, width: 60, fit: BoxFit.cover),
+                        const SizedBox(height: 8),
+                        Text(
+                          badge.name,
+                          style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.bold, fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cancel", style: TextStyle(color: context.themeMutedTextColor)),
+            ),
+          ],
+        );
+      },
     );
   }
 
