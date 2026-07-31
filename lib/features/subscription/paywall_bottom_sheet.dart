@@ -7,6 +7,7 @@ import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:it_feels_music/features/subscription/premium_celebration_dialog.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:upi_india/upi_india.dart';
 
 class PaywallBottomSheet extends ConsumerStatefulWidget {
   final String featureName;
@@ -45,15 +46,64 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
     }
   }
 
-  Future<void> _purchaseRazorpay(BuildContext context, int amount, int days) async {
+  Future<void> _handleUpiPayment(BuildContext context, int amount) async {
     final subProvider = ref.read(subscriptionProvider);
-    final success = await subProvider.purchaseRazorpay(amount, days);
-    if (success && mounted) {
-      Navigator.pop(context);
-    } else if (mounted && !subProvider.isPremium) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Payment failed or was cancelled.')),
-      );
+    try {
+      final apps = await subProvider.upiIndia.getAllUpiApps(mandatoryTransactionId: false);
+      if (apps.isEmpty) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No UPI apps found on device.')));
+        return;
+      }
+      
+      if (mounted) {
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          builder: (bottomSheetContext) {
+            return Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: AppColors.midnightSurface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Select UPI App', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 24),
+                  Wrap(
+                    spacing: 24,
+                    runSpacing: 24,
+                    alignment: WrapAlignment.center,
+                    children: apps.map((app) => GestureDetector(
+                      onTap: () async {
+                        Navigator.pop(bottomSheetContext); // close bottom sheet
+                        final success = await subProvider.purchaseUpi(app, amount);
+                        if (success && mounted) {
+                          Navigator.pop(this.context); // close paywall
+                          PremiumCelebrationDialog.show(this.context, isFamilyCoupon: false);
+                        } else if (mounted && !subProvider.isPremium) {
+                          ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('Payment failed or cancelled.')));
+                        }
+                      },
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Image.memory(app.icon, width: 50, height: 50),
+                          const SizedBox(height: 8),
+                          Text(app.name, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                        ],
+                      ),
+                    )).toList(),
+                  ),
+                ],
+              ),
+            );
+          }
+        );
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error loading UPI apps.')));
     }
   }
 
@@ -128,11 +178,11 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
             if (subProvider.isLoading)
               const CircularProgressIndicator(color: AppColors.midnightAccent)
             else if (SubscriptionProvider.useDirectDistribution) ...[
-              // Razorpay Direct UPI UI
+              // Direct Distribution UI
               Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: ElevatedButton(
-                  onPressed: () => _purchaseRazorpay(context, 599, 180),
+                  onPressed: () => _handleUpiPayment(context, 999),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.midnightPrimary,
                     foregroundColor: Colors.white,
@@ -143,9 +193,9 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.payment, size: 20),
+                      Icon(Icons.flash_on, size: 20, color: Colors.amber),
                       SizedBox(width: 8),
-                      Text("6 Months for ₹599 (via UPI)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text("1 Year for ₹999 (Instant Auto-Upgrade via UPI)", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -153,9 +203,9 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: ElevatedButton(
-                  onPressed: () => _purchaseRazorpay(context, 999, 365),
+                  onPressed: () => subProvider.launchPaymentUrl('https://gumroad.com/l/it-feels'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.midnightPrimary,
+                    backgroundColor: Colors.white.withValues(alpha: 0.1),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     minimumSize: const Size(double.infinity, 56),
@@ -164,16 +214,37 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.stars, size: 20),
+                      Icon(Icons.credit_card, size: 20),
                       SizedBox(width: 8),
-                      Text("1 Year for ₹999 (Best Value)", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text("Pay with Card (Gumroad)", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: ElevatedButton(
+                  onPressed: () => subProvider.launchPaymentUrl('https://commerce.coinbase.com/checkout'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.1),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    minimumSize: const Size(double.infinity, 56),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.currency_bitcoin, size: 20, color: Colors.orangeAccent),
+                      SizedBox(width: 8),
+                      Text("Pay with Crypto", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
-                "Includes a 14-day unlimited trial. Cancel anytime.",
+                "Cancel anytime. Direct payments carry 0% fees.",
                 style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5)),
               ),
             ] else ...[
@@ -210,7 +281,7 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
             const SizedBox(height: 16),
               TextButton(
                 onPressed: () => setState(() => _showCouponField = !_showCouponField),
-                child: Text("Have a custom coupon code?", style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+                child: Text("Redeem Code (Telegram / Discord)", style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
               ),
               if (_errorMessage != null)
                 Padding(

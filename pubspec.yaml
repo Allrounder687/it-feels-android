@@ -74,7 +74,6 @@ dependencies:
   google_sign_in: ^6.2.2
   purchases_flutter: ^10.6.0
   firebase_messaging: ^16.4.3
-  razorpay_flutter: ^1.4.5
   get_it: ^9.2.1
   flutter_dotenv: ^6.0.1
   logger: ^2.7.0
@@ -89,6 +88,7 @@ dependencies:
   package_info_plus: ^9.0.1
   url_launcher: ^6.3.2
   open_filex: ^4.7.0
+  upi_india: ^3.0.1
 
 
 

@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:it_feels_music/services/subscription_service.dart';
-import 'package:it_feels_music/services/razorpay_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:upi_india/upi_india.dart';
 
 class SubscriptionProvider extends ChangeNotifier {
   // CONFIG TOGGLE: Set to true to bypass RevenueCat and use Razorpay (Direct Distribution)
   static const bool useDirectDistribution = true;
 
   final SubscriptionService _service;
-  final RazorpayService _razorpayService = RazorpayService();
+  final UpiIndia upiIndia = UpiIndia();
   
   bool _isPremium = false;
   bool _isLoading = true;
@@ -111,23 +113,52 @@ class SubscriptionProvider extends ChangeNotifier {
     return success;
   }
 
-  Future<bool> purchaseRazorpay(int amountInRupees, int durationDays) async {
+  Future<bool> purchaseUpi(UpiApp app, int amountInRupees) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+
     _isLoading = true;
     notifyListeners();
-    
-    final success = await _razorpayService.checkout(amountInRupees, durationDays);
-    if (success) {
-      _isPremium = true;
+
+    try {
+      UpiResponse response = await upiIndia.startTransaction(
+        app: app,
+        receiverUpiId: "methhead687@okaxis",
+        receiverName: "IT-Feels Premium",
+        transactionRefId: 'txn_${DateTime.now().millisecondsSinceEpoch}',
+        transactionNote: 'Premium Upgrade for ${user.uid}',
+        amount: amountInRupees.toDouble(),
+      );
+
+      if (response.status == UpiPaymentStatus.SUCCESS) {
+        // Instant Auto-Upgrade!
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'isPremiumFamily': true,
+          'premiumGrantedBy': 'upi_auto_${response.transactionId}',
+        }, SetOptions(merge: true));
+        _isPremium = true;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint("UPI Transaction failed: $e");
     }
-    
+
     _isLoading = false;
     notifyListeners();
-    return success;
+    return false;
+  }
+
+  Future<void> launchPaymentUrl(String urlString) async {
+    final url = Uri.parse(urlString);
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    }
   }
 
   @override
   void dispose() {
-    _razorpayService.dispose();
     super.dispose();
   }
 }
