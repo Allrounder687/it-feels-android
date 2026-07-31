@@ -12,6 +12,8 @@ import 'package:it_feels_music/features/library/artist_detail_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/main.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
+import 'package:it_feels_music/features/social/social_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SongOptionsSheet extends ConsumerWidget {
   final Song song;
@@ -149,6 +151,17 @@ class SongOptionsSheet extends ConsumerWidget {
                   duration: const Duration(seconds: 2),
                 ),
               );
+            },
+          ),
+          
+          // Action: Send to Friend
+          _buildOptionTile(context,
+            icon: Icons.send_rounded,
+            iconColor: Colors.blueAccent,
+            title: "Send to Friend",
+            onTap: () {
+              Navigator.pop(context);
+              _showSendToFriendDialog(context);
             },
           ),
 

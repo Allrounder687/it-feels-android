@@ -29,6 +29,7 @@ Future<void> setupServiceLocator() async {
   locator.registerLazySingleton<MusicApiService>(() => MusicApiService());
   locator.registerLazySingleton<LyricsService>(() => LyricsService());
   locator.registerLazySingleton<NotificationService>(() => NotificationService());
+  locator.registerLazySingleton<SocialService>(() => SocialService());
 
   // (Optional) You can register ViewModels or other Providers here if you migrate away from ChangeNotifierProvider in the future.
 }

@@ -9,6 +9,7 @@ import 'package:it_feels_music/features/library/library_screen.dart';
 import 'package:it_feels_music/features/player/video_tab_screen.dart';
 import 'package:it_feels_music/features/player/now_playing_screen.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
+import 'package:it_feels_music/features/social/social_screen.dart';
 import 'main_navigation_wrapper.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -73,6 +74,16 @@ final GoRouter appRouter = GoRouter(
               },
               pageBuilder: (context, state) => const NoTransitionPage(
                 child: VideoTabScreen(),
+              ),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/social',
+              pageBuilder: (context, state) => const NoTransitionPage(
+                child: SocialScreen(),
               ),
             ),
           ],
