@@ -22,6 +22,10 @@ class FakeFirebaseAuthException extends Fake implements FirebaseAuthException {
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(MockUser());
+  });
+
   late MockAuthService mockAuthService;
   late MockCloudSyncService mockCloudSyncService;
   late StreamController<User?> userStreamController;
@@ -136,6 +140,7 @@ void main() {
     test('auth state changes correctly when user logs in', () async {
       final mockUser = MockUser();
       when(() => mockAuthService.currentUser).thenReturn(mockUser);
+      when(() => mockCloudSyncService.initializeSync(any())).thenAnswer((_) async {});
       
       container.read(authProvider);
 
