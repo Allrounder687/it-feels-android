@@ -5,17 +5,20 @@ import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file_plus/open_file_plus.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 class ForceUpdateScreen extends StatefulWidget {
   final String latestVersion;
   final String updateUrl;
   final String? releaseNotes;
+  final String? iosUpdateUrl;
 
   const ForceUpdateScreen({
     super.key,
     required this.latestVersion,
     required this.updateUrl,
     this.releaseNotes,
+    this.iosUpdateUrl,
   });
 
   @override
@@ -28,6 +31,20 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
   String _statusMessage = "Update Now";
 
   Future<void> _downloadAndInstall() async {
+    // Apple's Walled Garden explicitly blocks in-app IPA installations.
+    if (Platform.isIOS) {
+      final url = widget.iosUpdateUrl ?? widget.updateUrl;
+      final uri = Uri.parse(url);
+      
+      // We must kick iOS users to Safari or AltStore/TestFlight links
+      try {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (e) {
+        debugPrint('[OTA] Could not launch iOS update URL');
+      }
+      return;
+    }
+
     setState(() {
       _isDownloading = true;
       _progress = 0.0;
@@ -176,7 +193,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                     ),
                   ),
                   child: Text(
-                    _statusMessage,
+                    Platform.isIOS ? "Download Update (Safari)" : _statusMessage,
                     style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),

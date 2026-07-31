@@ -15,6 +15,9 @@ import 'services/notification_service.dart';
 import 'package:it_feels_music/core/router/app_router.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/auth/banned_screen.dart';
+import 'package:it_feels_music/features/admin/in_app_broadcast_listener.dart';
+import 'package:it_feels_music/services/config_service.dart';
+import 'package:it_feels_music/features/admin/force_update_screen.dart';
 
 import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
@@ -121,10 +124,37 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                 routerConfig: appRouter,
                 builder: (context, child) {
                   final isBanned = ref.watch(banProvider).isBanned;
-                  if (isBanned) {
-                    return const BannedScreen();
-                  }
-                  return child ?? const SizedBox();
+                  return FutureBuilder<AppConfig?>(
+                    future: ConfigService.fetchRemoteConfig(),
+                    builder: (context, configSnapshot) {
+                      if (configSnapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      
+                      final config = configSnapshot.data;
+                      if (config != null) {
+                        return FutureBuilder<bool>(
+                          future: ConfigService.requiresForceUpdate(config),
+                          builder: (context, requireUpdateSnapshot) {
+                            if (requireUpdateSnapshot.data == true) {
+                              return ForceUpdateScreen(
+                                latestVersion: config.latestVersion,
+                                updateUrl: config.updateUrl,
+                                releaseNotes: config.releaseNotes,
+                                iosUpdateUrl: config.iosUpdateUrl,
+                              );
+                            }
+                            
+                            if (isBanned) return const BannedScreen();
+                            return InAppBroadcastListener(child: child ?? const SizedBox());
+                          }
+                        );
+                      }
+
+                      if (isBanned) return const BannedScreen();
+                      return InAppBroadcastListener(child: child ?? const SizedBox());
+                    }
+                  );
                 },
               );
             },
