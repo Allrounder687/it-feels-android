@@ -165,7 +165,7 @@ class SubscriptionService {
          final response = await http.post(
            Uri.parse('https://api.gumroad.com/v2/licenses/verify'),
            body: {
-             'product_permalink': 'it-feels', // Must match the Gumroad product URL slug
+             'product_id': 'sC8BcFZNHHStRCAERalyxA==', // Exact Product ID from Gumroad
              'license_key': cleanCode,
            }
          );
