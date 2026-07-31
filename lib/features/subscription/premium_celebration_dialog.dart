@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
+import 'package:confetti/confetti.dart';
 
 class PremiumCelebrationDialog extends StatefulWidget {
   final bool isFamilyCoupon;
@@ -45,6 +46,7 @@ class _PremiumCelebrationDialogState extends State<PremiumCelebrationDialog> wit
   late AnimationController _controller;
   late Animation<double> _rotationAnimation;
   late Animation<double> _scaleAnimation;
+  late ConfettiController _confettiController;
 
   @override
   void initState() {
@@ -61,17 +63,23 @@ class _PremiumCelebrationDialogState extends State<PremiumCelebrationDialog> wit
     _scaleAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
     );
+
+    _confettiController = ConfettiController(duration: const Duration(seconds: 4));
+    _confettiController.play();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _confettiController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return Stack(
+      children: [
+        Center(
       child: Material(
         color: Colors.transparent,
         child: Container(
@@ -177,6 +185,28 @@ class _PremiumCelebrationDialogState extends State<PremiumCelebrationDialog> wit
           ),
         ),
       ),
+    ),
+    Align(
+      alignment: Alignment.topCenter,
+          child: ConfettiWidget(
+            confettiController: _confettiController,
+            blastDirection: 3.14 / 2, // downwards
+            blastDirectionality: BlastDirectionality.explosive,
+            maxBlastForce: 20,
+            minBlastForce: 8,
+            emissionFrequency: 0.05,
+            numberOfParticles: 50,
+            gravity: 0.1,
+            colors: const [
+              Colors.amber,
+              Colors.blue,
+              Colors.pink,
+              Colors.orange,
+              Colors.purple
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

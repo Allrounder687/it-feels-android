@@ -84,6 +84,10 @@ dependencies:
   riverpod_annotation: ^2.6.1
   device_info_plus: ^12.4.0
   background_downloader: ^9.5.7
+  timeago: ^3.7.1
+  confetti: ^0.8.0
+  package_info_plus: ^9.0.1
+  open_file_plus: ^3.4.1+1
 
 
 
