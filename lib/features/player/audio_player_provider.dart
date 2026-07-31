@@ -645,7 +645,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       }
       
       if (state.currentRoomId != null && state.isHost && state.currentSong != null) {
-        _roomService.updateRoomState(state.currentRoomId!, state.currentSong!.id, state.position, state.isPlaying);
+        _roomService.updateRoomState(state.currentRoomId!, state.currentSong!, state.position, state.isPlaying);
       }
     });
 
@@ -659,7 +659,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
       if (state.currentRoomId != null && state.isHost && state.currentSong != null && state.isPlaying && pos.inSeconds % 5 == 0 && _lastSyncedSecond != pos.inSeconds) {
         _lastSyncedSecond = pos.inSeconds;
-        _roomService.updateRoomState(state.currentRoomId!, state.currentSong!.id, pos, state.isPlaying);
+        _roomService.updateRoomState(state.currentRoomId!, state.currentSong!, pos, state.isPlaying);
       }
     });
 

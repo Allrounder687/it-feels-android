@@ -35,10 +35,14 @@ class RoomService {
   }
 
   // Update room state (only called by host)
-  Future<void> updateRoomState(String roomId, String songId, Duration position, bool isPlaying) async {
+  Future<void> updateRoomState(String roomId, Song currentSong, Duration position, bool isPlaying) async {
     final roomRef = _rtdb.ref('rooms/$roomId');
     await roomRef.update({
-      'songId': songId,
+      'songId': currentSong.id,
+      'saavnId': currentSong.saavnId,
+      'title': currentSong.title,
+      'artist': currentSong.artist,
+      'coverArt': currentSong.coverArt,
       'positionMs': position.inMilliseconds,
       'isPlaying': isPlaying,
       'timestamp': ServerValue.timestamp,
