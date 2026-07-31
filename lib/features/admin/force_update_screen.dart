@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_file_plus/open_file_plus.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -80,12 +80,16 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
       await sink.close();
 
       setState(() {
-        _statusMessage = "Installing...";
-        _progress = 1.0;
+        if (mounted) {
+          setState(() {
+            _isDownloading = false;
+            _statusMessage = "Installing...";
+          });
+        }
       });
 
       // Trigger Android native package installer
-      final result = await OpenFile.open(savePath);
+      final result = await OpenFilex.open(savePath);
       
       if (result.type != ResultType.done) {
         setState(() {
