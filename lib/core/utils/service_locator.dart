@@ -3,6 +3,8 @@ import 'package:logger/logger.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:it_feels_music/services/notification_service.dart';
+import 'package:it_feels_music/services/cloud_sync_service.dart';
+import 'package:it_feels_music/services/telemetry_service.dart';
 
 final GetIt locator = GetIt.instance;
 
@@ -22,6 +24,8 @@ Future<void> setupServiceLocator() async {
       ));
 
   // Register Core Services
+  locator.registerLazySingleton<CloudSyncService>(() => CloudSyncService());
+  locator.registerLazySingleton<TelemetryService>(() => TelemetryService());
   locator.registerLazySingleton<MusicApiService>(() => MusicApiService());
   locator.registerLazySingleton<LyricsService>(() => LyricsService());
   locator.registerLazySingleton<NotificationService>(() => NotificationService());
