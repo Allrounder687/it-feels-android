@@ -2,10 +2,12 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/features/auth/auth_provider.dart';
 import 'package:it_feels_music/services/auth_service.dart';
 import 'package:it_feels_music/services/cloud_sync_service.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 class MockAuthService extends Mock implements AuthService {}
 class MockCloudSyncService extends Mock implements CloudSyncService {}
@@ -22,8 +24,8 @@ class FakeFirebaseAuthException extends Fake implements FirebaseAuthException {
 void main() {
   late MockAuthService mockAuthService;
   late MockCloudSyncService mockCloudSyncService;
-  late AuthNotifier authNotifier;
   late StreamController<User?> userStreamController;
+  late ProviderContainer container;
 
   setUp(() {
     mockAuthService = MockAuthService();
@@ -40,35 +42,41 @@ void main() {
       locator.registerSingleton<CloudSyncService>(mockCloudSyncService);
     }
 
-    authNotifier = AuthNotifier();
+    container = ProviderContainer();
   });
 
   tearDown(() {
     userStreamController.close();
+    container.dispose();
     locator.reset();
   });
 
   group('AuthNotifier State Machine Tests (Anti-Enumeration Flow)', () {
     test('initial state is emailInput', () {
-      expect(authNotifier.state.viewState, AuthViewState.emailInput);
-      expect(authNotifier.state.isAuthenticated, false);
-      expect(authNotifier.state.errorMessage, isEmpty);
+      final state = container.read(authProvider);
+      expect(state.viewState, AuthViewState.emailInput);
+      expect(state.isAuthenticated, false);
+      expect(state.errorMessage, isEmpty);
     });
 
     test('submitEmail sets viewState to loginPassword unconditionally', () async {
       const email = 'test@example.com';
+      final notifier = container.read(authProvider.notifier);
 
-      await authNotifier.submitEmail(email);
+      await notifier.submitEmail(email);
+      final state = container.read(authProvider);
 
-      expect(authNotifier.state.viewState, AuthViewState.loginPassword);
-      expect(authNotifier.state.email, email);
+      expect(state.viewState, AuthViewState.loginPassword);
+      expect(state.email, email);
     });
 
     test('submitEmail handles invalid email', () async {
-      await authNotifier.submitEmail('invalidemail');
+      final notifier = container.read(authProvider.notifier);
+      await notifier.submitEmail('invalidemail');
+      final state = container.read(authProvider);
       
-      expect(authNotifier.state.errorMessage, 'Please enter a valid email');
-      expect(authNotifier.state.viewState, AuthViewState.emailInput);
+      expect(state.errorMessage, 'Please enter a valid email');
+      expect(state.viewState, AuthViewState.emailInput);
     });
 
     test('submitPassword calls signInWithEmail when in loginPassword state', () async {
@@ -77,10 +85,11 @@ void main() {
       
       when(() => mockAuthService.signInWithEmail(email, password)).thenAnswer((_) async => MockUserCredential());
       
-      await authNotifier.submitEmail(email);
-      expect(authNotifier.state.viewState, AuthViewState.loginPassword);
+      final notifier = container.read(authProvider.notifier);
+      await notifier.submitEmail(email);
+      expect(container.read(authProvider).viewState, AuthViewState.loginPassword);
 
-      final success = await authNotifier.submitPassword(password);
+      final success = await notifier.submitPassword(password);
 
       expect(success, true);
       verify(() => mockAuthService.signInWithEmail(email, password)).called(1);
@@ -93,12 +102,14 @@ void main() {
       when(() => mockAuthService.signInWithEmail(email, password))
           .thenThrow(FakeFirebaseAuthException('invalid-credential'));
       
-      await authNotifier.submitEmail(email);
-      final success = await authNotifier.submitPassword(password);
+      final notifier = container.read(authProvider.notifier);
+      await notifier.submitEmail(email);
+      final success = await notifier.submitPassword(password);
+      final state = container.read(authProvider);
 
       expect(success, false);
-      expect(authNotifier.state.viewState, AuthViewState.signupPassword);
-      expect(authNotifier.state.errorMessage, contains('Click "Create Account"'));
+      expect(state.viewState, AuthViewState.signupPassword);
+      expect(state.errorMessage, contains('Click "Create Account"'));
     });
     
     test('submitPassword calls signUpWithEmail when in signupPassword state', () async {
@@ -108,14 +119,15 @@ void main() {
       when(() => mockAuthService.signInWithEmail(email, password))
           .thenThrow(FakeFirebaseAuthException('invalid-credential'));
           
-      await authNotifier.submitEmail(email);
-      await authNotifier.submitPassword(password);
+      final notifier = container.read(authProvider.notifier);
+      await notifier.submitEmail(email);
+      await notifier.submitPassword(password);
       
-      expect(authNotifier.state.viewState, AuthViewState.signupPassword);
+      expect(container.read(authProvider).viewState, AuthViewState.signupPassword);
 
       when(() => mockAuthService.signUpWithEmail(email, password)).thenAnswer((_) async => MockUserCredential());
 
-      final success = await authNotifier.submitPassword(password);
+      final success = await notifier.submitPassword(password);
 
       expect(success, true);
       verify(() => mockAuthService.signUpWithEmail(email, password)).called(1);
@@ -125,11 +137,15 @@ void main() {
       final mockUser = MockUser();
       when(() => mockAuthService.currentUser).thenReturn(mockUser);
       
+      // Initialize notifier to start listening to stream
+      container.read(authProvider);
+
       userStreamController.add(mockUser);
       await Future.delayed(Duration.zero);
 
-      expect(authNotifier.state.isAuthenticated, true);
-      expect(authNotifier.state.viewState, AuthViewState.authenticated);
+      final state = container.read(authProvider);
+      expect(state.isAuthenticated, true);
+      expect(state.viewState, AuthViewState.authenticated);
     });
   });
 }

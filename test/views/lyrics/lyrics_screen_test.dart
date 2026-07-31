@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
 import 'package:it_feels_music/features/player/lyrics_screen.dart';
 import 'package:it_feels_music/features/player/lyrics_provider.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -46,10 +49,20 @@ class MockAudioPlayerNotifier extends AudioPlayerNotifier {
   }
 }
 
+class MockSettingsNotifier extends SettingsNotifier {
+  @override
+  SettingsState build() {
+    return const SettingsState();
+  }
+}
+
 class FakeSong extends Fake implements Song {}
 
 void main() {
-  setUpAll(() {
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    setupFirebaseCoreMocks();
+    await Firebase.initializeApp();
     registerFallbackValue(FakeSong());
     registerFallbackValue(Duration.zero);
   });
@@ -60,6 +73,7 @@ void main() {
         overrides: [
           audioPlayerProvider.overrideWith(() => MockAudioPlayerNotifier()),
           lyricsProvider.overrideWith(() => MockLyricsNotifier()),
+          settingsProvider.overrideWith(() => MockSettingsNotifier()),
         ],
         child: const MaterialApp(
           home: Scaffold(body: LyricsScreen()),
@@ -67,13 +81,8 @@ void main() {
       ),
     );
 
-    await tester.pump();
+    await tester.pumpAndSettle();
 
-    try {
-      expect(find.textContaining("Oopsies!"), findsOneWidget);
-    } catch (e) {
-      debugDumpApp();
-      rethrow;
-    }
+    expect(find.textContaining("Oopsies!"), findsOneWidget);
   });
 }
