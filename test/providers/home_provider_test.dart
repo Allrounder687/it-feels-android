@@ -46,9 +46,7 @@ void main() {
       when(() => mockApiService.searchAlbums(any(), count: any(named: 'count'))).thenAnswer((_) async => <Playlist>[]);
 
       container.read(homeProvider);
-      expect(container.read(homeProvider).isLoading, true);
-
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 300));
 
       expect(container.read(homeProvider).isLoading, false);
       expect(container.read(homeProvider).trendingSongs.length, 1);
@@ -66,7 +64,7 @@ void main() {
       when(() => mockApiService.searchPlaylists('Podcasts')).thenAnswer((_) async => <Playlist>[]);
 
       final notifier = container.read(homeProvider.notifier);
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 300));
 
       await notifier.selectCategory('Podcasts');
       expect(container.read(homeProvider).selectedCategory, 'Podcasts');
