@@ -42,9 +42,9 @@ class AudioPlayerState {
   final bool hasSentTelemetryForCurrentSong;
   final Duration position;
   final Duration duration;
-  final Color themeBackgroundColor;
-  final Color themeSurfaceColor;
-  final Color themeAccentColor;
+  final Color extractedBackgroundColor;
+  final Color extractedSurfaceColor;
+  final Color extractedAccentColor;
   final Color? materialYouSurface;
   final Color? materialYouSurfaceContainer;
   final Color? materialYouPrimary;
@@ -82,9 +82,9 @@ class AudioPlayerState {
     this.hasSentTelemetryForCurrentSong = false,
     this.position = Duration.zero,
     this.duration = Duration.zero,
-    this.themeBackgroundColor = AppColors.midnightBackground,
-    this.themeSurfaceColor = AppColors.midnightSurface,
-    this.themeAccentColor = AppColors.midnightPrimary,
+    this.extractedBackgroundColor = AppColors.midnightBackground,
+    this.extractedSurfaceColor = AppColors.midnightSurface,
+    this.extractedAccentColor = AppColors.midnightPrimary,
     this.materialYouSurface,
     this.materialYouSurfaceContainer,
     this.materialYouPrimary,
@@ -113,7 +113,7 @@ class AudioPlayerState {
   Color get themeBackgroundColor {
     switch (appThemeMode) {
       case AppThemeMode.dynamic:
-        return themeBackgroundColor;
+        return extractedBackgroundColor;
       case AppThemeMode.materialYou:
         return materialYouSurface ?? AppColors.midnightBackground;
       case AppThemeMode.midnight:
@@ -130,7 +130,7 @@ class AudioPlayerState {
   Color get themeSurfaceColor {
     switch (appThemeMode) {
       case AppThemeMode.dynamic:
-        return themeSurfaceColor;
+        return extractedSurfaceColor;
       case AppThemeMode.materialYou:
         return materialYouSurfaceContainer ?? AppColors.midnightSurface;
       case AppThemeMode.midnight:
@@ -147,7 +147,7 @@ class AudioPlayerState {
   Color get themeAccentColor {
     switch (appThemeMode) {
       case AppThemeMode.dynamic:
-        return themeAccentColor;
+        return extractedAccentColor;
       case AppThemeMode.materialYou:
         return materialYouPrimary ?? AppColors.midnightPrimary;
       case AppThemeMode.midnight:
@@ -234,9 +234,9 @@ class AudioPlayerState {
       hasSentTelemetryForCurrentSong: hasSentTelemetryForCurrentSong ?? this.hasSentTelemetryForCurrentSong,
       position: position ?? this.position,
       duration: duration ?? this.duration,
-      themeBackgroundColor: themeBackgroundColor ?? this.themeBackgroundColor,
-      themeSurfaceColor: themeSurfaceColor ?? this.themeSurfaceColor,
-      themeAccentColor: themeAccentColor ?? this.themeAccentColor,
+      extractedBackgroundColor: themeBackgroundColor ?? this.extractedBackgroundColor,
+      extractedSurfaceColor: themeSurfaceColor ?? this.extractedSurfaceColor,
+      extractedAccentColor: themeAccentColor ?? this.extractedAccentColor,
       materialYouSurface: materialYouSurface ?? this.materialYouSurface,
       materialYouSurfaceContainer: materialYouSurfaceContainer ?? this.materialYouSurfaceContainer,
       materialYouPrimary: materialYouPrimary ?? this.materialYouPrimary,

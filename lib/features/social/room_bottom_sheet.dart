@@ -292,7 +292,7 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
         ElevatedButton(
           onPressed: _pinController.text.length == 6 ? _joinSession : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: audioProvider.activeAccentColor,
+            backgroundColor: audioProvider.themeAccentColor,
             foregroundColor: Colors.white,
             elevation: 0,
             minimumSize: const Size(double.infinity, 56),
