@@ -7,6 +7,8 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - **Social Sync Rooms:** Fixed a severe state desync bug in `Listen Together` rooms where guests would hear the new track but see the old song's title and album art. The `RoomService` now strictly pushes the entire `Song` object upon track changes to ensure 100% UI and Audio synchronization across all clients.
 - **OTA Updates (iOS):** Fixed a bug where missing `iosUpdateUrl` in Firebase would cause the Force Update screen to dangerously link to the Android `.apk` instead of the `.ipa`. It now dynamically repairs the missing URL.
 - **CI Pipeline:** Fixed an issue where GitHub Actions CI failed to build the Android APK because of the missing `_showSendToFriendDialog` method in `SongOptionsSheet`. Added the missing dialog to `song_options_sheet.dart` to allow users to send tracks to their friends' inboxes.
+- **CI Pipeline (Hotfix):** Resolved fatal `undefined getter` compilation error caused by a missing `audioPlayerProvider` import in `social_screen.dart`, and updated test argument typings in `room_service_test.dart` to fix `flutter analyze` failures.
+
 
 ### Added
 - **External Payments (Gumroad & Crypto):** Implemented License Key verification in `SubscriptionService`. Users can now pay via Gumroad or Crypto, receive a license code, and paste it into the "Redeem Code" section to instantly unlock Premium (bypassing Google Play).

@@ -4,7 +4,7 @@
 A premium, modern Flutter Android music application built with the design aesthetics of **IT Feels Music** and powered by the **FEELS Cloud Proxy Engine**.
 
 ![IT Feels Music Banner](https://img.shields.io/badge/IT%20Feels%20Music-Edition-FF4081?style=for-the-badge&logo=flutter)
-![Version](https://img.shields.io/badge/Version-3.2.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-3.3.4-blue?style=for-the-badge)
 ![Flutter Version](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter)
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
@@ -14,6 +14,7 @@ A premium, modern Flutter Android music application built with the design aesthe
 ## ✨ Highlights & Key Features
 
 - **IT Feels Music UI Aesthetics**: High-contrast dark themes (Burgundy `#220F19` & Midnight Blue `#090D16`), organic artwork bubble collages (`HeroCollage`), display typography (`Outfit` & `Inter`), and custom squiggly progress bars (`WavySeekBar`).
+- **Live Social Suite & Admin Telemetry**: Includes real-time listening parties, direct track sharing to friends' inboxes, reactive in-app broadcasts, and full Admin Dashboard analytics.
 - **Zero Cognitive Overload UX**: Graceful empty states, smooth animated transitions on all player controls, and zero-wait background video loading that falls back to 60fps album art while resolving streams.
 - **Unified Multi-Backend Search Engine**: Concurrently queries both the Saavn API and the IT-Feels Native Catalog, automatically merging, deduplicating, and relevance-sorting results with distinct UI badging.
 - **Instant Native Video Extraction**: Bypasses external proxies with a highly optimized local `youtube_explode_dart` engine that strictly fetches pre-muxed 720p streams to guarantee zero-latency audio/video synchronization.
@@ -80,6 +81,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 
 ## Recent Updates
+- **Payment Gateways & Sync Bug Fixes (3.3.4):** Implemented License Key verification for external payments (Gumroad & Crypto), redesigned the zero cognitive overload auth flow for instant syncing, and resolved critical state desyncs in Listen Together rooms and CI/CD OTA Pipelines.
+- **Admin Telemetry & Live Social Expansion (3.2.0):** Overhauled LyricsService with concurrent Completer racing for <1s resolution. Upgraded the Admin Dashboard with real-time UI filtering and Global Broadcast capability. Finalized real-time synced rooms and the new Force Update OTA engine.
 - **World-Class Architecture Upgrade (3.1.0):** Deployed a Zero-Buffering local caching audio engine, Concurrent Network Racing for instant streaming, True Native OS Background Downloading, Live Karaoke Auto-Scroll, and Advanced Cloud Telemetry.
 - **Phase 3 Authentication (Listen Together):** Implemented Firebase Core and a highly secure, Zero Cognitive Overload Magic Auth bottom sheet for seamless cloud syncing.
 - **Ask Feels AI Engine:** Branded and updated smart playlist capabilities featuring "What are you feeling like?" UX.
