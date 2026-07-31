@@ -116,8 +116,9 @@ class SearchNotifier extends Notifier<SearchState> {
           // Filter out duplicates (if native result is same as saavn result by id or name)
           final nativeIds = taggedNativeSongs.map((s) => s.id).toSet();
           songs.removeWhere((s) => nativeIds.contains(s.id));
-          
-          songs.insertAll(0, taggedNativeSongs);
+          // Insert native songs right below the #1 global Saavn result to preserve relevance balance
+          int insertIndex = songs.isNotEmpty ? 1 : 0;
+          songs.insertAll(insertIndex, taggedNativeSongs);
         }
 
         state = state.copyWith(

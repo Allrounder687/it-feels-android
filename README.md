@@ -14,8 +14,9 @@ A premium, modern Flutter Android music application built with the design aesthe
 ## ✨ Highlights & Key Features
 
 - **IT Feels Music UI Aesthetics**: High-contrast dark themes (Burgundy `#220F19` & Midnight Blue `#090D16`), organic artwork bubble collages (`HeroCollage`), display typography (`Outfit` & `Inter`), and custom squiggly progress bars (`WavySeekBar`).
-- **Zero Cognitive Overload UX**: Graceful empty states, smooth animated transitions on all player controls, and broadened hit areas for an effortless navigation experience.
-- **Spotify-like Search Engine**: Typo-tolerant, instantaneous Full-Text Search using a native Isar database and normalized `searchVector` logic.
+- **Zero Cognitive Overload UX**: Graceful empty states, smooth animated transitions on all player controls, and zero-wait background video loading that falls back to 60fps album art while resolving streams.
+- **Unified Multi-Backend Search Engine**: Concurrently queries both the Saavn API and the IT-Feels Native Catalog, automatically merging, deduplicating, and relevance-sorting results with distinct UI badging.
+- **Instant Native Video Extraction**: Bypasses external proxies with a highly optimized local `youtube_explode_dart` engine that strictly fetches pre-muxed 720p streams to guarantee zero-latency audio/video synchronization.
 - **Multi-Provider Smart Playlist Engine:** Leverages three highly cost-efficient 2026 LLM backend proxies (ChatGPT `gpt-5.6-luna`, Claude `haiku-4-5-20251001`, Gemini `3.5-flash-lite`) for playlist generation, fully protected and routed via the Cloudflare Edge.
 - **Backend E2E Validation:** Ships with a standalone native Node.js testing harness (`npm run test`) for the Cloudflare Worker to rapidly iterate on AI prompts and KV caching without needing the mobile client.
 - **Curated Moods & Charts**: Dedicated dynamic tabs for curated mood playlists (with English/Hindi toggle) and top global streaming charts.
