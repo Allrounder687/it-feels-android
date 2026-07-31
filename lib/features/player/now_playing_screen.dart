@@ -68,7 +68,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
             audioProvider.play();
           }
         }
-      };
+      });
 
       ref.read(videoPlayerProvider.notifier).playVideo(
         currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}',
