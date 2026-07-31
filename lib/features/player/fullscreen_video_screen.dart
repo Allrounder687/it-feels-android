@@ -124,7 +124,7 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                       ),
                       trailing: isSelected ? Icon(Icons.check_circle_rounded, color: context.themeAccentColor) : null,
                       onTap: () {
-                        videoProvider.changeQuality(quality);
+                        ref.read(videoPlayerProvider.notifier).changeQuality(quality);
                         Navigator.pop(context);
                       },
                     );

@@ -26,8 +26,8 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
       final lyricsProv = ref.read(lyricsProvider);
       final playerProv = ref.read(audioPlayerProvider);
       if (playerProv.currentSong != null) {
-        lyricsProv.loadLyricsIfNeeded(playerProv.currentSong!, playerProv.position);
-        lyricsProv.scrollToActiveIndex(force: true);
+        ref.read(lyricsProvider.notifier).loadLyricsIfNeeded(playerProv.currentSong!, playerProv.position);
+        ref.read(lyricsProvider.notifier).scrollToActiveIndex(force: true);
       }
     });
   }
@@ -42,7 +42,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
         final position = playerProvLocal.position;
 
         if (currentSong != null) {
-          lyricsProvLocal.loadLyricsIfNeeded(currentSong, position);
+          ref.read(lyricsProvider.notifier).loadLyricsIfNeeded(currentSong, position);
         }
 
         return Scaffold(
@@ -78,7 +78,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                         child: Row(
                           children: [
                             GestureDetector(
-                              onTap: () => lyricsProvLocal.setMode(LyricsMode.synced),
+                              onTap: () => ref.read(lyricsProvider.notifier).setMode(LyricsMode.synced),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                                 decoration: BoxDecoration(
@@ -100,7 +100,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                               ),
                             ),
                             GestureDetector(
-                              onTap: () => lyricsProvLocal.setMode(LyricsMode.static),
+                              onTap: () => ref.read(lyricsProvider.notifier).setMode(LyricsMode.static),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                                 decoration: BoxDecoration(
@@ -135,7 +135,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                           ),
                           child: Icon(Icons.text_fields, color: context.themeTextColor, size: 20),
                         ),
-                        onPressed: () => lyricsProvLocal.cycleFont(),
+                        onPressed: () => ref.read(lyricsProvider.notifier).cycleFont(),
                       ),
                     ],
                   ),
@@ -156,7 +156,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           GestureDetector(
-                            onTap: () => lyricsProvLocal.adjustSyncOffset(-100),
+                            onTap: () => ref.read(lyricsProvider.notifier).adjustSyncOffset(-100),
                             child: Icon(Icons.remove_circle_outline, size: 16, color: context.themeMutedTextColor),
                           ),
                           const SizedBox(width: 8),
@@ -170,7 +170,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                           ),
                           const SizedBox(width: 8),
                           GestureDetector(
-                            onTap: () => lyricsProvLocal.adjustSyncOffset(100),
+                            onTap: () => ref.read(lyricsProvider.notifier).adjustSyncOffset(100),
                             child: Icon(Icons.add_circle_outline, size: 16, color: context.themeMutedTextColor),
                           ),
                         ],

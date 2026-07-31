@@ -1,51 +1,79 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 
-class SearchProvider extends ChangeNotifier {
-  final MusicApiService apiService;
+@immutable
+class SearchState {
+  final String query;
+  final List<Song> songs;
+  final List<Playlist> albums;
+  final List<Playlist> playlists;
+  final List<Map<String, dynamic>> artists;
+  final bool isSearching;
 
-  String _query = '';
-  List<Song> _songs = [];
-  List<Playlist> _albums = [];
-  List<Playlist> _playlists = [];
-  List<Map<String, dynamic>> _artists = [];
-  bool _isSearching = false;
-  
+  const SearchState({
+    this.query = '',
+    this.songs = const [],
+    this.albums = const [],
+    this.playlists = const [],
+    this.artists = const [],
+    this.isSearching = false,
+  });
+
+  SearchState copyWith({
+    String? query,
+    List<Song>? songs,
+    List<Playlist>? albums,
+    List<Playlist>? playlists,
+    List<Map<String, dynamic>>? artists,
+    bool? isSearching,
+  }) {
+    return SearchState(
+      query: query ?? this.query,
+      songs: songs ?? this.songs,
+      albums: albums ?? this.albums,
+      playlists: playlists ?? this.playlists,
+      artists: artists ?? this.artists,
+      isSearching: isSearching ?? this.isSearching,
+    );
+  }
+}
+
+class SearchNotifier extends Notifier<SearchState> {
+  late final MusicApiService apiService;
   Timer? _debounceTimer;
 
-  SearchProvider({required this.apiService});
-
-  String get query => _query;
-  List<Song> get songs => _songs;
-  List<Playlist> get albums => _albums;
-  List<Playlist> get playlists => _playlists;
-  List<Map<String, dynamic>> get artists => _artists;
-  bool get isSearching => _isSearching;
+  @override
+  SearchState build() {
+    apiService = locator<MusicApiService>();
+    ref.onDispose(() {
+      _debounceTimer?.cancel();
+    });
+    return const SearchState();
+  }
 
   void search(String newQuery, {BuildContext? context}) {
-    _query = newQuery;
-    
-    if (_debounceTimer != null) {
-      _debounceTimer!.cancel();
-    }
+    _debounceTimer?.cancel();
 
     if (newQuery.trim().isEmpty) {
-      _songs = [];
-      _albums = [];
-      _playlists = [];
-      _artists = [];
-      _isSearching = false;
-      notifyListeners();
+      state = state.copyWith(
+        query: '',
+        songs: const [],
+        albums: const [],
+        playlists: const [],
+        artists: const [],
+        isSearching: false,
+      );
       return;
     }
 
-    _isSearching = true;
-    notifyListeners();
+    state = state.copyWith(query: newQuery, isSearching: true);
 
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
-      if (_query != newQuery) return; // Prevent race conditions
+      if (state.query != newQuery) return;
 
       try {
         final resultsFuture = apiService.searchAll(newQuery);
@@ -54,40 +82,42 @@ class SearchProvider extends ChangeNotifier {
         final results = await resultsFuture;
         final topSongs = await songsFuture;
 
-        if (_query != newQuery) return; // Re-check after await
+        if (state.query != newQuery) return;
 
-        _albums = List<Playlist>.from(results['albums'] ?? []);
-        _playlists = List<Playlist>.from(results['playlists'] ?? []);
-        _artists = List<Map<String, dynamic>>.from(results['artists'] ?? []);
+        var albums = List<Playlist>.from(results['albums'] ?? []);
+        var playlists = List<Playlist>.from(results['playlists'] ?? []);
+        var artists = List<Map<String, dynamic>>.from(results['artists'] ?? []);
+        List<Song> songs = [];
 
-        // Ultimate Artist Search: If an artist is matched, fetch their true top songs
-        if (_artists.isNotEmpty && _artists.first['id'] != null && _artists.first['id'].toString().isNotEmpty) {
-          final artistId = _artists.first['id'].toString();
+        if (artists.isNotEmpty && artists.first['id'] != null && artists.first['id'].toString().isNotEmpty) {
+          final artistId = artists.first['id'].toString();
           final artistData = await apiService.fetchArtistDetails(artistId);
           
-          if (_query != newQuery) return; // Re-check after 2nd await
+          if (state.query != newQuery) return;
 
           if (artistData['topSongs'] != null && (artistData['topSongs'] as List).isNotEmpty) {
-            // Prepend true artist songs or replace completely
-            final trueArtistSongs = artistData['topSongs'] as List<Song>;
-            _songs = trueArtistSongs;
-            
+            songs = artistData['topSongs'] as List<Song>;
             if (artistData['albums'] != null && (artistData['albums'] as List).isNotEmpty) {
-              _albums.insertAll(0, artistData['albums'] as List<Playlist>);
+              albums.insertAll(0, artistData['albums'] as List<Playlist>);
             }
           }
         } else {
-          _songs = topSongs.isNotEmpty ? topSongs : List<Song>.from(results['songs'] ?? []);
+          songs = topSongs.isNotEmpty ? topSongs : List<Song>.from(results['songs'] ?? []);
         }
+
+        state = state.copyWith(
+          songs: songs,
+          albums: albums,
+          playlists: playlists,
+          artists: artists,
+          isSearching: false,
+        );
       } catch (e) {
-        debugPrint('[SearchProvider] Search error: $e');
-      } finally {
-        if (_query == newQuery) {
-          _isSearching = false;
-          notifyListeners();
-        }
+        debugPrint('[SearchNotifier] Search error: $e');
+        state = state.copyWith(isSearching: false);
       }
     });
   }
 }
 
+typedef SearchProvider = SearchNotifier;

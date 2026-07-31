@@ -1,143 +1,193 @@
-import 'package:flutter/material.dart';
-import 'package:video_player/video_player.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:video_player/video_player.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 
-class VideoPlayerProvider extends ChangeNotifier {
-  VideoPlayerController? videoController;
-  
-  bool isVideoActive = false;
-  bool isLoading = false;
-  bool isMuted = false;
-  
-  String currentVideoId = '';
-  String currentTitle = '';
-  String currentUploader = '';
-  
-  List<Map<String, dynamic>> streams = [];
-  String selectedQuality = '720p'; // Default
-  List<Map<String, dynamic>> relatedVideos = [];
-  VoidCallback? onVideoStarted;
+@immutable
+class VideoPlayerState {
+  final VideoPlayerController? videoController;
+  final bool isVideoActive;
+  final bool isLoading;
+  final bool isMuted;
+  final String currentVideoId;
+  final String currentTitle;
+  final String currentUploader;
+  final List<Map<String, dynamic>> streams;
+  final String selectedQuality;
+  final List<Map<String, dynamic>> relatedVideos;
+  final VoidCallback? onVideoStarted;
+  final double volume;
+  final double brightness;
 
-  double _volume = 0.5;
-  double _brightness = 0.5;
+  const VideoPlayerState({
+    this.videoController,
+    this.isVideoActive = false,
+    this.isLoading = false,
+    this.isMuted = false,
+    this.currentVideoId = '',
+    this.currentTitle = '',
+    this.currentUploader = '',
+    this.streams = const [],
+    this.selectedQuality = '720p',
+    this.relatedVideos = const [],
+    this.onVideoStarted,
+    this.volume = 0.5,
+    this.brightness = 0.5,
+  });
+
+  VideoPlayerState copyWith({
+    VideoPlayerController? videoController,
+    bool? isVideoActive,
+    bool? isLoading,
+    bool? isMuted,
+    String? currentVideoId,
+    String? currentTitle,
+    String? currentUploader,
+    List<Map<String, dynamic>>? streams,
+    String? selectedQuality,
+    List<Map<String, dynamic>>? relatedVideos,
+    VoidCallback? onVideoStarted,
+    double? volume,
+    double? brightness,
+  }) {
+    return VideoPlayerState(
+      videoController: videoController ?? this.videoController,
+      isVideoActive: isVideoActive ?? this.isVideoActive,
+      isLoading: isLoading ?? this.isLoading,
+      isMuted: isMuted ?? this.isMuted,
+      currentVideoId: currentVideoId ?? this.currentVideoId,
+      currentTitle: currentTitle ?? this.currentTitle,
+      currentUploader: currentUploader ?? this.currentUploader,
+      streams: streams ?? this.streams,
+      selectedQuality: selectedQuality ?? this.selectedQuality,
+      relatedVideos: relatedVideos ?? this.relatedVideos,
+      onVideoStarted: onVideoStarted ?? this.onVideoStarted,
+      volume: volume ?? this.volume,
+      brightness: brightness ?? this.brightness,
+    );
+  }
+}
+
+class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
   bool _isRecovering = false;
+  int _recoveryAttempts = 0;
 
-  VideoPlayerProvider() {
+  @override
+  VideoPlayerState build() {
     _initSystemControls();
+    ref.onDispose(() {
+      state.videoController?.dispose();
+    });
+    return const VideoPlayerState();
   }
 
   Future<void> _initSystemControls() async {
+    double vol = 0.5;
+    double bright = 0.5;
     try {
-      _volume = await VolumeController.instance.getVolume();
-    } catch (_) {
-      _volume = 0.5;
-    }
+      vol = await VolumeController.instance.getVolume();
+    } catch (_) {}
     try {
-      _brightness = await ScreenBrightness().current;
-    } catch (e) {
-      debugPrint('[VideoPlayerProvider] Error initializing system controls: $e');
-    }
+      bright = await ScreenBrightness().current;
+    } catch (_) {}
+    state = state.copyWith(volume: vol, brightness: bright);
   }
 
-  /// Plays a video
   Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition}) async {
-    if (currentVideoId == videoId && videoController != null && videoController!.value.isInitialized) {
-      // Fast resume without reloading network streams
-      isVideoActive = true;
+    if (state.currentVideoId == videoId && state.videoController != null && state.videoController!.value.isInitialized) {
+      state = state.copyWith(isVideoActive: true);
       if (startPosition != null) {
-        await videoController!.seekTo(startPosition);
+        await state.videoController!.seekTo(startPosition);
       }
-      await videoController!.play();
-      notifyListeners();
+      await state.videoController!.play();
       return;
     }
 
-    // Reset state
-    isLoading = true;
-    isVideoActive = true;
-    currentVideoId = videoId;
-    currentTitle = title;
-    currentUploader = uploader;
-    streams = [];
-    relatedVideos = [];
     _recoveryAttempts = 0;
-    notifyListeners();
+    state = state.copyWith(
+      isLoading: true,
+      isVideoActive: true,
+      currentVideoId: videoId,
+      currentTitle: title,
+      currentUploader: uploader,
+      streams: const [],
+      relatedVideos: const [],
+    );
 
     if (localPath != null && localPath.isNotEmpty) {
-      // Offline Playback
       await _initPlayerWithFile(localPath, startPosition: startPosition);
       final results = await Future.wait([
         BackendApiService.getRelatedVideos(videoId),
       ]);
-      relatedVideos = List<Map<String, dynamic>>.from(results[0] ?? []);
-      isLoading = false;
-      notifyListeners();
+      state = state.copyWith(
+        relatedVideos: List<Map<String, dynamic>>.from(results[0] ?? []),
+        isLoading: false,
+      );
       return;
     }
 
-    // Fetch streams and related videos in parallel
     final results = await Future.wait([
       BackendApiService.getVideoStreams(videoId, query: query),
       BackendApiService.getRelatedVideos(videoId, query: query),
     ]);
 
     final streamData = results[0] as Map<String, dynamic>;
-    relatedVideos = List<Map<String, dynamic>>.from((results[1] as Iterable?) ?? []);
+    final relVideos = List<Map<String, dynamic>>.from((results[1] as Iterable?) ?? []);
+    final streamList = List<Map<String, dynamic>>.from(streamData['streams'] ?? []);
+
+    state = state.copyWith(
+      relatedVideos: relVideos,
+      streams: streamList,
+    );
     
-    streams = List<Map<String, dynamic>>.from(streamData['streams'] ?? []);
-    
-    if (streams.isNotEmpty) {
-      _initializeStreamForQuality(selectedQuality, startPosition: startPosition);
+    if (streamList.isNotEmpty) {
+      _initializeStreamForQuality(state.selectedQuality, startPosition: startPosition);
     } else {
-      isLoading = false;
-      notifyListeners();
+      state = state.copyWith(isLoading: false);
     }
   }
 
   Future<void> _initPlayerWithFile(String localPath, {Duration? startPosition}) async {
     try {
-      await videoController?.dispose();
-      videoController = VideoPlayerController.file(
+      await state.videoController?.dispose();
+      final controller = VideoPlayerController.file(
         File(localPath),
         videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
       );
-      await videoController!.initialize();
+      await controller.initialize();
       if (startPosition != null) {
-        await videoController!.seekTo(startPosition);
+        await controller.seekTo(startPosition);
       }
-      await videoController!.play();
+      await controller.play();
+      state = state.copyWith(videoController: controller);
     } catch (e) {
-      debugPrint('[VideoPlayerProvider] Error playing offline file: $e');
+      debugPrint('[VideoPlayerNotifier] Error playing offline file: $e');
     }
   }
 
-  /// Initialize video controller for a specific quality
   Future<void> _initializeStreamForQuality(String targetQuality, {Duration? startPosition}) async {
-    if (streams.isEmpty) return;
+    if (state.streams.isEmpty) return;
 
-    isLoading = true;
-    notifyListeners();
+    state = state.copyWith(isLoading: true);
 
-    final previousPosition = startPosition ?? videoController?.value.position ?? Duration.zero;
-    final wasPlaying = videoController?.value.isPlaying ?? true;
+    final previousPosition = startPosition ?? state.videoController?.value.position ?? Duration.zero;
+    final wasPlaying = state.videoController?.value.isPlaying ?? true;
 
-    // Dispose old controller
-    await videoController?.dispose();
+    await state.videoController?.dispose();
 
-    // Find the stream that matches the target quality, or fallback to the first (highest) available
-    var selectedStream = streams.firstWhere(
+    var selectedStream = state.streams.firstWhere(
       (s) => s['quality'] == targetQuality,
-      orElse: () => streams.first,
+      orElse: () => state.streams.first,
     );
     
-    selectedQuality = selectedStream['quality'];
+    final quality = selectedStream['quality'];
     final streamUrl = selectedStream['url'] as String;
     final formatHint = streamUrl.contains('.m3u8') ? VideoFormat.hls : VideoFormat.other;
     
-    videoController = VideoPlayerController.networkUrl(
+    final controller = VideoPlayerController.networkUrl(
       Uri.parse(streamUrl),
       formatHint: formatHint,
       videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
@@ -148,120 +198,108 @@ class VideoPlayerProvider extends ChangeNotifier {
     );
     
     try {
-      await videoController!.initialize();
+      await controller.initialize();
     } catch (e) {
-      debugPrint('[VideoPlayerProvider] Error initializing video stream: $e');
+      debugPrint('[VideoPlayerNotifier] Error initializing video stream: $e');
       if (e.toString().contains('403') || e.toString().contains('Response code: 403')) {
         await _handleVideoPlaybackError(previousPosition, wasPlaying);
         return;
       }
     }
 
-    videoController!.addListener(() {
-      if (videoController != null && videoController!.value.hasError) {
-        final err = videoController!.value.errorDescription;
+    controller.addListener(() {
+      if (controller.value.hasError) {
+        final err = controller.value.errorDescription;
         if (err != null && (err.contains('403') || err.contains('Response code: 403'))) {
-          _handleVideoPlaybackError(videoController!.value.position, videoController!.value.isPlaying);
+          _handleVideoPlaybackError(controller.value.position, controller.value.isPlaying);
         }
       }
     });
 
-    await videoController!.setVolume(isMuted ? 0.0 : 1.0);
+    await controller.setVolume(state.isMuted ? 0.0 : 1.0);
     
     if (previousPosition != Duration.zero) {
-      await videoController!.seekTo(previousPosition);
+      await controller.seekTo(previousPosition);
     }
     
     if (wasPlaying) {
-      await videoController!.play();
+      await controller.play();
     }
 
-    isLoading = false;
-    notifyListeners();
-    onVideoStarted?.call();
+    state = state.copyWith(
+      videoController: controller,
+      selectedQuality: quality,
+      isLoading: false,
+    );
+    state.onVideoStarted?.call();
   }
 
-  int _recoveryAttempts = 0;
-
-  /// Self-healing auto recovery for expired stream links (403 Forbidden)
   Future<void> _handleVideoPlaybackError(Duration position, bool wasPlaying) async {
     if (_isRecovering) return;
-    if (_recoveryAttempts >= 2) {
-      debugPrint('[VideoPlayerProvider] Max recovery attempts reached. Stopping auto-recovery.');
-      return;
-    }
+    if (_recoveryAttempts >= 2) return;
     
     _isRecovering = true;
     _recoveryAttempts++;
     
-    debugPrint('[VideoPlayerProvider] Expired stream (403 Forbidden) detected. Auto-recovering URL... Attempt: $_recoveryAttempts');
     try {
-      BackendApiService.clearVideoStreamCache(currentVideoId);
-      final freshData = await BackendApiService.getVideoStreams(currentVideoId, bypassCache: true);
-      streams = List<Map<String, dynamic>>.from(freshData['streams'] ?? []);
+      BackendApiService.clearVideoStreamCache(state.currentVideoId);
+      final freshData = await BackendApiService.getVideoStreams(state.currentVideoId, bypassCache: true);
+      final freshStreams = List<Map<String, dynamic>>.from(freshData['streams'] ?? []);
+      state = state.copyWith(streams: freshStreams);
       
-      if (streams.isNotEmpty) {
+      if (freshStreams.isNotEmpty) {
         _isRecovering = false;
-        await _initializeStreamForQuality(selectedQuality, startPosition: position);
+        await _initializeStreamForQuality(state.selectedQuality, startPosition: position);
       }
     } catch (e) {
-      debugPrint('[VideoPlayerProvider] Auto-recovery failed: $e');
+      debugPrint('[VideoPlayerNotifier] Auto-recovery failed: $e');
     } finally {
       _isRecovering = false;
     }
   }
 
-  /// Change video quality
   Future<void> changeQuality(String quality) async {
-    if (quality == selectedQuality) return;
+    if (quality == state.selectedQuality) return;
     await _initializeStreamForQuality(quality);
   }
 
-  /// Adjust brightness via swipe gesture
   void adjustBrightness(double delta) {
-    _brightness += delta;
-    _brightness = _brightness.clamp(0.0, 1.0);
-    ScreenBrightness().setScreenBrightness(_brightness);
+    final newB = (state.brightness + delta).clamp(0.0, 1.0);
+    ScreenBrightness().setScreenBrightness(newB);
+    state = state.copyWith(brightness: newB);
   }
 
-  /// Adjust volume via swipe gesture
   void adjustVolume(double delta) {
-    _volume += delta;
-    _volume = _volume.clamp(0.0, 1.0);
+    final newV = (state.volume + delta).clamp(0.0, 1.0);
     try {
-      VolumeController.instance.setVolume(_volume);
+      VolumeController.instance.setVolume(newV);
     } catch (_) {}
+    state = state.copyWith(volume: newV);
   }
 
-  /// Seek forward/backward
   void seek(Duration duration) {
-    if (videoController == null) return;
-    final currentPos = videoController!.value.position;
+    if (state.videoController == null) return;
+    final currentPos = state.videoController!.value.position;
     var targetPos = currentPos + duration;
-    var maxDur = videoController!.value.duration;
+    var maxDur = state.videoController!.value.duration;
     if (targetPos < Duration.zero) targetPos = Duration.zero;
     if (targetPos > maxDur) targetPos = maxDur;
-    videoController!.seekTo(targetPos);
+    state.videoController!.seekTo(targetPos);
   }
 
-  /// Close the video player
   void closeVideo() {
-    isVideoActive = false;
-    videoController?.pause();
-    videoController?.dispose();
-    videoController = null;
-    notifyListeners();
+    state.videoController?.pause();
+    state.videoController?.dispose();
+    state = state.copyWith(
+      isVideoActive: false,
+      videoController: null,
+    );
   }
 
   void setMuted(bool mute) {
-    isMuted = mute;
-    videoController?.setVolume(mute ? 0.0 : 1.0);
-    notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    videoController?.dispose();
-    super.dispose();
+    state.videoController?.setVolume(mute ? 0.0 : 1.0);
+    state = state.copyWith(isMuted: mute);
   }
 }
+
+typedef VideoPlayerProvider = VideoPlayerNotifier;

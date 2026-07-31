@@ -299,7 +299,7 @@ class _VideoTabScreenState extends ConsumerState<VideoTabScreen> {
                       child: InkWell(
               borderRadius: BorderRadius.circular(20),
               onTap: () {
-                ref.read(videoPlayerProvider).playVideo(videoId, title, uploader);
+                ref.read(videoPlayerProvider.notifier).playVideo(videoId, title, uploader);
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -487,7 +487,7 @@ class _VideoTabScreenState extends ConsumerState<VideoTabScreen> {
               ),
               onTap: () {
                 if (localPath.isNotEmpty && File(localPath).existsSync()) {
-                  ref.read(videoPlayerProvider).playVideo(
+                  ref.read(videoPlayerProvider.notifier).playVideo(
                     videoId, 
                     title, 
                     uploader, 

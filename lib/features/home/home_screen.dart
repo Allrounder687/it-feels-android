@@ -57,12 +57,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
 
       if (homeProv.selectedCategory == "For You" && homeProv.currentCategoryPlaylists.isEmpty) {
-        homeProv.fetchYouSongs(historyProvider.getTopArtists());
-        if (homeProv.moodPlaylists.isEmpty) homeProv.fetchMoods();
+        ref.read(homeProvider.notifier).fetchYouSongs(historyProvider.getTopArtists());
+        if (homeProv.moodPlaylists.isEmpty) ref.read(homeProvider.notifier).fetchMoods();
       } else if (homeProv.selectedCategory == "Charts") {
-        homeProv.fetchCharts();
+        ref.read(homeProvider.notifier).fetchCharts();
       } else if (homeProv.selectedCategory == "Music") {
-        homeProv.selectCategory("Music");
+        ref.read(homeProvider.notifier).selectCategory("Music");
       }
     });
   }
@@ -434,10 +434,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         return GestureDetector(
                           onTap: () {
                             setState(() => _selectedFilterIndex = index);
-                            homeProv.selectCategory(_filters[index]);
+                            ref.read(homeProvider.notifier).selectCategory(_filters[index]);
                             if (_filters[index] == "For You" && homeProv.currentCategoryPlaylists.isEmpty) {
-                              homeProv.fetchYouSongs(historyProvider.getTopArtists());
-                              if (homeProv.moodPlaylists.isEmpty) homeProv.fetchMoods();
+                              ref.read(homeProvider.notifier).fetchYouSongs(historyProvider.getTopArtists());
+                              if (homeProv.moodPlaylists.isEmpty) ref.read(homeProvider.notifier).fetchMoods();
                             }
                           },
                           child: Container(

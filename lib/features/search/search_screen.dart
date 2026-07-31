@@ -89,14 +89,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     icon: Icon(Icons.clear, color: context.themeMutedTextColor),
                                     onPressed: () {
                                       _searchController.clear();
-                                      searchProviderObj.search('');
+                                      ref.read(searchProvider.notifier).search('');
                                     },
                                   )
                                 : null,
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          onChanged: (val) => searchProviderObj.search(val),
+                          onChanged: (val) => ref.read(searchProvider.notifier).search(val),
                         ),
                       ),
                     ],

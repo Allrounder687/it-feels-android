@@ -1,5 +1,5 @@
-import 'package:it_feels_music/core/utils/error_reporter.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:it_feels_music/core/utils/error_reporter.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
@@ -7,35 +7,74 @@ import 'package:it_feels_music/data/services/lyrics_service.dart';
 
 enum LyricsMode { synced, static }
 
-class LyricsProvider extends ChangeNotifier {
-  final LyricsService lyricsService;
+@immutable
+class LyricsState {
+  final LyricsMode mode;
+  final LyricsResult? lyricsResult;
+  final bool lyricsNotFound;
+  final bool isLoading;
+  final String? loadedSongId;
+  final int activeIndex;
+  final int syncOffsetMs;
+  final String fontFamily;
 
-  LyricsMode _mode = LyricsMode.synced;
-  LyricsResult? _lyricsResult;
-  bool _lyricsNotFound = false;
-  bool _isLoading = false;
+  const LyricsState({
+    this.mode = LyricsMode.synced,
+    this.lyricsResult,
+    this.lyricsNotFound = false,
+    this.isLoading = false,
+    this.loadedSongId,
+    this.activeIndex = -1,
+    this.syncOffsetMs = 350,
+    this.fontFamily = 'Plus Jakarta Sans',
+  });
 
-  String? _loadedSongId;
-  int _activeIndex = -1;
-  int _syncOffsetMs = 350; // Default +350ms compensation for audio buffer latency
-  String _fontFamily = 'Plus Jakarta Sans'; // Sleek modern lyrics font
-  final ItemScrollController _itemScrollController = ItemScrollController();
+  LyricsResult get result => lyricsResult ?? LyricsResult();
 
-  LyricsProvider({required this.lyricsService});
+  LyricsState copyWith({
+    LyricsMode? mode,
+    LyricsResult? lyricsResult,
+    bool? lyricsNotFound,
+    bool? isLoading,
+    String? loadedSongId,
+    int? activeIndex,
+    int? syncOffsetMs,
+    String? fontFamily,
+  }) {
+    return LyricsState(
+      mode: mode ?? this.mode,
+      lyricsResult: lyricsResult ?? this.lyricsResult,
+      lyricsNotFound: lyricsNotFound ?? this.lyricsNotFound,
+      isLoading: isLoading ?? this.isLoading,
+      loadedSongId: loadedSongId ?? this.loadedSongId,
+      activeIndex: activeIndex ?? this.activeIndex,
+      syncOffsetMs: syncOffsetMs ?? this.syncOffsetMs,
+      fontFamily: fontFamily ?? this.fontFamily,
+    );
+  }
 
-  LyricsMode get mode => _mode;
-  LyricsResult get result => _lyricsResult ?? LyricsResult();
-  LyricsResult? get lyricsResult => _lyricsResult;
-  bool get isLoading => _isLoading;
-  bool get lyricsNotFound => _lyricsNotFound;
-  int get activeIndex => _activeIndex;
-  int get syncOffsetMs => _syncOffsetMs;
-  String get fontFamily => _fontFamily;
-  ItemScrollController get itemScrollController => _itemScrollController;
+  int getActiveLineIndex(Duration position) {
+    if (lyricsResult == null || !lyricsResult!.hasSynced) return -1;
+    final lines = lyricsResult!.syncedLyrics;
+    final adjustedPosition = position + Duration(milliseconds: syncOffsetMs);
 
-  void setMode(LyricsMode newMode) {
-    _mode = newMode;
-    notifyListeners();
+    for (int i = lines.length - 1; i >= 0; i--) {
+      if (adjustedPosition >= lines[i].time) {
+        return i;
+      }
+    }
+    return 0;
+  }
+}
+
+class LyricsNotifier extends Notifier<LyricsState> {
+  final ItemScrollController itemScrollController = ItemScrollController();
+  late final LyricsService _lyricsService;
+
+  @override
+  LyricsState build() {
+    _lyricsService = LyricsService();
+    return const LyricsState();
   }
 
   static const List<String> availableFonts = [
@@ -45,63 +84,58 @@ class LyricsProvider extends ChangeNotifier {
     'Outfit',
   ];
 
+  void setMode(LyricsMode newMode) {
+    state = state.copyWith(mode: newMode);
+  }
+
   void cycleFont() {
-    final currentIndex = availableFonts.indexOf(_fontFamily);
+    final currentIndex = availableFonts.indexOf(state.fontFamily);
     final nextIndex = (currentIndex + 1) % availableFonts.length;
-    _fontFamily = availableFonts[nextIndex];
-    notifyListeners();
+    state = state.copyWith(fontFamily: availableFonts[nextIndex]);
   }
 
   void setFontFamily(String font) {
-    _fontFamily = font;
-    notifyListeners();
+    state = state.copyWith(fontFamily: font);
   }
 
   void adjustSyncOffset(int deltaMs) {
-    _syncOffsetMs = (_syncOffsetMs + deltaMs).clamp(-2000, 2000);
-    notifyListeners();
+    final newOffset = (state.syncOffsetMs + deltaMs).clamp(-2000, 2000);
+    state = state.copyWith(syncOffsetMs: newOffset);
   }
 
   void resetSyncOffset() {
-    _syncOffsetMs = 350;
-    notifyListeners();
+    state = state.copyWith(syncOffsetMs: 350);
   }
 
   Future<void> loadLyricsIfNeeded(Song song, Duration position) async {
-    if (_loadedSongId != song.id) {
-      _loadedSongId = song.id;
-      _isLoading = true;
-      _lyricsResult = null;
-      _lyricsNotFound = false;
-      
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+    if (state.loadedSongId != song.id) {
+      state = state.copyWith(
+        loadedSongId: song.id,
+        isLoading: true,
+        lyricsResult: null,
+        lyricsNotFound: false,
+      );
 
-      _lyricsResult = await lyricsService.fetchLyrics(song);
-      _isLoading = false;
-      
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifyListeners();
-      });
+      final res = await _lyricsService.fetchLyrics(song);
+      state = state.copyWith(
+        lyricsResult: res,
+        isLoading: false,
+      );
     }
 
-    if (_lyricsResult != null && _lyricsResult!.hasSynced) {
-      final newIndex = getActiveLineIndex(position);
-      if (newIndex != _activeIndex) {
-        _activeIndex = newIndex;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          notifyListeners();
-          scrollToActiveIndex();
-        });
+    if (state.lyricsResult != null && state.lyricsResult!.hasSynced) {
+      final newIndex = state.getActiveLineIndex(position);
+      if (newIndex != state.activeIndex) {
+        state = state.copyWith(activeIndex: newIndex);
+        scrollToActiveIndex();
       }
     }
   }
 
-  void scrollToActiveIndex({bool force = false}) {
-    if (_itemScrollController.isAttached && _activeIndex >= 0) {
-      _itemScrollController.scrollTo(
-        index: _activeIndex,
+  void scrollToActiveIndex() {
+    if (itemScrollController.isAttached && state.activeIndex >= 0) {
+      itemScrollController.scrollTo(
+        index: state.activeIndex,
         alignment: 0.5,
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeOutCubic,
@@ -110,12 +144,13 @@ class LyricsProvider extends ChangeNotifier {
   }
 
   Future<void> fetchLyrics(Song song, {BuildContext? context}) async {
-    _isLoading = true;
-    _lyricsResult = null;
-    _lyricsNotFound = false;
-    notifyListeners();
+    state = state.copyWith(
+      isLoading: true,
+      lyricsResult: null,
+      lyricsNotFound: false,
+    );
 
-    _lyricsResult = await lyricsService.fetchLyrics(
+    final res = await _lyricsService.fetchLyrics(
       song,
       onError: (message) {
         if (context != null) {
@@ -123,28 +158,14 @@ class LyricsProvider extends ChangeNotifier {
         }
       },
     );
-    _isLoading = false;
 
-    if (_lyricsResult == null || (!_lyricsResult!.hasStatic && !_lyricsResult!.hasSynced)) {
-      _lyricsNotFound = true;
-    }
-
-    notifyListeners();
+    final notFound = res == null || (!res.hasStatic && !res.hasSynced);
+    state = state.copyWith(
+      isLoading: false,
+      lyricsResult: res,
+      lyricsNotFound: notFound,
+    );
   }
-
-  int getActiveLineIndex(Duration position) {
-    if (_lyricsResult == null || !_lyricsResult!.hasSynced) return -1;
-    final lines = _lyricsResult!.syncedLyrics;
-    
-    // Apply sync offset compensation to eliminate audio buffer latency lag
-    final adjustedPosition = position + Duration(milliseconds: _syncOffsetMs);
-
-    for (int i = lines.length - 1; i >= 0; i--) {
-      if (adjustedPosition >= lines[i].time) {
-        return i;
-      }
-    }
-    return 0;
-  }
-
 }
+
+typedef LyricsProvider = LyricsNotifier;

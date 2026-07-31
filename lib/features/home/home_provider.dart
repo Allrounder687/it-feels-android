@@ -1,119 +1,173 @@
-import 'package:it_feels_music/core/utils/error_reporter.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/core/utils/error_reporter.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 
-class HomeProvider extends ChangeNotifier {
-  final MusicApiService apiService;
+@immutable
+class HomeState {
+  final List<Song> trendingSongs;
+  final List<Playlist> topPlaylists;
+  final List<Playlist> topAlbums;
+  final List<Song> bollywoodSongs;
+  final List<Playlist> bollywoodPlaylists;
+  final List<Song> teluguSongs;
+  final List<Playlist> teluguPlaylists;
+  final List<Song> tamilSongs;
+  final List<Playlist> tamilPlaylists;
+  final List<Song> punjabiSongs;
+  final List<Playlist> punjabiPlaylists;
+  final List<Song> hollywoodSongs;
+  final List<Playlist> hollywoodPlaylists;
+  final List<Song> podcastSongs;
+  final List<Playlist> podcastPlaylists;
+  final List<Song> youSongs;
+  final List<Playlist> youPlaylists;
+  final String moodLanguage;
+  final List<Playlist> moodPlaylists;
+  final bool isLoadingMoods;
+  final List<Playlist> chartPlaylists;
+  final bool isLoadingCharts;
+  final String selectedCategory;
+  final bool isLoading;
 
-  List<Song> _trendingSongs = [];
-  List<Playlist> _topPlaylists = [];
-  List<Playlist> _topAlbums = [];
-
-  List<Song> _bollywoodSongs = [];
-  List<Playlist> _bollywoodPlaylists = [];
-
-  List<Song> _teluguSongs = [];
-  List<Playlist> _teluguPlaylists = [];
-
-  List<Song> _tamilSongs = [];
-  List<Playlist> _tamilPlaylists = [];
-
-  List<Song> _punjabiSongs = [];
-  List<Playlist> _punjabiPlaylists = [];
-
-  List<Song> _hollywoodSongs = [];
-  List<Playlist> _hollywoodPlaylists = [];
-
-  List<Song> _podcastSongs = [];
-  List<Playlist> _podcastPlaylists = [];
-
-  List<Song> _youSongs = [];
-  final List<Playlist> _youPlaylists = [];
-
-  // Moods
-  String _moodLanguage = 'English'; // English or Hindi
-  List<Playlist> _moodPlaylists = [];
-  bool _isLoadingMoods = false;
-
-  // Charts
-  List<Playlist> _chartPlaylists = [];
-  bool _isLoadingCharts = false;
-
-  String _selectedCategory = "For You";
-  bool _isLoading = true;
-
-  HomeProvider({required this.apiService}) {
-    _initCategory();
-    loadHomepageData();
-  }
-
-  Future<void> _initCategory() async {
-    _selectedCategory = await StorageService.loadDefaultCategory();
-    notifyListeners();
-  }
-
-  List<Song> get trendingSongs => _trendingSongs;
-  List<Playlist> get topPlaylists => _topPlaylists;
-  List<Playlist> get topAlbums => _topAlbums;
-  String get selectedCategory => _selectedCategory;
-  bool get isLoading => _isLoading;
-  bool get isLoadingMoods => _isLoadingMoods;
-  bool get isLoadingCharts => _isLoadingCharts;
-  String get moodLanguage => _moodLanguage;
-
-  List<Song> get youSongs => _youSongs;
-  List<Playlist> get youPlaylists => _youPlaylists;
-  List<Song> get bollywoodSongs => _bollywoodSongs;
-  List<Song> get teluguSongs => _teluguSongs;
-  List<Song> get tamilSongs => _tamilSongs;
-  List<Song> get punjabiSongs => _punjabiSongs;
-  List<Song> get hollywoodSongs => _hollywoodSongs;
-  List<Song> get podcastSongs => _podcastSongs;
-  List<Playlist> get podcastPlaylists => _podcastPlaylists;
-  List<Playlist> get moodPlaylists => _moodPlaylists;
-  List<Playlist> get chartPlaylists => _chartPlaylists;
+  const HomeState({
+    this.trendingSongs = const [],
+    this.topPlaylists = const [],
+    this.topAlbums = const [],
+    this.bollywoodSongs = const [],
+    this.bollywoodPlaylists = const [],
+    this.teluguSongs = const [],
+    this.teluguPlaylists = const [],
+    this.tamilSongs = const [],
+    this.tamilPlaylists = const [],
+    this.punjabiSongs = const [],
+    this.punjabiPlaylists = const [],
+    this.hollywoodSongs = const [],
+    this.hollywoodPlaylists = const [],
+    this.podcastSongs = const [],
+    this.podcastPlaylists = const [],
+    this.youSongs = const [],
+    this.youPlaylists = const [],
+    this.moodLanguage = 'English',
+    this.moodPlaylists = const [],
+    this.isLoadingMoods = false,
+    this.chartPlaylists = const [],
+    this.isLoadingCharts = false,
+    this.selectedCategory = 'For You',
+    this.isLoading = true,
+  });
 
   List<Song> get currentCategorySongs {
-    switch (_selectedCategory) {
+    switch (selectedCategory) {
       case "For You":
-        return _youSongs;
+        return youSongs;
       case "Podcasts":
-        return _podcastSongs;
+        return podcastSongs;
       case "Music":
       case "Charts":
       default:
-        return _trendingSongs;
+        return trendingSongs;
     }
   }
 
   List<Playlist> get currentCategoryPlaylists {
-    switch (_selectedCategory) {
+    switch (selectedCategory) {
       case "For You":
-        return _youPlaylists;
+        return youPlaylists;
       case "Podcasts":
-        return _podcastPlaylists;
+        return podcastPlaylists;
       case "Charts":
-        return _chartPlaylists;
+        return chartPlaylists;
       case "Music":
       default:
-        return _topPlaylists;
+        return topPlaylists;
     }
   }
 
-  Future<void> selectCategory(String category) async {
-    _selectedCategory = category;
-    notifyListeners();
+  HomeState copyWith({
+    List<Song>? trendingSongs,
+    List<Playlist>? topPlaylists,
+    List<Playlist>? topAlbums,
+    List<Song>? bollywoodSongs,
+    List<Playlist>? bollywoodPlaylists,
+    List<Song>? teluguSongs,
+    List<Playlist>? teluguPlaylists,
+    List<Song>? tamilSongs,
+    List<Playlist>? tamilPlaylists,
+    List<Song>? punjabiSongs,
+    List<Playlist>? punjabiPlaylists,
+    List<Song>? hollywoodSongs,
+    List<Playlist>? hollywoodPlaylists,
+    List<Song>? podcastSongs,
+    List<Playlist>? podcastPlaylists,
+    List<Song>? youSongs,
+    List<Playlist>? youPlaylists,
+    String? moodLanguage,
+    List<Playlist>? moodPlaylists,
+    bool? isLoadingMoods,
+    List<Playlist>? chartPlaylists,
+    bool? isLoadingCharts,
+    String? selectedCategory,
+    bool? isLoading,
+  }) {
+    return HomeState(
+      trendingSongs: trendingSongs ?? this.trendingSongs,
+      topPlaylists: topPlaylists ?? this.topPlaylists,
+      topAlbums: topAlbums ?? this.topAlbums,
+      bollywoodSongs: bollywoodSongs ?? this.bollywoodSongs,
+      bollywoodPlaylists: bollywoodPlaylists ?? this.bollywoodPlaylists,
+      teluguSongs: teluguSongs ?? this.teluguSongs,
+      teluguPlaylists: teluguPlaylists ?? this.teluguPlaylists,
+      tamilSongs: tamilSongs ?? this.tamilSongs,
+      tamilPlaylists: tamilPlaylists ?? this.tamilPlaylists,
+      punjabiSongs: punjabiSongs ?? this.punjabiSongs,
+      punjabiPlaylists: punjabiPlaylists ?? this.punjabiPlaylists,
+      hollywoodSongs: hollywoodSongs ?? this.hollywoodSongs,
+      hollywoodPlaylists: hollywoodPlaylists ?? this.hollywoodPlaylists,
+      podcastSongs: podcastSongs ?? this.podcastSongs,
+      podcastPlaylists: podcastPlaylists ?? this.podcastPlaylists,
+      youSongs: youSongs ?? this.youSongs,
+      youPlaylists: youPlaylists ?? this.youPlaylists,
+      moodLanguage: moodLanguage ?? this.moodLanguage,
+      moodPlaylists: moodPlaylists ?? this.moodPlaylists,
+      isLoadingMoods: isLoadingMoods ?? this.isLoadingMoods,
+      chartPlaylists: chartPlaylists ?? this.chartPlaylists,
+      isLoadingCharts: isLoadingCharts ?? this.isLoadingCharts,
+      selectedCategory: selectedCategory ?? this.selectedCategory,
+      isLoading: isLoading ?? this.isLoading,
+    );
+  }
+}
 
-    if (category == "Podcasts" && _podcastPlaylists.isEmpty) {
+class HomeNotifier extends Notifier<HomeState> {
+  late final MusicApiService apiService;
+
+  @override
+  HomeState build() {
+    apiService = locator<MusicApiService>();
+    _initCategory();
+    loadHomepageData();
+    return const HomeState();
+  }
+
+  Future<void> _initCategory() async {
+    final cat = await StorageService.loadDefaultCategory();
+    state = state.copyWith(selectedCategory: cat);
+  }
+
+  Future<void> selectCategory(String category) async {
+    state = state.copyWith(selectedCategory: category);
+
+    if (category == "Podcasts" && state.podcastPlaylists.isEmpty) {
       await fetchPodcasts();
-    } else if (category == "For You" && _moodPlaylists.isEmpty) {
+    } else if (category == "For You" && state.moodPlaylists.isEmpty) {
       await fetchMoods();
-    } else if (category == "Charts" && _chartPlaylists.isEmpty) {
+    } else if (category == "Charts" && state.chartPlaylists.isEmpty) {
       await fetchCharts();
-    } else if (category == "Music" && _hollywoodSongs.isEmpty) {
+    } else if (category == "Music" && state.hollywoodSongs.isEmpty) {
       await fetchHollywoodSongs();
     }
   }
@@ -122,25 +176,17 @@ class HomeProvider extends ChangeNotifier {
     final Map<String, Song> unique = {};
     for (var s in songs) {
       if (s.title.isEmpty) continue;
-
-      // Clean title: strip (From "..."), - Title Track, special characters
       String cleanTitle = s.title
           .replaceAll(RegExp(r'\s*\([^)]*\)'), '')
           .replaceAll(RegExp(r'\s*-\s*.*'), '')
           .toLowerCase()
           .replaceAll(RegExp(r'[^a-z0-9]'), '')
           .trim();
-
       if (cleanTitle.isEmpty) {
         cleanTitle = s.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '').trim();
       }
-      
-      // Combine with artist name to allow the same song title by different artists
-      // but prevent exact duplicates of the same song by the same artist
       String artistClean = s.artist.split(',').first.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '').trim();
       String uniqueKey = '${cleanTitle}_$artistClean';
-
-      // Keep only the first instance
       if (uniqueKey.isNotEmpty && !unique.containsKey(uniqueKey)) {
         unique[uniqueKey] = s;
       }
@@ -156,10 +202,11 @@ class HomeProvider extends ChangeNotifier {
       final playlists = await apiService.searchPlaylists("Bollywood Hits", count: 20);
 
       final combined = _deduplicate([...list1, ...list2, ...list3]);
-      if (combined.isNotEmpty) _bollywoodSongs = combined;
-      if (playlists.isNotEmpty) _bollywoodPlaylists = playlists;
+      state = state.copyWith(
+        bollywoodSongs: combined.isNotEmpty ? combined : state.bollywoodSongs,
+        bollywoodPlaylists: playlists.isNotEmpty ? playlists : state.bollywoodPlaylists,
+      );
     } catch (_) {}
-    notifyListeners();
   }
 
   Future<void> fetchTeluguSongs() async {
@@ -170,10 +217,11 @@ class HomeProvider extends ChangeNotifier {
       final playlists = await apiService.searchPlaylists("Telugu Hits", count: 20);
 
       final combined = _deduplicate([...list1, ...list2, ...list3]);
-      if (combined.isNotEmpty) _teluguSongs = combined;
-      if (playlists.isNotEmpty) _teluguPlaylists = playlists;
+      state = state.copyWith(
+        teluguSongs: combined.isNotEmpty ? combined : state.teluguSongs,
+        teluguPlaylists: playlists.isNotEmpty ? playlists : state.teluguPlaylists,
+      );
     } catch (_) {}
-    notifyListeners();
   }
 
   Future<void> fetchTamilSongs() async {
@@ -184,10 +232,11 @@ class HomeProvider extends ChangeNotifier {
       final playlists = await apiService.searchPlaylists("Tamil Hits", count: 20);
 
       final combined = _deduplicate([...list1, ...list2, ...list3]);
-      if (combined.isNotEmpty) _tamilSongs = combined;
-      if (playlists.isNotEmpty) _tamilPlaylists = playlists;
+      state = state.copyWith(
+        tamilSongs: combined.isNotEmpty ? combined : state.tamilSongs,
+        tamilPlaylists: playlists.isNotEmpty ? playlists : state.tamilPlaylists,
+      );
     } catch (_) {}
-    notifyListeners();
   }
 
   Future<void> fetchPunjabiSongs() async {
@@ -198,10 +247,11 @@ class HomeProvider extends ChangeNotifier {
       final playlists = await apiService.searchPlaylists("Punjabi Hits", count: 20);
 
       final combined = _deduplicate([...list1, ...list2, ...list3]);
-      if (combined.isNotEmpty) _punjabiSongs = combined;
-      if (playlists.isNotEmpty) _punjabiPlaylists = playlists;
+      state = state.copyWith(
+        punjabiSongs: combined.isNotEmpty ? combined : state.punjabiSongs,
+        punjabiPlaylists: playlists.isNotEmpty ? playlists : state.punjabiPlaylists,
+      );
     } catch (_) {}
-    notifyListeners();
   }
 
   Future<void> fetchHollywoodSongs() async {
@@ -212,27 +262,28 @@ class HomeProvider extends ChangeNotifier {
       final playlists = await apiService.searchPlaylists("English Hits", count: 20);
 
       final combined = _deduplicate([...list1, ...list2, ...list3]);
-      if (combined.isNotEmpty) _hollywoodSongs = combined;
-      if (playlists.isNotEmpty) _hollywoodPlaylists = playlists;
+      state = state.copyWith(
+        hollywoodSongs: combined.isNotEmpty ? combined : state.hollywoodSongs,
+        hollywoodPlaylists: playlists.isNotEmpty ? playlists : state.hollywoodPlaylists,
+      );
     } catch (_) {}
-    notifyListeners();
   }
 
   Future<void> fetchPodcasts() async {
     try {
       final res = await apiService.searchAll('Podcasts');
       final combinedSongs = _deduplicate(res['songs'] as List<Song>);
-      if (combinedSongs.isNotEmpty) _podcastSongs = combinedSongs;
-      
       var playlists = res['playlists'] as List<Playlist>;
       if (playlists.isEmpty) {
         playlists = await apiService.searchPlaylists("Podcasts");
       }
-      if (playlists.isNotEmpty) _podcastPlaylists = playlists;
+      state = state.copyWith(
+        podcastSongs: combinedSongs.isNotEmpty ? combinedSongs : state.podcastSongs,
+        podcastPlaylists: playlists.isNotEmpty ? playlists : state.podcastPlaylists,
+      );
     } catch (e) {
-      debugPrint('[HomeProvider] fetchPodcasts error: $e');
+      debugPrint('[HomeNotifier] fetchPodcasts error: $e');
     }
-    notifyListeners();
   }
 
   Future<void> fetchIndianAlbums() async {
@@ -245,118 +296,115 @@ class HomeProvider extends ChangeNotifier {
       final combined = <Playlist>[...hindiAlbums, ...teluguAlbums, ...tamilAlbums, ...punjabiAlbums];
       final Map<String, Playlist> unique = {};
       for (var album in combined) {
-        if (album.id.isNotEmpty) {
-          unique[album.id] = album;
-        }
+        if (album.id.isNotEmpty) unique[album.id] = album;
       }
       if (unique.isNotEmpty) {
-        _topAlbums = unique.values.toList();
+        state = state.copyWith(topAlbums: unique.values.toList());
       }
     } catch (_) {}
-    notifyListeners();
   }
 
   Future<void> fetchYouSongs(List<String> topArtists) async {
-    if (_youSongs.isNotEmpty) return;
+    if (state.youSongs.isNotEmpty) return;
 
     try {
       final queryArtists = topArtists.isNotEmpty 
           ? topArtists 
-          : ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift']; // Fallback artists
+          : ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift'];
+
+      final newSongs = <Song>[];
+      final newPlaylists = <Playlist>[];
 
       for (var artist in queryArtists.take(4)) {
         final res = await apiService.searchSongs(artist, count: 20);
         if (res.isNotEmpty) {
-          _youPlaylists.add(Playlist(
+          newPlaylists.add(Playlist(
             id: 'mix_${artist.replaceAll(' ', '_')}',
             title: 'Daily Mix: $artist',
             type: 'playlist',
             coverArt: res.first.coverArt,
             songCount: res.length,
           ));
-          _youSongs.addAll(res);
+          newSongs.addAll(res);
         }
       }
       
-      // If still empty (network failure etc), fallback to trending
-      if (_youSongs.isEmpty) {
-        _youSongs.addAll(_trendingSongs.take(10));
-      }
-      
-      _youSongs = _deduplicate(_youSongs);
+      var finalYou = newSongs.isEmpty ? state.trendingSongs.take(10).toList() : newSongs;
+      finalYou = _deduplicate(finalYou);
+
+      state = state.copyWith(
+        youSongs: finalYou,
+        youPlaylists: newPlaylists,
+      );
     } catch (_) {}
-    
-    notifyListeners();
   }
 
   void toggleMoodLanguage() {
-    _moodLanguage = _moodLanguage == 'English' ? 'Hindi' : 'English';
+    final newLang = state.moodLanguage == 'English' ? 'Hindi' : 'English';
+    state = state.copyWith(moodLanguage: newLang);
     fetchMoods();
   }
 
   Future<void> fetchMoods() async {
-    if (_isLoadingMoods) return;
-    _isLoadingMoods = true;
-    notifyListeners();
+    if (state.isLoadingMoods) return;
+    state = state.copyWith(isLoadingMoods: true);
 
     try {
       final moods = ['Chill', 'Party', 'Lofi', 'Romance', 'Workout'];
-      final futures = moods.map((mood) => apiService.searchPlaylists('$_moodLanguage $mood', count: 4));
+      final futures = moods.map((mood) => apiService.searchPlaylists('${state.moodLanguage} $mood', count: 4));
       final results = await Future.wait(futures);
       
-      _moodPlaylists.clear();
+      final moodList = <Playlist>[];
       for (var result in results) {
-        if (result.isNotEmpty) {
-          _moodPlaylists.addAll(result);
-        }
+        if (result.isNotEmpty) moodList.addAll(result);
       }
       
-      // Deduplicate playlists by id
       final seen = <String>{};
-      _moodPlaylists = _moodPlaylists.where((p) => seen.add(p.id)).toList();
-      
-      // Fallback if empty
-      if (_moodPlaylists.isEmpty) {
-        _moodPlaylists = _topPlaylists.where((p) => p.type == 'playlist').take(5).toList();
+      var finalMoods = moodList.where((p) => seen.add(p.id)).toList();
+      if (finalMoods.isEmpty) {
+        finalMoods = state.topPlaylists.where((p) => p.type == 'playlist').take(5).toList();
       }
-    } catch (_) {}
-    
-    _isLoadingMoods = false;
-    notifyListeners();
+
+      state = state.copyWith(
+        moodPlaylists: finalMoods,
+        isLoadingMoods: false,
+      );
+    } catch (_) {
+      state = state.copyWith(isLoadingMoods: false);
+    }
   }
 
   Future<void> fetchCharts() async {
-    if (_chartPlaylists.isNotEmpty || _isLoadingCharts) return;
-    _isLoadingCharts = true;
-    notifyListeners();
+    if (state.chartPlaylists.isNotEmpty || state.isLoadingCharts) return;
+    state = state.copyWith(isLoadingCharts: true);
 
     try {
       final queries = ['Top 50', 'Billboard', 'Viral', 'Global 100'];
       final futures = queries.map((query) => apiService.searchPlaylists(query, count: 4));
       final results = await Future.wait(futures);
       
-      _chartPlaylists.clear();
+      final chartList = <Playlist>[];
       for (var result in results) {
-        if (result.isNotEmpty) {
-          _chartPlaylists.addAll(result);
-        }
+        if (result.isNotEmpty) chartList.addAll(result);
       }
       
       final seen = <String>{};
-      _chartPlaylists = _chartPlaylists.where((p) => seen.add(p.id)).toList();
-      
-      if (_chartPlaylists.isEmpty) {
-         _chartPlaylists = _topPlaylists.where((p) => p.type == 'playlist').take(5).toList();
+      var finalCharts = chartList.where((p) => seen.add(p.id)).toList();
+      if (finalCharts.isEmpty) {
+        finalCharts = state.topPlaylists.where((p) => p.type == 'playlist').take(5).toList();
       }
-    } catch (_) {}
-    
-    _isLoadingCharts = false;
-    notifyListeners();
+
+      state = state.copyWith(
+        chartPlaylists: finalCharts,
+        isLoadingCharts: false,
+      );
+    } catch (_) {
+      state = state.copyWith(isLoadingCharts: false);
+    }
   }
 
   Future<void> loadHomepageData([BuildContext? context]) async {
-    _isLoading = true;
-    notifyListeners();
+    state = state.copyWith(isLoading: true);
 
     final data = await apiService.fetchHomepageData(
       onError: (message) {
@@ -365,19 +413,23 @@ class HomeProvider extends ChangeNotifier {
         }
       },
     );
-    _trendingSongs = List<Song>.from(data['trending'] ?? []);
-    final rawPlaylists = List<Playlist>.from(data['playlists'] ?? []);
-    _topPlaylists = rawPlaylists;
-    _topAlbums = rawPlaylists.where((p) => p.type == 'album').toList();
 
-    // Fetch rich multi-query song lists for all regional categories
+    final trending = List<Song>.from(data['trending'] ?? []);
+    final rawPlaylists = List<Playlist>.from(data['playlists'] ?? []);
+
+    state = state.copyWith(
+      trendingSongs: trending,
+      topPlaylists: rawPlaylists,
+      topAlbums: rawPlaylists.where((p) => p.type == 'album').toList(),
+      isLoading: false,
+    );
+
     fetchBollywoodSongs();
     fetchTeluguSongs();
     fetchTamilSongs();
     fetchPunjabiSongs();
     fetchIndianAlbums();
-
-    _isLoading = false;
-    notifyListeners();
   }
 }
+
+typedef HomeProvider = HomeNotifier;

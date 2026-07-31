@@ -101,10 +101,10 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
 
     if (_dragStartX! < screenWidth / 2) {
       // Left side: Brightness
-      provider.adjustBrightness(delta);
+      ref.read(videoPlayerProvider.notifier).adjustBrightness(delta);
     } else {
       // Right side: Volume
-      provider.adjustVolume(delta);
+      ref.read(videoPlayerProvider.notifier).adjustVolume(delta);
     }
   }
 
@@ -198,9 +198,9 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                       _startHideTimer();
                       final screenWidth = MediaQuery.of(context).size.width;
                       if (details.globalPosition.dx < screenWidth / 2) {
-                        videoProvider.seek(const Duration(seconds: -10));
+                        ref.read(videoPlayerProvider.notifier).seek(const Duration(seconds: -10));
                       } else {
-                        videoProvider.seek(const Duration(seconds: 10));
+                        ref.read(videoPlayerProvider.notifier).seek(const Duration(seconds: 10));
                       }
                     },
                     onVerticalDragStart: _onVerticalDragStart,
@@ -247,7 +247,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                   if (videoProvider.streams.isNotEmpty)
                                     PopupMenuButton<String>(
                                       icon: const Icon(Icons.settings, color: Colors.white, size: 28),
-                                      onSelected: (q) => videoProvider.changeQuality(q),
+                                      onSelected: (q) => ref.read(videoPlayerProvider.notifier).changeQuality(q),
                                       itemBuilder: (context) => videoProvider.streams.map((s) => PopupMenuItem<String>(
                                         value: s['quality'],
                                         child: Text("${s['quality']} (MP4)"),
@@ -266,7 +266,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                   icon: const Icon(Icons.replay_10, color: Colors.white),
                                   onPressed: () {
                                     _startHideTimer();
-                                    videoProvider.seek(const Duration(seconds: -10));
+                                    ref.read(videoPlayerProvider.notifier).seek(const Duration(seconds: -10));
                                   },
                                 ),
                                 const SizedBox(width: 32),
@@ -300,7 +300,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                   icon: const Icon(Icons.forward_10, color: Colors.white),
                                   onPressed: () {
                                     _startHideTimer();
-                                    videoProvider.seek(const Duration(seconds: 10));
+                                    ref.read(videoPlayerProvider.notifier).seek(const Duration(seconds: 10));
                                   },
                                 ),
                               ],
@@ -495,7 +495,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                         ),
                         onTap: () {
                           // Play related video
-                          videoProvider.playVideo(video['id'], video['title'], video['uploader']);
+                          ref.read(videoPlayerProvider.notifier).playVideo(video['id'], video['title'], video['uploader']);
                         },
                       );
                     },

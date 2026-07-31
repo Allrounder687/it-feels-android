@@ -146,7 +146,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 
   Widget _buildTabContent(
-    HomeProvider homeProv,
+    HomeState homeProv,
     AudioPlayerProvider playerProvider,
     DownloadState downloadProviderLocal,
     CustomPlaylistState customPlaylistProviderLocal,

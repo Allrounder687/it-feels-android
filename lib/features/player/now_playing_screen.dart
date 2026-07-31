@@ -36,7 +36,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
 
 
-  Future<void> _toggleMode(bool toVideo, AudioPlayerProvider audioProvider, VideoPlayerProvider videoProvider, SettingsState settingsProv) async {
+  Future<void> _toggleMode(bool toVideo, AudioPlayerProvider audioProvider, VideoPlayerState videoProvider, SettingsState settingsProv) async {
     if (_isVideoMode == toVideo) return;
     final currentSong = audioProvider.currentSong;
     if (currentSong == null) return;
@@ -52,10 +52,10 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
       
       if (useVideoAudio) {
         audioProvider.pause();
-        videoProvider.setMuted(false);
+        ref.read(videoPlayerProvider.notifier).setMuted(false);
       } else {
         // Keep high quality audio playing from music player!
-        videoProvider.setMuted(true);
+        ref.read(videoPlayerProvider.notifier).setMuted(true);
         audioProvider.seek(position);
         if (!audioProvider.isPlaying) {
           audioProvider.play();
@@ -70,7 +70,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         }
       };
 
-      videoProvider.playVideo(
+      ref.read(videoPlayerProvider.notifier).playVideo(
         currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}',
         currentSong.title,
         currentSong.artist,
@@ -94,7 +94,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     return '$minutes:$seconds';
   }
 
-  void _showQualityPickerBottomSheet(BuildContext context, VideoPlayerProvider videoProvider) {
+  void _showQualityPickerBottomSheet(BuildContext context, VideoPlayerState videoProvider) {
     if (videoProvider.streams.isEmpty) return;
 
     showModalBottomSheet(
@@ -148,7 +148,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                       ),
                       trailing: isSelected ? Icon(Icons.check_circle_rounded, color: context.themeAccentColor) : null,
                       onTap: () {
-                        videoProvider.changeQuality(quality);
+                        ref.read(videoPlayerProvider.notifier).changeQuality(quality);
                         Navigator.pop(context);
                       },
                     );
