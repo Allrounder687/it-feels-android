@@ -1,0 +1,22 @@
+name: Database Harvester Cron
+
+on:
+  schedule:
+    - cron: '0 */12 * * *'  # Runs every 12 hours
+  workflow_dispatch:        # Allows manual triggering from GitHub UI
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Run Harvester Bot
+        run: node backend/harvester_bot.js
