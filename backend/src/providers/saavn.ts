@@ -87,6 +87,127 @@ export class SaavnProvider {
     return songObj ? this.normalizeTrack(songObj) : null;
   }
 
+
+  /**
+   * Fetch Saavn Home Launch Data (Featured Playlists, Top Charts, Trending)
+   */
+  static async getHomePage(): Promise<any> {
+    const params = new URLSearchParams({
+      __call: 'webapi.getLaunchData',
+      api_version: '4',
+      _format: 'json',
+      _marker: '0',
+      ctx: 'web6dot0',
+    });
+
+    const response = await fetch(`${SAAVN_BASE_URL}?${params.toString()}`);
+    const data = (await response.json()) as any;
+    
+    const playlists = (data.new_trending || []).map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      subtitle: item.subtitle,
+      coverArt: (item.image || '').replace('150x150', '500x500'),
+      type: item.type,
+    }));
+
+    const charts = (data.top_playlists || []).map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      subtitle: item.subtitle,
+      coverArt: (item.image || '').replace('150x150', '500x500'),
+      type: item.type,
+    }));
+
+    const newReleases = (data.new_albums || []).map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      subtitle: item.subtitle,
+      coverArt: (item.image || '').replace('150x150', '500x500'),
+      type: item.type,
+    }));
+
+    return { playlists, charts, newReleases };
+  }
+
+  /**
+   * Fetch Saavn Playlist Details & Tracks by Playlist ID
+   */
+  static async getPlaylist(listId: string): Promise<any> {
+    const params = new URLSearchParams({
+      __call: 'playlist.getDetails',
+      listid: listId,
+      _format: 'json',
+      _marker: '0',
+      api_version: '4',
+    });
+
+    const response = await fetch(`${SAAVN_BASE_URL}?${params.toString()}`);
+    const data = (await response.json()) as any;
+    const songs = (data.songs || []).map((item: any) => this.normalizeTrack(item));
+
+    return {
+      id: data.id || listId,
+      title: data.listname || data.title || 'Playlist',
+      headerDesc: data.header_desc || '',
+      coverArt: (data.image || '').replace('150x150', '500x500'),
+      songCount: songs.length,
+      tracks: songs,
+    };
+  }
+
+  /**
+   * Fetch Saavn Album Details & Tracks by Album ID
+   */
+  static async getAlbum(albumId: string): Promise<any> {
+    const params = new URLSearchParams({
+      __call: 'content.getAlbumDetails',
+      albumid: albumId,
+      _format: 'json',
+      _marker: '0',
+      api_version: '4',
+    });
+
+    const response = await fetch(`${SAAVN_BASE_URL}?${params.toString()}`);
+    const data = (await response.json()) as any;
+    const songs = (data.songs || []).map((item: any) => this.normalizeTrack(item));
+
+    return {
+      id: data.id || albumId,
+      title: data.title || data.name || 'Album',
+      artist: data.primary_artists || data.artist || 'Various Artists',
+      year: data.year || '2024',
+      coverArt: (data.image || '').replace('150x150', '500x500'),
+      songCount: songs.length,
+      tracks: songs,
+    };
+  }
+
+  /**
+   * Fetch Saavn Artist Page Details & Top Songs by Artist ID
+   */
+  static async getArtist(artistId: string): Promise<any> {
+    const params = new URLSearchParams({
+      __call: 'artist.getArtistPageDetails',
+      artistId: artistId,
+      _format: 'json',
+      _marker: '0',
+      api_version: '4',
+    });
+
+    const response = await fetch(`${SAAVN_BASE_URL}?${params.toString()}`);
+    const data = (await response.json()) as any;
+    const topSongs = (data.topSongs || []).map((item: any) => this.normalizeTrack(item));
+
+    return {
+      id: data.artistId || artistId,
+      name: data.name || 'Artist',
+      image: (data.image || '').replace('150x150', '500x500'),
+      bio: data.bio || '',
+      topSongs,
+    };
+  }
+
   private static normalizeTrack(item: any): NormalizedTrack {
     const id = item.id || item.song_id || '';
     const title = item.title || item.song || item.name || 'Unknown Title';

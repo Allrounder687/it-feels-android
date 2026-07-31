@@ -699,4 +699,78 @@ app.get('/api/v1/artist/details', async (c) => {
   }
 });
 
+
+// Dedicated Saavn API Suite: Home Launch Data
+app.get('/api/v1/saavn/home', async (c) => {
+  const cacheKey = 'saavn:home';
+  const cached = await c.env.SEARCH_CACHE.get(cacheKey, 'json');
+  if (cached) return c.json(cached);
+
+  try {
+    const data = await SaavnProvider.getHomePage();
+    const res = { success: true, data };
+    c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 43200 }));
+    return c.json(res);
+  } catch (e: any) {
+    return c.json({ error: 'Saavn home fetch failed', details: (e as Error).message }, 500);
+  }
+});
+
+// Dedicated Saavn API Suite: Playlist Details
+app.get('/api/v1/saavn/playlist', async (c) => {
+  const id = c.req.query('id');
+  if (!id) return c.json({ error: 'id parameter is required' }, 400);
+
+  const cacheKey = `saavn:playlist:${id}`;
+  const cached = await c.env.SEARCH_CACHE.get(cacheKey, 'json');
+  if (cached) return c.json(cached);
+
+  try {
+    const playlist = await SaavnProvider.getPlaylist(id);
+    const res = { success: true, playlist };
+    c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 86400 }));
+    return c.json(res);
+  } catch (e: any) {
+    return c.json({ error: 'Saavn playlist fetch failed', details: (e as Error).message }, 500);
+  }
+});
+
+// Dedicated Saavn API Suite: Album Details
+app.get('/api/v1/saavn/album', async (c) => {
+  const id = c.req.query('id');
+  if (!id) return c.json({ error: 'id parameter is required' }, 400);
+
+  const cacheKey = `saavn:album:${id}`;
+  const cached = await c.env.SEARCH_CACHE.get(cacheKey, 'json');
+  if (cached) return c.json(cached);
+
+  try {
+    const album = await SaavnProvider.getAlbum(id);
+    const res = { success: true, album };
+    c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 86400 }));
+    return c.json(res);
+  } catch (e: any) {
+    return c.json({ error: 'Saavn album fetch failed', details: (e as Error).message }, 500);
+  }
+});
+
+// Dedicated Saavn API Suite: Artist Details
+app.get('/api/v1/saavn/artist', async (c) => {
+  const id = c.req.query('id');
+  if (!id) return c.json({ error: 'id parameter is required' }, 400);
+
+  const cacheKey = `saavn:artist:${id}`;
+  const cached = await c.env.SEARCH_CACHE.get(cacheKey, 'json');
+  if (cached) return c.json(cached);
+
+  try {
+    const artist = await SaavnProvider.getArtist(id);
+    const res = { success: true, artist };
+    c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 86400 }));
+    return c.json(res);
+  } catch (e: any) {
+    return c.json({ error: 'Saavn artist fetch failed', details: (e as Error).message }, 500);
+  }
+});
+
 export default app;

@@ -149,6 +149,25 @@ async function startTests() {
     }
   });
 
+  
+  // 9. Saavn Suite: GET /api/v1/saavn/home
+  await runTest('GET /api/v1/saavn/home', async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/saavn/home`, { headers: HEADERS });
+    const data = await res.json();
+    if (!data.success || !data.data || !Array.isArray(data.data.playlists)) {
+      throw new Error('Saavn home failed to return playlists array');
+    }
+  });
+
+  // 10. Saavn Suite: GET /api/v1/saavn/playlist
+  await runTest('GET /api/v1/saavn/playlist', async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/saavn/playlist?id=110858205`, { headers: HEADERS });
+    const data = await res.json();
+    if (!data.success || !data.playlist) {
+      throw new Error('Saavn playlist failed to return playlist data');
+    }
+  });
+
   console.log(`\nTests Complete! Passed: ${passed}, Failed: ${failed}`);
   if (failed > 0) {
     process.exit(1);
