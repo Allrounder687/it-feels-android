@@ -17,6 +17,7 @@ class AdminDashboardScreen extends StatefulWidget {
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final TextEditingController _searchController = TextEditingController();
   AdminFilter _currentFilter = AdminFilter.all;
+  String _sortBy = 'lastActive';
 
   @override
   void dispose() {
@@ -103,16 +104,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildFilterChip("All", AdminFilter.all),
-                      _buildFilterChip("Online", AdminFilter.online),
-                      _buildFilterChip("Premium", AdminFilter.premium),
-                      _buildFilterChip("Banned", AdminFilter.banned),
-                    ],
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildFilterChip("All", AdminFilter.all),
+                            _buildFilterChip("Online", AdminFilter.online),
+                            _buildFilterChip("Premium", AdminFilter.premium),
+                            _buildFilterChip("Banned", AdminFilter.banned),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildSortDropdown(),
+                  ],
                 ),
               ],
             ),
@@ -120,7 +129,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('users').orderBy('lastActive', descending: true).snapshots(),
+              stream: FirebaseFirestore.instance.collection('users').orderBy(_sortBy, descending: true).snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent));
@@ -332,6 +341,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           color: isSelected ? Colors.transparent : context.themeMutedTextColor.withValues(alpha: 0.3),
         ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+    );
+  }
+
+  Widget _buildSortDropdown() {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: context.themeSurfaceColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _sortBy,
+          dropdownColor: context.themeSurfaceColor,
+          icon: Icon(Icons.sort, color: context.themeMutedTextColor, size: 18),
+          style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 13),
+          items: const [
+            DropdownMenuItem(value: 'lastActive', child: Text('Recent')),
+            DropdownMenuItem(value: 'totalUsageSeconds', child: Text('Top Listeners')),
+          ],
+          onChanged: (val) {
+            if (val != null) setState(() => _sortBy = val);
+          },
+        ),
       ),
     );
   }

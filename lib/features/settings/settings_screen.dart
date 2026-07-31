@@ -37,7 +37,12 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           body: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: EdgeInsets.only(
+              left: 20, 
+              right: 20, 
+              top: 12, 
+              bottom: MediaQuery.of(context).padding.bottom + 120, // Avoids overlapping with mini-player/nav
+            ),
             children: [
               // Category 1: Audio & Streaming Quality
               _buildSectionHeader(context, "🎵 Audio & Streaming Quality"),
