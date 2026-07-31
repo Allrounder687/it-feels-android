@@ -11,7 +11,6 @@ import 'package:it_feels_music/features/library/artist_detail_screen.dart';
 import 'package:it_feels_music/features/library/playlist_detail_screen.dart';
 
 import 'package:it_feels_music/features/settings/hidden_songs_provider.dart';
-import 'package:it_feels_music/features/settings/settings_provider.dart';
 
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -39,7 +38,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return Builder(
       builder: (context) {
         final searchProviderObj = ref.watch(searchProvider);
-        final playerProviderObj = ref.watch(audioPlayerProvider);
         final hiddenProviderObj = ref.watch(hiddenSongsProvider);
         final settingsProviderObj = ref.watch(settingsProvider);
         final enableVideos = settingsProviderObj.enableMusicVideos;

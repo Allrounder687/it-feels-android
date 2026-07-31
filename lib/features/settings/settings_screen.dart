@@ -3,8 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
-import 'package:it_feels_music/features/library/download_provider.dart';
-import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/features/settings/hidden_songs_screen.dart';
 import 'package:it_feels_music/features/settings/audio_settings_screen.dart';
 import 'package:file_picker/file_picker.dart';
@@ -399,7 +397,6 @@ class SettingsScreen extends ConsumerWidget {
                 currentValue: settings.theme,
                 onSelected: (val) {
                   ref.read(settingsProvider.notifier).setTheme(val);
-                  final player = ref.read(audioPlayerProvider);
                   if (val == "System (Material You)") {
                     ref.read(audioPlayerProvider.notifier).setAppThemeMode(AppThemeMode.materialYou);
                   } else if (val == "Midnight Dark") {

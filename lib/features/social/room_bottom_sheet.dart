@@ -37,7 +37,6 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
 
   Future<void> _startHosting() async {
     setState(() => _isLoading = true);
-    final audioProvider = ref.read(audioPlayerProvider);
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
@@ -59,7 +58,6 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
     if (pin.length != 6) return;
     
     setState(() => _isLoading = true);
-    final audioProvider = ref.read(audioPlayerProvider);
     try {
       await ref.read(audioPlayerProvider.notifier).joinSession(pin);
       if (mounted) Navigator.pop(context);

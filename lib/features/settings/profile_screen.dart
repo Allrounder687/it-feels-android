@@ -4,8 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:it_feels_music/features/settings/profile_provider.dart';
-import 'package:it_feels_music/features/auth/auth_provider.dart';
 import 'package:it_feels_music/data/services/local_audio_service.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/settings/stats_screen.dart';

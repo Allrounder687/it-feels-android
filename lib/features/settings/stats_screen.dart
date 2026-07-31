@@ -4,8 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
-import 'package:it_feels_music/features/library/listening_history_provider.dart';
 import 'package:it_feels_music/services/database_service.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -41,7 +39,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     final historyProvider = ref.watch(listeningHistoryProvider);
-    final audioProvider = ref.read(audioPlayerProvider);
     final topArtists = historyProvider.getTopArtists(limit: 5);
 
     return Scaffold(

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:it_feels_music/features/player/lyrics_screen.dart';
 import 'package:it_feels_music/features/player/lyrics_provider.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
