@@ -181,6 +181,32 @@ class Song {
       searchVector: searchVector,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'saavnId': saavnId,
+      'title': title,
+      'artist': artist,
+      'album': album,
+      'duration': duration,
+      'coverArt': coverArt,
+      'streamUrl': streamUrl,
+      'encryptedMediaUrl': encryptedMediaUrl,
+      'hasLyrics': hasLyrics,
+      'genre': genre,
+      'year': year,
+      'language': language,
+      'isExplicit': isExplicit,
+      'playCount': playCount,
+      'skipCount': skipCount,
+      'lastPlayedAt': lastPlayedAt?.toIso8601String(),
+      'addedAt': addedAt.toIso8601String(),
+      'isFavorite': isFavorite,
+      'localFilePath': localFilePath,
+      'offlineStatus': offlineStatus.index,
+    };
+  }
 }
 
 enum OfflineStatus { none, downloading, downloaded }
@@ -191,6 +217,7 @@ class Playlist {
   final String coverArt;
   final int songCount;
   final String type; // 'playlist' or 'album'
+  final List<Song>? songs;
 
   Playlist({
     required this.id,
@@ -198,6 +225,7 @@ class Playlist {
     required this.coverArt,
     required this.songCount,
     this.type = 'playlist',
+    this.songs,
   });
 
   factory Playlist.fromJson(Map<String, dynamic> json) {
