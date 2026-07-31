@@ -205,6 +205,20 @@ async function startTests() {
     }
   });
 
+  
+  // 14. Native API Engine: POST /api/v1/native/seed/saavn (Batch Seeder)
+  await runTest('POST /api/v1/native/seed/saavn', async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/native/seed/saavn`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({ queries: ['Taylor Swift'], limitPerQuery: 3 })
+    });
+    const data = await res.json();
+    if (!data.success || typeof data.totalCatalogSize !== 'number') {
+      throw new Error('Native Saavn batch seed failed');
+    }
+  });
+
   console.log(`\nTests Complete! Passed: ${passed}, Failed: ${failed}`);
   if (failed > 0) {
     process.exit(1);

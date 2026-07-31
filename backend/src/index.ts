@@ -881,4 +881,52 @@ app.post('/api/v1/native/import/saavn', async (c) => {
   }
 });
 
+
+// 7. Saavn Batch Seeder (Bulk clones Saavn music library into Native Database schema)
+app.post('/api/v1/native/seed/saavn', async (c) => {
+  try {
+    const body = await c.req.json().catch(() => ({}));
+    const queries: string[] = body.queries || ['Trending Hits', 'Top Hindi Hits', 'Global Pop', 'Arijit Singh', 'Taylor Swift'];
+    const limitPerQuery = parseInt(body.limitPerQuery || '10', 10);
+
+    const allTracksToInsert: any[] = [];
+
+    for (const query of queries) {
+      try {
+        const saavnResults = await SaavnProvider.search(query, 1, limitPerQuery);
+        for (const track of saavnResults) {
+          if (track.streamUrl && track.streamUrl.trim() !== '') {
+            allTracksToInsert.push({
+              id: `native:${track.id.replace('saavn:', '')}`,
+              title: track.title,
+              artist: track.artist,
+              album: track.album,
+              duration: track.duration,
+              coverArt: track.coverArt,
+              streamUrl: track.streamUrl,
+              hasLyrics: track.hasLyrics,
+              language: track.language,
+              year: track.year,
+              explicit: track.explicit,
+            });
+          }
+        }
+      } catch (e) {
+        console.error(`Failed to fetch query "${query}" during Saavn seed:`, e);
+      }
+    }
+
+    const result = await NativeDatabaseProvider.addSongsBatch(c.env.SEARCH_CACHE, allTracksToInsert);
+
+    return c.json({
+      success: true,
+      message: `Successfully batch seeded Saavn library into Native Database!`,
+      importedCount: result.addedCount,
+      totalCatalogSize: result.totalCount,
+    });
+  } catch (e: any) {
+    return c.json({ error: 'Saavn batch seed failed', details: (e as Error).message }, 500);
+  }
+});
+
 export default app;

@@ -95,6 +95,36 @@ export class NativeDatabaseProvider {
   /**
    * Search native catalog by query string
    */
+
+  /**
+   * Bulk insert a list of songs into your native database (Deduplicated)
+   */
+  static async addSongsBatch(kv: KVNamespace, newSongs: Array<Omit<NativeSong, 'id' | 'createdAt'> & { id?: string }>): Promise<{ addedCount: number; totalCount: number }> {
+    const catalog = await this.getCatalog(kv);
+    let addedCount = 0;
+
+    for (const song of newSongs) {
+      const targetId = song.id || `native:song_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+      const existingIndex = catalog.findIndex((s) => s.id === targetId || (s.title.toLowerCase() === song.title.toLowerCase() && s.artist.toLowerCase() === song.artist.toLowerCase()));
+      
+      const nativeItem: NativeSong = {
+        ...song,
+        id: targetId,
+        createdAt: new Date().toISOString(),
+      };
+
+      if (existingIndex >= 0) {
+        catalog[existingIndex] = nativeItem;
+      } else {
+        catalog.unshift(nativeItem);
+        addedCount++;
+      }
+    }
+
+    await kv.put('native:catalog', JSON.stringify(catalog));
+    return { addedCount, totalCount: catalog.length };
+  }
+
   static async searchSongs(kv: KVNamespace, query: string): Promise<NativeSong[]> {
     const catalog = await this.getCatalog(kv);
     const q = query.toLowerCase().trim();
