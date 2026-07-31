@@ -554,7 +554,7 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: "See if a new version is available",
                 icon: Icons.system_update_rounded,
                 onTap: () async {
-                  showDialog(
+                  await showDialog(
                     context: context,
                     barrierDismissible: false,
                     builder: (ctx) => const Center(child: CircularProgressIndicator()),
@@ -567,7 +567,7 @@ class SettingsScreen extends ConsumerWidget {
                     final requiresForce = await ConfigService.requiresForceUpdate(config);
                     final hasSoft = await ConfigService.hasSoftUpdate(config);
                     if ((requiresForce || hasSoft) && context.mounted) {
-                      Navigator.push(
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => ForceUpdateScreen(

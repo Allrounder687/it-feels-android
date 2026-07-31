@@ -40,7 +40,7 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
   Future<void> _purchase(BuildContext context, Package package) async {
     final subProvider = ref.read(subscriptionProvider);
     final success = await subProvider.purchasePackage(package);
-    if (success && mounted) {
+    if (success && context.mounted) {
       Navigator.pop(context);
     }
   }
@@ -51,10 +51,10 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
     // Launch Razorpay Checkout
     final success = await subProvider.purchaseUpi(amount, days);
     
-    if (success && mounted) {
+    if (success && context.mounted) {
       Navigator.pop(context); // close paywall sheet
       PremiumCelebrationDialog.show(this.context, isFamilyCoupon: false);
-    } else if (mounted && !subProvider.isPremium) {
+    } else if (context.mounted && !subProvider.isPremium) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment failed or cancelled.')));
     }
   }
@@ -71,10 +71,10 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
     
     final subProvider = ref.read(subscriptionProvider);
     final success = await subProvider.redeemCoupon(code);
-    if (success && mounted) {
+    if (success && context.mounted) {
       Navigator.pop(context);
       PremiumCelebrationDialog.show(context, isFamilyCoupon: isFamily);
-    } else if (mounted) {
+    } else if (context.mounted) {
       setState(() {
         _errorMessage = 'Invalid or expired code.';
       });

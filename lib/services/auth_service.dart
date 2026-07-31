@@ -129,7 +129,7 @@ class AuthService {
         });
       } else {
         // Generate a username for existing users if they don't have one
-        Map<String, dynamic> data = snapshot.data() as Map<String, dynamic>? ?? {};
+        Map<String, dynamic> data = snapshot.data() ?? {};
         if (!data.containsKey('username')) {
           String baseName = user.isAnonymous ? 'guest' : (user.email?.split('@')[0] ?? 'user');
           String generatedUsername = '@${baseName}_${user.uid.substring(0, 4)}'.toLowerCase();

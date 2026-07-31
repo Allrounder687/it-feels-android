@@ -103,6 +103,7 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
 
   const PixelPlayerSaavnApp({super.key, this.audioHandler});
 
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
@@ -110,7 +111,6 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
             builder: (context) {
               final colorScheme = darkDynamic ?? ColorScheme.fromSeed(seedColor: context.themeAccentColor, brightness: Brightness.dark);
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                final provider = ref.read(audioPlayerProvider);
                 ref.read(audioPlayerProvider.notifier).setMaterialYouColors(colorScheme.surface, colorScheme.surfaceContainer, colorScheme.primary);
               });
               return MaterialApp.router(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:it_feels_music/services/subscription_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import 'package:it_feels_music/services/razorpay_service.dart';
 

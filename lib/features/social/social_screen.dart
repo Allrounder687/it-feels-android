@@ -12,7 +12,6 @@ import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
 
 class SocialScreen extends StatefulWidget {
   const SocialScreen({super.key});
@@ -65,7 +64,7 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
                 final query = uidController.text.trim();
                 if (query.isNotEmpty) {
                   final success = await _socialService.addFriendByQuery(query);
-                  if (mounted) {
+                  if (context.mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text(success ? "Friend added successfully! 🎉" : "Failed to find user. Check your entry.")),
