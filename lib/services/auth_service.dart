@@ -118,6 +118,8 @@ class AuthService {
           'isAnonymous': user.isAnonymous,
           'createdAt': FieldValue.serverTimestamp(),
           'lastLogin': FieldValue.serverTimestamp(),
+          'lastActive': FieldValue.serverTimestamp(),
+          'totalUsageSeconds': 0,
           'isBanned': false,
         });
       } else {
