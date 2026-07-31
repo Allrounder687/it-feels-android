@@ -9,7 +9,7 @@ import 'package:it_feels_music/core/utils/des_decryptor.dart';
 class BackendApiService {
   // Configurable proxy base URL (defaults to user's live Cloudflare Worker URL)
   static String baseUrl = (dotenv.isInitialized ? dotenv.env['PROXY_BASE_URL'] : null) ?? 'https://it-feels-proxy.cleverfox687.workers.dev'; 
-  static bool useProxyBackend = false; // Toggle to switch between direct & proxy mode
+  static bool useProxyBackend = true; // Toggle to switch between direct & proxy mode
   static final Map<String, Map<String, dynamic>> _videoStreamCache = {};
   static final YoutubeExplode _yt = YoutubeExplode();
   @visibleForTesting
@@ -70,6 +70,39 @@ class BackendApiService {
   static Map<String, String> get _proxyHeaders => {
     'X-Feels-Secret': (dotenv.isInitialized ? dotenv.env['API_SECRET'] : null) ?? 'development_secret_123',
   };
+
+
+  /// Search custom Native Database catalog directly from your API
+  static Future<List<Song>> searchNativeCatalog(String query) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/native/search').replace(queryParameters: {'query': query});
+      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['results'] is List) {
+          final List results = data['results'];
+          return results.map((item) => _songFromProxyJson(item)).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] Native catalog search error: $e');
+    }
+    return search(query); // Fallback to standard multi-source search
+  }
+
+  /// Fetch custom Native Home Feed directly from your API
+  static Future<Map<String, dynamic>?> fetchNativeHomeFeed() async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/native/home');
+      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] Native home feed error: $e');
+    }
+    return null;
+  }
 
   /// Search tracks across multi-source backend proxy
   static Future<List<Song>> search(String query, {int page = 1, int limit = 20}) async {
