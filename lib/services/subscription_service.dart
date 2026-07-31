@@ -3,6 +3,8 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class SubscriptionService {
   // TODO: Replace with your actual RevenueCat API keys from the RevenueCat Dashboard
@@ -156,6 +158,36 @@ class SubscriptionService {
       }
     }
 
+    // Gumroad License API Verification
+    // Gumroad keys are formatted like XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX
+    if (cleanCode.length > 20 && cleanCode.contains('-')) {
+       try {
+         final response = await http.post(
+           Uri.parse('https://api.gumroad.com/v2/licenses/verify'),
+           body: {
+             'product_permalink': 'it-feels', // Must match the Gumroad product URL slug
+             'license_key': cleanCode,
+           }
+         );
+         
+         if (response.statusCode == 200) {
+           final data = jsonDecode(response.body);
+           if (data['success'] == true && data['purchase'] != null && data['purchase']['refunded'] == false && data['purchase']['chargebacked'] == false) {
+              final expiresAt = DateTime.now().add(const Duration(days: 365)); // Grant 1 year per Gumroad license
+              await _firestore.collection('users').doc(uid).collection('entitlements').doc('premium').set({
+                'isActive': true,
+                'expiresAt': Timestamp.fromDate(expiresAt),
+                'grantedBy': 'gumroad_$cleanCode',
+              });
+              return true;
+           }
+         }
+       } catch (e) {
+         debugPrint("Gumroad Verification Error: $e");
+       }
+    }
+
+    // Fallback to Firestore custom Crypto/Promo coupons
     try {
       final couponQuery = await _firestore.collection('coupons').where('code', isEqualTo: cleanCode).limit(1).get();
       if (couponQuery.docs.isEmpty) return false;

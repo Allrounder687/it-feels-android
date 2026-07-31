@@ -233,7 +233,7 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
             const SizedBox(height: 16),
               TextButton(
                 onPressed: () => setState(() => _showCouponField = !_showCouponField),
-                child: Text("Redeem Code (Telegram / Discord)", style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+                child: Text("Redeem Code (Gumroad / Crypto / Promo)", style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
               ),
               if (_errorMessage != null)
                 Padding(
