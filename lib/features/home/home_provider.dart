@@ -148,9 +148,11 @@ class HomeNotifier extends Notifier<HomeState> {
 
   @override
   HomeState build() {
-    apiService = locator<MusicApiService>();
-    _initCategory();
-    loadHomepageData();
+    apiService = locator.isRegistered<MusicApiService>() ? locator<MusicApiService>() : MusicApiService();
+    Future.microtask(() {
+      _initCategory();
+      loadHomepageData();
+    });
     return const HomeState();
   }
 
