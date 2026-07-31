@@ -8,6 +8,7 @@ import 'package:it_feels_music/data/services/local_audio_service.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/settings/stats_screen.dart';
 import 'package:it_feels_music/features/auth/auth_bottom_sheet.dart';
+import 'package:it_feels_music/features/admin/admin_dashboard_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -186,6 +187,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ),
             ),
+            
+            // ADMIN DASHBOARD BUTTON (Only visible to owner)
+            if (ref.watch(authProvider).currentUser?.email == 'syedfaixalmajeed@gmail.com') ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen()));
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
+                    foregroundColor: Colors.redAccent,
+                    side: const BorderSide(color: Colors.redAccent, width: 2),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.security, color: Colors.redAccent),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Admin Dashboard",
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
