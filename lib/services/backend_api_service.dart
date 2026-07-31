@@ -28,7 +28,7 @@ class BackendApiService {
 
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute<String, dynamic>(jsonDecode, response.body);
         if (data['success'] == true && data['recommendations'] is List) {
           final List recs = data['recommendations'];
           return recs.map((item) => _songFromProxyJson(item)).toList();
@@ -50,7 +50,7 @@ class BackendApiService {
 
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute<String, dynamic>(jsonDecode, response.body);
         if (data['success'] == true && data['topTracks'] is List) {
           final List tracks = data['topTracks'];
           return tracks.map((item) => _songFromProxyJson(item)).toList();
@@ -82,7 +82,7 @@ class BackendApiService {
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         prefs.setString(cacheKey, response.body);
-        final data = await compute(jsonDecode, response.body) as Map<String, dynamic>;
+        final data = await compute<String, dynamic>(jsonDecode, response.body) as Map<String, dynamic>;
         if (data['success'] == true && data['results'] is List) {
           final List results = data['results'];
           return results.map((item) => _songFromProxyJson(item)).toList();
@@ -115,7 +115,7 @@ class BackendApiService {
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         prefs.setString(cacheKey, response.body);
-        return await compute(jsonDecode, response.body) as Map<String, dynamic>?;
+        return await compute<String, dynamic>(jsonDecode, response.body) as Map<String, dynamic>?;
       }
     } catch (e) {
       debugPrint('[BackendApiService] Native home feed network error, falling back to offline cache: $e');
@@ -147,7 +147,7 @@ class BackendApiService {
 
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute<String, dynamic>(jsonDecode, response.body);
         if (data['success'] == true && data['results'] is List) {
           final List results = data['results'];
           return results.map((item) => _songFromProxyJson(item)).toList();
@@ -189,7 +189,7 @@ class BackendApiService {
 
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute<String, dynamic>(jsonDecode, response.body);
         if (data['success'] == true && data['streamUrl'] != null) {
           return data['streamUrl'] as String;
         }
@@ -218,7 +218,7 @@ class BackendApiService {
 
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute<String, dynamic>(jsonDecode, response.body);
         if (data['success'] == true && data['lyrics'] != null) {
           final lyrics = data['lyrics'];
           return {
@@ -253,7 +253,7 @@ class BackendApiService {
       ).timeout(const Duration(seconds: 25));
       
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        return await compute<String, dynamic>(jsonDecode, response.body);
       }
     } catch (e) {
       debugPrint('[BackendApiService] AI Action Error: $e');
@@ -377,7 +377,7 @@ class BackendApiService {
       final uri = Uri.parse('$baseUrl/api/v1/video').replace(queryParameters: queryParams);
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute<String, dynamic>(jsonDecode, response.body);
         final List streamsList = data['streams'] ?? [];
         if (streamsList.isNotEmpty) {
           final res = {
@@ -429,7 +429,7 @@ class BackendApiService {
         final uri = Uri.parse('$instance/streams/$cleanId');
         final response = await httpClient.get(uri).timeout(const Duration(seconds: 6));
         if (response.statusCode == 200) {
-          final data = json.decode(response.body);
+          final data = await compute<String, dynamic>(jsonDecode, response.body);
           final title = data['title'] ?? 'Music Video';
           final videoStreams = data['videoStreams'] as List? ?? [];
           final audioStreams = data['audioStreams'] as List? ?? [];
@@ -487,7 +487,7 @@ class BackendApiService {
       try {
         final response = await httpClient.get(uri).timeout(const Duration(seconds: 60));
         if (response.statusCode == 200) {
-          return json.decode(response.body);
+          return await compute<String, dynamic>(jsonDecode, response.body);
         } else {
           debugPrint('[BackendApiService] yt-dlp backend non-200 response: ${response.statusCode}');
         }
@@ -576,7 +576,7 @@ class BackendApiService {
       final uri = Uri.parse('$baseUrl/api/v1/videos/search').replace(queryParameters: {'query': query});
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute<String, dynamic>(jsonDecode, response.body);
         final List list = data['videos'] ?? [];
         if (list.isNotEmpty) {
           return list.map((item) => Map<String, dynamic>.from(item)).toList();
@@ -596,7 +596,7 @@ class BackendApiService {
       final uri = Uri.parse('$baseUrl/api/v1/videos/trending');
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute<String, dynamic>(jsonDecode, response.body);
         final List list = data['videos'] ?? [];
         if (list.isNotEmpty) {
           return list.map((item) => Map<String, dynamic>.from(item)).toList();
@@ -632,7 +632,7 @@ class BackendApiService {
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute<String, dynamic>(jsonDecode, response.body);
         final contents = data['contents']?['twoColumnSearchResultsRenderer']?['primaryContents']?['sectionListRenderer']?['contents'] ?? [];
 
         final List<Map<String, dynamic>> videos = [];
@@ -691,7 +691,7 @@ class BackendApiService {
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute<String, dynamic>(jsonDecode, response.body);
         final tabs = data['contents']?['twoColumnBrowseResultsRenderer']?['tabs'] ?? [];
         final firstTab = tabs[0]?['tabRenderer']?['content']?['sectionListRenderer']?['contents'] ?? [];
 
@@ -765,7 +765,7 @@ class BackendApiService {
     );
     final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
-      final data = json.decode(response.body);
+      final data = await compute<String, dynamic>(jsonDecode, response.body);
       final List results = data['results'] ?? [];
       return results.map((e) => Song.fromJson(e)).toList();
     }

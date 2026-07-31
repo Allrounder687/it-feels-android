@@ -13,6 +13,19 @@ class AuthService {
 
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
+  // Sign In Anonymously
+  Future<UserCredential?> signInAnonymously() async {
+    try {
+      final cred = await _auth.signInAnonymously();
+      if (cred.user != null) {
+        await _syncUserToFirestore(cred.user!);
+      }
+      return cred;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   // Sign In with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
@@ -100,14 +113,17 @@ class AuthService {
       
       if (!snapshot.exists) {
         await docRef.set({
-          'email': user.email,
+          'email': user.isAnonymous ? 'Guest User' : user.email,
           'uid': user.uid,
+          'isAnonymous': user.isAnonymous,
           'createdAt': FieldValue.serverTimestamp(),
           'lastLogin': FieldValue.serverTimestamp(),
           'isBanned': false,
         });
       } else {
         await docRef.update({
+          'email': user.isAnonymous ? 'Guest User' : user.email,
+          'isAnonymous': user.isAnonymous,
           'lastLogin': FieldValue.serverTimestamp(),
         });
       }

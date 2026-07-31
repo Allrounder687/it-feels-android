@@ -99,7 +99,7 @@ class LyricsService {
         final response = await http.get(saavnUrl, headers: _headers).timeout(const Duration(seconds: 5));
 
         if (response.statusCode == 200) {
-          final data = json.decode(response.body);
+          final data = await compute(jsonDecode, response.body);
           if (data['lyrics'] != null) {
             final rawStatic = _cleanText(data['lyrics'].toString());
             staticLrc = HinglishTransliterator.transliterate(rawStatic);
@@ -122,7 +122,7 @@ class LyricsService {
       final response = await http.get(lrclibUrl).timeout(const Duration(seconds: 6));
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute(jsonDecode, response.body);
         if (data is List && data.isNotEmpty) {
           String? bestLrc;
           for (var item in data) {

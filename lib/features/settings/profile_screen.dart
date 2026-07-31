@@ -237,7 +237,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             const SizedBox(height: 16),
             // Cloud Sync Auth Button
             Consumer(builder: (context, ref, _) { final auth = ref.watch(authProvider); 
-                final isAuth = auth.isAuthenticated;
+                final isAuth = auth.isAuthenticated && !(auth.currentUser?.isAnonymous ?? false);
                 return SizedBox(
                   width: double.infinity,
                   height: 56,

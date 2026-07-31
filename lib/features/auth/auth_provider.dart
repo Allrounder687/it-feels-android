@@ -61,6 +61,8 @@ class AuthNotifier extends Notifier<AuthState> {
       } else {
         state = state.copyWith(viewState: AuthViewState.login);
         _cloudSyncService.stopSync();
+        // Automatically sign in anonymously if no user is present (Guest mode)
+        _authService.signInAnonymously();
       }
     });
 
@@ -68,7 +70,7 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   void resetFlow() {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || (currentUser?.isAnonymous ?? false)) {
       state = state.copyWith(
         viewState: AuthViewState.login,
         email: '',

@@ -52,7 +52,7 @@ class MusicApiService {
         return {'songs': <Song>[], 'albums': <Playlist>[], 'playlists': <Playlist>[]};
       }
 
-      final data = json.decode(response.body);
+      final data = await compute(jsonDecode, response.body);
       final List<Song> songs = [];
       final List<Playlist> albums = [];
       final List<Playlist> playlists = [];
@@ -125,7 +125,7 @@ class MusicApiService {
 
       final response = await http.get(url, headers: _headers);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute(jsonDecode, response.body);
         final rawSongs = data['results'] ?? data['songs'] ?? [];
         final List<Song> songs = [];
         if (rawSongs is List) {
@@ -150,7 +150,7 @@ class MusicApiService {
           '$_baseUrl?__call=search.getPlaylistResults&_format=json&p=$page&n=$count&api_version=4&ctx=web6dot0&q=${Uri.encodeComponent(query)}');
       final response = await http.get(url, headers: _headers);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute(jsonDecode, response.body);
         final rawResults = data['results'] ?? data['playlists'] ?? [];
         final List<Playlist> playlists = [];
         if (rawResults is List) {
@@ -174,7 +174,7 @@ class MusicApiService {
           '$_baseUrl?__call=search.getAlbumResults&_format=json&p=$page&n=$count&api_version=4&ctx=web6dot0&q=${Uri.encodeComponent(query)}');
       final response = await http.get(url, headers: _headers);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute(jsonDecode, response.body);
         final rawResults = data['results'] ?? data['albums'] ?? [];
         final List<Playlist> albums = [];
         if (rawResults is List) {
@@ -206,7 +206,7 @@ class MusicApiService {
       final List<Playlist> playlists = [];
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute(jsonDecode, response.body);
 
         // 1. Direct song items from new_albums or new_trending
         if (data['new_albums'] is List) {
@@ -294,7 +294,7 @@ class MusicApiService {
         return {'name': '', 'songs': <Song>[]};
       }
 
-      final data = json.decode(response.body);
+      final data = await compute(jsonDecode, response.body);
       final String playlistName = Song.cleanText(data['listname'] ?? data['title'] ?? data['name'] ?? 'Playlist');
       final rawSongs = data['songs'] ?? data['list'] ?? [];
 
@@ -338,7 +338,7 @@ class MusicApiService {
         return {'name': '', 'songs': <Song>[]};
       }
 
-      final data = json.decode(response.body);
+      final data = await compute(jsonDecode, response.body);
       final String albumName = Song.cleanText(data['title'] ?? data['name'] ?? 'Album');
       final rawSongs = data['songs'] ?? data['list'] ?? [];
 
@@ -376,7 +376,7 @@ class MusicApiService {
         return {'topSongs': <Song>[], 'albums': <Playlist>[]};
       }
 
-      final data = json.decode(response.body);
+      final data = await compute(jsonDecode, response.body);
       final List<Song> topSongs = [];
       final List<Playlist> albums = [];
 
@@ -437,7 +437,7 @@ class MusicApiService {
         final response = await http.get(url, headers: _headers);
 
         if (response.statusCode == 200) {
-          final data = json.decode(response.body);
+          final data = await compute(jsonDecode, response.body);
           if (data['songs'] is List && (data['songs'] as List).isNotEmpty) {
             encUrl = data['songs'][0]['more_info']?['encrypted_media_url'] ??
                 data['songs'][0]['encrypted_media_url'];
@@ -478,7 +478,7 @@ class MusicApiService {
           '$_baseUrl?__call=reco.getreco&_format=json&api_version=4&ctx=web6dot0&pid=${song.saavnId}');
       final response = await http.get(url, headers: _headers);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = await compute(jsonDecode, response.body);
         if (data is List && data.isNotEmpty) {
            final List<Song> recoSongs = [];
            for (var item in data) {
