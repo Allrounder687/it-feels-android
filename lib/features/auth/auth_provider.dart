@@ -1,3 +1,4 @@
+import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -19,7 +20,7 @@ class AuthState {
     this.errorMessage = '',
   });
 
-  User? get currentUser => FirebaseAuth.instance.currentUser;
+  User? get currentUser { try { return FirebaseAuth.instance.currentUser; } catch (_) { return null; } }
   bool get isAuthenticated => currentUser != null;
 
   AuthState copyWith({
@@ -44,8 +45,8 @@ class AuthNotifier extends Notifier<AuthState> {
 
   @override
   AuthState build() {
-    _authService = AuthService();
-    _cloudSyncService = CloudSyncService();
+    _authService = locator.isRegistered<AuthService>() ? locator<AuthService>() : AuthService();
+    _cloudSyncService = locator.isRegistered<CloudSyncService>() ? locator<CloudSyncService>() : CloudSyncService();
 
     _authService.userStream.listen((user) {
       if (user != null) {
