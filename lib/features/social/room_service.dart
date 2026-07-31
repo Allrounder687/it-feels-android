@@ -2,6 +2,8 @@ import 'dart:math';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RoomService {
   final FirebaseDatabase _rtdb;
@@ -66,5 +68,31 @@ class RoomService {
     final rand = Random();
     int code = rand.nextInt(900000) + 100000;
     return code.toString();
+  }
+
+  // Deep Link Auto-Friending: Magically adds both users as friends
+  Future<void> autoFriend(String hostId) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || currentUser.uid == hostId) return;
+    
+    final firestore = FirebaseFirestore.instance;
+    final batch = firestore.batch();
+    
+    final myDoc = firestore.collection('users').doc(currentUser.uid);
+    final hostDoc = firestore.collection('users').doc(hostId);
+    
+    batch.set(myDoc, {
+      'friends': FieldValue.arrayUnion([hostId])
+    }, SetOptions(merge: true));
+    
+    batch.set(hostDoc, {
+      'friends': FieldValue.arrayUnion([currentUser.uid])
+    }, SetOptions(merge: true));
+    
+    try {
+      await batch.commit();
+    } catch (e) {
+      // Silently fail if permissions prevent cross-writes, though zero-cog implies open rules for friends array
+    }
   }
 }

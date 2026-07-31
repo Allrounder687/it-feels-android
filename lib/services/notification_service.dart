@@ -29,7 +29,12 @@ class NotificationService {
       // Auto-subscribe to global announcements for zero-cognitive-load push marketing
       try {
         await _messaging.subscribeToTopic('global_announcements');
-        debugPrint('Subscribed to global_announcements topic');
+        
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          await _messaging.subscribeToTopic('friend_updates_${user.uid}');
+        }
+        debugPrint('Subscribed to push topics');
       } catch (e) {
         debugPrint('Failed to subscribe to topic: $e');
       }
@@ -74,6 +79,34 @@ class NotificationService {
       } catch (e) {
         debugPrint("Failed to save FCM token to Firestore: $e");
       }
+    }
+  }
+
+  // Writes to a push queue. A simple Firebase Function can process this queue and send FCM.
+  Future<void> notifyFriendsOfRoom(List<String> friendIds, String hostName, String roomId) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null || friendIds.isEmpty) return;
+
+      final batch = _firestore.batch();
+      for (final friendId in friendIds) {
+        final docRef = _firestore.collection('push_queue').doc();
+        batch.set(docRef, {
+          'topic': 'friend_updates_$friendId',
+          'title': '🎵 Listen Together',
+          'body': '$hostName just started a Listen Together room! Tap to join.',
+          'data': {
+            'action': 'join_room',
+            'roomId': roomId,
+          },
+          'timestamp': FieldValue.serverTimestamp(),
+          'status': 'pending'
+        });
+      }
+      await batch.commit();
+      debugPrint("Queued push notifications for ${friendIds.length} friends.");
+    } catch (e) {
+      debugPrint("Failed to notify friends: $e");
     }
   }
 }

@@ -21,6 +21,8 @@ import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:it_feels_music/services/notification_service.dart';
 
 enum AppThemeMode {
   dynamic,
@@ -986,6 +988,23 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     if (state.currentSong == null) return null;
     final roomId = await _roomService.createRoom(uid, state.currentSong!, state.position, state.isPlaying);
     state = state.copyWith(currentRoomId: roomId, isHost: true);
+    
+    // Zero-cognitive load friending: Notify all friends
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final friends = List<String>.from(data['friends'] ?? []);
+        final myName = data['name'] ?? 'Your friend';
+        if (friends.isNotEmpty) {
+          final NotificationService notifService = locator<NotificationService>();
+          await notifService.notifyFriendsOfRoom(friends, myName, roomId);
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching friends to notify: $e");
+    }
+    
     return roomId;
   }
 
@@ -1000,6 +1019,11 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       }
       
       final data = Map<String, dynamic>.from(event.snapshot.value as Map);
+      final hostId = data['hostId']?.toString();
+      if (hostId != null) {
+        _roomService.autoFriend(hostId);
+      }
+      
       final songId = data['songId']?.toString();
       final isPlaying = data['isPlaying'] as bool? ?? false;
       final positionMs = data['positionMs'] as int? ?? 0;
