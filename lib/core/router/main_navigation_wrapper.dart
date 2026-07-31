@@ -20,6 +20,8 @@ import 'package:it_feels_music/core/widgets/mini_player.dart';
 import 'package:it_feels_music/core/widgets/import_progress_banner.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
+import 'package:it_feels_music/features/library/download_provider.dart';
+import 'package:it_feels_music/features/social/unread_count_provider.dart';
 
 class MainNavigationWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -365,11 +367,20 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          icon,
-                          color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor,
-                          size: 32,
-                        ),
+                        label == "Social"
+                            ? Consumer(
+                                builder: (context, ref, _) {
+                                  final count = ref.watch(unreadCountProvider).value ?? 0;
+                                  final iconWidget = Icon(icon, color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor, size: 32);
+                                  if (count > 0) return Badge(label: Text(count.toString()), backgroundColor: Colors.redAccent, child: iconWidget);
+                                  return iconWidget;
+                                },
+                              )
+                            : Icon(
+                                icon,
+                                color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor,
+                                size: 32,
+                              ),
                         if (isSelected) ...[
                           const SizedBox(height: 6),
                           Text(
@@ -388,11 +399,20 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                   : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          icon,
-                          color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor,
-                          size: 32,
-                        ),
+                        label == "Social"
+                            ? Consumer(
+                                builder: (context, ref, _) {
+                                  final count = ref.watch(unreadCountProvider).value ?? 0;
+                                  final iconWidget = Icon(icon, color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor, size: 32);
+                                  if (count > 0) return Badge(label: Text(count.toString()), backgroundColor: Colors.redAccent, child: iconWidget);
+                                  return iconWidget;
+                                },
+                              )
+                            : Icon(
+                                icon,
+                                color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor,
+                                size: 32,
+                              ),
                         if (isSelected) ...[
                           const SizedBox(width: 6),
                           Flexible(

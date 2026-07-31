@@ -10,6 +10,7 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 
 class SocialScreen extends StatefulWidget {
@@ -149,63 +150,76 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
           );
         }
 
-        final docs = snapshot.data!.docs;
+        final items = snapshot.data!.docs;
         return ListView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: docs.length,
+          itemCount: items.length,
           itemBuilder: (context, index) {
-            final doc = docs[index];
-            final data = doc.data() as Map<String, dynamic>;
-            final senderName = data['senderName'] ?? 'A friend';
-            final songData = data['payload'] as Map<String, dynamic>;
-            final song = Song.fromJson(songData);
-            final reactions = Map<String, String>.from(data['reactions'] ?? {});
-            
-            return Card(
-              color: context.themeSurfaceColor,
-              margin: const EdgeInsets.only(bottom: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Sent by $senderName", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: AppColors.midnightAccent)),
-                    const SizedBox(height: 8),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: CustomImageWidget(url: song.coverArt, width: 50, height: 50),
-                      ),
-                      title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: context.themeTextColor)),
-                      subtitle: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: context.themeMutedTextColor)),
-                      trailing: Consumer(
-                        builder: (context, ref, child) {
-                          return IconButton(
-                            icon: const Icon(Icons.play_circle_fill, color: AppColors.midnightAccent, size: 36),
+            return Consumer(
+              builder: (context, ref, child) {
+                final item = items[index];
+                final data = item.data() as Map<String, dynamic>;
+                final docId = item.id;
+                final song = Song.fromJson(data['payload'] as Map<String, dynamic>);
+                final senderName = data['senderName'] ?? 'Someone';
+                final reactions = Map<String, String>.from(data['reactions'] ?? {});
+                final isRead = data['isRead'] as bool? ?? true;
+                
+                return Dismissible(
+                  key: Key(docId),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20.0),
+                    color: Colors.redAccent,
+                    child: const Icon(Icons.delete, color: Colors.white),
+                  ),
+                  onDismissed: (direction) {
+                    _socialService.deleteMessage(docId);
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: context.themeSurfaceColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: isRead ? null : Border.all(color: AppColors.midnightAccent, width: 1.5),
+                    ),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          contentPadding: const EdgeInsets.all(12),
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: CustomImageWidget(url: song.coverArt, width: 56, height: 56),
+                          ),
+                          title: Text(song.title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
+                          subtitle: Text("Sent by $senderName", style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.midnightAccent, size: 42),
                             onPressed: () {
+                              _socialService.markAsRead(docId);
                               ref.read(audioPlayerProvider.notifier).playSong(song);
                             },
-                          );
-                        }
-                      ),
-                    ),
-                    const Divider(color: Colors.white10),
-                    Row(
-                      children: [
-                        Text("React: ", style: TextStyle(color: context.themeMutedTextColor)),
-                        _buildReactionButton(doc.id, "🔥", reactions[myUid] == "🔥"),
-                        _buildReactionButton(doc.id, "❤️", reactions[myUid] == "❤️"),
-                        _buildReactionButton(doc.id, "🎵", reactions[myUid] == "🎵"),
-                        const Spacer(),
-                        if (reactions.isNotEmpty)
-                          Text(reactions.values.join(" "), style: const TextStyle(fontSize: 16)),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Row(
+                            children: [
+                              _buildReactionButton(docId, "🔥", reactions[myUid] == "🔥"),
+                              _buildReactionButton(docId, "❤️", reactions[myUid] == "❤️"),
+                              _buildReactionButton(docId, "🎵", reactions[myUid] == "🎵"),
+                              const Spacer(),
+                              if (reactions.isNotEmpty)
+                                Text(reactions.values.toSet().join(" "), style: const TextStyle(fontSize: 16)),
+                            ],
+                          ),
+                        )
                       ],
-                    )
-                  ],
-                ),
-              ),
+                    ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -231,7 +245,6 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
   Widget _buildFriendsTab() {
     return Column(
       children: [
-        // Admin Pinned Announcement
         StreamBuilder<DocumentSnapshot>(
           stream: FirebaseFirestore.instance.collection('client_config').doc('social').snapshots(),
           builder: (context, snapshot) {
@@ -267,7 +280,6 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
           },
         ),
         
-        // Share My ID Widget
         Padding(
           padding: const EdgeInsets.all(16),
           child: StreamBuilder<DocumentSnapshot>(
@@ -337,14 +349,64 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
                   return FutureBuilder<Map<String, dynamic>?>(
                     future: _socialService.getFriendDetails(friendUid),
                     builder: (context, friendSnap) {
-                      final name = friendSnap.data?['name'] ?? 'IT-Feels User';
+                      final name = friendSnap.data?['name'] ?? 'Friend';
+                      final username = friendSnap.data?['username'] ?? '';
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: AppColors.midnightAccent,
                           child: Text(name[0].toUpperCase(), style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                         ),
-                        title: Text(name, style: TextStyle(color: context.themeTextColor)),
-                        subtitle: Text("Friend", style: TextStyle(color: context.themeMutedTextColor)),
+                        title: Text(name, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
+                        subtitle: StreamBuilder<DatabaseEvent>(
+                          stream: _socialService.getPresenceStream(friendUid),
+                          builder: (context, presenceSnap) {
+                            if (presenceSnap.hasData && presenceSnap.data!.snapshot.value != null) {
+                              final presenceData = Map<String, dynamic>.from(presenceSnap.data!.snapshot.value as Map);
+                              if (presenceData['is_playing'] == true) {
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        "Listening to ${presenceData['song_title']}",
+                                        style: GoogleFonts.inter(color: Colors.greenAccent, fontSize: 12),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }
+                            }
+                            return Text(username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12));
+                          },
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.person_remove_rounded, color: Colors.redAccent),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: context.themeSurfaceColor,
+                                title: Text("Remove Friend", style: TextStyle(color: context.themeTextColor)),
+                                content: Text("Are you sure you want to remove $name?", style: TextStyle(color: context.themeMutedTextColor)),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                    onPressed: () {
+                                      _socialService.removeFriend(friendUid);
+                                      Navigator.pop(ctx);
+                                    },
+                                    child: const Text("Remove", style: TextStyle(color: Colors.white)),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                       );
                     },
                   );

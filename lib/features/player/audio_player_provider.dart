@@ -17,6 +17,7 @@ import 'package:it_feels_music/data/services/audio_player_handler.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
+import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -647,6 +648,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     audioHandler.player.playerStateStream.listen((pState) async {
       final isPlaying = pState.playing;
       state = state.copyWith(isPlaying: isPlaying);
+      locator<SocialService>().updatePresence(state.currentSong, isPlaying);
 
       if (isPlaying && state.audioSyncHapticsEnabled) {
         _startAudioSyncHaptics();
@@ -795,6 +797,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
     if (streamUrl != null) {
       await audioHandler.playSong(song, streamUrl);
+      locator<SocialService>().updatePresence(song, true);
     } else {
       debugPrint('[AudioPlayerNotifier] Failed to resolve stream for ${song.title}');
     }
@@ -804,10 +807,12 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
   Future<void> play() async {
     await audioHandler.play();
+    locator<SocialService>().updatePresence(state.currentSong, true);
   }
 
   Future<void> pause() async {
     await audioHandler.pause();
+    locator<SocialService>().updatePresence(state.currentSong, false);
   }
 
   Future<void> togglePlayPause() async {
@@ -821,8 +826,10 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
     if (state.isPlaying) {
       await audioHandler.pause();
+      locator<SocialService>().updatePresence(state.currentSong, false);
     } else {
       await audioHandler.play();
+      locator<SocialService>().updatePresence(state.currentSong, true);
     }
     _saveMemory();
   }

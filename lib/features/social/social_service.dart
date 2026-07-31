@@ -70,6 +70,30 @@ class SocialService {
     }
   }
 
+  // Remove a friend
+  Future<bool> removeFriend(String friendUid) async {
+    final user = _auth.currentUser;
+    if (user == null || friendUid.isEmpty) return false;
+
+    try {
+      final batch = _firestore.batch();
+      
+      batch.set(_firestore.collection('users').doc(user.uid), {
+        'friends': FieldValue.arrayRemove([friendUid])
+      }, SetOptions(merge: true));
+
+      batch.set(_firestore.collection('users').doc(friendUid), {
+        'friends': FieldValue.arrayRemove([user.uid])
+      }, SetOptions(merge: true));
+
+      await batch.commit();
+      return true;
+    } catch (e) {
+      debugPrint("Error removing friend: $e");
+      return false;
+    }
+  }
+
   // Get friends list stream
   Stream<DocumentSnapshot> getFriendsStream() {
     final user = _auth.currentUser;
@@ -105,6 +129,7 @@ class SocialService {
         'payload': song.toJson(),
         'timestamp': FieldValue.serverTimestamp(),
         'reactions': {},
+        'isRead': false,
       });
 
       // Notify the friend
@@ -132,7 +157,47 @@ class SocialService {
         .snapshots();
   }
 
-  // React to an inbox message
+  // Delete message
+  Future<void> deleteMessage(String messageId) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('inbox')
+        .doc(messageId)
+        .delete();
+  }
+
+  // Mark message as read
+  Future<void> markAsRead(String messageId) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('inbox')
+        .doc(messageId)
+        .update({'isRead': true});
+  }
+
+  // Get unread count stream
+  Stream<int> getUnreadCountStream() {
+    final user = _auth.currentUser;
+    if (user == null) return Stream.value(0);
+    
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('inbox')
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
+  // React to a message
   Future<void> reactToMessage(String messageId, String emoji) async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -149,5 +214,30 @@ class SocialService {
     } catch (e) {
       debugPrint("Error reacting to message: $e");
     }
+  }
+
+  // Update real-time presence (what they are listening to)
+  Future<void> updatePresence(Song? song, bool isPlaying) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    final presenceRef = _rtdb.ref('presence/${user.uid}');
+    
+    if (song != null && isPlaying) {
+      await presenceRef.set({
+        'is_playing': true,
+        'song_title': song.title,
+        'artist': song.artist,
+        'timestamp': ServerValue.timestamp,
+      });
+      presenceRef.onDisconnect().remove();
+    } else {
+      await presenceRef.remove();
+    }
+  }
+
+  // Get a friend's presence stream
+  Stream<DatabaseEvent> getPresenceStream(String friendUid) {
+    return _rtdb.ref('presence/$friendUid').onValue;
   }
 }
