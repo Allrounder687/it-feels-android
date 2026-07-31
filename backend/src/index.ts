@@ -612,18 +612,90 @@ app.post('/api/v1/telemetry/play', async (c) => {
   return c.json({ success: true });
 });
 
-// Telemetry Trending Charts Route
+// Telemetry Trending Charts Route (48h Rolling Window)
 app.get('/api/v1/charts/trending', async (c) => {
-  const today = new Date().toISOString().split('T')[0];
-  const chartKey = `chart:${today}`;
-  let chart = await c.env.SEARCH_CACHE.get(chartKey, 'json') as any || {};
-  
-  const trending = Object.entries(chart)
-    .map(([id, data]: any) => ({ id, ...data }))
-    .sort((a: any, b: any) => b.count - a.count)
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const yesterday = new Date(now.getTime() - 86400000).toISOString().split('T')[0];
+
+  const [chartToday, chartYesterday] = await Promise.all([
+    c.env.SEARCH_CACHE.get(`chart:${today}`, 'json') as Promise<any>,
+    c.env.SEARCH_CACHE.get(`chart:${yesterday}`, 'json') as Promise<any>,
+  ]);
+
+  const combinedMap: Record<string, any> = {};
+
+  const mergeMap = (m: Record<string, any> | null, weight: number) => {
+    if (!m) return;
+    for (const [id, data] of Object.entries(m)) {
+      if (!combinedMap[id]) {
+        combinedMap[id] = { id, title: data.title, artist: data.artist, coverArt: data.coverArt, count: 0 };
+      }
+      combinedMap[id].count += Math.round((data.count || 0) * weight);
+    }
+  };
+
+  mergeMap(chartToday, 1.0);
+  mergeMap(chartYesterday, 0.5);
+
+  const trending = Object.values(combinedMap)
+    .sort((a, b) => b.count - a.count)
     .slice(0, 50);
 
   return c.json({ success: true, trending });
+});
+
+
+// Smart Edge Recommendations Route (KV Cached)
+app.get('/api/v1/recommendations', async (c) => {
+  const songId = c.req.query('songId');
+  const artist = c.req.query('artist');
+
+  if (!songId && !artist) {
+    return c.json({ error: 'Either songId or artist parameter is required' }, 400);
+  }
+
+  const cacheKey = `recommendations:${songId || ''}:${artist || ''}`;
+  const cached = await c.env.SEARCH_CACHE.get(cacheKey, 'json');
+  if (cached) {
+    return c.json(cached);
+  }
+
+  try {
+    const query = artist ? `${artist} top hits` : 'popular hits';
+    const results = await SaavnProvider.search(query, 1, 20);
+    const filtered = results.filter((s: any) => s.id !== songId);
+
+    const res = { success: true, recommendations: filtered };
+    c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 86400 }));
+    return c.json(res);
+  } catch (e: any) {
+    return c.json({ error: 'Recommendations fetch failed', details: e.message }, 500);
+  }
+});
+
+// Artist Edge Details Route (7-Day KV Cached)
+app.get('/api/v1/artist/details', async (c) => {
+  const artist = c.req.query('artist');
+
+  if (!artist) {
+    return c.json({ error: 'artist parameter is required' }, 400);
+  }
+
+  const cacheKey = `artist:${artist.toLowerCase().trim()}`;
+  const cached = await c.env.SEARCH_CACHE.get(cacheKey, 'json');
+  if (cached) {
+    return c.json(cached);
+  }
+
+  try {
+    const results = await SaavnProvider.search(artist, 1, 20);
+    const res = { success: true, artist, topTracks: results };
+    c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 604800 }));
+    return c.json(res);
+  } catch (e: any) {
+    return c.json({ error: 'Artist details fetch failed', details: e.message }, 500);
+  }
 });
 
 export default app;

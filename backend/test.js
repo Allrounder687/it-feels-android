@@ -130,6 +130,25 @@ async function startTests() {
     console.log(`\n   [Success] Gemini generated name: "${data.result.name}"`);
   });
 
+  
+  // 7. Smart Edge Recommendations
+  await runTest('GET /api/v1/recommendations', async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/recommendations?artist=Taylor%20Swift`, { headers: HEADERS });
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.recommendations)) {
+      throw new Error('Recommendations failed to return array');
+    }
+  });
+
+  // 8. Artist Edge Details
+  await runTest('GET /api/v1/artist/details', async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/artist/details?artist=Arijit%20Singh`, { headers: HEADERS });
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.topTracks)) {
+      throw new Error('Artist details failed to return topTracks array');
+    }
+  });
+
   console.log(`\nTests Complete! Passed: ${passed}, Failed: ${failed}`);
   if (failed > 0) {
     process.exit(1);

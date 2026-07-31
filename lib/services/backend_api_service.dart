@@ -15,6 +15,52 @@ class BackendApiService {
   @visibleForTesting
   static http.Client httpClient = http.Client();
 
+
+  /// Fetch smart edge recommendations for a song/artist
+  static Future<List<Song>> fetchRecommendations({String? songId, String? artist}) async {
+    if (!useProxyBackend) return [];
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/recommendations').replace(queryParameters: {
+        if (songId != null) 'songId': songId,
+        if (artist != null) 'artist': artist,
+      });
+
+      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['recommendations'] is List) {
+          final List recs = data['recommendations'];
+          return recs.map((item) => _songFromProxyJson(item)).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] Recommendations fetch failed: $e');
+    }
+    return [];
+  }
+
+  /// Fetch cached artist details and top tracks from Cloudflare Edge
+  static Future<List<Song>> fetchArtistDetails(String artist) async {
+    if (!useProxyBackend) return [];
+    try {
+      final uri = Uri.parse('$baseUrl/api/v1/artist/details').replace(queryParameters: {
+        'artist': artist,
+      });
+
+      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['topTracks'] is List) {
+          final List tracks = data['topTracks'];
+          return tracks.map((item) => _songFromProxyJson(item)).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] Artist details fetch failed: $e');
+    }
+    return [];
+  }
+
   static String cleanSearchQuery(String title, String artist) {
     final cleanTitle = title.replaceAll(RegExp(r'\s*\([^)]*\)'), '').replaceAll(RegExp(r'\s*\[[^\]]*\]'), '').trim();
     final mainArtist = artist.split(',').first.trim();
