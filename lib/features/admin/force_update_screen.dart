@@ -107,6 +107,16 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
     }
   }
 
+  String get _effectiveIosUrl {
+    if (widget.iosUpdateUrl != null && widget.iosUpdateUrl!.isNotEmpty) {
+      return widget.iosUpdateUrl!;
+    }
+    if (widget.updateUrl.endsWith('.apk')) {
+      return widget.updateUrl.replaceAll('.apk', '.ipa');
+    }
+    return widget.updateUrl;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -190,7 +200,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                   children: [
                     ElevatedButton(
                       onPressed: () async {
-                        final url = widget.iosUpdateUrl ?? widget.updateUrl;
+                        final url = _effectiveIosUrl;
                         final uri = Uri.parse('apple-magnifier://install?url=$url');
                         if (await canLaunchUrl(uri)) {
                           await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -209,7 +219,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                     const SizedBox(height: 12),
                     ElevatedButton(
                       onPressed: () async {
-                        final url = widget.iosUpdateUrl ?? widget.updateUrl;
+                        final url = _effectiveIosUrl;
                         final uri = Uri.parse('altstore://install?url=$url');
                         if (await canLaunchUrl(uri)) {
                           await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -227,7 +237,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                     ),
                     const SizedBox(height: 12),
                     TextButton(
-                      onPressed: () => launchUrl(Uri.parse(widget.iosUpdateUrl ?? widget.updateUrl), mode: LaunchMode.externalApplication),
+                      onPressed: () => launchUrl(Uri.parse(_effectiveIosUrl), mode: LaunchMode.externalApplication),
                       child: Text(
                         "Download IPA (Safari)",
                         style: GoogleFonts.inter(fontSize: 16, color: Colors.white70, decoration: TextDecoration.underline),
