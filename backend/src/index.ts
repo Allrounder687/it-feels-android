@@ -8,6 +8,7 @@ import { MusixmatchProvider } from './providers/musixmatch';
 
 type Bindings = {
   SEARCH_CACHE: KVNamespace;
+  YT_DLP_BASE_URL?: string;
   API_SECRET: string;
   OPENAI_API_KEY?: string;
   ANTHROPIC_API_KEY?: string;
@@ -118,10 +119,10 @@ app.post('/api/v1/send-email', async (c) => {
 
     const data = await response.json();
     if (!response.ok) {
-      return c.json({ error: 'Email Failed', details: data }, response.status);
+      return c.json({ error: 'Email Failed', details: data }, response.status as any);
     }
 
-    return c.json({ success: true, id: data.id });
+    return c.json({ success: true, id: (data as any).id });
   } catch (error: any) {
     return c.json({ error: 'Internal Server Error', message: error.message }, 500);
   }
@@ -156,7 +157,7 @@ app.post('/api/v1/razorpay/order', async (c) => {
 
     const data = await response.json();
     if (!response.ok) {
-      return c.json({ error: 'Razorpay Error', details: data }, response.status);
+      return c.json({ error: 'Razorpay Error', details: data }, response.status as any);
     }
 
     return c.json(data);
@@ -319,7 +320,7 @@ app.get('/api/v1/video', async (c) => {
         });
         clearTimeout(timeoutId);
         if (ytRes.ok) {
-          const ytData = await ytRes.json();
+          const ytData = await ytRes.json() as any;
           if (ytData['streams'] && (ytData['streams'] as Array<any>).length > 0) {
             console.log('[Cloudflare] Render yt-dlp proxy returned high-quality streams - using this');
             return c.json({
@@ -332,7 +333,7 @@ app.get('/api/v1/video', async (c) => {
           }
         }
       } catch (e) {
-        console.log('[Cloudflare] Render yt-dlp fetch failed, falling back to YoutubeProvider: ' + e.message);
+        console.log('[Cloudflare] Render yt-dlp fetch failed, falling back to YoutubeProvider: ' + (e as Error).message);
       }
     }
 
@@ -499,7 +500,7 @@ app.get('/api/v1/image-proxy', async (c) => {
     c.header('Cache-Control', 'public, max-age=31536000, immutable');
     c.header('Content-Type', imageRes.headers.get('Content-Type') || 'image/jpeg');
 
-    return c.body(imageRes.body);
+    return c.body(imageRes.body as any);
   } catch (e: any) {
     return c.json({ error: 'Image proxy failed', details: e.message }, 500);
   }
