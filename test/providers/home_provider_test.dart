@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:it_feels_music/features/home/home_provider.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
 
 class MockMusicApiService extends Mock implements MusicApiService {}
 
@@ -13,9 +14,16 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({'default_category': 'Trending'});
     mockApiService = MockMusicApiService();
+    if (!locator.isRegistered<MusicApiService>()) {
+      locator.registerSingleton<MusicApiService>(mockApiService);
+    }
   });
 
-  group('HomeProvider Tests', () {
+  tearDown(() {
+    locator.reset();
+  });
+
+  group('HomeNotifier Tests', () {
     test('Initialization fetches homepage data and sets default category', () async {
       when(() => mockApiService.fetchHomepageData(onError: any(named: 'onError')))
           .thenAnswer((_) async => {
@@ -28,23 +36,18 @@ void main() {
                 'playlists': [],
               });
 
-      // Avoid calling search functions in initialization for faster test
       when(() => mockApiService.searchSongs(any(), count: any(named: 'count'))).thenAnswer((_) async => <Song>[]);
       when(() => mockApiService.searchPlaylists(any(), count: any(named: 'count'))).thenAnswer((_) async => <Playlist>[]);
       when(() => mockApiService.searchAlbums(any(), count: any(named: 'count'))).thenAnswer((_) async => <Playlist>[]);
 
-      final provider = HomeProvider(apiService: mockApiService);
-      
-      // Initially it loads
-      expect(provider.isLoading, true);
+      final notifier = HomeNotifier();
+      expect(notifier.state.isLoading, true);
 
-      // Wait for futures
       await Future.delayed(const Duration(milliseconds: 100));
 
-      expect(provider.isLoading, false);
-      expect(provider.trendingSongs.length, 1);
-      expect(provider.trendingSongs.first.title, 'Trending 1');
-      expect(provider.selectedCategory, 'Trending');
+      expect(notifier.state.isLoading, false);
+      expect(notifier.state.trendingSongs.length, 1);
+      expect(notifier.state.trendingSongs.first.title, 'Trending 1');
     });
 
     test('selectCategory changes category and triggers fetch if needed', () async {
@@ -57,13 +60,11 @@ void main() {
       when(() => mockApiService.searchAll('Podcasts')).thenAnswer((_) async => {'songs': <Song>[], 'playlists': <Playlist>[]});
       when(() => mockApiService.searchPlaylists('Podcasts')).thenAnswer((_) async => <Playlist>[]);
 
-      final provider = HomeProvider(apiService: mockApiService);
-      
-      // Wait for initialization to complete
+      final notifier = HomeNotifier();
       await Future.delayed(const Duration(milliseconds: 100));
 
-      await provider.selectCategory('Podcasts');
-      expect(provider.selectedCategory, 'Podcasts');
+      await notifier.selectCategory('Podcasts');
+      expect(notifier.state.selectedCategory, 'Podcasts');
       
       verify(() => mockApiService.searchAll('Podcasts')).called(1);
     });
