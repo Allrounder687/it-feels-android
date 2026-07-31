@@ -50,7 +50,7 @@ class AuthNotifier extends Notifier<AuthState> {
 
     _authService.userStream.listen((user) {
       if (user != null) {
-        final isPasswordProvider = user.providerData.any((info) => info.providerId == 'password');
+        final isPasswordProvider = (user.providerData ?? []).any((info) => info.providerId == 'password');
         if (isPasswordProvider && !user.emailVerified) {
           state = state.copyWith(viewState: AuthViewState.emailVerificationPending);
           _cloudSyncService.stopSync();
