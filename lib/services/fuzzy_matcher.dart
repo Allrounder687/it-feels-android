@@ -1,5 +1,5 @@
 import 'dart:math';
-import '../data/models/song_model.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 
 /// FuzzyMatcher — matches AI-returned song names against the user's local library.
 /// Provider-independent: works even when AI is unavailable.

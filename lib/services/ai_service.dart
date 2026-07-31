@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../core/ai/ai_provider.dart';
-import '../data/models/song_model.dart';
+import 'package:it_feels_music/core/ai/ai_provider.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 
 class AIService extends ChangeNotifier {
   static AIService? _instance;

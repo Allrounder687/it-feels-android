@@ -1,4 +1,4 @@
-import '../../data/models/song_model.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 
 /// `LrcParser` is a utility class responsible for parsing raw LRC (LyRiCs) formatted
 /// text into a structured list of [LyricLine] objects.

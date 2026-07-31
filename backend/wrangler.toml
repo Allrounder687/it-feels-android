@@ -6,6 +6,7 @@ compatibility_date = "2024-03-01"
 ENVIRONMENT = "production"
 DEFAULT_AUDIO_QUALITY = "320kbps"
 API_SECRET = "development_secret_123"
+YT_DLP_BASE_URL = "https://it-feels-android.onrender.com"
 
 [[kv_namespaces]]
 binding = "SEARCH_CACHE"

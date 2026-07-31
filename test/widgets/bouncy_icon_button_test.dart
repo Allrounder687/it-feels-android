@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:it_feels_music/views/widgets/bouncy_icon_button.dart';
+import 'package:it_feels_music/core/widgets/bouncy_icon_button.dart';
 
 void main() {
   testWidgets('BouncyIconButton triggers onPressed when tapped', (WidgetTester tester) async {

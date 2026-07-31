@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-// import 'package:it_feels_music/providers/audio_player_provider.dart';
+// import 'package:it_feels_music/features/player/audio_player_provider.dart';
 
 void main() {
   group('Phase 1: AudioPlayerProvider Sleep Timer Tests', () {

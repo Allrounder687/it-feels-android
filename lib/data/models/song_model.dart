@@ -1,6 +1,6 @@
 import 'package:isar/isar.dart';
-import '../../core/utils/image_utils.dart';
-import '../../core/utils/string_utils.dart';
+import 'package:it_feels_music/core/utils/image_utils.dart';
+import 'package:it_feels_music/core/utils/string_utils.dart';
 
 part 'song_model.g.dart';
 

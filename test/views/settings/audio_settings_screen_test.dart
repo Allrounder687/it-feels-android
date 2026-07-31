@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-// import 'package:it_feels_music/views/settings/audio_settings_screen.dart';
+// import 'package:it_feels_music/features/settings/audio_settings_screen.dart';
 
 void main() {
   group('Phase 3: AudioSettingsScreen Widget Tests', () {

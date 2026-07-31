@@ -1,16 +1,19 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
-import '../data/models/song_model.dart';
-import '../core/utils/des_decryptor.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/core/utils/des_decryptor.dart';
 
 class BackendApiService {
   // Configurable proxy base URL (defaults to user's live Cloudflare Worker URL)
-  static String baseUrl = 'https://it-feels-proxy.cleverfox687.workers.dev'; 
+  static String baseUrl = (dotenv.isInitialized ? dotenv.env['PROXY_BASE_URL'] : null) ?? 'https://it-feels-proxy.cleverfox687.workers.dev'; 
   static bool useProxyBackend = false; // Toggle to switch between direct & proxy mode
   static final Map<String, Map<String, dynamic>> _videoStreamCache = {};
   static final YoutubeExplode _yt = YoutubeExplode();
+  @visibleForTesting
+  static http.Client httpClient = http.Client();
 
   static String cleanSearchQuery(String title, String artist) {
     final cleanTitle = title.replaceAll(RegExp(r'\s*\([^)]*\)'), '').replaceAll(RegExp(r'\s*\[[^\]]*\]'), '').trim();
@@ -18,8 +21,8 @@ class BackendApiService {
     return '$cleanTitle $mainArtist official music video'.trim();
   }
 
-  static const Map<String, String> _proxyHeaders = {
-    'X-Feels-Secret': 'development_secret_123',
+  static Map<String, String> get _proxyHeaders => {
+    'X-Feels-Secret': (dotenv.isInitialized ? dotenv.env['API_SECRET'] : null) ?? 'development_secret_123',
   };
 
   /// Search tracks across multi-source backend proxy
@@ -37,7 +40,7 @@ class BackendApiService {
         'provider': 'saavn',
       });
 
-      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
+      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['results'] is List) {
@@ -79,7 +82,7 @@ class BackendApiService {
         });
       }
 
-      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 5));
+      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 5));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['streamUrl'] != null) {
@@ -104,11 +107,11 @@ class BackendApiService {
       final uri = Uri.parse('$baseUrl/api/v1/lyrics').replace(queryParameters: {
         'track': track,
         'artist': artist,
-        if (album != null) 'album': album,
+        'album': ?album,
         if (duration != null && duration > 0) 'duration': duration.toString(),
       });
 
-      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
+      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true && data['lyrics'] != null) {
@@ -134,7 +137,7 @@ class BackendApiService {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/api/v1/ai/action');
-      final response = await http.post(
+      final response = await httpClient.post(
         uri,
         headers: {..._proxyHeaders, 'Content-Type': 'application/json'},
         body: json.encode({
@@ -157,7 +160,7 @@ class BackendApiService {
   static Future<bool> sendWelcomeEmail(String email) async {
     try {
       final uri = Uri.parse('$baseUrl/api/v1/email/welcome');
-      final response = await http.post(
+      final response = await httpClient.post(
         uri,
         headers: {..._proxyHeaders, 'Content-Type': 'application/json'},
         body: json.encode({'email': email}),
@@ -174,7 +177,7 @@ class BackendApiService {
   static Future<void> sendTelemetryPlay(Song song) async {
     try {
       final uri = Uri.parse('$baseUrl/api/v1/telemetry/play');
-      await http.post(
+      await httpClient.post(
         uri,
         headers: {..._proxyHeaders, 'Content-Type': 'application/json'},
         body: json.encode({
@@ -267,7 +270,7 @@ class BackendApiService {
       }
 
       final uri = Uri.parse('$baseUrl/api/v1/video').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 15));
+      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List streamsList = data['streams'] ?? [];
@@ -294,7 +297,9 @@ class BackendApiService {
   }
 
   // IMPORTANT: Paste your Render URL here once it's deployed (e.g. 'https://it-feels-yt-proxy.onrender.com')
-  static String ytDlpBackendUrl = 'https://it-feels-android.onrender.com';
+  static String? _testYtDlpUrl;
+  static String get ytDlpBackendUrl => _testYtDlpUrl ?? (dotenv.isInitialized ? dotenv.env['YT_DLP_BASE_URL'] : null) ?? 'https://it-feels-android.onrender.com';
+  static set ytDlpBackendUrl(String val) => _testYtDlpUrl = val;
 
   static final List<String> _pipedInstances = [
     'https://pipedapi.adminforge.de',
@@ -317,7 +322,7 @@ class BackendApiService {
     for (final instance in _pipedInstances) {
       try {
         final uri = Uri.parse('$instance/streams/$cleanId');
-        final response = await http.get(uri).timeout(const Duration(seconds: 6));
+        final response = await httpClient.get(uri).timeout(const Duration(seconds: 6));
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
           final title = data['title'] ?? 'Music Video';
@@ -375,7 +380,7 @@ class BackendApiService {
     
     for (int i = 0; i < retries; i++) {
       try {
-        final response = await http.get(uri).timeout(const Duration(seconds: 60));
+        final response = await httpClient.get(uri).timeout(const Duration(seconds: 60));
         if (response.statusCode == 200) {
           return json.decode(response.body);
         } else {
@@ -434,7 +439,7 @@ class BackendApiService {
   static Future<List<Map<String, dynamic>>> searchVideos(String query) async {
     try {
       final uri = Uri.parse('$baseUrl/api/v1/videos/search').replace(queryParameters: {'query': query});
-      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
+      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List list = data['videos'] ?? [];
@@ -454,7 +459,7 @@ class BackendApiService {
   static Future<List<Map<String, dynamic>>> getTrendingVideos() async {
     try {
       final uri = Uri.parse('$baseUrl/api/v1/videos/trending');
-      final response = await http.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
+      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List list = data['videos'] ?? [];
@@ -474,7 +479,7 @@ class BackendApiService {
   static Future<List<Map<String, dynamic>>> _directInnerTubeVideoSearch(String query, {int limit = 20}) async {
     try {
       final uri = Uri.parse('https://www.youtube.com/youtubei/v1/search');
-      final response = await http.post(
+      final response = await httpClient.post(
         uri,
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -534,7 +539,7 @@ class BackendApiService {
   static Future<List<Map<String, dynamic>>> _directInnerTubeTrendingVideos({int limit = 20}) async {
     try {
       final uri = Uri.parse('https://www.youtube.com/youtubei/v1/browse');
-      final response = await http.post(
+      final response = await httpClient.post(
         uri,
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -623,7 +628,7 @@ class BackendApiService {
     final uri = Uri.parse(
       'https://www.jiosaavn.com/api.php?__call=search.getResults&p=$page&n=$limit&q=${Uri.encodeComponent(query)}&_format=json&_marker=0&api_version=4',
     );
-    final response = await http.get(uri);
+    final response = await httpClient.get(uri);
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       final List results = data['results'] ?? [];

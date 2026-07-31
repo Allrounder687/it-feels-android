@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-// import 'package:it_feels_music/views/home/smart_recommendations_row.dart';
+// import 'package:it_feels_music/features/home/smart_recommendations_row.dart';
 
 void main() {
   group('Phase 2: SmartRecommendationsRow Widget Tests', () {

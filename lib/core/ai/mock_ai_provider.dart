@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'ai_provider.dart';
 import 'failure_mode.dart';
-import '../../data/models/song_model.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 
 class MockAIProvider extends ChangeNotifier implements AIProvider {
   @override

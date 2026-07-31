@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../data/models/song_model.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 
 class StorageService {
   static const String _favKey = 'favorite_songs_json_v1';

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
-import '../providers/custom_playlist_provider.dart';
-import '../data/services/music_api_service.dart';
-import '../data/models/song_model.dart';
+import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
+import 'package:it_feels_music/data/services/music_api_service.dart';
 
 class PlaylistImportProgress {
   final int total;

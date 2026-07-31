@@ -2,9 +2,9 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:io';
-import '../models/song_model.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 import 'music_api_service.dart';
-import '../../services/storage_service.dart';
+import 'package:it_feels_music/services/storage_service.dart';
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   late final AudioPlayer _player;

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:it_feels_music/providers/home_provider.dart';
+import 'package:it_feels_music/features/home/home_provider.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 
@@ -39,7 +39,7 @@ void main() {
       expect(provider.isLoading, true);
 
       // Wait for futures
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
 
       expect(provider.isLoading, false);
       expect(provider.trendingSongs.length, 1);

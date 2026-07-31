@@ -1,6 +1,6 @@
-import '../ai_provider.dart';
-import '../../../data/models/song_model.dart';
-import '../../../services/backend_api_service.dart';
+import 'package:it_feels_music/core/ai/ai_provider.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/services/backend_api_service.dart';
 
 class ClaudeProvider implements AIProvider {
   final String apiKey; // Kept for backwards compatibility constructor signature

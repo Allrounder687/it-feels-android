@@ -4,6 +4,9 @@ All notable changes to **IT Feels Music** will be documented in this file.
 
 ## [2.6.0] - Unreleased (Phase 3: Listen Together)
 
+### Fixed
+- **Multi-Tier Stream Resolution Engine:** Deployed a Priority 1 Render proxy with PO-Token bypass and Priority 2 Cloudflare Piped fallback, fixing 4K audio sync drops and ensuring bulletproof video stream extraction.
+
 ### Added
 - **Firestore Cloud Sync:** Built `CloudSyncService` to securely push local Isar `Song` favorites to Cloud Firestore. 
 - **Real-Time Database Listeners:** Integrated bi-directional Firestore snapshot listeners that instantly merge cloud state into the local Isar database.

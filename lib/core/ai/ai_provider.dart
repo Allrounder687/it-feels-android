@@ -1,4 +1,4 @@
-import '../../data/models/song_model.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 
 // ─────────────────────────────────────────────
 // AIProvider — abstract interface every real/mock provider must implement.

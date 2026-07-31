@@ -3,9 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-import 'package:it_feels_music/views/lyrics/lyrics_screen.dart';
-import 'package:it_feels_music/providers/lyrics_provider.dart';
-import 'package:it_feels_music/providers/audio_player_provider.dart';
+import 'package:it_feels_music/features/player/lyrics_screen.dart';
+import 'package:it_feels_music/features/player/lyrics_provider.dart';
+import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
 

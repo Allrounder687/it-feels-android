@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-// import 'package:it_feels_music/views/lyrics/lyrics_share_dialog.dart';
+// import 'package:it_feels_music/features/player/lyrics_share_dialog.dart';
 // import 'package:it_feels_music/data/models/song_model.dart';
 
 void main() {

@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:on_audio_query/on_audio_query.dart';
-import 'package:permission_handler/permission_handler.dart';
-import '../models/song_model.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 import 'dart:io';
 
 class LocalAudioService {

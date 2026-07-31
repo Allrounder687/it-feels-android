@@ -285,9 +285,11 @@ app.get('/api/v1/search', async (c) => {
 });
 
 // Video Stream Resolution Route (with Age Restriction Bypass)
+// Priority: 1) Direct Render yt-dlp proxy (for high quality/4K), 2) Cloudflare + YoutubeProvider (Piped/Invidious/InnerTube)
 app.get('/api/v1/video', async (c) => {
   const id = c.req.query('id');
   const query = c.req.query('query');
+  const ytDlpUrl = c.env.YT_DLP_BASE_URL || ''; // Set via Render environment variable
 
   if (!id && !query) {
     return c.json({ error: 'Either id or query parameter is required' }, 400);
@@ -306,6 +308,35 @@ app.get('/api/v1/video', async (c) => {
       return c.json({ error: 'Video not found' }, 404);
     }
 
+    // PRIORITY 1: Try Render yt-dlp backend first for high-quality 4K/muxed MP4 streams
+    if (ytDlpUrl && ytDlpUrl !== '') {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const ytRes = await fetch(`${ytDlpUrl}/api/streams?videoId=${videoId}`, {
+          headers: { 'User-Agent': 'Mozilla/5.0', 'X-Feels-Secret': 'development_secret_123' },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (ytRes.ok) {
+          const ytData = await ytRes.json();
+          if (ytData['streams'] && (ytData['streams'] as Array<any>).length > 0) {
+            console.log('[Cloudflare] Render yt-dlp proxy returned high-quality streams - using this');
+            return c.json({
+              success: true,
+              id: videoId,
+              title: ytData['title'] || 'Music Video',
+              streams: ytData['streams'],
+              audioUrl: ytData['audioUrl'] || '',
+            });
+          }
+        }
+      } catch (e) {
+        console.log('[Cloudflare] Render yt-dlp fetch failed, falling back to YoutubeProvider: ' + e.message);
+      }
+    }
+
+    // PRIORITY 2: Use Cloudflare worker-local YouTube provider (Piped, Invidious, InnerTube)
     const videoData = await YoutubeProvider.getVideoStreams(videoId);
     return c.json({
       success: true,

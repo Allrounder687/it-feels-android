@@ -1,6 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
-import '../data/models/song_model.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 
 class DatabaseService {
   static late Isar _isar;

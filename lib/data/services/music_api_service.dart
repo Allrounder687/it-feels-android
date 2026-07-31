@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import '../../core/utils/des_decryptor.dart';
-import '../../services/backend_api_service.dart';
-import '../models/song_model.dart';
+import 'package:it_feels_music/core/utils/des_decryptor.dart';
+import 'package:it_feels_music/services/backend_api_service.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 
 class MusicApiService {
   static const String _baseUrl = 'https://www.jiosaavn.com/api.php';

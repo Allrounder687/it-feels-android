@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import '../../core/utils/hinglish_transliterator.dart';
-import '../../core/utils/lrc_parser.dart';
-import '../models/song_model.dart';
-import '../../services/backend_api_service.dart';
+import 'package:it_feels_music/core/utils/hinglish_transliterator.dart';
+import 'package:it_feels_music/core/utils/lrc_parser.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/services/backend_api_service.dart';
 
 import 'package:string_similarity/string_similarity.dart';
 

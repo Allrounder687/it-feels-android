@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
-import 'package:it_feels_music/providers/auth_provider.dart';
+import 'package:it_feels_music/features/auth/auth_provider.dart';
 import 'package:it_feels_music/services/auth_service.dart';
 import 'package:it_feels_music/services/cloud_sync_service.dart';
 

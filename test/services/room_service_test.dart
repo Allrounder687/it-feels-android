@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:it_feels_music/services/room_service.dart';
+import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 
 class MockFirebaseDatabase extends Mock implements FirebaseDatabase {}

@@ -4,8 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import '../data/models/song_model.dart';
-import '../data/services/music_api_service.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'storage_service.dart';
 
 class DownloadService {
