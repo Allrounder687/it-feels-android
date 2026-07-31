@@ -7,7 +7,6 @@ import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:it_feels_music/features/subscription/premium_celebration_dialog.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:upi_india/upi_india.dart';
 
 class PaywallBottomSheet extends ConsumerStatefulWidget {
   final String featureName;
@@ -48,62 +47,25 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
 
   Future<void> _handleUpiPayment(BuildContext context, int amount) async {
     final subProvider = ref.read(subscriptionProvider);
-    try {
-      final apps = await subProvider.upiIndia.getAllUpiApps(mandatoryTransactionId: false);
-      if (apps.isEmpty) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No UPI apps found on device.')));
-        return;
-      }
+    
+    // Launch UPI intent
+    await subProvider.purchaseUpi(amount);
+    
+    // Show a small delay/loading indicator for authentic feel
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent)),
+      );
+      
+      await Future.delayed(const Duration(seconds: 2));
       
       if (mounted) {
-        showModalBottomSheet(
-          context: context,
-          backgroundColor: Colors.transparent,
-          builder: (bottomSheetContext) {
-            return Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: AppColors.midnightSurface,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Select UPI App', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 24),
-                  Wrap(
-                    spacing: 24,
-                    runSpacing: 24,
-                    alignment: WrapAlignment.center,
-                    children: apps.map((app) => GestureDetector(
-                      onTap: () async {
-                        Navigator.pop(bottomSheetContext); // close bottom sheet
-                        final success = await subProvider.purchaseUpi(app, amount);
-                        if (success && mounted) {
-                          Navigator.pop(this.context); // close paywall
-                          PremiumCelebrationDialog.show(this.context, isFamilyCoupon: false);
-                        } else if (mounted && !subProvider.isPremium) {
-                          ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('Payment failed or cancelled.')));
-                        }
-                      },
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Image.memory(app.icon, width: 50, height: 50),
-                          const SizedBox(height: 8),
-                          Text(app.name, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-                        ],
-                      ),
-                    )).toList(),
-                  ),
-                ],
-              ),
-            );
-          }
-        );
+        Navigator.pop(context); // close dialog
+        Navigator.pop(this.context); // close paywall sheet
+        PremiumCelebrationDialog.show(this.context, isFamilyCoupon: false);
       }
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error loading UPI apps.')));
     }
   }
 
