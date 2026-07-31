@@ -212,7 +212,7 @@ class BackendApiService {
       final uri = Uri.parse('$baseUrl/api/v1/lyrics').replace(queryParameters: {
         'track': track,
         'artist': artist,
-        'album': ?album,
+        if (album != null) 'album': album,
         if (duration != null && duration > 0) 'duration': duration.toString(),
       });
 

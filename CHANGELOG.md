@@ -244,7 +244,8 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - Added missing lyrics fallback message UI.
 - Implemented share intent (ndroid.intent.action.SEND) for Spotify/music links in AndroidManifest.
 
-### Changed
+### Fixed
+- Fixed syntax errors and type issues in Auth and Subscription bottom sheets preventing successful iOS/Android builds.
 - Improved Bottom Navigation Bar click area and icon sizes.
 - Fixed MiniPlayer visibility in custom app bar screens (Playlist, Artist, Custom Playlist details) by utilizing Scaffold's bottomNavigationBar.
 - Refactored AudioPlayerProvider as the single source of truth for app state and theming.

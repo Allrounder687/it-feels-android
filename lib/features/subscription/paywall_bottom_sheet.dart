@@ -258,6 +258,7 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
             ],
         ),
       ),
+      ),
     );
   }
 }
