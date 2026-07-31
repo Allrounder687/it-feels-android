@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
+import 'package:it_feels_music/services/backend_api_service.dart';
 
 @immutable
 class SearchState {
@@ -79,9 +80,11 @@ class SearchNotifier extends Notifier<SearchState> {
       try {
         final resultsFuture = apiService.searchAll(newQuery);
         final songsFuture = apiService.searchSongs(newQuery, count: 50);
+        final nativeSongsFuture = BackendApiService.searchNativeCatalog(newQuery);
 
         final results = await resultsFuture;
         final topSongs = await songsFuture;
+        final nativeSongs = await nativeSongsFuture;
 
         if (state.query != newQuery) return;
 
@@ -104,6 +107,17 @@ class SearchNotifier extends Notifier<SearchState> {
           }
         } else {
           songs = topSongs.isNotEmpty ? topSongs : List<Song>.from(results['songs'] ?? []);
+        }
+
+        // Prepend Native Catalog Songs and tag them
+        if (nativeSongs.isNotEmpty) {
+          final taggedNativeSongs = nativeSongs.map((s) => s.copyWith(album: '${s.album} (IT-Feels)')).toList();
+          
+          // Filter out duplicates (if native result is same as saavn result by id or name)
+          final nativeIds = taggedNativeSongs.map((s) => s.id).toSet();
+          songs.removeWhere((s) => nativeIds.contains(s.id));
+          
+          songs.insertAll(0, taggedNativeSongs);
         }
 
         state = state.copyWith(

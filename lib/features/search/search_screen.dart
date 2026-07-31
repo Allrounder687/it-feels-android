@@ -9,6 +9,7 @@ import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/search/search_provider.dart';
 import 'package:it_feels_music/features/library/artist_detail_screen.dart';
 import 'package:it_feels_music/features/library/playlist_detail_screen.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 
 import 'package:it_feels_music/features/settings/hidden_songs_provider.dart';
 
@@ -260,7 +261,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                             ),
                                             subtitle: Row(
                                               children: [
-                                                _buildProviderBadge(context, song.id),
+                                                _buildProviderBadge(context, song),
                                                 const SizedBox(width: 6),
                                                 Expanded(
                                                   child: Text(
@@ -430,17 +431,20 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildProviderBadge(BuildContext context, String songId) {
+  Widget _buildProviderBadge(BuildContext context, Song song) {
     String label = 'SAAVN';
     Color badgeColor = const Color(0xFF00B0FF); // Cool Saavn Blue
 
-    if (songId.startsWith('youtube:')) {
+    if (song.album.contains('(IT-Feels)')) {
+      label = 'IT-FEELS';
+      badgeColor = const Color(0xFF9C27B0); // Deep Purple
+    } else if (song.id.startsWith('youtube:')) {
       label = 'YOUTUBE';
       badgeColor = const Color(0xFFFF3D00); // YouTube Red
-    } else if (songId.startsWith('spotify:')) {
+    } else if (song.id.startsWith('spotify:')) {
       label = 'SPOTIFY';
       badgeColor = const Color(0xFF1DB954); // Spotify Green
-    } else if (songId.startsWith('soundcloud:')) {
+    } else if (song.id.startsWith('soundcloud:')) {
       label = 'SOUNDCLOUD';
       badgeColor = const Color(0xFFFF5500); // SoundCloud Orange
     }

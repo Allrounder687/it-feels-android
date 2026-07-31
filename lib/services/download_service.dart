@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:background_downloader/background_downloader.dart';
 
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
@@ -10,10 +11,26 @@ import 'storage_service.dart';
 
 class DownloadService {
   final MusicApiService apiService;
+  bool _initialized = false;
 
-  DownloadService({required this.apiService});
+  DownloadService({required this.apiService}) {
+    _initDownloader();
+  }
 
-  /// Download a single song for offline playback
+  Future<void> _initDownloader() async {
+    if (_initialized) return;
+    
+    // Configure background OS notifications for Android/iOS
+    await FileDownloader().configureNotification(
+      running: const TaskNotification('Downloading...', 'file: {filename}'),
+      complete: const TaskNotification('Download Complete', 'file: {filename}'),
+      error: const TaskNotification('Download Failed', 'file: {filename}'),
+      progressBar: true,
+    );
+    _initialized = true;
+  }
+
+  /// Download a single song for offline playback via background OS task
   Future<bool> downloadSong(Song song, {Function(double)? onProgress}) async {
     try {
       Directory musicDir;
@@ -28,6 +45,9 @@ class DownloadService {
           await Permission.manageExternalStorage.request();
         }
         await Permission.audio.request();
+        // Request notification permission for Android 13+ background notifications
+        await Permission.notification.request();
+        
         musicDir = Directory('/storage/emulated/0/Music/IT-Feels');
       } else {
         final dir = await getApplicationDocumentsDirectory();
@@ -44,31 +64,13 @@ class DownloadService {
         return false;
       }
 
-      // Sanitize ID to avoid illegal characters like colons in the filename
+      // Sanitize ID
       final safeId = song.id.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+      final fileName = '$safeId.mp4';
+      final savedFilePath = '${musicDir.path}/$fileName';
 
-      // Download audio file
-      final audioFile = File('${musicDir.path}/$safeId.mp4');
-      final request = http.Request('GET', Uri.parse(streamUrl));
-      final response = await http.Client().send(request);
-
-      final totalBytes = response.contentLength ?? 0;
-      int downloadedBytes = 0;
-      final List<int> bytes = [];
-
-      await for (var chunk in response.stream) {
-        bytes.addAll(chunk);
-        downloadedBytes += chunk.length;
-        if (totalBytes > 0 && onProgress != null) {
-          onProgress(downloadedBytes / totalBytes);
-        }
-      }
-
-      await audioFile.writeAsBytes(bytes);
-
-      // Download cover art locally if available
+      // 1. Download Cover Art locally first
       String localCover = song.coverArt;
-      List<int>? coverBytes;
       if (song.coverArt.isNotEmpty) {
         try {
           final coverResponse = await http.get(Uri.parse(song.coverArt));
@@ -76,54 +78,60 @@ class DownloadService {
             final coverFile = File('${musicDir.path}/$safeId.jpg');
             await coverFile.writeAsBytes(coverResponse.bodyBytes);
             localCover = coverFile.path;
-            coverBytes = coverResponse.bodyBytes;
           }
         } catch (_) {}
       }
 
-      // Write ID3 tags
-      // Removed audiotags due to iOS arm64 FFI linker issues
-      /*
-      try {
-        final tag = Tag(
-          title: song.title,
-          trackArtist: song.artist,
-          album: song.album,
-          pictures: coverBytes != null ? [
-            Picture(
-              bytes: Uint8List.fromList(coverBytes),
-              mimeType: null,
-              pictureType: PictureType.coverFront,
-            )
-          ] : [],
-        );
-        await AudioTags.write(audioFile.path, tag);
-      } catch (e) {
-        debugPrint('[DownloadService] ID3 Tag error: $e');
-      }
-      */
-
-      // Create downloaded song entry
-      final downloadedSong = Song(
-        id: song.id,
-        saavnId: song.saavnId,
-        title: song.title,
-        artist: song.artist,
-        album: song.album,
-        duration: song.duration,
-        coverArt: localCover,
-        encryptedMediaUrl: audioFile.path, // Local file path
-        hasLyrics: song.hasLyrics,
-        addedAt: DateTime.now(),
+      // 2. Configure Background Download Task
+      final task = DownloadTask(
+        url: streamUrl,
+        filename: fileName,
+        directory: musicDir.path,
+        baseDirectory: BaseDirectory.root, // Important for absolute custom paths
+        updates: Updates.statusAndProgress,
+        retries: 3,
+        allowPause: true,
+        metaData: song.id,
       );
 
-      final currentDownloads = await StorageService.loadDownloads();
-      currentDownloads.removeWhere((s) => s.id == song.id);
-      currentDownloads.add(downloadedSong);
+      // 3. Enqueue and wait for completion
+      // We use .download() so we can await it and update our local database when done.
+      // Even if the UI thread is busy, the actual download happens via native OS threads.
+      final result = await FileDownloader().download(
+        task,
+        onProgress: (progress) {
+          if (onProgress != null && progress >= 0.0) {
+            onProgress(progress);
+          }
+        },
+      );
 
-      await StorageService.saveDownloads(currentDownloads);
-      debugPrint('[DownloadService] Successfully downloaded: ${song.title}');
-      return true;
+      if (result.status == TaskStatus.complete) {
+        // Create downloaded song entry
+        final downloadedSong = Song(
+          id: song.id,
+          saavnId: song.saavnId,
+          title: song.title,
+          artist: song.artist,
+          album: song.album,
+          duration: song.duration,
+          coverArt: localCover,
+          encryptedMediaUrl: savedFilePath,
+          hasLyrics: song.hasLyrics,
+          addedAt: DateTime.now(),
+        );
+
+        final currentDownloads = await StorageService.loadDownloads();
+        currentDownloads.removeWhere((s) => s.id == song.id);
+        currentDownloads.add(downloadedSong);
+
+        await StorageService.saveDownloads(currentDownloads);
+        debugPrint('[DownloadService] Successfully downloaded via Background Task: ${song.title}');
+        return true;
+      } else {
+        debugPrint('[DownloadService] Background download failed with status: ${result.status}');
+        return false;
+      }
     } catch (e) {
       debugPrint('[DownloadService] Download error for ${song.title}: $e');
       return false;

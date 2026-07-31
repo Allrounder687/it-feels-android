@@ -79,9 +79,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
       );
     } else {
       // Switching to audio
-      final position = videoProvider.videoController?.value.position ?? Duration.zero;
+      final useVideoAudio = settingsProv.useVideoAudioSource;
+      if (useVideoAudio) {
+        final position = videoProvider.videoController?.value.position;
+        if (position != null && position > Duration.zero) {
+          ref.read(audioPlayerProvider.notifier).seek(position);
+        }
+      }
       videoProvider.videoController?.pause();
-      ref.read(audioPlayerProvider.notifier).seek(position);
       if (!audioProvider.isPlaying) {
         ref.read(audioPlayerProvider.notifier).play();
       }

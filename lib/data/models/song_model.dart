@@ -144,6 +144,9 @@ class Song {
   }
 
   Song copyWith({
+    String? title,
+    String? artist,
+    String? album,
     String? streamUrl,
     String? coverArt,
     String? localFilePath,
@@ -156,9 +159,9 @@ class Song {
       isarId: isarId,
       id: id,
       saavnId: saavnId,
-      title: title,
-      artist: artist,
-      album: album,
+      title: title ?? this.title,
+      artist: artist ?? this.artist,
+      album: album ?? this.album,
       duration: duration,
       coverArt: coverArt ?? this.coverArt,
       streamUrl: streamUrl ?? this.streamUrl,

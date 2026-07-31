@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -342,63 +343,50 @@ class BackendApiService {
       }
     }
 
-    try {
-      // 1. FAST PATH: If we have the 4K yt-dlp Render proxy configured, try it first.
-      if (ytDlpBackendUrl.isNotEmpty) {
-        final ytDlpData = await _fetchFromYtDlpBackend(actualVideoId);
-        if (ytDlpData['streams'] != null && (ytDlpData['streams'] as List).isNotEmpty) {
-          debugPrint('[BackendApiService] Successfully fetched streams directly from Render yt-dlp proxy!');
-          _videoStreamCache[cacheKey] = ytDlpData;
-          return ytDlpData;
+    // Concurrent Network Racing: Race Native (youtube_explode) vs Piped Proxy
+    final completer = Completer<Map<String, dynamic>>();
+    int errors = 0;
+    
+    void tryComplete(Future<Map<String, dynamic>> future) {
+      future.then((res) {
+        if (!completer.isCompleted) completer.complete(res);
+      }).catchError((e) {
+        errors++;
+        if (errors == 2 && !completer.isCompleted) {
+          completer.completeError(Exception('All streaming racers failed'));
         }
-      }
+      });
+    }
 
-      // 2. PIPED API FAST FAILOVER: High-speed, zero-cost public Piped instances with auto-failover
-      final updatedCleanId = actualVideoId.contains(':') ? actualVideoId.split(':').last : actualVideoId;
-      final pipedData = await _fetchFromPipedApi(updatedCleanId);
-      if (pipedData['streams'] != null && (pipedData['streams'] as List).isNotEmpty) {
-        debugPrint('[BackendApiService] Successfully fetched streams from Piped API network!');
-        _videoStreamCache[cacheKey] = pipedData;
-        return pipedData;
+    tryComplete(_directYoutubeExplodeStreamFallback(actualVideoId, query: query).then((res) {
+      if (res.isNotEmpty && res['streams'] != null && (res['streams'] as List).isNotEmpty) {
+        debugPrint('[BackendApiService] Race won by: Native (youtube_explode)');
+        return res;
       }
-
-      // 3. CLOUDFLARE WORKER API
-      final queryParams = <String, String>{};
-      if (actualVideoId.isNotEmpty && !actualVideoId.startsWith('search:')) {
-        queryParams['id'] = actualVideoId;
-      }
-      if (query != null && query.isNotEmpty) {
-        queryParams['query'] = query;
-      }
-      if (bypassCache) {
-        queryParams['bypassCache'] = 'true';
-      }
-
-      final uri = Uri.parse('$baseUrl/api/v1/video').replace(queryParameters: queryParams);
-      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 15));
-      if (response.statusCode == 200) {
-        final data = await compute<String, dynamic>(jsonDecode, response.body);
-        final List streamsList = data['streams'] ?? [];
-        if (streamsList.isNotEmpty) {
-          final res = {
-            'title': data['title'] ?? 'Music Video',
-            'streams': streamsList,
-            'audioUrl': data['audioUrl'] ?? '',
-          };
-          _videoStreamCache[cacheKey] = res;
+      throw Exception('Native empty');
+    }));
+    
+    tryComplete(_fetchFromPipedApi(actualVideoId).then((res) {
+      if (res.isNotEmpty && res['streams'] != null && (res['streams'] as List).isNotEmpty) {
+        final filteredStreams = (res['streams'] as List).where((s) => !(s['videoOnly'] == true)).toList();
+        if (filteredStreams.isNotEmpty) {
+          res['streams'] = filteredStreams;
+          debugPrint('[BackendApiService] Race won by: Piped API Proxy');
           return res;
         }
       }
+      throw Exception('Piped empty');
+    }));
+
+    try {
+      final winner = await completer.future;
+      _videoStreamCache[cacheKey] = winner;
+      return winner;
     } catch (e) {
-      debugPrint('[BackendApiService] getVideoStreams error: $e');
+      debugPrint('[BackendApiService] Race failed: $e');
     }
-    
-    // 4. Direct fallback
-    final fallbackRes = await _directYoutubeExplodeStreamFallback(videoId, query: query);
-    if (fallbackRes.isNotEmpty && fallbackRes['streams'] != null && (fallbackRes['streams'] as List).isNotEmpty) {
-      _videoStreamCache[cacheKey] = fallbackRes;
-    }
-    return fallbackRes;
+
+    return {};
   }
 
   // IMPORTANT: Paste your Render URL here once it's deployed (e.g. 'https://it-feels-yt-proxy.onrender.com')
@@ -538,18 +526,9 @@ class BackendApiService {
         });
       }
       
-      // Get Video-Only streams for higher qualities
-      for (final streamInfo in manifest.videoOnly) {
-        final qualityLabel = streamInfo.videoQuality.name;
-        if (!streams.any((s) => s['quality'] == qualityLabel)) {
-           streams.add({
-            'quality': qualityLabel,
-            'url': streamInfo.url.toString(),
-            'mimeType': 'video/mp4',
-            'videoOnly': true,
-          });
-        }
-      }
+      // Exclude video-only streams because standard VideoPlayer cannot multiplex them 
+      // with audio natively without a custom HLS pipeline. Muxed streams (up to 720p) 
+      // guarantee perfect audio/video sync instantly.
 
       String audioUrl = '';
       if (manifest.audioOnly.isNotEmpty) {
