@@ -123,7 +123,7 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
     );
   }
 
-  Widget _buildHostView(AudioPlayerProvider audioProvider) {
+  Widget _buildHostView(AudioPlayerState audioProvider) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       return Padding(
@@ -251,7 +251,7 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
     );
   }
 
-  Widget _buildGuestView(AudioPlayerProvider audioProvider) {
+  Widget _buildGuestView(AudioPlayerState audioProvider) {
     return Column(
       children: [
         const Text(
@@ -292,7 +292,7 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
         ElevatedButton(
           onPressed: _pinController.text.length == 6 ? _joinSession : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: audioProvider.themeAccentColor,
+            backgroundColor: audioProvider.activeAccentColor,
             foregroundColor: Colors.white,
             elevation: 0,
             minimumSize: const Size(double.infinity, 56),

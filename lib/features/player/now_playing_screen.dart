@@ -192,7 +192,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               final settingsProv = ref.read(settingsProvider);
-              _toggleMode(true, playerProvider, videoProvider, settingsProv);
+              _toggleMode(true, ref.read(audioPlayerProvider.notifier), videoProvider, settingsProv);
             }
           });
         }
@@ -249,7 +249,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   GestureDetector(
-                                    onTap: () => _toggleMode(false, playerProvider, videoProvider, settingsProv),
+                                    onTap: () => _toggleMode(false, ref.read(audioPlayerProvider.notifier), videoProvider, settingsProv),
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                                       decoration: BoxDecoration(
@@ -267,7 +267,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                     ),
                                   ),
                                   GestureDetector(
-                                    onTap: () => _toggleMode(true, playerProvider, videoProvider, settingsProv),
+                                    onTap: () => _toggleMode(true, ref.read(audioPlayerProvider.notifier), videoProvider, settingsProv),
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                                       decoration: BoxDecoration(
@@ -710,7 +710,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                       }
 
                       return StreamBuilder<Duration>(
-                        stream: playerProvider.audioHandler.player.positionStream,
+                        stream: ref.read(audioPlayerProvider.notifier).audioHandler.player.positionStream,
                         initialData: playerProvider.position,
                         builder: (context, snapshot) {
                           final currentPos = snapshot.data ?? playerProvider.position;
@@ -767,7 +767,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   ref.read(audioPlayerProvider.notifier).seek(newPos);
                                 }
                               } else {
-                                playerProvider.seekBackward();
+                                ref.read(audioPlayerProvider.notifier).seekBackward();
                               }
                             },
                           ),
@@ -786,13 +786,13 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   if (ctrl.value.isPlaying) {
                                     ctrl.pause();
                                     if (!settingsProv.useVideoAudioSource) {
-                                      playerProvider.pause();
+                                      ref.read(audioPlayerProvider.notifier).pause();
                                     }
                                   } else {
                                     ctrl.play();
                                     if (!settingsProv.useVideoAudioSource) {
                                       ref.read(audioPlayerProvider.notifier).seek(ctrl.value.position);
-                                      playerProvider.play();
+                                      ref.read(audioPlayerProvider.notifier).play();
                                     }
                                   }
                                   setState(() {});
@@ -821,13 +821,13 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                           if (value.isPlaying) {
                                             videoProvider.videoController!.pause();
                                             if (!settingsProv.useVideoAudioSource) {
-                                              playerProvider.pause();
+                                              ref.read(audioPlayerProvider.notifier).pause();
                                             }
                                           } else {
                                             videoProvider.videoController!.play();
                                             if (!settingsProv.useVideoAudioSource) {
                                               ref.read(audioPlayerProvider.notifier).seek(value.position);
-                                              playerProvider.play();
+                                              ref.read(audioPlayerProvider.notifier).play();
                                             }
                                           }
                                         },
@@ -862,7 +862,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   ref.read(audioPlayerProvider.notifier).seek(newPos);
                                 }
                               } else {
-                                playerProvider.seekForward();
+                                ref.read(audioPlayerProvider.notifier).seekForward();
                               }
                             },
                           ),

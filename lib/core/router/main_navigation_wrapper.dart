@@ -59,13 +59,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
       final player = ref.read(audioPlayerProvider);
       final history = ref.read(listeningHistoryProvider);
       
-      player.addListener(() {
-        final currentSong = player.currentSong;
-        if (currentSong != null && currentSong.id != _lastLoggedSong?.id) {
-          _lastLoggedSong = currentSong;
-          ref.read(listeningHistoryProvider.notifier).logSong(currentSong);
-        }
-      });
+      // Listening history logging is handled via ref.listen in build()
       
       // Check clipboard on startup
       _checkClipboardForPlaylist();
@@ -173,6 +167,13 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AudioPlayerState>(audioPlayerProvider, (previous, next) {
+      final currentSong = next.currentSong;
+      if (currentSong != null && currentSong.id != _lastLoggedSong?.id) {
+        _lastLoggedSong = currentSong;
+        ref.read(listeningHistoryProvider.notifier).logSong(currentSong);
+      }
+    });
     final settingsProv = ref.watch(settingsProvider);
     final enableVideos = settingsProv.enableMusicVideos;
 

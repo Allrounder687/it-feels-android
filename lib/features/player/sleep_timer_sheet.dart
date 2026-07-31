@@ -104,7 +104,7 @@ class SleepTimerSheet extends ConsumerWidget {
         style: TextStyle(color: context.themeTextColor, fontSize: 18),
       ),
       onTap: () {
-        provider.startSleepTimer(duration);
+        ref.read(audioPlayerProvider.notifier).startSleepTimer(duration);
         Navigator.pop(context);
       },
     );
