@@ -11,6 +11,7 @@ import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 
 class SocialScreen extends StatefulWidget {
@@ -190,7 +191,7 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
                           contentPadding: const EdgeInsets.all(12),
                           leading: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: CustomImageWidget(url: song.coverArt, width: 56, height: 56),
+                            child: CustomImageWidget(imageUrl: song.coverArt, width: 56, height: 56),
                           ),
                           title: Text(song.title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
                           subtitle: Text("Sent by $senderName", style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),

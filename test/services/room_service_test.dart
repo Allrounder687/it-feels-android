@@ -65,7 +65,17 @@ void main() {
     test('updateRoomState updates position and playing state', () async {
       when(() => mockRef.update(any())).thenAnswer((_) async {});
 
-      await roomService.updateRoomState('123456', '456', const Duration(seconds: 20), false);
+      final song = Song(
+        id: '456',
+        saavnId: '456',
+        title: 'Title',
+        artist: 'Artist',
+        album: 'Album',
+        coverArt: 'url',
+        duration: 100,
+        addedAt: DateTime.now(),
+      );
+      await roomService.updateRoomState('123456', song, const Duration(seconds: 20), false);
 
       verify(() => mockDb.ref('rooms/123456')).called(1);
       
