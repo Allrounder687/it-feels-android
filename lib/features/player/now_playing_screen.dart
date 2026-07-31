@@ -36,7 +36,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
 
 
-  Future<void> _toggleMode(bool toVideo, AudioPlayerProvider audioProvider, VideoPlayerState videoProvider, SettingsState settingsProv) async {
+  Future<void> _toggleMode(bool toVideo, AudioPlayerState audioProvider, VideoPlayerState videoProvider, SettingsState settingsProv) async {
     if (_isVideoMode == toVideo) return;
     final currentSong = audioProvider.currentSong;
     if (currentSong == null) return;

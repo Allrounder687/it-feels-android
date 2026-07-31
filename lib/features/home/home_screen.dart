@@ -81,7 +81,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return "Late Night Vibes";
   }
 
-  Widget _buildHeroBanner(BuildContext context, Song heroSong, AudioPlayerProvider player) {
+  Widget _buildHeroBanner(BuildContext context, Song heroSong, AudioPlayerState player) {
     return Container(
       height: 280,
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
