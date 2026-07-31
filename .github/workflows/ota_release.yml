@@ -45,7 +45,7 @@ jobs:
       - name: Build Shorebird Release (APK)
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird release android --artifact apk --force
+        run: shorebird release android --artifact apk
 
       - name: Rename APK file
         run: mv build/app/outputs/apk/release/app-release.apk it-feels-android-${{ github.ref_name }}.apk
