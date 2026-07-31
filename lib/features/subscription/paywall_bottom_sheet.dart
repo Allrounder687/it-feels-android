@@ -45,27 +45,17 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
     }
   }
 
-  Future<void> _handleUpiPayment(BuildContext context, int amount) async {
+  Future<void> _handleUpiPayment(BuildContext context, int amount, int days) async {
     final subProvider = ref.read(subscriptionProvider);
     
-    // Launch UPI intent
-    await subProvider.purchaseUpi(amount);
+    // Launch Razorpay Checkout
+    final success = await subProvider.purchaseUpi(amount, days);
     
-    // Show a small delay/loading indicator for authentic feel
-    if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent)),
-      );
-      
-      await Future.delayed(const Duration(seconds: 2));
-      
-      if (mounted) {
-        Navigator.pop(context); // close dialog
-        Navigator.pop(this.context); // close paywall sheet
-        PremiumCelebrationDialog.show(this.context, isFamilyCoupon: false);
-      }
+    if (success && mounted) {
+      Navigator.pop(context); // close paywall sheet
+      PremiumCelebrationDialog.show(this.context, isFamilyCoupon: false);
+    } else if (mounted && !subProvider.isPremium) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment failed or cancelled.')));
     }
   }
 
@@ -144,7 +134,7 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
                 child: ElevatedButton(
-                  onPressed: () => _handleUpiPayment(context, 999),
+                  onPressed: () => _handleUpiPayment(context, 999, 365),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.midnightPrimary,
                     foregroundColor: Colors.white,
@@ -155,9 +145,9 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.flash_on, size: 20, color: Colors.amber),
+                      Icon(Icons.security, size: 20, color: Colors.amber),
                       SizedBox(width: 8),
-                      Text("1 Year for ₹999 (Instant Auto-Upgrade via UPI)", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                      Text("1 Year for ₹999 (Verified UPI Payment)", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),

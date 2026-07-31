@@ -80,13 +80,11 @@ class RazorpayService {
   Future<void> _handlePaymentSuccess(PaymentSuccessResponse response) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final expiresAt = DateTime.now().add(Duration(days: _pendingDurationDays));
-      await _firestore.collection('users').doc(user.uid).collection('entitlements').doc('premium').set({
-        'isActive': true,
-        'expiresAt': Timestamp.fromDate(expiresAt),
-        'grantedBy': 'razorpay_${response.paymentId}',
+      await _firestore.collection('users').doc(user.uid).set({
+        'isPremiumFamily': true,
+        'premiumGrantedBy': 'razorpay_${response.paymentId}',
         'orderId': response.orderId,
-      });
+      }, SetOptions(merge: true));
       _paymentCompleter?.complete(true);
     } else {
       _paymentCompleter?.complete(false);
