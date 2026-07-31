@@ -4,10 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/services/notification_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class SocialService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseDatabase _rtdb = FirebaseDatabase.instanceFor(
+    app: Firebase.app(), 
+    databaseURL: Firebase.app().options.databaseURL,
+  );
 
   // Manually add a friend via UID
   Future<bool> addFriendByUid(String friendUid) async {

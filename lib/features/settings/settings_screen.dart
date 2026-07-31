@@ -6,6 +6,8 @@ import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/settings/hidden_songs_screen.dart';
 import 'package:it_feels_music/features/settings/audio_settings_screen.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:it_feels_music/services/config_service.dart';
+import 'package:it_feels_music/features/admin/force_update_screen.dart';
 
 import 'package:it_feels_music/features/ai/ai_settings_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -41,7 +43,7 @@ class SettingsScreen extends ConsumerWidget {
               left: 20, 
               right: 20, 
               top: 12, 
-              bottom: MediaQuery.of(context).padding.bottom + 120, // Avoids overlapping with mini-player/nav
+              bottom: MediaQuery.of(context).viewPadding.bottom + 200, // Safe clearance for mini-player and nav bar
             ),
             children: [
               // Category 1: Audio & Streaming Quality
@@ -545,6 +547,49 @@ class SettingsScreen extends ConsumerWidget {
               // Category 5: About
               _buildSectionHeader(context, "ℹ️ About & Info"),
               const SizedBox(height: 8),
+
+              _buildActionTile(
+                context: context,
+                title: "Check for Updates",
+                subtitle: "See if a new version is available",
+                icon: Icons.system_update_rounded,
+                onTap: () async {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (ctx) => const Center(child: CircularProgressIndicator()),
+                  );
+                  
+                  final config = await ConfigService.fetchRemoteConfig();
+                  if (context.mounted) Navigator.pop(context);
+                  
+                  if (config != null) {
+                    final requiresForce = await ConfigService.requiresForceUpdate(config);
+                    final hasSoft = await ConfigService.hasSoftUpdate(config);
+                    if ((requiresForce || hasSoft) && context.mounted) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ForceUpdateScreen(
+                            latestVersion: config.latestVersion,
+                            updateUrl: config.updateUrl,
+                            releaseNotes: config.releaseNotes,
+                            iosUpdateUrl: config.iosUpdateUrl,
+                          ),
+                        ),
+                      );
+                    } else if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("You are on the latest version!")),
+                      );
+                    }
+                  } else if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Failed to check for updates. Check your connection.")),
+                    );
+                  }
+                },
+              ),
 
               _buildActionTile(
                 context: context,

@@ -375,13 +375,13 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                               onPressed: () {
                                 final current = playerProvider.currentVibe;
                                 if (current == AudioVibe.normal) {
-                                  playerProvider.setAudioVibe(AudioVibe.slowedReverb);
+                                  ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.slowedReverb);
                                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🌙 Slowed + Reverb'), duration: Duration(seconds: 1)));
                                 } else if (current == AudioVibe.slowedReverb) {
-                                  playerProvider.setAudioVibe(AudioVibe.nightcore);
+                                  ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.nightcore);
                                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('⚡ Nightcore (Sped Up)'), duration: Duration(seconds: 1)));
                                 } else {
-                                  playerProvider.setAudioVibe(AudioVibe.normal);
+                                  ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.normal);
                                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎵 Normal Audio'), duration: Duration(seconds: 1)));
                                 }
                               },

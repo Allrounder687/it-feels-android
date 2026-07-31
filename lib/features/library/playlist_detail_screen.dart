@@ -36,6 +36,18 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   }
 
   Future<void> _loadDetails() async {
+    if (widget.playlist.songs != null && widget.playlist.songs!.isNotEmpty) {
+      if (mounted) {
+        setState(() {
+          _title = widget.playlist.title;
+          _coverArt = widget.playlist.coverArt;
+          _songs = widget.playlist.songs!;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
     final api = MusicApiService();
     Map<String, dynamic> data;
 

@@ -513,7 +513,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   _buildSongCarousel(context, "Latest Episodes", activeSongs, playerProvider),
                 ]
                 else if (selectedCat == "Charts") ...[
-                  _buildPlaylistCarousel(context, "Global Charts", homeProv.chartPlaylists),
+                  _buildPlaylistCarousel(context, "Global Charts", homeProv.chartPlaylists.take(5).toList()),
+                  _buildPlaylistCarousel(context, "Billboard Hot 100", homeProv.chartPlaylists.skip(5).take(5).toList()),
+                  _buildPlaylistCarousel(context, "Viral 50", homeProv.chartPlaylists.skip(10).take(5).toList()),
+                  _buildPlaylistCarousel(context, "Top 50", homeProv.chartPlaylists.skip(15).take(5).toList()),
                 ],
 
                 SliverToBoxAdapter(child: SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom)),

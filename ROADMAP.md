@@ -20,5 +20,12 @@ These features require writing new logic in the Cloudflare Worker, as well as up
 ### Phase 3: Major Features (Full Stack Projects) 🔴
 *Status: Planned*
 These are massive features that act as standalone projects. They require setting up databases, managing complex state, and building brand new UI screens in Flutter.
-- [ ] **Serverless User Accounts & Cloud Sync**: Set up a **Cloudflare D1** SQL database to store user profiles, custom playlists, and favorite tracks. Requires building Login/Signup screens and handling JWT authentication in the mobile app.
-- [ ] **"Listen Together" (WebSockets)**: Set up **Cloudflare Durable Objects** for WebSocket management. Build a highly complex real-time synchronization engine and UI in the Flutter app to allow friends to connect to a "room" and listen to the same song perfectly synced.
+- [x] **Serverless User Accounts & Cloud Sync**: Set up Firebase backend to store user profiles, custom playlists, and favorite tracks. Built Auth screens with 0 cognitive overload.
+- [x] **"Listen Together" (Firebase RTDB)**: Built a highly complex real-time synchronization engine and UI in the Flutter app to allow friends to connect to a "room" and listen to the same song perfectly synced.
+
+### Phase 4: Social Audio & Real-time Expansions 🔴
+*Status: Planned*
+Taking the existing Listen Together sync engine and expanding it into a full social suite.
+- [ ] **Live Voice Chat (Walkie Talkie)**: Integrate WebRTC/Agora to allow friends to talk over the music with automatic audio ducking.
+- [ ] **Collaborative DJ Queue**: Allow guests in a sync room to add songs to a shared "Up Next" queue.
+- [ ] **Interactive Sync Rooms**: Add floating emoji reactions (Instagram Live style) and real-time synchronized lyrics (karaoke mode) for all users in the room.

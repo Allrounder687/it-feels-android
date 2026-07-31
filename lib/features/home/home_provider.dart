@@ -274,12 +274,13 @@ class HomeNotifier extends Notifier<HomeState> {
 
   Future<void> fetchPodcasts() async {
     try {
-      final res = await apiService.searchAll('Podcasts');
-      final combinedSongs = _deduplicate(res['songs'] as List<Song>);
-      var playlists = res['playlists'] as List<Playlist>;
-      if (playlists.isEmpty) {
-        playlists = await apiService.searchPlaylists("Podcasts");
-      }
+      final list1 = await apiService.searchSongs("Podcast", count: 20);
+      final list2 = await apiService.searchSongs("The Ranveer Show", count: 10);
+      final list3 = await apiService.searchSongs("Jay Shetty", count: 10);
+      final playlists = await apiService.searchPlaylists("Podcast", count: 20);
+
+      final combinedSongs = _deduplicate([...list1, ...list2, ...list3]);
+      
       state = state.copyWith(
         podcastSongs: combinedSongs.isNotEmpty ? combinedSongs : state.podcastSongs,
         podcastPlaylists: playlists.isNotEmpty ? playlists : state.podcastPlaylists,
@@ -327,6 +328,7 @@ class HomeNotifier extends Notifier<HomeState> {
             type: 'playlist',
             coverArt: res.first.coverArt,
             songCount: res.length,
+            songs: res,
           ));
           newSongs.addAll(res);
         }
@@ -383,7 +385,7 @@ class HomeNotifier extends Notifier<HomeState> {
 
     try {
       final queries = ['Top 50', 'Billboard', 'Viral', 'Global 100'];
-      final futures = queries.map((query) => apiService.searchPlaylists(query, count: 4));
+      final futures = queries.map((query) => apiService.searchPlaylists(query, count: 8));
       final results = await Future.wait(futures);
       
       final chartList = <Playlist>[];

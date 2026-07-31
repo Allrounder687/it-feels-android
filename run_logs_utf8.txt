@@ -1,0 +1,477 @@
+﻿Build, Release, and Trigger OTA	Set up job	∩╗┐2026-07-31T14:12:47.7964182Z Current runner version: '2.336.0'
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7984428Z ##[group]Runner Image Provisioner
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7985390Z Hosted Compute Agent
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7986067Z Version: 20260707.563
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7986787Z Commit: 02667638d2b423fbc733a8e32a88b44996a3ba6e
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7987599Z Build Date: 2026-07-07T19:33:50Z
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7988434Z Worker ID: ***e50de221-94f1-466a-96a1-5ba84346fac0***
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7989242Z Azure Region: westus3
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7990142Z ##[endgroup]
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7991553Z ##[group]Operating System
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7992287Z Ubuntu
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7992898Z 24.04.4
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7993502Z LTS
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7994259Z ##[endgroup]
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7995034Z ##[group]Runner Image
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7995715Z Image: ubuntu-24.04
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7996324Z Version: 20260720.247.2
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7997387Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260720.247/images/ubuntu/Ubuntu2404-Readme.md
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.7998972Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260720.247
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.8000058Z ##[endgroup]
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.8001332Z ##[group]GITHUB_TOKEN Permissions
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.8003556Z Contents: write
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.8004183Z Metadata: read
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.8004824Z ##[endgroup]
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.8006604Z Secret source: Actions
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.8007701Z Prepare workflow directory
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.8270563Z Prepare all required actions
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:47.8313440Z Getting action download info
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:48.1283085Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:48.8068922Z Download action repository 'actions/setup-java@v3' (SHA:17f84c3641ba7b8f6deff6309fc4c864478f5d62)
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:49.7385630Z Download action repository 'subosito/flutter-action@v2' (SHA:1a449444c387b1966244ae4d4f8c696479add0b2)
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:50.1151347Z Download action repository 'softprops/action-gh-release@v2' (SHA:3bb12739c298aeb8a4eeaf626c5b8d85266b0e65)
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:50.5778416Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:50.7230612Z Getting action download info
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:50.8689651Z Download action repository 'actions/cache@v5' (SHA:caa296126883cff596d87d8935842f9db880ef25)
+Build, Release, and Trigger OTA	Set up job	2026-07-31T14:12:51.1710815Z Complete job name: Build, Release, and Trigger OTA
+Build, Release, and Trigger OTA	Checkout repository	∩╗┐2026-07-31T14:12:51.2250355Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2256729Z ##[group]Run actions/checkout@v4
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2257290Z with:
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2257695Z   repository: Allrounder687/it-feels-android
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2260327Z   token: ***
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2260743Z   ssh-strict: true
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2261071Z   ssh-user: git
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2261505Z   persist-credentials: true
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2261875Z   clean: true
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2262223Z   sparse-checkout-cone-mode: true
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2262676Z   fetch-depth: 1
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2262998Z   fetch-tags: false
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2263385Z   show-progress: true
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2263718Z   lfs: false
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2264093Z   submodules: false
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2264534Z   set-safe-directory: true
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2264903Z   allow-unsafe-pr-checkout: false
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.2265459Z ##[endgroup]
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3126062Z Syncing repository: Allrounder687/it-feels-android
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3128377Z ##[group]Getting Git version info
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3129243Z Working directory is '/home/runner/work/it-feels-android/it-feels-android'
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3130949Z [command]/usr/bin/git version
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3546391Z git version 2.54.0
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3561343Z ##[endgroup]
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3573188Z Temporarily overriding HOME='/home/runner/work/_temp/d261a77d-18ed-497a-9626-98fd8d7b1d5a' before making global git config changes
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3574746Z Adding repository directory to the temporary git global config as a safe directory
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3578919Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/it-feels-android/it-feels-android
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3609615Z Deleting the contents of '/home/runner/work/it-feels-android/it-feels-android'
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3613180Z ##[group]Initializing the repository
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3617367Z [command]/usr/bin/git init /home/runner/work/it-feels-android/it-feels-android
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3695776Z hint: Using 'master' as the name for the initial branch. This default branch name
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3696754Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3697347Z hint: to use in all of your new repositories, which will suppress this warning,
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3698074Z hint: call:
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3698548Z hint:
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3699186Z hint: 	git config --global init.defaultBranch <name>
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3699772Z hint:
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3700916Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3712317Z hint: 'development'. The just-created branch can be renamed via this command:
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3713038Z hint:
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3713571Z hint: 	git branch -m <name>
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3714085Z hint:
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3715007Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3716075Z Initialized empty Git repository in /home/runner/work/it-feels-android/it-feels-android/.git/
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.3717917Z [command]/usr/bin/git remote add origin https://github.com/Allrounder687/it-feels-android
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.4509387Z ##[endgroup]
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.4510697Z ##[group]Disabling automatic garbage collection
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.4511830Z [command]/usr/bin/git config --local gc.auto 0
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.4706369Z ##[endgroup]
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.4707381Z ##[group]Setting up auth
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.4716102Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.4738832Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.5324185Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.5347612Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.5505415Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.5529301Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.5688787Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.5995809Z ##[endgroup]
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.5996643Z ##[group]Fetching the repository
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:51.6004137Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +bb65e909715e5b7c012b6b13c81636b98cc2ec9a:refs/tags/v3.3.3
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.7526660Z From https://github.com/Allrounder687/it-feels-android
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.7527578Z  * [new ref]         bb65e909715e5b7c012b6b13c81636b98cc2ec9a -> v3.3.3
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.7546510Z ##[endgroup]
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.7547015Z ##[group]Determining the checkout info
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.7547823Z ##[endgroup]
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.7553631Z [command]/usr/bin/git sparse-checkout disable
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8276565Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8300066Z ##[group]Checking out the ref
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8304276Z [command]/usr/bin/git checkout --progress --force refs/tags/v3.3.3
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8853807Z Note: switching to 'refs/tags/v3.3.3'.
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8854231Z 
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8854610Z You are in 'detached HEAD' state. You can look around, make experimental
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8855335Z changes and commit them, and you can discard any commits you make in this
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8860349Z state without impacting any branches by switching back to a branch.
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8860910Z 
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8861307Z If you want to create a new branch to retain commits you create, you may
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8861983Z do so (now or later) by using -c with the switch command. Example:
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8862371Z 
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8862554Z   git switch -c <new-branch-name>
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8862848Z 
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8863013Z Or undo this operation with:
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8863266Z 
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8863408Z   git switch -
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8863624Z 
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8863923Z Turn off this advice by setting config variable advice.detachedHead to false
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8864326Z 
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8864588Z HEAD is now at bb65e90 fix(ci): Restore missing SubscriptionService import
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8871590Z ##[endgroup]
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8891531Z [command]/usr/bin/git log -1 --format=%H
+Build, Release, and Trigger OTA	Checkout repository	2026-07-31T14:12:53.8911045Z bb65e909715e5b7c012b6b13c81636b98cc2ec9a
+Build, Release, and Trigger OTA	Set up Java	∩╗┐2026-07-31T14:12:53.9132736Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9134299Z ##[group]Run actions/setup-java@v3
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9134588Z with:
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9134821Z   distribution: zulu
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9135076Z   java-version: 17
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9135315Z   java-package: jdk
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9135553Z   check-latest: false
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9135830Z   server-id: github
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9136069Z   server-username: GITHUB_ACTOR
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9136356Z   server-password: GITHUB_TOKEN
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9136622Z   overwrite-settings: true
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9136881Z   job-status: success
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9138992Z   token: ***
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:53.9139228Z ##[endgroup]
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:54.0426102Z ##[group]Installed distributions
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:54.0461138Z Trying to resolve the latest version from remote
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:54.0546836Z (node:2035) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:54.0547656Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:54.2117623Z Resolved latest version as 17.0.20+8
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:54.2118311Z Trying to download...
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:54.2119174Z Downloading Java 17.0.20+8 (Zulu) from https://cdn.azul.com/zulu/bin/zulu17.68.17-ca-jdk17.0.20-linux_x64.tar.gz ...
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:58.6201895Z Extracting Java archive...
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:12:58.6303686Z [command]/usr/bin/tar xz --warning=no-unknown-keyword -C /home/runner/work/_temp/68bd6dd1-1767-402a-b6e8-6bc2f918552b -f /home/runner/work/_temp/a902fa4b-b576-45f5-8996-b9dc29936c46
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5553629Z Java 17.0.20+8 was downloaded
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5554055Z Setting Java 17.0.20+8 as the default
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5562320Z Creating toolchains.xml for JDK version 17 from zulu
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5618330Z Writing to /home/runner/.m2/toolchains.xml
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5618870Z 
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5619095Z Java configuration:
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5619441Z   Distribution: zulu
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5619955Z   Version: 17.0.20+8
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5620352Z   Path: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5620650Z 
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5621466Z ##[endgroup]
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5635879Z Creating settings.xml with server-id: github
+Build, Release, and Trigger OTA	Set up Java	2026-07-31T14:13:02.5636389Z Writing to /home/runner/.m2/settings.xml
+Build, Release, and Trigger OTA	Set up Flutter	∩╗┐2026-07-31T14:13:02.5850515Z ##[group]Run subosito/flutter-action@v2
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5850829Z with:
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5851052Z   channel: stable
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5851287Z   cache: true
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5851512Z   architecture: X64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5851762Z   pub-cache-path: default
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5852008Z   dry-run: false
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5852297Z   git-source: https://github.com/flutter/flutter.git
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5852607Z env:
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5852904Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5853305Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5853636Z ##[endgroup]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5908053Z ##[start-action display=Make yq tool available on Windows runners;id=__subosito_flutter-action.__run]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5916938Z ##[end-action id=__subosito_flutter-action.__run;outcome=skipped;conclusion=skipped;duration_ms=0]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5918966Z ##[start-action display=Make setup script executable;id=__subosito_flutter-action.__run_2]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5947723Z ##[group]Run chmod +x "$GITHUB_ACTION_PATH/setup.sh"
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5948158Z [36;1mchmod +x "$GITHUB_ACTION_PATH/setup.sh"[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5977680Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail ***0***
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5978062Z env:
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5978362Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5978769Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.5979107Z ##[endgroup]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6061545Z ##[end-action id=__subosito_flutter-action.__run_2;outcome=success;conclusion=success;duration_ms=14]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6063744Z ##[start-action display=Set action inputs;id=__subosito_flutter-action.flutter-action]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6092771Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh -p \
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6093194Z [36;1m$GITHUB_ACTION_PATH/setup.sh -p \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6093488Z [36;1m  -n '' \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6093716Z [36;1m  -f '' \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6093964Z [36;1m  -a 'X64' \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6094199Z [36;1m  -k '' \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6094428Z [36;1m  -c '' \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6094643Z [36;1m  -l '' \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6094892Z [36;1m  -d 'default' \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6095210Z [36;1m  -g 'https://github.com/flutter/flutter.git' \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6095537Z [36;1m  stable[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6117143Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail ***0***
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6117497Z env:
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6117788Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6118203Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.6118538Z ##[endgroup]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8031407Z ##[end-action id=__subosito_flutter-action.flutter-action;outcome=success;conclusion=success;duration_ms=196]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8035639Z ##[start-action display=Cache Flutter;id=__subosito_flutter-action.cache-flutter]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8069564Z ##[group]Run actions/cache@v5
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8069849Z with:
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8070619Z   path: /opt/hostedtoolcache/flutter/stable-3.44.8-x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8071083Z   key: flutter-linux-stable-3.44.8-x64-058e0af2c2b57e369d905a03ac9748b0ebf543c6
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8071509Z   enableCrossOsArchive: false
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8071780Z   fail-on-cache-miss: false
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8072044Z   lookup-only: false
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8072285Z   save-always: false
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8072517Z env:
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8072789Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8073197Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:02.8073532Z ##[endgroup]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.1495657Z Cache not found for input keys: flutter-linux-stable-3.44.8-x64-058e0af2c2b57e369d905a03ac9748b0ebf543c6
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.1531464Z ##[end-action id=__subosito_flutter-action.cache-flutter;outcome=success;conclusion=success;duration_ms=349]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.1534207Z ##[start-action display=Cache pub dependencies;id=__subosito_flutter-action.cache-pub]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.2357435Z ##[group]Run actions/cache@v5
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.2357714Z with:
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.2357962Z   path: /home/runner/.pub-cache
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.2358600Z   key: flutter-pub-linux-stable-3.44.8-x64-058e0af2c2b57e369d905a03ac9748b0ebf543c6-026904e3617653c23c1da04bf0cb3866aaa236403bbbe8678adfbb8830ed3f7e
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.2359254Z   enableCrossOsArchive: false
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.2359521Z   fail-on-cache-miss: false
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.2359774Z   lookup-only: false
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.2360254Z   save-always: false
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.2360500Z env:
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.2360778Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.2361196Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.2361548Z ##[endgroup]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5616463Z Cache not found for input keys: flutter-pub-linux-stable-3.44.8-x64-058e0af2c2b57e369d905a03ac9748b0ebf543c6-026904e3617653c23c1da04bf0cb3866aaa236403bbbe8678adfbb8830ed3f7e
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5651201Z ##[end-action id=__subosito_flutter-action.cache-pub;outcome=success;conclusion=success;duration_ms=411]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5653611Z ##[start-action display=Run setup script;id=__subosito_flutter-action.__run_3]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5683105Z ##[group]Run $GITHUB_ACTION_PATH/setup.sh \
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5683500Z [36;1m$GITHUB_ACTION_PATH/setup.sh \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5683794Z [36;1m  -n '3.44.8' \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5684054Z [36;1m  -a 'x64' \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5684370Z [36;1m  -c '/opt/hostedtoolcache/flutter/stable-3.44.8-x64' \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5684744Z [36;1m  -d '/home/runner/.pub-cache' \[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5685026Z [36;1m  stable[0m
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5709571Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail ***0***
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5710151Z env:
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5710474Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5710892Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.5711247Z ##[endgroup]
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.7398834Z   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.7399659Z                                  Dload  Upload   Total   Spent    Left  Speed
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:03.7400150Z 
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:04.2149586Z   0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:05.2150561Z   5 1473M    5 79.1M    0     0   166M      0  0:00:08 --:--:--  0:00:08  166M
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:06.2148738Z  24 1473M   24  359M    0     0   243M      0  0:00:06  0:00:01  0:00:05  243M
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:07.2148072Z  41 1473M   41  610M    0     0   246M      0  0:00:05  0:00:02  0:00:03  246M
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:08.2151735Z  59 1473M   59  879M    0     0   253M      0  0:00:05  0:00:03  0:00:02  253M
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:09.2147032Z  78 1473M   78 1151M    0     0   257M      0  0:00:05  0:00:04  0:00:01  257M
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:09.6043176Z  94 1473M   94 1392M    0     0   254M      0  0:00:05  0:00:05 --:--:--  262M
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:09.6043870Z 100 1473M  100 1473M    0     0   251M      0  0:00:05  0:00:05 --:--:--  253M
+Build, Release, and Trigger OTA	Set up Flutter	2026-07-31T14:13:57.4760903Z ##[end-action id=__subosito_flutter-action.__run_3;outcome=success;conclusion=success;duration_ms=53910]
+Build, Release, and Trigger OTA	Install dependencies	∩╗┐2026-07-31T14:13:57.4811505Z ##[group]Run flutter pub get
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:13:57.4811820Z [36;1mflutter pub get[0m
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:13:57.4837169Z shell: /usr/bin/bash -e ***0***
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:13:57.4837486Z env:
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:13:57.4837786Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:13:57.4838204Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:13:57.4838626Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.44.8-x64/flutter
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:13:57.4839156Z   PUB_CACHE: /home/runner/.pub-cache
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:13:57.4839428Z ##[endgroup]
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:00.3115662Z Resolving dependencies...
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:01.5629244Z Downloading packages...
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2210515Z   _fe_analyzer_shared 61.0.0 (105.0.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2211065Z   analyzer 5.13.0 (14.1.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2211515Z   audio_session 0.1.25 (0.2.4 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2211900Z   build 2.4.1 (4.0.10 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2212263Z   build_config 1.1.2 (1.3.2 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2212706Z   build_daemon 4.1.2 (4.1.3 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2213063Z   build_resolvers 2.4.2 (3.0.4 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2213438Z   build_runner 2.4.13 (2.16.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2213805Z   build_runner_core 7.3.2 (9.3.2 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2214190Z   cli_util 0.4.2 (0.5.2 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2214536Z   dart_style 2.3.2 (3.1.12 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2214915Z   device_info_plus 12.4.0 (13.2.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2215387Z   device_info_plus_platform_interface 7.0.3 (8.1.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2215842Z   file_picker 8.3.7 (11.0.3 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2216193Z   flutter_riverpod 2.6.1 (3.4.2 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2216564Z   google_fonts 6.3.3 (8.2.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2216909Z   google_sign_in 6.3.0 (7.2.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2217304Z   google_sign_in_android 6.2.1 (7.2.15 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2217705Z   google_sign_in_ios 5.9.0 (6.3.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2218347Z   google_sign_in_platform_interface 2.5.0 (3.1.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2218830Z   google_sign_in_web 0.12.4+4 (1.1.3 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2219214Z   hooks 2.0.2 (2.1.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2219551Z   image 4.8.0 (4.9.1 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2220010Z   jni 1.0.0 (1.0.3 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2220380Z   jni_flutter 1.0.1 (1.0.2 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2220727Z   js 0.6.7 (0.7.2 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2221079Z   just_audio 0.9.46 (0.10.6 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2221422Z   matcher 0.12.19 (0.12.20 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2221776Z   meta 1.18.0 (1.19.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2222148Z   objective_c 9.4.1 (9.5.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2222548Z   package_config 2.2.0 (3.0.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2222968Z   package_info_plus 9.0.1 (10.2.1 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2223458Z   package_info_plus_platform_interface 3.2.1 (4.1.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2223965Z   palette_generator 0.3.3+7 (discontinued)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2224386Z   pointycastle 3.9.1 (4.0.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2224806Z   purchases_flutter 10.6.0 (10.7.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2225204Z   qr 3.0.2 (4.0.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2225569Z   record_use 0.6.0 (1.0.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2225917Z   riverpod 2.6.1 (3.4.2 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2226334Z   riverpod_annotation 2.6.1 (4.0.6 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2226779Z   share_plus 12.0.2 (13.3.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2227260Z   share_plus_platform_interface 6.1.0 (7.2.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2227739Z   shelf_web_socket 2.0.1 (3.0.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2228127Z   source_gen 1.5.0 (4.2.4 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2228528Z   test_api 0.7.11 (0.7.13 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2228953Z   vector_graphics_compiler 1.2.6 (1.3.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2229422Z   vector_math 2.2.0 (2.4.2 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2229806Z   win32 5.15.0 (6.3.0 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2230359Z   win32_registry 2.1.0 (3.0.3 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2231068Z   xml 6.6.1 (7.0.1 available)
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2231472Z Got dependencies!
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2231819Z 1 package is discontinued.
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2232357Z 49 packages have newer versions incompatible with dependency constraints.
+Build, Release, and Trigger OTA	Install dependencies	2026-07-31T14:14:11.2232979Z Try `flutter pub outdated` for more information.
+Build, Release, and Trigger OTA	Build Android APK	∩╗┐2026-07-31T14:14:12.1538702Z ##[group]Run flutter build apk --release
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.1539448Z [36;1mflutter build apk --release[0m
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.1571079Z shell: /usr/bin/bash -e ***0***
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.1571416Z env:
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.1571732Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.1572159Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.20-8/x64
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.1572597Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.44.8-x64/flutter
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.1572967Z   PUB_CACHE: /home/runner/.pub-cache
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.1573254Z ##[endgroup]
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.3272337Z Resolving dependencies...
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.5965451Z Downloading packages...
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6465758Z   _fe_analyzer_shared 61.0.0 (105.0.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6466246Z   analyzer 5.13.0 (14.1.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6466637Z   audio_session 0.1.25 (0.2.4 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6467095Z   build 2.4.1 (4.0.10 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6467474Z   build_config 1.1.2 (1.3.2 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6467999Z   build_daemon 4.1.2 (4.1.3 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6468426Z   build_resolvers 2.4.2 (3.0.4 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6468812Z   build_runner 2.4.13 (2.16.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6469187Z   build_runner_core 7.3.2 (9.3.2 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6469575Z   cli_util 0.4.2 (0.5.2 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6470119Z   dart_style 2.3.2 (3.1.12 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6470535Z   device_info_plus 12.4.0 (13.2.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6470999Z   device_info_plus_platform_interface 7.0.3 (8.1.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6471475Z   file_picker 8.3.7 (11.0.3 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6471818Z   flutter_riverpod 2.6.1 (3.4.2 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6472159Z   google_fonts 6.3.3 (8.2.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6472523Z   google_sign_in 6.3.0 (7.2.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6472941Z   google_sign_in_android 6.2.1 (7.2.15 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6473390Z   google_sign_in_ios 5.9.0 (6.3.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6473747Z   google_sign_in_platform_interface 2.5.0 (3.1.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6474097Z   google_sign_in_web 0.12.4+4 (1.1.3 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6474399Z   hooks 2.0.2 (2.1.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6474729Z   image 4.8.0 (4.9.1 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6475074Z   jni 1.0.0 (1.0.3 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6475480Z   jni_flutter 1.0.1 (1.0.2 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6475748Z   js 0.6.7 (0.7.2 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6476017Z   just_audio 0.9.46 (0.10.6 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6476288Z   matcher 0.12.19 (0.12.20 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6476564Z   meta 1.18.0 (1.19.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6476831Z   objective_c 9.4.1 (9.5.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6477117Z   package_config 2.2.0 (3.0.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6477413Z   package_info_plus 9.0.1 (10.2.1 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6477765Z   package_info_plus_platform_interface 3.2.1 (4.1.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6478113Z   palette_generator 0.3.3+7 (discontinued)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6478427Z   pointycastle 3.9.1 (4.0.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6478716Z   purchases_flutter 10.6.0 (10.7.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6479006Z   qr 3.0.2 (4.0.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6479278Z   record_use 0.6.0 (1.0.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6479549Z   riverpod 2.6.1 (3.4.2 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6479844Z   riverpod_annotation 2.6.1 (4.0.6 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6480430Z   share_plus 12.0.2 (13.3.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6480764Z   share_plus_platform_interface 6.1.0 (7.2.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6481098Z   shelf_web_socket 2.0.1 (3.0.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6481404Z   source_gen 1.5.0 (4.2.4 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6481684Z   test_api 0.7.11 (0.7.13 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6481990Z   vector_graphics_compiler 1.2.6 (1.3.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6482300Z   vector_math 2.2.0 (2.4.2 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6482576Z   win32 5.15.0 (6.3.0 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6483126Z   win32_registry 2.1.0 (3.0.3 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6483508Z   xml 6.6.1 (7.0.1 available)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6483803Z Got dependencies!
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6484051Z 1 package is discontinued.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6484389Z 49 packages have newer versions incompatible with dependency constraints.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:14:12.6484787Z Try `flutter pub outdated` for more information.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:39.4457211Z Running Gradle task 'assembleRelease'...                        
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:39.4475698Z WARNING: Your app uses the following plugins that apply Kotlin Gradle Plugin (KGP): device_info_plus, dynamic_color, firebase_database, home_widget, on_audio_query_android, package_info_plus, purchases_flutter, share_plus
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:39.4508676Z Future versions of Flutter will fail to build if your app uses plugins that apply KGP.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:39.4509817Z 
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:39.4511162Z Please check the changelogs of these plugins and upgrade to a version that supports Built-in Kotlin.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:39.4512452Z If no such version exists, report the issue to the plugin. If necessary, here is a guide on filing 
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:39.4514299Z an issue against a plugin: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers#report-incompatible-kotlin-gradle-plugin-usage-to-plugin-authors
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:39.4515525Z 
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:39.4516493Z If you are a plugin author, please migrate your plugin to Built-in Kotlin using this guide: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-plugin-authors
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:42.6352529Z Checking the license for package CMake 3.22.1 in /usr/local/lib/android/sdk/licenses
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:42.6354594Z License for package CMake 3.22.1 accepted.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:42.6355884Z Preparing "Install CMake 3.22.1 v.3.22.1".
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:44.4345611Z "Install CMake 3.22.1 v.3.22.1" ready.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:44.4346505Z Installing CMake 3.22.1 in /usr/local/lib/android/sdk/cmake/3.22.1
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:44.4347042Z "Install CMake 3.22.1 v.3.22.1" complete.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:18:44.7346608Z "Install CMake 3.22.1 v.3.22.1" finished.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:19:11.6364663Z Font asset "CupertinoIcons.ttf" was tree-shaken, reducing it from 257628 to 848 bytes (99.7% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:19:11.6401720Z Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 16192 bytes (99.0% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.1362120Z /home/runner/.pub-cache/hosted/pub.dev/audio_session-0.1.25/android/src/main/java/com/ryanheise/audio_session/AndroidAudioManager.java:455: warning: [deprecation] isBluetoothScoAvailableOffCall() in AudioManager has been deprecated
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.1391647Z             return audioManager.isBluetoothScoAvailableOffCall();
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.1430817Z                                ^
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.2346201Z /home/runner/.pub-cache/hosted/pub.dev/audio_session-0.1.25/android/src/main/java/com/ryanheise/audio_session/AndroidAudioManager.java:468: warning: [deprecation] setBluetoothScoOn(boolean) in AudioManager has been deprecated
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.2368145Z             audioManager.setBluetoothScoOn(enabled);
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.2405555Z                         ^
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.2451555Z /home/runner/.pub-cache/hosted/pub.dev/audio_session-0.1.25/android/src/main/java/com/ryanheise/audio_session/AndroidAudioManager.java:618: warning: [deprecation] EXTRA_SCO_AUDIO_STATE in AudioManager has been deprecated
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.2482303Z                         intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE, -1),
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.2510699Z                                                        ^
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.2521529Z /home/runner/.pub-cache/hosted/pub.dev/audio_session-0.1.25/android/src/main/java/com/ryanheise/audio_session/AndroidAudioManager.java:619: warning: [deprecation] EXTRA_SCO_AUDIO_PREVIOUS_STATE in AudioManager has been deprecated
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.2610751Z                         intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_PREVIOUS_STATE, -1)
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.2611696Z                                                        ^
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.2617195Z /home/runner/.pub-cache/hosted/pub.dev/audio_session-0.1.25/android/src/main/java/com/ryanheise/audio_session/AndroidAudioManager.java:623: warning: [deprecation] ACTION_SCO_AUDIO_STATE_UPDATED in AudioManager has been deprecated
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.2630982Z             ContextCompat.registerReceiver(applicationContext, scoReceiver, new IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED), ContextCompat.RECEIVER_EXPORTED);
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.2632220Z                                                                                           ^
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:03.3360752Z 5 warnings
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:19.4357613Z Note: /home/runner/.pub-cache/hosted/pub.dev/cloud_firestore-6.7.1/android/src/main/java/io/flutter/plugins/firebase/firestore/utils/PipelineStageHandlers.java uses unchecked or unsafe operations.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:19.4370608Z Note: Recompile with -Xlint:unchecked for details.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:26.4356097Z Note: Some input files use or override a deprecated API.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:26.4360377Z Note: Recompile with -Xlint:deprecation for details.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:29.2347582Z Note: Some input files use or override a deprecated API.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:29.2371379Z Note: Recompile with -Xlint:deprecation for details.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:40.4345970Z Note: /home/runner/.pub-cache/hosted/pub.dev/razorpay_flutter-1.4.5/android/src/main/java/com/razorpay/razorpay_flutter/RazorpayDelegate.java uses or overrides a deprecated API.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:40.4347662Z Note: Recompile with -Xlint:deprecation for details.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:20:56.0371256Z Caught exception: Already watching path: /home/runner/work/it-feels-android/it-feels-android/android
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7391978Z 
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7397917Z FAILURE: Build failed with an exception.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7401376Z 
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7403419Z * What went wrong:
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7403881Z Execution failed for task ':app:validateSigningRelease'.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7404594Z > Keystore file '/home/runner/work/it-feels-android/it-feels-android/android/app/key.jks' not found for signing config 'release'.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7405068Z 
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7405269Z * Try:
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7405650Z > Run with --stacktrace option to get the stack trace.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7406163Z > Run with --info or --debug option to get more log output.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7406656Z > Run with --scan to generate a Build Scan (Powered by Develocity).
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7407224Z > Get more help at https://help.gradle.org.
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7407471Z 
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:40.7407610Z BUILD FAILED in 9m 27s
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:41.1851346Z Running Gradle task 'assembleRelease'...                          568.0s
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:41.1921932Z Gradle task assembleRelease failed with exit code 1
+Build, Release, and Trigger OTA	Build Android APK	2026-07-31T14:23:41.2111849Z ##[error]Process completed with exit code 1.
+Build, Release, and Trigger OTA	Post Set up Flutter	∩╗┐2026-07-31T14:23:41.3428084Z Post job cleanup.
+Build, Release, and Trigger OTA	Post Set up Flutter	2026-07-31T14:23:41.3445523Z ##[start-action display=Cache pub dependencies;id=__1889368c-3855-461e-ad4c-034575f66215.cache-pub]
+Build, Release, and Trigger OTA	Post Set up Flutter	2026-07-31T14:23:41.3450099Z ##[end-action id=__1889368c-3855-461e-ad4c-034575f66215.cache-pub;outcome=skipped;conclusion=skipped;duration_ms=0]
+Build, Release, and Trigger OTA	Post Set up Flutter	2026-07-31T14:23:41.3452500Z ##[start-action display=Cache Flutter;id=__1889368c-3855-461e-ad4c-034575f66215.cache-flutter]
+Build, Release, and Trigger OTA	Post Set up Flutter	2026-07-31T14:23:41.3454803Z ##[end-action id=__1889368c-3855-461e-ad4c-034575f66215.cache-flutter;outcome=skipped;conclusion=skipped;duration_ms=0]
+Build, Release, and Trigger OTA	Post Set up Java	∩╗┐2026-07-31T14:23:41.3538866Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Build, Release, and Trigger OTA	Post Set up Java	2026-07-31T14:23:41.3540235Z Post job cleanup.
+Build, Release, and Trigger OTA	Post Set up Java	2026-07-31T14:23:41.7049083Z (node:4163) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+Build, Release, and Trigger OTA	Post Set up Java	2026-07-31T14:23:41.7497849Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Build, Release, and Trigger OTA	Post Checkout repository	∩╗┐2026-07-31T14:23:41.7630339Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:41.7631525Z Post job cleanup.
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:41.8378906Z [command]/usr/bin/git version
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:41.8421357Z git version 2.54.0
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:41.8487690Z Temporarily overriding HOME='/home/runner/work/_temp/bf26c356-f69f-4fbd-b787-d5284ad0874d' before making global git config changes
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:41.8489013Z Adding repository directory to the temporary git global config as a safe directory
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:41.8490275Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/it-feels-android/it-feels-android
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:41.8502094Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:41.8536923Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:42.0284762Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:42.0305772Z http.https://github.com/.extraheader
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:42.0315706Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:42.0342912Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:42.0518444Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build, Release, and Trigger OTA	Post Checkout repository	2026-07-31T14:23:42.0544711Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Build, Release, and Trigger OTA	Complete job	∩╗┐2026-07-31T14:23:42.0884822Z Cleaning up orphan processes
+Build, Release, and Trigger OTA	Complete job	2026-07-31T14:23:42.1905144Z Terminate orphan process: pid (2901) (java)
+Build, Release, and Trigger OTA	Complete job	2026-07-31T14:23:42.1979708Z Terminate orphan process: pid (3026) (java)
+Build, Release, and Trigger OTA	Complete job	2026-07-31T14:23:42.2044330Z Terminate orphan process: pid (3758) (java)
+Build, Release, and Trigger OTA	Complete job	2026-07-31T14:23:42.2293233Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-java@v3. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
