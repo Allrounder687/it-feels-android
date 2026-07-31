@@ -168,6 +168,43 @@ async function startTests() {
     }
   });
 
+  
+  // 11. Native API Engine: GET /api/v1/native/home
+  await runTest('GET /api/v1/native/home', async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/native/home`, { headers: HEADERS });
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.featuredPlaylists)) {
+      throw new Error('Native home failed to return featuredPlaylists array');
+    }
+  });
+
+  // 12. Native API Engine: POST /api/v1/native/songs (Create Song)
+  await runTest('POST /api/v1/native/songs', async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/native/songs`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({
+        title: 'Custom Indie Song',
+        artist: 'Native Artist',
+        album: 'Native Single',
+        streamUrl: 'https://example.com/stream.mp3'
+      })
+    });
+    const data = await res.json();
+    if (!data.success || !data.song || !data.song.id) {
+      throw new Error('Failed to create native song');
+    }
+  });
+
+  // 13. Native API Engine: GET /api/v1/native/search
+  await runTest('GET /api/v1/native/search', async () => {
+    const res = await fetch(`${BASE_URL}/api/v1/native/search?query=Indie`, { headers: HEADERS });
+    const data = await res.json();
+    if (!data.success || !Array.isArray(data.results)) {
+      throw new Error('Native search failed to return results array');
+    }
+  });
+
   console.log(`\nTests Complete! Passed: ${passed}, Failed: ${failed}`);
   if (failed > 0) {
     process.exit(1);

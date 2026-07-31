@@ -1,3 +1,4 @@
+import { NativeDatabaseProvider } from './providers/native_db';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { SaavnProvider } from './providers/saavn';
@@ -770,6 +771,113 @@ app.get('/api/v1/saavn/artist', async (c) => {
     return c.json(res);
   } catch (e: any) {
     return c.json({ error: 'Saavn artist fetch failed', details: (e as Error).message }, 500);
+  }
+});
+
+
+// Standalone Native Custom API Routes (/api/v1/native/*)
+
+// 1. Fetch Native Home Feed (Playlists, Trending, Imports)
+app.get('/api/v1/native/home', async (c) => {
+  try {
+    const feed = await NativeDatabaseProvider.getHomeFeed(c.env.SEARCH_CACHE);
+    return c.json(feed);
+  } catch (e: any) {
+    return c.json({ error: 'Native home fetch failed', details: (e as Error).message }, 500);
+  }
+});
+
+// 2. Search Custom Native Database Catalog
+app.get('/api/v1/native/search', async (c) => {
+  const query = c.req.query('query') || '';
+  try {
+    const results = await NativeDatabaseProvider.searchSongs(c.env.SEARCH_CACHE, query);
+    return c.json({ success: true, query, totalCount: results.length, results });
+  } catch (e: any) {
+    return c.json({ error: 'Native search failed', details: (e as Error).message }, 500);
+  }
+});
+
+// 3. Fetch All Native Songs Catalog
+app.get('/api/v1/native/songs', async (c) => {
+  try {
+    const catalog = await NativeDatabaseProvider.getCatalog(c.env.SEARCH_CACHE);
+    return c.json({ success: true, totalCount: catalog.length, songs: catalog });
+  } catch (e: any) {
+    return c.json({ error: 'Native songs fetch failed', details: (e as Error).message }, 500);
+  }
+});
+
+// 4. Fetch Single Native Song by ID
+app.get('/api/v1/native/songs/:id', async (c) => {
+  const id = c.req.param('id');
+  try {
+    const catalog = await NativeDatabaseProvider.getCatalog(c.env.SEARCH_CACHE);
+    const song = catalog.find((s) => s.id === id || s.id === `native:${id}`);
+    if (!song) return c.json({ error: 'Song not found in native database' }, 404);
+    return c.json({ success: true, song });
+  } catch (e: any) {
+    return c.json({ error: 'Native song details fetch failed', details: (e as Error).message }, 500);
+  }
+});
+
+// 5. Create / Add New Custom Song Entry to Native Database
+app.post('/api/v1/native/songs', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { title, artist, album, duration, coverArt, streamUrl } = body;
+    if (!title || !artist || !streamUrl) {
+      return c.json({ error: 'Missing required fields: title, artist, or streamUrl' }, 400);
+    }
+
+    const newSong = await NativeDatabaseProvider.addSong(c.env.SEARCH_CACHE, {
+      title,
+      artist,
+      album: album || 'Single',
+      duration: parseInt(duration || '180', 10),
+      coverArt: coverArt || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500',
+      streamUrl,
+    });
+
+    return c.json({ success: true, song: newSong });
+  } catch (e: any) {
+    return c.json({ error: 'Failed to add song to native database', details: (e as Error).message }, 500);
+  }
+});
+
+// 6. Saavn-to-Native Importer (Clones Saavn data into native database schema)
+app.post('/api/v1/native/import/saavn', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { saavnId } = body;
+    if (!saavnId) return c.json({ error: 'saavnId parameter is required' }, 400);
+
+    const saavnTrack = await SaavnProvider.getDetails(saavnId);
+    if (!saavnTrack || !saavnTrack.streamUrl) {
+      return c.json({ error: 'Could not fetch or decrypt track from Saavn' }, 404);
+    }
+
+    const nativeSong = await NativeDatabaseProvider.addSong(c.env.SEARCH_CACHE, {
+      id: `native:${saavnTrack.id.replace('saavn:', '')}`,
+      title: saavnTrack.title,
+      artist: saavnTrack.artist,
+      album: saavnTrack.album,
+      duration: saavnTrack.duration,
+      coverArt: saavnTrack.coverArt,
+      streamUrl: saavnTrack.streamUrl,
+      hasLyrics: saavnTrack.hasLyrics,
+      language: saavnTrack.language,
+      year: saavnTrack.year,
+      explicit: saavnTrack.explicit,
+    });
+
+    return c.json({
+      success: true,
+      message: 'Successfully imported Saavn track into Native Database schema!',
+      song: nativeSong,
+    });
+  } catch (e: any) {
+    return c.json({ error: 'Saavn import failed', details: (e as Error).message }, 500);
   }
 });
 
