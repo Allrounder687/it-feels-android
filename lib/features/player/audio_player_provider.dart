@@ -31,6 +31,12 @@ enum AppThemeMode {
   light,
 }
 
+enum AudioVibe {
+  normal,
+  slowedReverb,
+  nightcore,
+}
+
 @immutable
 class AudioPlayerState {
   final Song? currentSong;
@@ -71,6 +77,7 @@ class AudioPlayerState {
   final double crossfadeDuration;
   final double playbackSpeed;
   final double playbackPitch;
+  final AudioVibe currentVibe;
 
   const AudioPlayerState({
     this.currentSong,
@@ -103,6 +110,7 @@ class AudioPlayerState {
     this.crossfadeDuration = 0.0,
     this.playbackSpeed = 1.0,
     this.playbackPitch = 1.0,
+    this.currentVibe = AudioVibe.normal,
   });
 
   bool get isInRoom => currentRoomId != null;
@@ -223,6 +231,7 @@ class AudioPlayerState {
     double? crossfadeDuration,
     double? playbackSpeed,
     double? playbackPitch,
+    AudioVibe? currentVibe,
   }) {
     return AudioPlayerState(
       currentSong: clearCurrentSong ? null : (currentSong ?? this.currentSong),
@@ -255,6 +264,7 @@ class AudioPlayerState {
       crossfadeDuration: crossfadeDuration ?? this.crossfadeDuration,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       playbackPitch: playbackPitch ?? this.playbackPitch,
+      currentVibe: currentVibe ?? this.currentVibe,
     );
   }
 }
@@ -583,6 +593,30 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     } catch (e) {
       debugPrint("Error saving Audio Settings: $e");
     }
+  }
+
+  Future<void> setAudioVibe(AudioVibe vibe) async {
+    state = state.copyWith(currentVibe: vibe);
+    
+    switch (vibe) {
+      case AudioVibe.normal:
+        await setPlaybackSpeed(1.0);
+        await setPlaybackPitch(1.0);
+        await setDspEngine(false);
+        break;
+      case AudioVibe.slowedReverb:
+        await setPlaybackSpeed(0.85);
+        await setPlaybackPitch(0.85);
+        await setDspEngine(true);
+        // Additional heavy bass EQ logic is handled inside setDspEngine
+        break;
+      case AudioVibe.nightcore:
+        await setPlaybackSpeed(1.25);
+        await setPlaybackPitch(1.3);
+        await setDspEngine(false);
+        break;
+    }
+    triggerHaptic(heavy: true);
   }
 
   void toggleFavorite(Song song) {

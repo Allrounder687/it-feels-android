@@ -26,6 +26,14 @@ class NotificationService {
       debugPrint('User granted permission for notifications');
       await _saveTokenToDatabase();
 
+      // Auto-subscribe to global announcements for zero-cognitive-load push marketing
+      try {
+        await _messaging.subscribeToTopic('global_announcements');
+        debugPrint('Subscribed to global_announcements topic');
+      } catch (e) {
+        debugPrint('Failed to subscribe to topic: $e');
+      }
+
       // Listen for token refreshes
       _messaging.onTokenRefresh.listen((token) async {
         await _updateToken(token);
