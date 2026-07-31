@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:it_feels_music/services/auth_service.dart';
 import 'package:it_feels_music/services/cloud_sync_service.dart';
@@ -6,133 +7,150 @@ import 'package:it_feels_music/services/backend_api_service.dart';
 
 enum AuthViewState { emailInput, loginPassword, signupPassword, loading, emailVerificationPending, authenticated }
 
-class AuthProvider extends ChangeNotifier {
-  final AuthService _authService;
-  final CloudSyncService _cloudSyncService;
-  
-  AuthViewState _viewState = AuthViewState.emailInput;
-  String _email = '';
-  String _errorMessage = '';
+@immutable
+class AuthState {
+  final AuthViewState viewState;
+  final String email;
+  final String errorMessage;
 
-  AuthViewState get viewState => _viewState;
-  String get email => _email;
-  String get errorMessage => _errorMessage;
+  const AuthState({
+    this.viewState = AuthViewState.emailInput,
+    this.email = '',
+    this.errorMessage = '',
+  });
+
+  AuthState copyWith({
+    AuthViewState? viewState,
+    String? email,
+    String? errorMessage,
+  }) {
+    return AuthState(
+      viewState: viewState ?? this.viewState,
+      email: email ?? this.email,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+}
+
+class AuthNotifier extends Notifier<AuthState> {
+  late final AuthService _authService;
+  late final CloudSyncService _cloudSyncService;
+
   User? get currentUser => _authService.currentUser;
   bool get isAuthenticated => currentUser != null;
 
-  AuthProvider({AuthService? authService, CloudSyncService? cloudSyncService}) 
-      : _authService = authService ?? AuthService(),
-        _cloudSyncService = cloudSyncService ?? CloudSyncService() {
+  @override
+  AuthState build() {
+    _authService = AuthService();
+    _cloudSyncService = CloudSyncService();
+
     _authService.userStream.listen((user) {
       if (user != null) {
-        // If it's a password provider and email is not verified, require verification.
         final isPasswordProvider = user.providerData.any((info) => info.providerId == 'password');
-        
         if (isPasswordProvider && !user.emailVerified) {
-          _viewState = AuthViewState.emailVerificationPending;
+          state = state.copyWith(viewState: AuthViewState.emailVerificationPending);
           _cloudSyncService.stopSync();
         } else {
-          _viewState = AuthViewState.authenticated;
+          state = state.copyWith(viewState: AuthViewState.authenticated);
           _cloudSyncService.initializeSync(user);
         }
       } else {
-        _viewState = AuthViewState.emailInput;
+        state = state.copyWith(viewState: AuthViewState.emailInput);
         _cloudSyncService.stopSync();
       }
-      notifyListeners();
     });
+
+    return const AuthState();
   }
 
   void resetFlow() {
     if (!isAuthenticated) {
-      _viewState = AuthViewState.emailInput;
-      _email = '';
-      _errorMessage = '';
-      notifyListeners();
+      state = state.copyWith(
+        viewState: AuthViewState.emailInput,
+        email: '',
+        errorMessage: '',
+      );
     }
   }
 
   Future<void> submitEmail(String email) async {
     if (email.isEmpty || !email.contains('@')) {
-      _errorMessage = 'Please enter a valid email';
-      notifyListeners();
+      state = state.copyWith(errorMessage: 'Please enter a valid email');
       return;
     }
     
-    _email = email;
-    _errorMessage = '';
-    _viewState = AuthViewState.loginPassword;
-    notifyListeners();
+    state = state.copyWith(
+      email: email,
+      errorMessage: '',
+      viewState: AuthViewState.loginPassword,
+    );
   }
 
   Future<bool> submitPassword(String password) async {
     if (password.length < 6) {
-      _errorMessage = 'Password must be at least 6 characters';
-      notifyListeners();
+      state = state.copyWith(errorMessage: 'Password must be at least 6 characters');
       return false;
     }
 
-    final previousState = _viewState;
-    _viewState = AuthViewState.loading;
-    _errorMessage = '';
-    notifyListeners();
+    final previousState = state.viewState;
+    state = state.copyWith(viewState: AuthViewState.loading, errorMessage: '');
 
     try {
       if (previousState == AuthViewState.signupPassword) {
-        // They explicitly clicked "Create Account"
-        await _authService.signUpWithEmail(_email, password);
+        await _authService.signUpWithEmail(state.email, password);
       } else {
-        // Try logging in first
-        await _authService.signInWithEmail(_email, password);
+        await _authService.signInWithEmail(state.email, password);
       }
       return true;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found' || e.code == 'invalid-credential') {
-        // User doesn't exist (or wrong password, but due to anti-enumeration, Firebase might return invalid-credential for both)
-        // We will offer them to sign up.
-        _errorMessage = 'Account not found. Click "Create Account" to register.';
-        _viewState = AuthViewState.signupPassword;
+        state = state.copyWith(
+          errorMessage: 'Account not found. Click "Create Account" to register.',
+          viewState: AuthViewState.signupPassword,
+        );
       } else if (e.code == 'wrong-password') {
-        _errorMessage = 'Incorrect password.';
-        _viewState = AuthViewState.loginPassword;
+        state = state.copyWith(
+          errorMessage: 'Incorrect password.',
+          viewState: AuthViewState.loginPassword,
+        );
       } else {
-        _errorMessage = e.message ?? 'Authentication failed';
-        _viewState = previousState;
+        state = state.copyWith(
+          errorMessage: e.message ?? 'Authentication failed',
+          viewState: previousState,
+        );
       }
-      notifyListeners();
       return false;
     } catch (e) {
-      _errorMessage = 'An unexpected error occurred';
-      _viewState = previousState;
-      notifyListeners();
+      state = state.copyWith(
+        errorMessage: 'An unexpected error occurred',
+        viewState: previousState,
+      );
       return false;
     }
   }
 
   Future<bool> signInWithGoogle() async {
-    final previousState = _viewState;
-    _viewState = AuthViewState.loading;
-    _errorMessage = '';
-    notifyListeners();
+    final previousState = state.viewState;
+    state = state.copyWith(viewState: AuthViewState.loading, errorMessage: '');
 
     try {
       final credential = await _authService.signInWithGoogle();
       if (credential == null) {
-        // User canceled the login
-        _viewState = previousState;
-        notifyListeners();
+        state = state.copyWith(viewState: previousState);
         return false;
       }
       return true;
     } on FirebaseAuthException catch (e) {
-      _errorMessage = e.message ?? 'Google Sign-In failed';
-      _viewState = previousState;
-      notifyListeners();
+      state = state.copyWith(
+        errorMessage: e.message ?? 'Google Sign-In failed',
+        viewState: previousState,
+      );
       return false;
     } catch (e) {
-      _errorMessage = 'An unexpected error occurred';
-      _viewState = previousState;
-      notifyListeners();
+      state = state.copyWith(
+        errorMessage: 'An unexpected error occurred',
+        viewState: previousState,
+      );
       return false;
     }
   }
@@ -142,30 +160,25 @@ class AuthProvider extends ChangeNotifier {
       await _authService.reloadUser();
       final user = _authService.currentUser;
       if (user != null && user.emailVerified) {
-        _viewState = AuthViewState.authenticated;
+        state = state.copyWith(viewState: AuthViewState.authenticated);
         _cloudSyncService.initializeSync(user);
         if (user.email != null) {
-          // Fire and forget welcome email
           BackendApiService.sendWelcomeEmail(user.email!);
         }
       } else {
-        _errorMessage = 'Email not verified yet. Please check your inbox.';
+        state = state.copyWith(errorMessage: 'Email not verified yet. Please check your inbox.');
       }
-      notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to check verification status.';
-      notifyListeners();
+      state = state.copyWith(errorMessage: 'Failed to check verification status.');
     }
   }
 
   Future<void> resendVerificationEmail() async {
     try {
       await _authService.resendVerificationEmail();
-      _errorMessage = 'Verification email resent successfully!';
-      notifyListeners();
+      state = state.copyWith(errorMessage: 'Verification email resent successfully!');
     } catch (e) {
-      _errorMessage = 'Failed to resend verification email. Please try again later.';
-      notifyListeners();
+      state = state.copyWith(errorMessage: 'Failed to resend verification email. Please try again later.');
     }
   }
 
@@ -173,3 +186,5 @@ class AuthProvider extends ChangeNotifier {
     await _authService.signOut();
   }
 }
+
+typedef AuthProvider = AuthNotifier;

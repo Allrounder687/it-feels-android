@@ -246,7 +246,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text("Downloading ${_songs.length} songs...")),
                                   );
-                                  await downloadProv.downloadBatch(_songs);
+                                  await ref.read(downloadProvider.notifier).downloadBatch(_songs);
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(content: Text("Batch download completed!")),

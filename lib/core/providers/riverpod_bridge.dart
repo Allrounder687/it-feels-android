@@ -26,7 +26,6 @@ final audioPlayerProvider = ChangeNotifierProvider<AudioPlayerProvider>((ref) {
   throw UnimplementedError('audioPlayerProvider must be overridden in ProviderScope');
 });
 
-final downloadProvider = ChangeNotifierProvider<DownloadProvider>((ref) => DownloadProvider(apiService: locator<MusicApiService>()));
 final homeProvider = ChangeNotifierProvider<HomeProvider>((ref) => HomeProvider(apiService: locator<MusicApiService>()));
 final searchProvider = ChangeNotifierProvider<SearchProvider>((ref) => SearchProvider(apiService: locator<MusicApiService>()));
 final lyricsProvider = ChangeNotifierProvider<LyricsProvider>((ref) => LyricsProvider(lyricsService: locator<LyricsService>()));
@@ -37,9 +36,12 @@ final hiddenSongsProvider = NotifierProvider<HiddenSongsNotifier, HiddenSongsSta
 final listeningHistoryProvider = NotifierProvider<ListeningHistoryNotifier, ListeningHistoryState>(ListeningHistoryNotifier.new);
 final profileProvider = NotifierProvider<ProfileNotifier, ProfileState>(ProfileNotifier.new);
 
+// Group 2: Immutable Notifiers
+final customPlaylistProvider = NotifierProvider<CustomPlaylistNotifier, CustomPlaylistState>(CustomPlaylistNotifier.new);
+final downloadProvider = NotifierProvider<DownloadNotifier, DownloadState>(DownloadNotifier.new);
+final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+final aiSettingsProvider = NotifierProvider<AISettingsNotifier, AISettingsState>(AISettingsNotifier.new);
+
 // Remaining Bridge Providers
-final customPlaylistProvider = ChangeNotifierProvider<CustomPlaylistProvider>((ref) => CustomPlaylistProvider());
-final aiSettingsProvider = ChangeNotifierProvider<AISettingsProvider>((ref) => AISettingsProvider());
-final authProvider = ChangeNotifierProvider<AuthProvider>((ref) => AuthProvider());
 final videoPlayerProvider = ChangeNotifierProvider<VideoPlayerProvider>((ref) => VideoPlayerProvider());
 final subscriptionProvider = ChangeNotifierProvider<SubscriptionProvider>((ref) => SubscriptionProvider());

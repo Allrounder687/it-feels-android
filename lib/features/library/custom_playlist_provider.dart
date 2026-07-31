@@ -1,35 +1,42 @@
 import 'dart:convert';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/models/custom_playlist.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 
-class CustomPlaylistProvider extends ChangeNotifier {
-  List<CustomPlaylist> _playlists = [];
+@immutable
+class CustomPlaylistState {
+  final List<CustomPlaylist> playlists;
 
-  CustomPlaylistProvider() {
-    _init();
+  const CustomPlaylistState({this.playlists = const []});
+
+  CustomPlaylistState copyWith({List<CustomPlaylist>? playlists}) {
+    return CustomPlaylistState(playlists: playlists ?? this.playlists);
   }
+}
 
-  List<CustomPlaylist> get playlists => _playlists;
+class CustomPlaylistNotifier extends Notifier<CustomPlaylistState> {
+  @override
+  CustomPlaylistState build() {
+    _init();
+    return const CustomPlaylistState();
+  }
 
   Future<void> _init() async {
     final jsonStr = await StorageService.loadCustomPlaylists();
     if (jsonStr != null && jsonStr.isNotEmpty) {
       try {
         final List<dynamic> decoded = json.decode(jsonStr);
-        _playlists = decoded.map((item) => CustomPlaylist.fromJson(item)).toList();
-        notifyListeners();
-      } catch (e) {
-        // Handle error
-      }
+        final loaded = decoded.map((item) => CustomPlaylist.fromJson(item)).toList();
+        state = state.copyWith(playlists: loaded);
+      } catch (_) {}
     }
   }
 
   Future<void> _save() async {
-    final jsonList = _playlists.map((p) => p.toJson()).toList();
+    final jsonList = state.playlists.map((p) => p.toJson()).toList();
     await StorageService.saveCustomPlaylists(json.encode(jsonList));
-    notifyListeners();
   }
 
   Future<void> createPlaylist(String title) async {
@@ -39,7 +46,8 @@ class CustomPlaylistProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
       songs: [],
     );
-    _playlists.add(newPlaylist);
+    final updated = List<CustomPlaylist>.from(state.playlists)..add(newPlaylist);
+    state = state.copyWith(playlists: updated);
     await _save();
   }
 
@@ -50,39 +58,48 @@ class CustomPlaylistProvider extends ChangeNotifier {
       createdAt: DateTime.now(),
       songs: List.from(songs),
     );
-    _playlists.add(newPlaylist);
+    final updated = List<CustomPlaylist>.from(state.playlists)..add(newPlaylist);
+    state = state.copyWith(playlists: updated);
     await _save();
   }
 
   Future<void> renamePlaylist(String id, String newTitle) async {
-    final idx = _playlists.indexWhere((p) => p.id == id);
+    final idx = state.playlists.indexWhere((p) => p.id == id);
     if (idx != -1) {
-      _playlists[idx].title = newTitle;
+      final updated = List<CustomPlaylist>.from(state.playlists);
+      updated[idx].title = newTitle;
+      state = state.copyWith(playlists: updated);
       await _save();
     }
   }
 
   Future<void> deletePlaylist(String id) async {
-    _playlists.removeWhere((p) => p.id == id);
+    final updated = List<CustomPlaylist>.from(state.playlists)..removeWhere((p) => p.id == id);
+    state = state.copyWith(playlists: updated);
     await _save();
   }
 
   Future<void> addSongToPlaylist(String playlistId, Song song) async {
-    final idx = _playlists.indexWhere((p) => p.id == playlistId);
+    final idx = state.playlists.indexWhere((p) => p.id == playlistId);
     if (idx != -1) {
-      // Prevent exact duplicates
-      if (!_playlists[idx].songs.any((s) => s.id == song.id)) {
-        _playlists[idx].songs.add(song);
+      if (!state.playlists[idx].songs.any((s) => s.id == song.id)) {
+        final updated = List<CustomPlaylist>.from(state.playlists);
+        updated[idx].songs.add(song);
+        state = state.copyWith(playlists: updated);
         await _save();
       }
     }
   }
 
   Future<void> removeSongFromPlaylist(String playlistId, String songId) async {
-    final idx = _playlists.indexWhere((p) => p.id == playlistId);
+    final idx = state.playlists.indexWhere((p) => p.id == playlistId);
     if (idx != -1) {
-      _playlists[idx].songs.removeWhere((s) => s.id == songId);
+      final updated = List<CustomPlaylist>.from(state.playlists);
+      updated[idx].songs.removeWhere((s) => s.id == songId);
+      state = state.copyWith(playlists: updated);
       await _save();
     }
   }
 }
+
+typedef CustomPlaylistProvider = CustomPlaylistNotifier;

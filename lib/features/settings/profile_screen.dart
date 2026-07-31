@@ -260,7 +260,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                               TextButton(
                                 onPressed: () {
-                                  auth.signOut();
+                                  ref.read(authProvider.notifier).signOut();
                                   Navigator.pop(context);
                                 },
                                 child: const Text('Sign Out', style: TextStyle(color: Colors.red)),

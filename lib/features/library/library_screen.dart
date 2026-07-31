@@ -421,7 +421,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             child: const Text("Create", style: TextStyle(color: AppColors.midnightAccent)),
             onPressed: () {
               if (controller.text.trim().isNotEmpty) {
-                provider.createPlaylist(controller.text.trim());
+                ref.read(customPlaylistProvider.notifier).createPlaylist(controller.text.trim());
               }
               Navigator.pop(ctx);
             },

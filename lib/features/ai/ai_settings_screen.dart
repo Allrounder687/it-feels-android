@@ -40,7 +40,7 @@ class AISettingsScreen extends ConsumerWidget {
                 title: "Enable Ask Feels AI",
                 subtitle: "Use AI to generate playlists, rename and describe them.",
                 value: aiSettings.aiEnabled,
-                onChanged: (v) => aiSettings.setAIEnabled(v),
+                onChanged: (v) => ref.read(aiSettingsProvider.notifier).setAIEnabled(v),
               ),
 
               if (aiSettings.aiEnabled) ...[
@@ -53,7 +53,7 @@ class AISettingsScreen extends ConsumerWidget {
                     title: opt['name']!,
                     value: opt['id']!,
                     groupValue: aiSettings.selectedProviderId,
-                    onChanged: (v) => aiSettings.setSelectedProvider(v),
+                    onChanged: (v) => ref.read(aiSettingsProvider.notifier).setSelectedProvider(v),
                   );
                 }),
                 const SizedBox(height: 16),
@@ -62,7 +62,7 @@ class AISettingsScreen extends ConsumerWidget {
                   title: "Reset Provider",
                   subtitle: "Go back to Auto selection.",
                   icon: Icons.refresh_rounded,
-                  onTap: () => aiSettings.resetProvider(),
+                  onTap: () => ref.read(aiSettingsProvider.notifier).resetProvider(),
                 ),
 
                 const SizedBox(height: 24),
@@ -75,7 +75,7 @@ class AISettingsScreen extends ConsumerWidget {
                   label: "Gemini API Key",
                   hint: "AIzaSy...",
                   value: aiSettings.geminiKey,
-                  onChanged: (v) => aiSettings.setGeminiKey(v),
+                  onChanged: (v) => ref.read(aiSettingsProvider.notifier).setGeminiKey(v),
                 ),
                 const SizedBox(height: 12),
                 _buildApiKeyField(
@@ -83,7 +83,7 @@ class AISettingsScreen extends ConsumerWidget {
                   label: "OpenAI API Key",
                   hint: "sk-...",
                   value: aiSettings.openaiKey,
-                  onChanged: (v) => aiSettings.setOpenaiKey(v),
+                  onChanged: (v) => ref.read(aiSettingsProvider.notifier).setOpenaiKey(v),
                 ),
                 const SizedBox(height: 12),
                 _buildApiKeyField(
@@ -91,7 +91,7 @@ class AISettingsScreen extends ConsumerWidget {
                   label: "Anthropic API Key",
                   hint: "sk-ant-...",
                   value: aiSettings.anthropicKey,
-                  onChanged: (v) => aiSettings.setAnthropicKey(v),
+                  onChanged: (v) => ref.read(aiSettingsProvider.notifier).setAnthropicKey(v),
                 ),
               ],
             ],

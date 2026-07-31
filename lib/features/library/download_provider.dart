@@ -1,69 +1,104 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/download_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 
-class DownloadProvider extends ChangeNotifier {
-  final DownloadService downloadService;
-  List<Song> _downloadedSongs = [];
-  final Map<String, double> _downloadProgressMap = {};
-  final Set<String> _downloadingIds = {};
+@immutable
+class DownloadState {
+  final List<Song> downloadedSongs;
+  final Map<String, double> downloadProgressMap;
+  final Set<String> downloadingIds;
 
-  DownloadProvider({required MusicApiService apiService})
-      : downloadService = DownloadService(apiService: apiService) {
-    _init();
-  }
-
-  List<Song> get downloadedSongs => _downloadedSongs;
+  const DownloadState({
+    this.downloadedSongs = const [],
+    this.downloadProgressMap = const {},
+    this.downloadingIds = const {},
+  });
 
   bool isDownloaded(String songId) {
-    return _downloadedSongs.any((s) => s.id == songId);
+    return downloadedSongs.any((s) => s.id == songId);
   }
 
   bool isDownloading(String songId) {
-    return _downloadingIds.contains(songId);
+    return downloadingIds.contains(songId);
   }
 
   double getProgress(String songId) {
-    return _downloadProgressMap[songId] ?? 0.0;
+    return downloadProgressMap[songId] ?? 0.0;
+  }
+
+  DownloadState copyWith({
+    List<Song>? downloadedSongs,
+    Map<String, double>? downloadProgressMap,
+    Set<String>? downloadingIds,
+  }) {
+    return DownloadState(
+      downloadedSongs: downloadedSongs ?? this.downloadedSongs,
+      downloadProgressMap: downloadProgressMap ?? this.downloadProgressMap,
+      downloadingIds: downloadingIds ?? this.downloadingIds,
+    );
+  }
+}
+
+class DownloadNotifier extends Notifier<DownloadState> {
+  late final DownloadService downloadService;
+
+  @override
+  DownloadState build() {
+    downloadService = DownloadService(apiService: locator<MusicApiService>());
+    _init();
+    return const DownloadState();
   }
 
   Future<void> _init() async {
-    _downloadedSongs = await StorageService.loadDownloads();
-    notifyListeners();
+    final songs = await StorageService.loadDownloads();
+    state = state.copyWith(downloadedSongs: songs);
   }
 
   Future<bool> downloadSong(Song song) async {
-    if (isDownloaded(song.id)) return true;
-    if (isDownloading(song.id)) return false;
+    if (state.isDownloaded(song.id)) return true;
+    if (state.isDownloading(song.id)) return false;
 
-    _downloadingIds.add(song.id);
-    _downloadProgressMap[song.id] = 0.0;
-    notifyListeners();
+    final updatedIds = Set<String>.from(state.downloadingIds)..add(song.id);
+    final updatedProgress = Map<String, double>.from(state.downloadProgressMap)..[song.id] = 0.0;
+
+    state = state.copyWith(
+      downloadingIds: updatedIds,
+      downloadProgressMap: updatedProgress,
+    );
 
     final success = await downloadService.downloadSong(
       song,
       onProgress: (progress) {
-        _downloadProgressMap[song.id] = progress;
-        notifyListeners();
+        final currentMap = Map<String, double>.from(state.downloadProgressMap)..[song.id] = progress;
+        state = state.copyWith(downloadProgressMap: currentMap);
       },
     );
 
-    _downloadingIds.remove(song.id);
-    _downloadProgressMap.remove(song.id);
+    final finalIds = Set<String>.from(state.downloadingIds)..remove(song.id);
+    final finalProgress = Map<String, double>.from(state.downloadProgressMap)..remove(song.id);
 
+    List<Song> finalDownloads = state.downloadedSongs;
     if (success) {
-      _downloadedSongs = await StorageService.loadDownloads();
+      finalDownloads = await StorageService.loadDownloads();
     }
-    notifyListeners();
+
+    state = state.copyWith(
+      downloadingIds: finalIds,
+      downloadProgressMap: finalProgress,
+      downloadedSongs: finalDownloads,
+    );
+
     return success;
   }
 
   Future<void> downloadBatch(List<Song> songs) async {
     for (final song in songs) {
-      if (!isDownloaded(song.id)) {
+      if (!state.isDownloaded(song.id)) {
         await downloadSong(song);
       }
     }
@@ -79,13 +114,13 @@ class DownloadProvider extends ChangeNotifier {
       }
     } catch (_) {}
 
-    _downloadedSongs.removeWhere((s) => s.id == song.id);
-    await StorageService.saveDownloads(_downloadedSongs);
-    notifyListeners();
+    final updated = List<Song>.from(state.downloadedSongs)..removeWhere((s) => s.id == song.id);
+    state = state.copyWith(downloadedSongs: updated);
+    await StorageService.saveDownloads(updated);
   }
 
   Future<void> clearAllDownloads() async {
-    for (final song in _downloadedSongs) {
+    for (final song in state.downloadedSongs) {
       try {
         if (song.encryptedMediaUrl != null && song.encryptedMediaUrl!.isNotEmpty) {
           final file = File(song.encryptedMediaUrl!);
@@ -95,8 +130,9 @@ class DownloadProvider extends ChangeNotifier {
         }
       } catch (_) {}
     }
-    _downloadedSongs.clear();
-    await StorageService.saveDownloads(_downloadedSongs);
-    notifyListeners();
+    state = state.copyWith(downloadedSongs: const []);
+    await StorageService.saveDownloads(const []);
   }
 }
+
+typedef DownloadProvider = DownloadNotifier;

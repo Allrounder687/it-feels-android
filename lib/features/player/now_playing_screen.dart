@@ -578,7 +578,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                           GestureDetector(
                             onTap: () async {
                               if (isDown) {
-                                await downloadProviderLocal.removeDownload(currentSong);
+                                await ref.read(downloadProvider.notifier).removeDownload(currentSong);
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text("Removed ${currentSong.title} from downloads")),
@@ -588,7 +588,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text("Downloading ${currentSong.title}...")),
                                 );
-                                final ok = await downloadProviderLocal.downloadSong(currentSong);
+                                final ok = await ref.read(downloadProvider.notifier).downloadSong(currentSong);
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(content: Text(ok ? "Downloaded ${currentSong.title}" : "Download failed")),

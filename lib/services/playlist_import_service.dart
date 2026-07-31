@@ -1,3 +1,4 @@
+import 'package:it_feels_music/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
@@ -46,7 +47,7 @@ class PlaylistImportService {
     final playlistName = 'Imported Playlist (${DateTime.now().month}/${DateTime.now().day})';
     
     // 3. Create playlist
-    await playlistProvider.createPlaylist(playlistName);
+    await appProviderContainer.read(customPlaylistProvider.notifier).createPlaylist(playlistName);
     // Grab the newly created playlist ID (it should be the last one)
     final newPlaylistId = playlistProvider.playlists.last.id;
 
@@ -66,7 +67,7 @@ class PlaylistImportService {
         if (results.isNotEmpty) {
           // Zero cognitive load: Pick the top result automatically
           final bestMatch = results.first;
-          await playlistProvider.addSongToPlaylist(newPlaylistId, bestMatch);
+          await appProviderContainer.read(customPlaylistProvider.notifier).addSongToPlaylist(newPlaylistId, bestMatch);
           matchedCount++;
         }
       } catch (e) {

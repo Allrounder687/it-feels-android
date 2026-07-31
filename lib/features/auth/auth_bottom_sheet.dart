@@ -16,7 +16,7 @@ class AuthBottomSheet extends ConsumerStatefulWidget {
     ).whenComplete(() {
       // Reset the flow when the bottom sheet is closed
       if (context.mounted) {
-        ProviderScope.containerOf(context).read(authProvider).resetFlow();
+        ref.read(authProvider.notifier).resetFlow();
       }
     });
   }
@@ -117,7 +117,7 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
                     filled: true,
                     fillColor: Colors.black12,
                   ),
-                  onSubmitted: (val) => authState.submitEmail(val),
+                  onSubmitted: (val) => ref.read(authProvider.notifier).submitEmail(val),
                 ),
               ),
             ),
@@ -141,7 +141,7 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
                     filled: true,
                     fillColor: Colors.black12,
                   ),
-                  onSubmitted: (val) => authState.submitPassword(val),
+                  onSubmitted: (val) => ref.read(authProvider.notifier).submitPassword(val),
                 ),
               ),
             ),
@@ -164,11 +164,11 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
                   ? null
                   : () {
                       if (authState.viewState == AuthViewState.emailInput) {
-                        authState.submitEmail(_emailController.text);
+                        ref.read(authProvider.notifier).submitEmail(_emailController.text);
                       } else if (authState.viewState == AuthViewState.emailVerificationPending) {
-                        authState.checkVerificationStatus();
+                        ref.read(authProvider.notifier).checkVerificationStatus();
                       } else {
-                        authState.submitPassword(_passwordController.text);
+                        ref.read(authProvider.notifier).submitPassword(_passwordController.text);
                       }
                     },
               style: ElevatedButton.styleFrom(
@@ -197,7 +197,7 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
             
             if (authState.viewState == AuthViewState.emailVerificationPending)
               TextButton(
-                onPressed: () => authState.resendVerificationEmail(),
+                onPressed: () => ref.read(authProvider.notifier).resendVerificationEmail(),
                 child: const Text('Resend Verification Link'),
               ),
             
@@ -217,7 +217,7 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
               OutlinedButton.icon(
                 onPressed: authState.viewState == AuthViewState.loading
                     ? null
-                    : () => authState.signInWithGoogle(),
+                    : () => ref.read(authProvider.notifier).signInWithGoogle(),
                 icon: Image.network(
                   'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg',
                   height: 24,

@@ -260,7 +260,7 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   );
                   if (confirm == true) {
-                    await downloader.clearAllDownloads();
+                    await ref.read(downloadProvider.notifier).clearAllDownloads();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("All downloads cleared")),

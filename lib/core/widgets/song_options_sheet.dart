@@ -191,7 +191,7 @@ class SongOptionsSheet extends ConsumerWidget {
             onTap: () async {
               Navigator.pop(context);
               if (isDown) {
-                await downloadProv.removeDownload(song);
+                await ref.read(downloadProvider.notifier).removeDownload(song);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("Removed ${song.title} from downloads")),
@@ -201,7 +201,7 @@ class SongOptionsSheet extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text("Downloading ${song.title}...")),
                 );
-                final ok = await downloadProv.downloadSong(song);
+                final ok = await ref.read(downloadProvider.notifier).downloadSong(song);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -321,7 +321,7 @@ class SongOptionsSheet extends ConsumerWidget {
                       title: Text(pl.title, style: GoogleFonts.inter(color: context.themeTextColor)),
                       subtitle: Text("${pl.songs.length} tracks", style: GoogleFonts.inter(color: context.themeMutedTextColor)),
                       onTap: () {
-                        provider.addSongToPlaylist(pl.id, song);
+                        ref.read(customPlaylistProvider.notifier).addSongToPlaylist(pl.id, song);
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text("Added to ${pl.title}")),

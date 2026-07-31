@@ -39,7 +39,7 @@ class _AskAIScreenState extends ConsumerState<AskAIScreen> {
       ...audioProvider.queue,
     ];
 
-    final response = await aiSettings.askAI(query, allSongs);
+    final response = await ref.read(aiSettingsProvider.notifier).askAI(query, allSongs);
     if (!mounted) return;
 
     if (response.success && response.resultSongs != null && response.resultSongs!.isNotEmpty) {
@@ -137,7 +137,7 @@ class _AskAIScreenState extends ConsumerState<AskAIScreen> {
                               onPressed: () {
                                 final customPlaylistProv = ref.read(customPlaylistProvider);
                                 final playlistName = "AI: $query";
-                                customPlaylistProv.createPlaylistWithSongs(playlistName, response.resultSongs!);
+                                ref.read(customPlaylistProvider.notifier).createPlaylistWithSongs(playlistName, response.resultSongs!);
                                 Navigator.pop(bottomSheetContext);
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(

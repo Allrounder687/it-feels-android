@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/ai/ai_provider.dart';
 import 'package:it_feels_music/core/ai/mock_ai_provider.dart';
 import 'package:it_feels_music/core/ai/providers/gemini_provider.dart';
@@ -9,33 +10,28 @@ import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 
-/// Manages AI feature state for the app.
-/// Wires AIService into the Flutter provider tree.
-class AISettingsProvider extends ChangeNotifier {
-  bool _aiEnabled = true;
-  String _selectedProviderId = 'auto';
-  bool _isLoading = false;
-  String? _lastError;
+@immutable
+class AISettingsState {
+  final bool aiEnabled;
+  final String selectedProviderId;
+  final bool isLoading;
+  final String? lastError;
+  final String geminiKey;
+  final String openaiKey;
+  final String anthropicKey;
 
-  String _geminiKey = '';
-  String _openaiKey = '';
-  String _anthropicKey = '';
+  const AISettingsState({
+    this.aiEnabled = true,
+    this.selectedProviderId = 'auto',
+    this.isLoading = false,
+    this.lastError,
+    this.geminiKey = '',
+    this.openaiKey = '',
+    this.anthropicKey = '',
+  });
 
-  AISettingsProvider() {
-    _loadSettings();
-  }
-
-  bool get aiEnabled => _aiEnabled;
-  String get selectedProviderId => _selectedProviderId;
-  bool get isLoading => _isLoading;
-  String? get lastError => _lastError;
   bool get isInitialized => AIService.instance.isInitialized;
-
-  String get geminiKey => _geminiKey;
-  String get openaiKey => _openaiKey;
-  String get anthropicKey => _anthropicKey;
-
-  bool get isConfigured => _geminiKey.isNotEmpty || _openaiKey.isNotEmpty || _anthropicKey.isNotEmpty;
+  bool get isConfigured => geminiKey.isNotEmpty || openaiKey.isNotEmpty || anthropicKey.isNotEmpty;
 
   List<Map<String, String>> get providerOptions => [
         {'id': 'auto', 'name': 'Auto'},
@@ -44,68 +40,103 @@ class AISettingsProvider extends ChangeNotifier {
         {'id': 'claude', 'name': 'Claude'},
       ];
 
-  Future<void> _loadSettings() async {
-    final settings = await StorageService.loadAISettings();
-    _aiEnabled = settings['aiEnabled'] as bool;
-    _selectedProviderId = settings['selectedProvider'] as String;
-    _geminiKey = settings['geminiKey'] as String;
-    _openaiKey = settings['openaiKey'] as String;
-    _anthropicKey = settings['anthropicKey'] as String;
+  AISettingsState copyWith({
+    bool? aiEnabled,
+    String? selectedProviderId,
+    bool? isLoading,
+    String? lastError,
+    String? geminiKey,
+    String? openaiKey,
+    String? anthropicKey,
+  }) {
+    return AISettingsState(
+      aiEnabled: aiEnabled ?? this.aiEnabled,
+      selectedProviderId: selectedProviderId ?? this.selectedProviderId,
+      isLoading: isLoading ?? this.isLoading,
+      lastError: lastError,
+      geminiKey: geminiKey ?? this.geminiKey,
+      openaiKey: openaiKey ?? this.openaiKey,
+      anthropicKey: anthropicKey ?? this.anthropicKey,
+    );
+  }
+}
 
-    _reinitializeProviders();
+class AISettingsNotifier extends Notifier<AISettingsState> {
+  @override
+  AISettingsState build() {
+    _loadSettings();
+    return const AISettingsState();
   }
 
-  void _reinitializeProviders() {
+  Future<void> _loadSettings() async {
+    final settings = await StorageService.loadAISettings();
+    final gemini = settings['geminiKey'] as String;
+    final openai = settings['openaiKey'] as String;
+    final anthropic = settings['anthropicKey'] as String;
+
+    state = state.copyWith(
+      aiEnabled: settings['aiEnabled'] as bool,
+      selectedProviderId: settings['selectedProvider'] as String,
+      geminiKey: gemini,
+      openaiKey: openai,
+      anthropicKey: anthropic,
+    );
+
+    _reinitializeProviders(gemini: gemini, openai: openai, anthropic: anthropic);
+  }
+
+  void _reinitializeProviders({String? gemini, String? openai, String? anthropic}) {
+    final g = gemini ?? state.geminiKey;
+    final o = openai ?? state.openaiKey;
+    final a = anthropic ?? state.anthropicKey;
+
     final providers = <AIProvider>[MockAIProvider()];
-    if (_geminiKey.isNotEmpty) providers.add(GeminiProvider(_geminiKey));
-    if (_openaiKey.isNotEmpty) providers.add(ChatGPTProvider(_openaiKey));
-    if (_anthropicKey.isNotEmpty) providers.add(ClaudeProvider(_anthropicKey));
+    if (g.isNotEmpty) providers.add(GeminiProvider(g));
+    if (o.isNotEmpty) providers.add(ChatGPTProvider(o));
+    if (a.isNotEmpty) providers.add(ClaudeProvider(a));
 
     AIService.instance.initialize(providers);
-    notifyListeners();
   }
 
   void setAIEnabled(bool enabled) {
-    _aiEnabled = enabled;
+    state = state.copyWith(aiEnabled: enabled);
     _save();
   }
 
   void setSelectedProvider(String providerId) {
-    _selectedProviderId = providerId;
+    state = state.copyWith(selectedProviderId: providerId);
     AIService.instance.switchProvider(providerId);
     _save();
   }
 
   void resetProvider() {
-    _selectedProviderId = 'auto';
+    state = state.copyWith(selectedProviderId: 'auto');
     _save();
   }
 
   void setGeminiKey(String key) {
-    _geminiKey = key;
+    state = state.copyWith(geminiKey: key);
     _save();
-    _reinitializeProviders();
+    _reinitializeProviders(gemini: key);
   }
 
   void setOpenaiKey(String key) {
-    _openaiKey = key;
+    state = state.copyWith(openaiKey: key);
     _save();
-    _reinitializeProviders();
+    _reinitializeProviders(openai: key);
   }
 
   void setAnthropicKey(String key) {
-    _anthropicKey = key;
+    state = state.copyWith(anthropicKey: key);
     _save();
-    _reinitializeProviders();
+    _reinitializeProviders(anthropic: key);
   }
 
   Future<AIResponse> askAI(String request, List<dynamic> library) async {
-    if (!_aiEnabled) {
+    if (!state.aiEnabled) {
       return AIResponse.failure(providerId: 'none', error: 'AI is disabled');
     }
-    _isLoading = true;
-    _lastError = null;
-    notifyListeners();
+    state = state.copyWith(isLoading: true, lastError: null);
 
     try {
       AIResponse result = await AIService.instance.generatePlaylistFromRequest(
@@ -113,11 +144,8 @@ class AISettingsProvider extends ChangeNotifier {
         localLibrary: library.cast<Song>(),
       );
 
-      // If library is empty or less than 10 songs were found, fall back to global search to fill the gap
       if (!result.success || result.resultSongs == null || result.resultSongs!.length < 10) {
         final existingSongs = result.success && result.resultSongs != null ? List<Song>.from(result.resultSongs!) : <Song>[];
-        
-        // Add a delay to prevent Gemini 429 Rate Limit error for back-to-back requests
         await Future.delayed(const Duration(milliseconds: 2000));
         
         final globalResult = await AIService.instance.generateGlobalPlaylistNames(
@@ -128,8 +156,6 @@ class AISettingsProvider extends ChangeNotifier {
           final musicService = MusicApiService();
           final resolvedSongs = <Song>[];
           
-          // Run sequentially instead of concurrently to prevent JioSaavn rate limits
-          // and SocketException host lookup failures on Android devices.
           for (final name in globalResult.resultNames!) {
             try {
               final searchRes = await musicService.searchSongs(name, count: 1);
@@ -141,7 +167,6 @@ class AISettingsProvider extends ChangeNotifier {
                   resolvedSongs.add(s);
                 }
               }
-              // Prevent JioSaavn rate limit 429s
               await Future.delayed(const Duration(milliseconds: 400));
             } catch (_) {}
           }
@@ -151,40 +176,40 @@ class AISettingsProvider extends ChangeNotifier {
           if (existingSongs.isNotEmpty) {
             result = AIResponse.songs(providerId: globalResult.providerId, songs: existingSongs);
           } else {
-             _lastError = 'Failed to find matching global songs on JioSaavn.';
+            state = state.copyWith(lastError: 'Failed to find matching global songs on JioSaavn.');
           }
         } else if (!globalResult.success && existingSongs.isEmpty) {
-           _lastError = globalResult.error;
+          state = state.copyWith(lastError: globalResult.error);
         } else if (existingSongs.isNotEmpty) {
-           // We have some local songs, but global failed. Just use local.
-           result = AIResponse.songs(providerId: result.providerId, songs: existingSongs);
+          result = AIResponse.songs(providerId: result.providerId, songs: existingSongs);
         }
       }
 
-      if (!result.success && _lastError == null) {
-        _lastError = result.error;
+      if (!result.success && state.lastError == null) {
+        state = state.copyWith(lastError: result.error);
       }
       return result;
     } catch (e) {
-      _lastError = e.toString();
+      final err = e.toString();
+      state = state.copyWith(lastError: err);
       return AIResponse.failure(
         providerId: AIService.instance.currentProviderId ?? 'unknown',
-        error: _lastError!,
+        error: err,
       );
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      state = state.copyWith(isLoading: false);
     }
   }
 
   void _save() {
     StorageService.saveAISettings(
-      aiEnabled: _aiEnabled,
-      selectedProvider: _selectedProviderId,
-      geminiKey: _geminiKey,
-      openaiKey: _openaiKey,
-      anthropicKey: _anthropicKey,
+      aiEnabled: state.aiEnabled,
+      selectedProvider: state.selectedProviderId,
+      geminiKey: state.geminiKey,
+      openaiKey: state.openaiKey,
+      anthropicKey: state.anthropicKey,
     );
-    notifyListeners();
   }
 }
+
+typedef AISettingsProvider = AISettingsNotifier;

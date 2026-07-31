@@ -93,7 +93,7 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                     ),
                   );
                   if (newName != null && newName != currentPlaylist.title) {
-                    playlistProvider.renamePlaylist(currentPlaylist.id, newName);
+                    ref.read(customPlaylistProvider.notifier).renamePlaylist(currentPlaylist.id, newName);
                   }
                 },
               ),
@@ -113,7 +113,7 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                     ),
                   );
                   if (confirm == true) {
-                    playlistProvider.deletePlaylist(currentPlaylist.id);
+                    ref.read(customPlaylistProvider.notifier).deletePlaylist(currentPlaylist.id);
                     if (context.mounted) Navigator.pop(context);
                   }
                 },
@@ -212,7 +212,7 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                                     IconButton(
                                       icon: Icon(Icons.remove_circle_outline, color: context.themeMutedTextColor),
                                       onPressed: () {
-                                        playlistProvider.removeSongFromPlaylist(currentPlaylist.id, song.id);
+                                        ref.read(customPlaylistProvider.notifier).removeSongFromPlaylist(currentPlaylist.id, song.id);
                                       },
                                     ),
                                     IconButton(
