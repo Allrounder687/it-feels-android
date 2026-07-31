@@ -4,6 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 class AppConfig {
   final int minVersion;
+  final int latestVersionCode;
   final String latestVersion;
   final String updateUrl;
   final String? releaseNotes;
@@ -11,6 +12,7 @@ class AppConfig {
 
   AppConfig({
     required this.minVersion,
+    required this.latestVersionCode,
     required this.latestVersion,
     required this.updateUrl,
     this.releaseNotes,
@@ -20,6 +22,7 @@ class AppConfig {
   factory AppConfig.fromMap(Map<String, dynamic> data) {
     return AppConfig(
       minVersion: data['min_version_code'] ?? 1,
+      latestVersionCode: data['latest_version_code'] ?? data['min_version_code'] ?? 1,
       latestVersion: data['latest_version'] ?? '1.0.0',
       updateUrl: data['update_url'] ?? '',
       releaseNotes: data['release_notes'],
@@ -49,6 +52,21 @@ class ConfigService {
       return currentBuildNumber < config.minVersion;
     } catch (e) {
       debugPrint('[ConfigService] Error checking version: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> hasSoftUpdate(AppConfig config) async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentBuildNumber = int.tryParse(packageInfo.buildNumber) ?? 1;
+      
+      // If we need a force update, this shouldn't trigger (handled separately)
+      if (currentBuildNumber < config.minVersion) return false;
+      
+      return currentBuildNumber < config.latestVersionCode;
+    } catch (e) {
+      debugPrint('[ConfigService] Error checking soft update version: $e');
       return false;
     }
   }

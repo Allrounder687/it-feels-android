@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import 'package:it_feels_music/features/subscription/premium_celebration_dialog.dart';
+import 'package:it_feels_music/services/config_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class InAppBroadcastListener extends StatefulWidget {
   final Widget child;
@@ -26,6 +28,63 @@ class _InAppBroadcastListenerState extends State<InAppBroadcastListener> {
     super.initState();
     _listenForBroadcasts();
     _listenForPremiumUpgrades();
+    _checkForSoftUpdates();
+  }
+
+  void _checkForSoftUpdates() async {
+    final config = await ConfigService.fetchRemoteConfig();
+    if (config == null) return;
+    
+    final hasUpdate = await ConfigService.hasSoftUpdate(config);
+    if (hasUpdate && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.system_update, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Update Available (v${config.latestVersion})",
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              if (config.releaseNotes != null && config.releaseNotes!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  config.releaseNotes!,
+                  style: GoogleFonts.inter(fontSize: 14, color: Colors.white70),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ],
+          ),
+          backgroundColor: Colors.blueAccent,
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 15),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          elevation: 10,
+          action: SnackBarAction(
+            label: 'UPDATE',
+            textColor: Colors.white,
+            onPressed: () async {
+              final url = Uri.parse(config.updateUrl);
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            },
+          ),
+        ),
+      );
+    }
   }
 
   void _listenForPremiumUpgrades() async {
