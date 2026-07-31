@@ -105,7 +105,7 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
               final colorScheme = darkDynamic ?? ColorScheme.fromSeed(seedColor: context.themeAccentColor, brightness: Brightness.dark);
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 final provider = ref.read(audioPlayerProvider);
-                provider.setMaterialYouColors(colorScheme.surface, colorScheme.surfaceContainer, colorScheme.primary);
+                ref.read(audioPlayerProvider.notifier).setMaterialYouColors(colorScheme.surface, colorScheme.surfaceContainer, colorScheme.primary);
               });
               return MaterialApp.router(
                 title: 'It Feels',

@@ -51,7 +51,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
       final useVideoAudio = settingsProv.useVideoAudioSource;
       
       if (useVideoAudio) {
-        audioProvider.pause();
+        ref.read(audioPlayerProvider.notifier).pause();
         ref.read(videoPlayerProvider.notifier).setMuted(false);
       } else {
         // Keep high quality audio playing from music player!

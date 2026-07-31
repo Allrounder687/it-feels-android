@@ -110,7 +110,7 @@ class AudioPlayerState {
     return favoriteSongs.any((s) => s.id == songId);
   }
 
-  Color get activeBackgroundColor {
+  Color get themeBackgroundColor {
     switch (appThemeMode) {
       case AppThemeMode.dynamic:
         return themeBackgroundColor;
@@ -127,7 +127,7 @@ class AudioPlayerState {
     }
   }
 
-  Color get activeSurfaceColor {
+  Color get themeSurfaceColor {
     switch (appThemeMode) {
       case AppThemeMode.dynamic:
         return themeSurfaceColor;
@@ -144,7 +144,7 @@ class AudioPlayerState {
     }
   }
 
-  Color get activeAccentColor {
+  Color get themeAccentColor {
     switch (appThemeMode) {
       case AppThemeMode.dynamic:
         return themeAccentColor;
@@ -161,9 +161,6 @@ class AudioPlayerState {
     }
   }
 
-  Color get themeBackgroundColor => activeBackgroundColor;
-  Color get themeSurfaceColor => activeSurfaceColor;
-  Color get themeAccentColor => activeAccentColor;
 
   Color get themeTextColor {
     return appThemeMode == AppThemeMode.light ? Colors.black87 : Colors.white;
