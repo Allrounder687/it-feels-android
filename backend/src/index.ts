@@ -948,51 +948,41 @@ app.post('/api/v1/native/import/saavn', async (c) => {
 });
 
 
-// Background Data Seeding Engine logic
-async function runBackgroundSeeding(env: Bindings, queries: string[] = ['Trending Hits', 'Top Hindi Hits', 'Global Pop', 'Arijit Singh', 'Taylor Swift'], limitPerQuery: number = 20) {
-  const allTracksToInsert: any[] = [];
-
-  for (const query of queries) {
-    try {
-      const saavnResults = await SaavnProvider.search(query, 1, limitPerQuery);
-      for (const track of saavnResults) {
-        if (track.streamUrl && track.streamUrl.trim() !== '') {
-          allTracksToInsert.push({
-            id: `native:${track.id.replace('saavn:', '')}`,
-            title: track.title,
-            artist: track.artist,
-            album: track.album,
-            duration: track.duration,
-            coverArt: track.coverArt,
-            streamUrl: track.streamUrl,
-            hasLyrics: track.hasLyrics,
-            language: track.language,
-            year: track.year,
-            explicit: track.explicit,
-          });
-        }
-      }
-    } catch (e) {
-      console.error(`[CRON Seeder] Failed to fetch query "${query}":`, e);
-    }
-  }
-
-  if (allTracksToInsert.length > 0) {
-    const result = await NativeDatabaseProvider.addSongsBatch(env.SEARCH_CACHE, allTracksToInsert);
-    console.log(`[CRON Seeder] Successfully seeded ${result.addedCount} tracks. Total DB Size: ${result.totalCount}`);
-    return result;
-  }
-  return { addedCount: 0, totalCount: 0 };
-}
-
-// 7. Saavn Batch Seeder (HTTP Manual Trigger)
+// 7. Saavn Batch Seeder (HTTP Manual Trigger from GitHub Harvester Bot)
 app.post('/api/v1/native/seed/saavn', async (c) => {
   try {
     const body = await c.req.json().catch(() => ({}));
     const queries: string[] = body.queries || ['Trending Hits', 'Top Hindi Hits', 'Global Pop', 'Arijit Singh', 'Taylor Swift'];
     const limitPerQuery = parseInt(body.limitPerQuery || '10', 10);
 
-    const result = await runBackgroundSeeding(c.env, queries, limitPerQuery);
+    const allTracksToInsert: any[] = [];
+
+    for (const query of queries) {
+      try {
+        const saavnResults = await SaavnProvider.search(query, 1, limitPerQuery);
+        for (const track of saavnResults) {
+          if (track.streamUrl && track.streamUrl.trim() !== '') {
+            allTracksToInsert.push({
+              id: `native:${track.id.replace('saavn:', '')}`,
+              title: track.title,
+              artist: track.artist,
+              album: track.album,
+              duration: track.duration,
+              coverArt: track.coverArt,
+              streamUrl: track.streamUrl,
+              hasLyrics: track.hasLyrics,
+              language: track.language,
+              year: track.year,
+              explicit: track.explicit,
+            });
+          }
+        }
+      } catch (e) {
+        console.error(`Failed to fetch query "${query}" during Saavn seed:`, e);
+      }
+    }
+
+    const result = await NativeDatabaseProvider.addSongsBatch(c.env.SEARCH_CACHE, allTracksToInsert);
 
     return c.json({
       success: true,
@@ -1005,17 +995,4 @@ app.post('/api/v1/native/seed/saavn', async (c) => {
   }
 });
 
-export default {
-  fetch: app.fetch,
-  async scheduled(event: any, env: Bindings, ctx: any) {
-    console.log(`[CRON] Scheduled event fired at ${event.cron}. Starting Background Seeding...`);
-    // Aggressive queries for the scheduled worker to fetch millions of songs over time
-    const cronQueries = [
-      'Global Top 50', 'Viral Hits', 'Bollywood 2026', 'Lo-Fi Chill', 
-      'Workout Mix', 'Arijit Singh Top 50', 'Taylor Swift Hits', 
-      'Punjabi Dance', 'K-Pop Trending', 'The Weeknd'
-    ];
-    // Use waitUntil so the worker isn't killed before the heavy scraping finishes
-    ctx.waitUntil(runBackgroundSeeding(env, cronQueries, 50));
-  }
-};
+export default app;

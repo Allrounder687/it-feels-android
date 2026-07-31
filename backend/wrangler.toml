@@ -11,6 +11,3 @@ YT_DLP_BASE_URL = "https://it-feels-android.onrender.com"
 [[kv_namespaces]]
 binding = "SEARCH_CACHE"
 id = "3cc3e8229403480a8aba34a1f1750550"
-
-[triggers]
-crons = ["0 */12 * * *"]
