@@ -143,7 +143,8 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 300));
 
       final state = container.read(authProvider);
-      expect(state.isAuthenticated, true);
+      expect(container.read(authProvider.notifier).isAuthenticated, true);
+      expect(state.viewState, AuthViewState.authenticated);
     });
   });
 }
