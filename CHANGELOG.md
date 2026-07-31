@@ -1,6 +1,17 @@
 # Changelog
 
 All notable changes to **IT Feels Music** will be documented in this file.
+## [3.3.4] - Payment Gateways & Sync Bug Fixes
+
+### Fixed
+- **Social Sync Rooms:** Fixed a severe state desync bug in `Listen Together` rooms where guests would hear the new track but see the old song's title and album art. The `RoomService` now strictly pushes the entire `Song` object upon track changes to ensure 100% UI and Audio synchronization across all clients.
+- **OTA Updates (iOS):** Fixed a bug where missing `iosUpdateUrl` in Firebase would cause the Force Update screen to dangerously link to the Android `.apk` instead of the `.ipa`. It now dynamically repairs the missing URL.
+
+### Added
+- **External Payments (Gumroad & Crypto):** Implemented License Key verification in `SubscriptionService`. Users can now pay via Gumroad or Crypto, receive a license code, and paste it into the "Redeem Code" section to instantly unlock Premium (bypassing Google Play).
+- **Auth Flow (0 Cognitive Overload):** Redesigned email verification logic so that new users are instantly dropped into the app with full Telemetry and Cloud Sync running. A gentle, dismissable SnackBar reminder is shown when they play a song to encourage unlocking exclusive features.
+- **Admin Dashboard:** Initialized `lastActive` and `totalUsageSeconds` for all new signups in `AuthService` so that users pending email verification immediately appear in dashboard sorting queries.
+
 ## [3.3.3] - CI Pipeline Fix
 
 ### Fixed
