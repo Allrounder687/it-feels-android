@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:it_feels_music/features/auth/auth_provider.dart';
 import 'package:it_feels_music/services/auth_service.dart';
 import 'package:it_feels_music/services/cloud_sync_service.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
 
 class MockAuthService extends Mock implements AuthService {}
 class MockCloudSyncService extends Mock implements CloudSyncService {}
@@ -21,7 +22,7 @@ class FakeFirebaseAuthException extends Fake implements FirebaseAuthException {
 void main() {
   late MockAuthService mockAuthService;
   late MockCloudSyncService mockCloudSyncService;
-  late AuthProvider authProvider;
+  late AuthNotifier authNotifier;
   late StreamController<User?> userStreamController;
 
   setUp(() {
@@ -32,37 +33,42 @@ void main() {
     when(() => mockAuthService.userStream).thenAnswer((_) => userStreamController.stream);
     when(() => mockAuthService.currentUser).thenReturn(null);
 
-    authProvider = AuthProvider(
-      authService: mockAuthService,
-      cloudSyncService: mockCloudSyncService,
-    );
+    if (!locator.isRegistered<AuthService>()) {
+      locator.registerSingleton<AuthService>(mockAuthService);
+    }
+    if (!locator.isRegistered<CloudSyncService>()) {
+      locator.registerSingleton<CloudSyncService>(mockCloudSyncService);
+    }
+
+    authNotifier = AuthNotifier();
   });
 
   tearDown(() {
     userStreamController.close();
+    locator.reset();
   });
 
-  group('AuthProvider State Machine Tests (Anti-Enumeration Flow)', () {
+  group('AuthNotifier State Machine Tests (Anti-Enumeration Flow)', () {
     test('initial state is emailInput', () {
-      expect(authProvider.viewState, AuthViewState.emailInput);
-      expect(authProvider.isAuthenticated, false);
-      expect(authProvider.errorMessage, isEmpty);
+      expect(authNotifier.state.viewState, AuthViewState.emailInput);
+      expect(authNotifier.state.isAuthenticated, false);
+      expect(authNotifier.state.errorMessage, isEmpty);
     });
 
     test('submitEmail sets viewState to loginPassword unconditionally', () async {
       const email = 'test@example.com';
 
-      await authProvider.submitEmail(email);
+      await authNotifier.submitEmail(email);
 
-      expect(authProvider.viewState, AuthViewState.loginPassword);
-      expect(authProvider.email, email);
+      expect(authNotifier.state.viewState, AuthViewState.loginPassword);
+      expect(authNotifier.state.email, email);
     });
 
     test('submitEmail handles invalid email', () async {
-      await authProvider.submitEmail('invalidemail');
+      await authNotifier.submitEmail('invalidemail');
       
-      expect(authProvider.errorMessage, 'Please enter a valid email');
-      expect(authProvider.viewState, AuthViewState.emailInput);
+      expect(authNotifier.state.errorMessage, 'Please enter a valid email');
+      expect(authNotifier.state.viewState, AuthViewState.emailInput);
     });
 
     test('submitPassword calls signInWithEmail when in loginPassword state', () async {
@@ -71,10 +77,10 @@ void main() {
       
       when(() => mockAuthService.signInWithEmail(email, password)).thenAnswer((_) async => MockUserCredential());
       
-      await authProvider.submitEmail(email);
-      expect(authProvider.viewState, AuthViewState.loginPassword);
+      await authNotifier.submitEmail(email);
+      expect(authNotifier.state.viewState, AuthViewState.loginPassword);
 
-      final success = await authProvider.submitPassword(password);
+      final success = await authNotifier.submitPassword(password);
 
       expect(success, true);
       verify(() => mockAuthService.signInWithEmail(email, password)).called(1);
@@ -87,32 +93,29 @@ void main() {
       when(() => mockAuthService.signInWithEmail(email, password))
           .thenThrow(FakeFirebaseAuthException('invalid-credential'));
       
-      await authProvider.submitEmail(email);
-      final success = await authProvider.submitPassword(password);
+      await authNotifier.submitEmail(email);
+      final success = await authNotifier.submitPassword(password);
 
       expect(success, false);
-      expect(authProvider.viewState, AuthViewState.signupPassword);
-      expect(authProvider.errorMessage, contains('Click "Create Account"'));
+      expect(authNotifier.state.viewState, AuthViewState.signupPassword);
+      expect(authNotifier.state.errorMessage, contains('Click "Create Account"'));
     });
     
     test('submitPassword calls signUpWithEmail when in signupPassword state', () async {
       const email = 'new@example.com';
       const password = 'password123';
       
-      // First, simulate failing login to get into signup state
       when(() => mockAuthService.signInWithEmail(email, password))
           .thenThrow(FakeFirebaseAuthException('invalid-credential'));
           
-      await authProvider.submitEmail(email);
-      await authProvider.submitPassword(password);
+      await authNotifier.submitEmail(email);
+      await authNotifier.submitPassword(password);
       
-      // Now in signup state
-      expect(authProvider.viewState, AuthViewState.signupPassword);
+      expect(authNotifier.state.viewState, AuthViewState.signupPassword);
 
-      // Now mock the sign up
       when(() => mockAuthService.signUpWithEmail(email, password)).thenAnswer((_) async => MockUserCredential());
 
-      final success = await authProvider.submitPassword(password);
+      final success = await authNotifier.submitPassword(password);
 
       expect(success, true);
       verify(() => mockAuthService.signUpWithEmail(email, password)).called(1);
@@ -122,12 +125,11 @@ void main() {
       final mockUser = MockUser();
       when(() => mockAuthService.currentUser).thenReturn(mockUser);
       
-      // Simulate stream emitting a user
       userStreamController.add(mockUser);
-      await Future.delayed(Duration.zero); // yield to event loop
+      await Future.delayed(Duration.zero);
 
-      expect(authProvider.isAuthenticated, true);
-      expect(authProvider.viewState, AuthViewState.authenticated);
+      expect(authNotifier.state.isAuthenticated, true);
+      expect(authNotifier.state.viewState, AuthViewState.authenticated);
     });
   });
 }

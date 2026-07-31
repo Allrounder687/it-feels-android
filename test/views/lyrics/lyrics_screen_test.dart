@@ -10,19 +10,24 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
-class MockLyricsNotifier extends LyricsNotifier {}
-class MockAudioPlayerNotifier extends AudioPlayerNotifier {}
-class MockItemScrollController extends Mock implements ItemScrollController {}
+class MockLyricsNotifier extends LyricsNotifier {
+  @override
+  LyricsState build() {
+    return LyricsState(
+      isLoading: false,
+      lyricsNotFound: true,
+      mode: LyricsMode.synced,
+      activeIndex: -1,
+      fontFamily: 'Inter',
+      syncOffsetMs: 0,
+      lyricsResult: LyricsResult(),
+    );
+  }
+}
 
-class FakeSong extends Fake implements Song {}
-
-void main() {
-  setUpAll(() {
-    registerFallbackValue(FakeSong());
-    registerFallbackValue(Duration.zero);
-  });
-
-  testWidgets('LyricsScreen displays cute apologetic message when no lyrics', (WidgetTester tester) async {
+class MockAudioPlayerNotifier extends AudioPlayerNotifier {
+  @override
+  AudioPlayerState build() {
     final testSong = Song(
       id: '1',
       saavnId: '1',
@@ -33,31 +38,24 @@ void main() {
       coverArt: '',
       addedAt: DateTime.now(),
     );
-
-    final audioState = AudioPlayerState(
+    return AudioPlayerState(
       currentSong: testSong,
       position: Duration.zero,
       duration: const Duration(seconds: 100),
       isPlaying: true,
-      themeBackgroundColor: const Color(0xFF000000),
-      themeTextColor: const Color(0xFFFFFFFF),
-      themeMutedTextColor: const Color(0xFF888888),
-      themeInvertedTextColor: const Color(0xFF000000),
-      themeAccentColor: const Color(0xFFFF0000),
-      themeCardColor: const Color(0xFF111111),
-      themeSurfaceColor: const Color(0xFF222222),
     );
+  }
+}
 
-    final lyricsState = LyricsState(
-      isLoading: false,
-      lyricsNotFound: true,
-      mode: LyricsMode.synced,
-      activeIndex: -1,
-      fontFamily: 'Inter',
-      syncOffsetMs: 0,
-      lyricsResult: LyricsResult(),
-    );
+class FakeSong extends Fake implements Song {}
 
+void main() {
+  setUpAll(() {
+    registerFallbackValue(FakeSong());
+    registerFallbackValue(Duration.zero);
+  });
+
+  testWidgets('LyricsScreen displays cute apologetic message when no lyrics', (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
