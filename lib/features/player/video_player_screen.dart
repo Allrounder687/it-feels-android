@@ -90,7 +90,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     _dragStartY = details.globalPosition.dy;
   }
 
-  void _onVerticalDragUpdate(DragUpdateDetails details, VideoPlayerProvider provider) {
+  void _onVerticalDragUpdate(DragUpdateDetails details, VideoPlayerState provider) {
     if (_dragStartX == null || _dragStartY == null) return;
     
     final screenWidth = MediaQuery.of(context).size.width;
@@ -113,7 +113,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     _dragStartY = null;
   }
 
-  Future<void> _downloadVideo(VideoPlayerProvider provider) async {
+  Future<void> _downloadVideo(VideoPlayerState provider) async {
     if (provider.streams.isEmpty || _isDownloading) return;
 
     setState(() {
