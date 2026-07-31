@@ -19,6 +19,9 @@ class AuthState {
     this.errorMessage = '',
   });
 
+  User? get currentUser => FirebaseAuth.instance.currentUser;
+  bool get isAuthenticated => currentUser != null;
+
   AuthState copyWith({
     AuthViewState? viewState,
     String? email,

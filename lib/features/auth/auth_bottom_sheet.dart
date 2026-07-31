@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/auth/auth_provider.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/main.dart';
 
 class AuthBottomSheet extends ConsumerStatefulWidget {
   const AuthBottomSheet({super.key});
@@ -16,7 +17,7 @@ class AuthBottomSheet extends ConsumerStatefulWidget {
     ).whenComplete(() {
       // Reset the flow when the bottom sheet is closed
       if (context.mounted) {
-        ref.read(authProvider.notifier).resetFlow();
+        appProviderContainer.read(authProvider.notifier).resetFlow();
       }
     });
   }

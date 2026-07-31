@@ -10,6 +10,7 @@ import 'package:it_feels_music/features/settings/hidden_songs_provider.dart';
 import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/features/library/artist_detail_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/main.dart';
 
 class SongOptionsSheet extends ConsumerWidget {
   final Song song;
@@ -321,7 +322,7 @@ class SongOptionsSheet extends ConsumerWidget {
                       title: Text(pl.title, style: GoogleFonts.inter(color: context.themeTextColor)),
                       subtitle: Text("${pl.songs.length} tracks", style: GoogleFonts.inter(color: context.themeMutedTextColor)),
                       onTap: () {
-                        ref.read(customPlaylistProvider.notifier).addSongToPlaylist(pl.id, song);
+                        appProviderContainer.read(customPlaylistProvider.notifier).addSongToPlaylist(pl.id, song);
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text("Added to ${pl.title}")),
