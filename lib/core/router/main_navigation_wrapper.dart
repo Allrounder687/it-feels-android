@@ -19,6 +19,7 @@ import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/core/widgets/mini_player.dart';
 import 'package:it_feels_music/core/widgets/import_progress_banner.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 
 class MainNavigationWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -111,8 +112,8 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
       ),
       builder: (context) {
         return Consumer(builder: (context, ref, child) {
-          final hasActiveSong = ref.watch(audioPlayerProvider).currentSong != null;
-          final bottomPadding = 24.0 + (hasActiveSong ? 90.0 : 0.0);
+          final bottomUiHeight = ref.watch(bottomUiProvider);
+          final bottomPadding = bottomUiHeight > 0 ? bottomUiHeight + 12.0 : 24.0;
           return Padding(
             padding: EdgeInsets.only(top: 24, left: 24, right: 24, bottom: bottomPadding),
             child: Column(
@@ -158,6 +159,8 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                       },
                       child: Text('Import Now', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
                     ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -241,14 +244,17 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                         bottom: 0,
                         child: SafeArea(
                           bottom: true,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Import Progress Banner
-                              const ImportProgressBanner(),
-                              // Mini Player Pill
-                              MiniPlayer(onTap: () => context.push('/now_playing')),
-                            ],
+                          child: MeasureSize(
+                            onChange: (size) => ref.read(bottomUiProvider.notifier).updateHeight(size.height),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Import Progress Banner
+                                const ImportProgressBanner(),
+                                // Mini Player Pill
+                                MiniPlayer(onTap: () => context.push('/now_playing')),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -273,53 +279,56 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                   bottom: 0,
                   child: SafeArea(
                     bottom: true,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Import Progress Banner
-                      const ImportProgressBanner(),
-                      
-                      // Mini Player Pill
-                      MiniPlayer(onTap: () => context.push('/now_playing')),
+                    child: MeasureSize(
+                      onChange: (size) => ref.read(bottomUiProvider.notifier).updateHeight(size.height),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Import Progress Banner
+                          const ImportProgressBanner(),
+                          
+                          // Mini Player Pill
+                          MiniPlayer(onTap: () => context.push('/now_playing')),
       
-                      // We moved VideoMiniplayer behind the Bottom Nav in the stack
-                      // so the tabs are tappable and overlay the transparent part of PiP.
+                          // We moved VideoMiniplayer behind the Bottom Nav in the stack
+                          // so the tabs are tappable and overlay the transparent part of PiP.
       
-                      // Floating Bottom Navigation Bar Pill Container
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(32),
-                        child: BackdropFilter(
-                          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                          child: Container(
-                            height: 76,
-                            margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
-                            decoration: BoxDecoration(
-                              color: context.themeSurfaceColor.withValues(alpha: 0.7),
-                              borderRadius: BorderRadius.circular(32),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: context.themeInvertedTextColor.withValues(alpha: 0.4),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
+                          // Floating Bottom Navigation Bar Pill Container
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(32),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                              child: Container(
+                                height: 76,
+                                margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: context.themeSurfaceColor.withValues(alpha: 0.7),
+                                  borderRadius: BorderRadius.circular(32),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: context.themeInvertedTextColor.withValues(alpha: 0.4),
+                                      blurRadius: 20,
+                                      offset: const Offset(0, 8),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                _buildNavItem(0, Icons.home_rounded, "Home"),
-                                _buildNavItem(1, Icons.search_rounded, "Search"),
-                                _buildNavItem(2, Icons.library_music_rounded, "Library"),
-                                if (enableVideos) _buildNavItem(3, Icons.video_library_rounded, "Videos"),
-                              ],
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _buildNavItem(0, Icons.home_rounded, "Home"),
+                                    _buildNavItem(1, Icons.search_rounded, "Search"),
+                                    _buildNavItem(2, Icons.library_music_rounded, "Library"),
+                                    if (enableVideos) _buildNavItem(3, Icons.video_library_rounded, "Videos"),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
             ],
           );
         },

@@ -6,7 +6,7 @@ import 'package:it_feels_music/services/auth_service.dart';
 import 'package:it_feels_music/services/cloud_sync_service.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 
-enum AuthViewState { emailInput, loginPassword, signupPassword, loading, emailVerificationPending, authenticated }
+enum AuthViewState { login, signup, loading, emailVerificationPending, authenticated, forgotPassword }
 
 @immutable
 class AuthState {
@@ -15,7 +15,7 @@ class AuthState {
   final String errorMessage;
 
   const AuthState({
-    this.viewState = AuthViewState.emailInput,
+    this.viewState = AuthViewState.login,
     this.email = '',
     this.errorMessage = '',
   });
@@ -59,7 +59,7 @@ class AuthNotifier extends Notifier<AuthState> {
           _cloudSyncService.initializeSync(user);
         }
       } else {
-        state = state.copyWith(viewState: AuthViewState.emailInput);
+        state = state.copyWith(viewState: AuthViewState.login);
         _cloudSyncService.stopSync();
       }
     });
@@ -70,27 +70,22 @@ class AuthNotifier extends Notifier<AuthState> {
   void resetFlow() {
     if (!isAuthenticated) {
       state = state.copyWith(
-        viewState: AuthViewState.emailInput,
+        viewState: AuthViewState.login,
         email: '',
         errorMessage: '',
       );
     }
   }
-
-  Future<void> submitEmail(String email) async {
-    if (email.isEmpty || !email.contains('@')) {
-      state = state.copyWith(errorMessage: 'Please enter a valid email');
-      return;
-    }
-    
-    state = state.copyWith(
-      email: email,
-      errorMessage: '',
-      viewState: AuthViewState.loginPassword,
-    );
+  
+  void toggleView(AuthViewState newState) {
+    state = state.copyWith(viewState: newState, errorMessage: '');
   }
 
-  Future<bool> submitPassword(String password) async {
+  Future<bool> submitAuth(String email, String password) async {
+    if (email.isEmpty || !email.contains('@')) {
+      state = state.copyWith(errorMessage: 'Please enter a valid email');
+      return false;
+    }
     if (password.length < 6) {
       state = state.copyWith(errorMessage: 'Password must be at least 6 characters');
       return false;
@@ -100,22 +95,22 @@ class AuthNotifier extends Notifier<AuthState> {
     state = state.copyWith(viewState: AuthViewState.loading, errorMessage: '');
 
     try {
-      if (previousState == AuthViewState.signupPassword) {
-        await _authService.signUpWithEmail(state.email, password);
+      if (previousState == AuthViewState.signup) {
+        await _authService.signUpWithEmail(email, password);
       } else {
-        await _authService.signInWithEmail(state.email, password);
+        await _authService.signInWithEmail(email, password);
       }
       return true;
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'user-not-found' || e.code == 'invalid-credential') {
+      if (e.code == 'email-already-in-use') {
         state = state.copyWith(
-          errorMessage: 'Account not found. Click "Create Account" to register.',
-          viewState: AuthViewState.signupPassword,
+          errorMessage: 'Email is already registered. Please log in.',
+          viewState: AuthViewState.login,
         );
-      } else if (e.code == 'wrong-password') {
+      } else if (e.code == 'user-not-found' || e.code == 'invalid-credential' || e.code == 'wrong-password') {
         state = state.copyWith(
-          errorMessage: 'Incorrect password.',
-          viewState: AuthViewState.loginPassword,
+          errorMessage: 'Invalid email or password.',
+          viewState: previousState,
         );
       } else {
         state = state.copyWith(
@@ -130,6 +125,27 @@ class AuthNotifier extends Notifier<AuthState> {
         viewState: previousState,
       );
       return false;
+    }
+  }
+
+  Future<void> submitForgotPassword(String email) async {
+    if (email.isEmpty || !email.contains('@')) {
+      state = state.copyWith(errorMessage: 'Please enter a valid email');
+      return;
+    }
+    
+    state = state.copyWith(viewState: AuthViewState.loading, errorMessage: '');
+    try {
+      await _authService.sendPasswordResetEmail(email);
+      state = state.copyWith(
+        viewState: AuthViewState.login,
+        errorMessage: 'Password reset link sent to $email.',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        viewState: AuthViewState.forgotPassword,
+        errorMessage: 'Failed to send reset link. Try again.',
+      );
     }
   }
 

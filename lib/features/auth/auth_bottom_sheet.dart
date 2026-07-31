@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/auth/auth_provider.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -52,8 +53,8 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
       });
     }
 
-    final hasActiveSong = ref.watch(audioPlayerProvider).currentSong != null;
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom + (hasActiveSong ? 90.0 : 0.0);
+    final bottomUiHeight = ref.watch(bottomUiProvider);
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom + bottomUiHeight;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -72,11 +73,12 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
           ],
         ),
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
               child: Container(
                 width: 40,
                 height: 4,
@@ -243,6 +245,7 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
             ],
             const SizedBox(height: 16),
           ],
+        ),
         ),
       ),
     );

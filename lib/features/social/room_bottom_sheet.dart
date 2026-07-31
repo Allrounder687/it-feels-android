@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'dart:ui';
+import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 
 class RoomBottomSheet extends ConsumerStatefulWidget {
   final bool isHost;
@@ -82,8 +84,8 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final audioProvider = ref.watch(audioPlayerProvider);
-    final hasActiveSong = audioProvider.currentSong != null;
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom + (hasActiveSong ? 130.0 : 40.0);
+    final bottomUiHeight = ref.watch(bottomUiProvider);
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom + bottomUiHeight + 16.0;
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -99,9 +101,10 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Container(
               width: 40,
               height: 4,
@@ -118,6 +121,7 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
             else
               _buildGuestView(audioProvider),
           ],
+        ),
         ),
       ),
     );

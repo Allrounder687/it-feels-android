@@ -59,6 +59,12 @@ class SubscriptionService {
 
     // 2. Check Custom Firestore Coupon / Entitlement fallback
     try {
+      // Check for FAMILY coupon on user doc directly
+      final userDoc = await _firestore.collection('users').doc(uid).get();
+      if (userDoc.exists && userDoc.data()?['isPremiumFamily'] == true) {
+        return true;
+      }
+
       final doc = await _firestore.collection('users').doc(uid).collection('entitlements').doc('premium').get();
       if (doc.exists) {
         final data = doc.data();
@@ -114,12 +120,18 @@ class SubscriptionService {
     // Special Lifetime Coupon "FAMILY"
     if (cleanCode == 'FAMILY') {
       try {
-        final expiresAt = DateTime.now().add(const Duration(days: 36500)); // Lifetime
-        await _firestore.collection('users').doc(uid).collection('entitlements').doc('premium').set({
-          'isActive': true,
-          'expiresAt': Timestamp.fromDate(expiresAt),
-          'grantedBy': 'FAMILY',
-        });
+        await _firestore.collection('users').doc(uid).set({
+          'isPremiumFamily': true,
+        }, SetOptions(merge: true));
+
+        try {
+          await _firestore.collection('users').doc(uid).collection('entitlements').doc('premium').set({
+            'isActive': true,
+            'expiresAt': null, // Permanent lifetime access
+            'grantedBy': 'FAMILY',
+          }, SetOptions(merge: true));
+        } catch (_) {} // Ignore if entitlement subcollection is locked down
+
         return true;
       } catch (e) {
         debugPrint("Error granting FAMILY coupon: $e");

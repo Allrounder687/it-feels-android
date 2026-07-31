@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/subscription/subscription_provider.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
+import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 class PaywallBottomSheet extends ConsumerStatefulWidget {
@@ -27,6 +28,7 @@ class PaywallBottomSheet extends ConsumerStatefulWidget {
 class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
   final TextEditingController _couponController = TextEditingController();
   bool _showCouponField = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -56,22 +58,33 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
 
   Future<void> _redeem(BuildContext context) async {
     if (_couponController.text.trim().isEmpty) return;
+    
+    setState(() {
+      _errorMessage = null;
+    });
+    
     final subProvider = ref.read(subscriptionProvider);
     final success = await subProvider.redeemCoupon(_couponController.text.trim());
     if (success && mounted) {
       Navigator.pop(context);
-    } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid or expired code.')),
+        const SnackBar(
+          content: Text('Coupon applied successfully! Welcome to Premium.'),
+          backgroundColor: Colors.green,
+        ),
       );
+    } else if (mounted) {
+      setState(() {
+        _errorMessage = 'Invalid or expired code.';
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final subProvider = ref.watch(subscriptionProvider);
-    final hasActiveSong = ref.watch(audioPlayerProvider).currentSong != null;
-    final bottomPadding = MediaQuery.of(context).viewInsets.bottom + (hasActiveSong ? 130.0 : 40.0);
+    final bottomUiHeight = ref.watch(bottomUiProvider);
+    final bottomPadding = MediaQuery.of(context).viewInsets.bottom + bottomUiHeight + 16.0;
     
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
@@ -87,9 +100,10 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             Container(
               width: 40,
               height: 4,
@@ -199,8 +213,17 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
                 onPressed: () => setState(() => _showCouponField = !_showCouponField),
                 child: Text("Have a custom coupon code?", style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
               ),
+              if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                  ),
+                ),
+                
               if (_showCouponField) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -209,21 +232,24 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
                           hintText: "Enter code...",
-                          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
                           filled: true,
                           fillColor: Colors.white.withValues(alpha: 0.05),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     ElevatedButton(
                       onPressed: () => _redeem(context),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.midnightPill,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(80, 56),
+                        backgroundColor: AppColors.midnightAccent,
+                        foregroundColor: Colors.black,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                       ),
                       child: const Text("Redeem"),
                     )

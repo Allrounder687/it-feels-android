@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/utils/des_decryptor.dart';
@@ -72,12 +73,15 @@ class BackendApiService {
   };
 
 
-  /// Search custom Native Database catalog directly from your API
   static Future<List<Song>> searchNativeCatalog(String query) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cacheKey = 'offline_native_search_${query.toLowerCase()}';
+    
     try {
       final uri = Uri.parse('$baseUrl/api/v1/native/search').replace(queryParameters: {'query': query});
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
+        prefs.setString(cacheKey, response.body);
         final data = json.decode(response.body);
         if (data['success'] == true && data['results'] is List) {
           final List results = data['results'];
@@ -85,21 +89,43 @@ class BackendApiService {
         }
       }
     } catch (e) {
-      debugPrint('[BackendApiService] Native catalog search error: $e');
+      debugPrint('[BackendApiService] Native catalog search network error, falling back to offline cache: $e');
     }
+    
+    // Offline Fallback
+    final cachedData = prefs.getString(cacheKey);
+    if (cachedData != null) {
+      debugPrint('[BackendApiService] Loaded Search Results from Offline Device Cache!');
+      final data = json.decode(cachedData);
+      if (data['success'] == true && data['results'] is List) {
+        final List results = data['results'];
+        return results.map((item) => _songFromProxyJson(item)).toList();
+      }
+    }
+    
     return search(query); // Fallback to standard multi-source search
   }
 
-  /// Fetch custom Native Home Feed directly from your API
   static Future<Map<String, dynamic>?> fetchNativeHomeFeed() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cacheKey = 'offline_native_home_feed';
+    
     try {
       final uri = Uri.parse('$baseUrl/api/v1/native/home');
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
+        prefs.setString(cacheKey, response.body);
         return json.decode(response.body);
       }
     } catch (e) {
-      debugPrint('[BackendApiService] Native home feed error: $e');
+      debugPrint('[BackendApiService] Native home feed network error, falling back to offline cache: $e');
+    }
+    
+    // Offline Fallback
+    final cachedData = prefs.getString(cacheKey);
+    if (cachedData != null) {
+      debugPrint('[BackendApiService] Loaded Home Feed from Offline Device Cache!');
+      return json.decode(cachedData);
     }
     return null;
   }

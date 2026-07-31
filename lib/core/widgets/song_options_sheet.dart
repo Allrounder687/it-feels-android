@@ -11,6 +11,7 @@ import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/features/library/artist_detail_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/main.dart';
+import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 
 class SongOptionsSheet extends ConsumerWidget {
   final Song song;
@@ -42,8 +43,8 @@ class SongOptionsSheet extends ConsumerWidget {
     final isDown = downloadProv.isDownloaded(song.id);
     final isDownloading = downloadProv.isDownloading(song.id);
 
-    final hasActiveSong = playerProv.currentSong != null;
-    final bottomPadding = hasActiveSong ? 118.0 : 28.0;
+    final bottomUiHeight = ref.watch(bottomUiProvider);
+    final bottomPadding = bottomUiHeight > 0 ? bottomUiHeight + 12.0 : 28.0;
 
     return Container(
       padding: EdgeInsets.only(top: 16, bottom: bottomPadding, left: 20, right: 20),
