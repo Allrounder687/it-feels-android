@@ -96,6 +96,8 @@ Future<void> main() async {
   ));
 }
 
+final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
 class PixelPlayerSaavnApp extends ConsumerWidget {
   final AudioPlayerHandler? audioHandler;
 
@@ -112,6 +114,7 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                 ref.read(audioPlayerProvider.notifier).setMaterialYouColors(colorScheme.surface, colorScheme.surfaceContainer, colorScheme.primary);
               });
               return MaterialApp.router(
+                scaffoldMessengerKey: rootScaffoldMessengerKey,
                 title: 'It Feels',
                 debugShowCheckedModeBanner: false,
                 theme: ThemeData(

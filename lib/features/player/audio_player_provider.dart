@@ -1,4 +1,6 @@
 import 'package:it_feels_music/core/theme/app_colors.dart';
+import 'package:it_feels_music/main.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import 'dart:io';
 import 'dart:async';
@@ -673,6 +675,28 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       currentSong: song,
       hasSentTelemetryForCurrentSong: false,
     );
+    
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && user.email != null && !user.emailVerified) {
+      rootScaffoldMessengerKey.currentState?.clearSnackBars();
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text('Please verify your email to unlock exclusive features.', style: const TextStyle(color: Colors.white)),
+          backgroundColor: AppColors.midnightPrimary,
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          action: SnackBarAction(
+            label: 'Send Link',
+            textColor: Colors.white,
+            onPressed: () {
+               user.sendEmailVerification();
+            },
+          ),
+        ),
+      );
+    }
+
     _preloadQueueLyricsAndMedia();
 
     List<Song> newQueue = List.from(state.queue);
