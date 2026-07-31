@@ -147,7 +147,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   Widget _buildTabContent(
     HomeState homeProv,
-    AudioPlayerProvider playerProvider,
+    AudioPlayerState playerProvider,
     DownloadState downloadProviderLocal,
     CustomPlaylistState customPlaylistProviderLocal,
     List<Song> trending,
@@ -335,7 +335,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
-  Widget _buildSongListView(List<Song> songs, AudioPlayerProvider playerProvider, String emptyMessage) {
+  Widget _buildSongListView(List<Song> songs, AudioPlayerState playerProvider, String emptyMessage) {
     if (songs.isEmpty) {
       return Center(
         child: Text(emptyMessage, style: GoogleFonts.inter(color: context.themeMutedTextColor)),

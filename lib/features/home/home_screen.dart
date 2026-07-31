@@ -254,7 +254,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildSongCarousel(BuildContext context, String title, List<Song> songs, AudioPlayerProvider playerProvider) {
+  Widget _buildSongCarousel(BuildContext context, String title, List<Song> songs, AudioPlayerState playerProvider) {
     if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
     return SliverToBoxAdapter(
       child: Column(

@@ -192,7 +192,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               final settingsProv = ref.read(settingsProvider);
-              _toggleMode(true, ref.read(audioPlayerProvider.notifier), videoProvider, settingsProv);
+              _toggleMode(true, ref.read(audioPlayerProvider), videoProvider, settingsProv);
             }
           });
         }
@@ -249,7 +249,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   GestureDetector(
-                                    onTap: () => _toggleMode(false, ref.read(audioPlayerProvider.notifier), videoProvider, settingsProv),
+                                    onTap: () => _toggleMode(false, ref.read(audioPlayerProvider), videoProvider, settingsProv),
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                                       decoration: BoxDecoration(
@@ -267,7 +267,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                     ),
                                   ),
                                   GestureDetector(
-                                    onTap: () => _toggleMode(true, ref.read(audioPlayerProvider.notifier), videoProvider, settingsProv),
+                                    onTap: () => _toggleMode(true, ref.read(audioPlayerProvider), videoProvider, settingsProv),
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                                       decoration: BoxDecoration(

@@ -72,10 +72,10 @@ class SleepTimerSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
           ],
-          _buildTimerOption(context, audioProvider, '15 Minutes', const Duration(minutes: 15)),
-          _buildTimerOption(context, audioProvider, '30 Minutes', const Duration(minutes: 30)),
-          _buildTimerOption(context, audioProvider, '45 Minutes', const Duration(minutes: 45)),
-          _buildTimerOption(context, audioProvider, '60 Minutes', const Duration(minutes: 60)),
+          _buildTimerOption(context, ref, audioProvider, '15 Minutes', const Duration(minutes: 15)),
+          _buildTimerOption(context, ref, audioProvider, '30 Minutes', const Duration(minutes: 30)),
+          _buildTimerOption(context, ref, audioProvider, '45 Minutes', const Duration(minutes: 45)),
+          _buildTimerOption(context, ref, audioProvider, '60 Minutes', const Duration(minutes: 60)),
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(
