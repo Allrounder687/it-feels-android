@@ -1,3 +1,4 @@
+import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -157,16 +158,22 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     if (parentMediaId == AudioService.browsableRootId) {
       return [
         const MediaItem(
+          id: 'recently_played',
+          title: 'Recently Played',
+          playable: false,
+        ),
+        const MediaItem(
           id: 'favorites',
           title: 'Favorites',
           playable: false,
         ),
       ];
-    } else if (parentMediaId == 'favorites') {
+    } else if (parentMediaId == 'favorites' || parentMediaId == 'recently_played') {
       final state = await StorageService.loadPlaybackState();
-      if (state != null && state['favorites'] != null) {
-        final List<dynamic> rawFavs = state['favorites'];
-        return rawFavs.map((e) {
+      if (state != null) {
+        final key = parentMediaId == 'favorites' ? 'favorites' : 'recentlyPlayed';
+        final List<dynamic> rawList = state[key] ?? [];
+        return rawList.map((e) {
           final s = Song.fromJson(Map<String, dynamic>.from(e));
           return MediaItem(
             id: s.id,
@@ -174,12 +181,33 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
             artist: s.artist,
             album: s.album,
             duration: Duration(seconds: s.duration),
-            artUri: s.coverArt.isNotEmpty ? Uri.parse(s.coverArt) : null,
+            artUri: s.coverArt.isNotEmpty ? (s.coverArt.startsWith('http') ? Uri.parse(s.coverArt) : Uri.file(s.coverArt)) : null,
+            playable: true,
           );
         }).toList();
       }
     }
     return [];
+  }
+
+  @override
+  Future<void> playFromMediaId(String mediaId, [Map<String, dynamic>? extras]) async {
+    final state = await StorageService.loadPlaybackState();
+    if (state != null) {
+      final List<dynamic> rawFavs = state['favorites'] ?? [];
+      final List<dynamic> rawRecent = state['recentlyPlayed'] ?? [];
+      final all = [...rawFavs, ...rawRecent];
+      for (final e in all) {
+        final song = Song.fromJson(Map<String, dynamic>.from(e));
+        if (song.id == mediaId) {
+          final streamUrl = await BackendApiService.getStreamUrl(song);
+          if (streamUrl != null && streamUrl.isNotEmpty) {
+            await playSong(song, streamUrl);
+          }
+          return;
+        }
+      }
+    }
   }
 
   @override
