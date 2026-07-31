@@ -191,10 +191,22 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
           _lastPlayedSongId = currentSong.id;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
+              setState(() {
+                _isVideoMode = false;
+              });
               final settingsProv = ref.read(settingsProvider);
-              _toggleMode(true, ref.read(audioPlayerProvider), videoProvider, settingsProv);
+              // Trigger background load without switching UI
+              ref.read(videoPlayerProvider.notifier).playVideo(
+                currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}',
+                currentSong.title,
+                currentSong.artist,
+                query: BackendApiService.cleanSearchQuery(currentSong.title, currentSong.artist),
+                startPosition: ref.read(audioPlayerProvider).position,
+              );
             }
           });
+        } else if (currentSong.id != _lastPlayedSongId) {
+          _lastPlayedSongId = currentSong.id;
         }
 
         final isFav = playerProvider.isFavorite(currentSong.id);
@@ -273,11 +285,15 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                       decoration: BoxDecoration(
                                         color: _isVideoMode ? accentColor : Colors.transparent,
                                         borderRadius: BorderRadius.circular(20),
+                                        boxShadow: (! _isVideoMode && videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
+                                            ? [BoxShadow(color: accentColor.withValues(alpha: 0.8), blurRadius: 10, spreadRadius: 2)]
+                                            : null,
                                       ),
                                       child: Text(
                                         'Video',
                                         style: GoogleFonts.inter(
-                                          color: _isVideoMode ? context.themeInvertedTextColor : context.themeMutedTextColor,
+                                          color: _isVideoMode || (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized) 
+                                              ? context.themeInvertedTextColor : context.themeMutedTextColor,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,
                                         ),

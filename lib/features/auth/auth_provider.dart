@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:it_feels_music/services/auth_service.dart';
 import 'package:it_feels_music/services/cloud_sync_service.dart';
+import 'package:it_feels_music/services/telemetry_service.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 
 enum AuthViewState { login, signup, loading, emailVerificationPending, authenticated, forgotPassword }
@@ -39,6 +40,7 @@ class AuthState {
 class AuthNotifier extends Notifier<AuthState> {
   late final AuthService _authService;
   late final CloudSyncService _cloudSyncService;
+  late final TelemetryService _telemetryService;
 
   User? get currentUser => _authService.currentUser;
   bool get isAuthenticated => currentUser != null;
@@ -47,6 +49,7 @@ class AuthNotifier extends Notifier<AuthState> {
   AuthState build() {
     _authService = locator.isRegistered<AuthService>() ? locator<AuthService>() : AuthService();
     _cloudSyncService = locator.isRegistered<CloudSyncService>() ? locator<CloudSyncService>() : CloudSyncService();
+    _telemetryService = locator.isRegistered<TelemetryService>() ? locator<TelemetryService>() : TelemetryService();
 
     _authService.userStream.listen((user) {
       if (user != null) {
@@ -54,13 +57,16 @@ class AuthNotifier extends Notifier<AuthState> {
         if (isPasswordProvider && !user.emailVerified) {
           state = state.copyWith(viewState: AuthViewState.emailVerificationPending);
           _cloudSyncService.stopSync();
+          _telemetryService.stopTracking();
         } else {
           state = state.copyWith(viewState: AuthViewState.authenticated);
           _cloudSyncService.initializeSync(user);
+          _telemetryService.startTracking(user);
         }
       } else {
         state = state.copyWith(viewState: AuthViewState.login);
         _cloudSyncService.stopSync();
+        _telemetryService.stopTracking();
         // Automatically sign in anonymously if no user is present (Guest mode)
         _authService.signInAnonymously();
       }

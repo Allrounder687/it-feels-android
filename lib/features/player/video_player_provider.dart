@@ -40,6 +40,7 @@ class VideoPlayerState {
 
   VideoPlayerState copyWith({
     VideoPlayerController? videoController,
+    bool clearVideoController = false,
     bool? isVideoActive,
     bool? isLoading,
     bool? isMuted,
@@ -54,7 +55,7 @@ class VideoPlayerState {
     double? brightness,
   }) {
     return VideoPlayerState(
-      videoController: videoController ?? this.videoController,
+      videoController: clearVideoController ? null : (videoController ?? this.videoController),
       isVideoActive: isVideoActive ?? this.isVideoActive,
       isLoading: isLoading ?? this.isLoading,
       isMuted: isMuted ?? this.isMuted,
@@ -111,6 +112,11 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     }
 
     _recoveryAttempts = 0;
+    
+    // EXPLICITLY KILL OLD VIDEO TO PREVENT GLITCH
+    state.videoController?.pause();
+    state.videoController?.dispose();
+
     state = state.copyWith(
       isLoading: true,
       isVideoActive: true,
@@ -119,6 +125,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       currentUploader: uploader,
       streams: const [],
       relatedVideos: const [],
+      clearVideoController: true, // Wipe the old controller safely
     );
 
     if (localPath != null && localPath.isNotEmpty) {
