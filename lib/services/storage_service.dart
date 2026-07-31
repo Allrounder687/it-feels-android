@@ -68,7 +68,7 @@ class StorageService {
   }
 
   /// Playback Memory State
-  static Future<void> savePlaybackState(List<Song> queue, int currentIndex) async {
+  static Future<void> savePlaybackState(List<Song> queue, int currentIndex, {int positionSeconds = 0}) async {
     final prefs = await SharedPreferences.getInstance();
     if (queue.isEmpty) {
       await prefs.remove(_playbackStateKey);
@@ -90,6 +90,7 @@ class StorageService {
     
     final state = {
       'currentIndex': currentIndex,
+      'positionSeconds': positionSeconds,
       'queue': jsonList,
     };
     await prefs.setString(_playbackStateKey, json.encode(state));
@@ -106,6 +107,7 @@ class StorageService {
       final queue = rawQueue.map((item) => Song.fromJson(Map<String, dynamic>.from(item))).toList();
       return {
         'currentIndex': decoded['currentIndex'] ?? 0,
+        'positionSeconds': decoded['positionSeconds'] ?? 0,
         'queue': queue,
       };
     } catch (e) {

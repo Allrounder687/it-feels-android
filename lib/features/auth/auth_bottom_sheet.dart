@@ -105,11 +105,10 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
               ),
             ),
             const SizedBox(height: 24),
-            
             // Email Input
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              height: authState.viewState == AuthViewState.emailInput ? 60 : 0,
+              height: 60,
               child: SingleChildScrollView(
                 child: TextField(
                   controller: _emailController,
@@ -123,7 +122,6 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
                     filled: true,
                     fillColor: Colors.black12,
                   ),
-                  onSubmitted: (val) => ref.read(authProvider.notifier).submitEmail(val),
                 ),
               ),
             ),
@@ -131,15 +129,15 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
             // Password Input
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              height: (authState.viewState == AuthViewState.loginPassword || 
-                      authState.viewState == AuthViewState.signupPassword) ? 60 : 0,
+              height: authState.viewState == AuthViewState.forgotPassword ? 0 : 60,
+              margin: EdgeInsets.only(top: authState.viewState == AuthViewState.forgotPassword ? 0 : 16),
               child: SingleChildScrollView(
                 child: TextField(
                   controller: _passwordController,
                   focusNode: _passwordFocus,
                   obscureText: true,
                   decoration: InputDecoration(
-                    hintText: authState.viewState == AuthViewState.signupPassword ? 'Create a password' : 'Enter your password',
+                    hintText: 'Enter your password',
                     prefixIcon: const Icon(Icons.lock_outline),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -147,10 +145,18 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
                     filled: true,
                     fillColor: Colors.black12,
                   ),
-                  onSubmitted: (val) => ref.read(authProvider.notifier).submitPassword(val),
                 ),
               ),
             ),
+
+            if (authState.viewState == AuthViewState.login)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => ref.read(authProvider.notifier).toggleView(AuthViewState.forgotPassword),
+                  child: const Text('Forgot Password?', style: TextStyle(color: Colors.grey)),
+                ),
+              ),
 
             if (authState.errorMessage.isNotEmpty)
               Padding(
@@ -169,12 +175,12 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
               onPressed: authState.viewState == AuthViewState.loading
                   ? null
                   : () {
-                      if (authState.viewState == AuthViewState.emailInput) {
-                        ref.read(authProvider.notifier).submitEmail(_emailController.text);
+                      if (authState.viewState == AuthViewState.forgotPassword) {
+                        ref.read(authProvider.notifier).submitForgotPassword(_emailController.text);
                       } else if (authState.viewState == AuthViewState.emailVerificationPending) {
                         ref.read(authProvider.notifier).checkVerificationStatus();
                       } else {
-                        ref.read(authProvider.notifier).submitPassword(_passwordController.text);
+                        ref.read(authProvider.notifier).submitAuth(_emailController.text, _passwordController.text);
                       }
                     },
               style: ElevatedButton.styleFrom(
@@ -199,16 +205,37 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
             ),
-            const SizedBox(height: 16),
             
             if (authState.viewState == AuthViewState.emailVerificationPending)
               TextButton(
                 onPressed: () => ref.read(authProvider.notifier).resendVerificationEmail(),
                 child: const Text('Resend Verification Link'),
               ),
-            
+              
+            if (authState.viewState == AuthViewState.login || authState.viewState == AuthViewState.signup)
+              TextButton(
+                onPressed: () {
+                  final newState = authState.viewState == AuthViewState.login 
+                      ? AuthViewState.signup 
+                      : AuthViewState.login;
+                  ref.read(authProvider.notifier).toggleView(newState);
+                },
+                child: Text(
+                  authState.viewState == AuthViewState.login 
+                      ? "Don't have an account? Sign Up" 
+                      : "Already have an account? Log In",
+                  style: const TextStyle(color: Colors.grey),
+                ),
+              ),
+              
+            if (authState.viewState == AuthViewState.forgotPassword)
+              TextButton(
+                onPressed: () => ref.read(authProvider.notifier).toggleView(AuthViewState.login),
+                child: const Text("Back to Login", style: TextStyle(color: Colors.grey)),
+              ),
+
             // Google Sign-In Button
-            if (authState.viewState == AuthViewState.emailInput) ...[
+            if (authState.viewState == AuthViewState.login || authState.viewState == AuthViewState.signup) ...[
               const Center(
                 child: Text(
                   'OR',
@@ -253,12 +280,12 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
 
   String _getTitle(AuthViewState state) {
     switch (state) {
-      case AuthViewState.emailInput:
-        return 'Unlock Cloud Sync';
-      case AuthViewState.loginPassword:
+      case AuthViewState.login:
         return 'Welcome Back';
-      case AuthViewState.signupPassword:
+      case AuthViewState.signup:
         return 'Create Account';
+      case AuthViewState.forgotPassword:
+        return 'Reset Password';
       case AuthViewState.emailVerificationPending:
         return 'Verify Your Email';
       case AuthViewState.loading:
@@ -269,12 +296,12 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
 
   String _getSubtitle(AuthViewState state) {
     switch (state) {
-      case AuthViewState.emailInput:
-        return 'Enter your email to backup playlists and use Listen Together.';
-      case AuthViewState.loginPassword:
-        return 'Enter your password to continue.';
-      case AuthViewState.signupPassword:
-        return 'Create a secure password to protect your library.';
+      case AuthViewState.login:
+        return 'Log in to backup playlists and use Listen Together.';
+      case AuthViewState.signup:
+        return 'Sign up to protect your library.';
+      case AuthViewState.forgotPassword:
+        return 'Enter your email to receive a password reset link.';
       case AuthViewState.emailVerificationPending:
         return 'We sent a verification link to your email. Click it to activate your account.';
       default:
@@ -284,12 +311,12 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
 
   String _getButtonText(AuthViewState state) {
     switch (state) {
-      case AuthViewState.emailInput:
-        return 'Continue';
-      case AuthViewState.loginPassword:
+      case AuthViewState.login:
         return 'Log In';
-      case AuthViewState.signupPassword:
+      case AuthViewState.signup:
         return 'Create Account';
+      case AuthViewState.forgotPassword:
+        return 'Send Reset Link';
       case AuthViewState.emailVerificationPending:
         return 'I\'ve Verified My Email';
       default:

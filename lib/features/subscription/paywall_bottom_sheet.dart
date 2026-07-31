@@ -5,6 +5,7 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/subscription/subscription_provider.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
+import 'package:it_feels_music/features/subscription/premium_celebration_dialog.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
 class PaywallBottomSheet extends ConsumerStatefulWidget {
@@ -63,16 +64,14 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
       _errorMessage = null;
     });
     
+    final code = _couponController.text.trim();
+    final isFamily = code.toUpperCase() == 'FAMILY';
+    
     final subProvider = ref.read(subscriptionProvider);
-    final success = await subProvider.redeemCoupon(_couponController.text.trim());
+    final success = await subProvider.redeemCoupon(code);
     if (success && mounted) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Coupon applied successfully! Welcome to Premium.'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      PremiumCelebrationDialog.show(context, isFamilyCoupon: isFamily);
     } else if (mounted) {
       setState(() {
         _errorMessage = 'Invalid or expired code.';

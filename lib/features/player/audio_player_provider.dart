@@ -327,6 +327,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     if (pState != null) {
       final List<Song> savedQueue = pState['queue'];
       final int savedIndex = pState['currentIndex'];
+      final int savedPosition = pState['positionSeconds'];
 
       if (savedQueue.isNotEmpty && savedIndex >= 0 && savedIndex < savedQueue.length) {
         final current = savedQueue[savedIndex];
@@ -334,6 +335,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
           queue: savedQueue,
           currentIndex: savedIndex,
           currentSong: current,
+          position: Duration(seconds: savedPosition),
         );
 
         final mediaItems = savedQueue.map<MediaItem>((s) => MediaItem(
@@ -346,6 +348,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
         await audioHandler.updateQueue(mediaItems);
         await audioHandler.skipToQueueItem(savedIndex);
+        if (savedPosition > 0) {
+          await audioHandler.seek(Duration(seconds: savedPosition));
+        }
       }
     }
   }
@@ -385,7 +390,11 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   void _saveMemory() {
-    StorageService.savePlaybackState(state.queue, state.currentIndex);
+    StorageService.savePlaybackState(
+      state.queue, 
+      state.currentIndex, 
+      positionSeconds: state.position.inSeconds,
+    );
   }
 
   void _listenToEvents() {

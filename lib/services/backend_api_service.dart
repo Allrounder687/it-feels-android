@@ -82,7 +82,7 @@ class BackendApiService {
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         prefs.setString(cacheKey, response.body);
-        final data = json.decode(response.body);
+        final data = await compute(jsonDecode, response.body) as Map<String, dynamic>;
         if (data['success'] == true && data['results'] is List) {
           final List results = data['results'];
           return results.map((item) => _songFromProxyJson(item)).toList();
@@ -96,7 +96,7 @@ class BackendApiService {
     final cachedData = prefs.getString(cacheKey);
     if (cachedData != null) {
       debugPrint('[BackendApiService] Loaded Search Results from Offline Device Cache!');
-      final data = json.decode(cachedData);
+      final data = await compute(jsonDecode, cachedData) as Map<String, dynamic>;
       if (data['success'] == true && data['results'] is List) {
         final List results = data['results'];
         return results.map((item) => _songFromProxyJson(item)).toList();
@@ -115,7 +115,7 @@ class BackendApiService {
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
       if (response.statusCode == 200) {
         prefs.setString(cacheKey, response.body);
-        return json.decode(response.body);
+        return await compute(jsonDecode, response.body) as Map<String, dynamic>?;
       }
     } catch (e) {
       debugPrint('[BackendApiService] Native home feed network error, falling back to offline cache: $e');
@@ -125,7 +125,7 @@ class BackendApiService {
     final cachedData = prefs.getString(cacheKey);
     if (cachedData != null) {
       debugPrint('[BackendApiService] Loaded Home Feed from Offline Device Cache!');
-      return json.decode(cachedData);
+      return await compute(jsonDecode, cachedData) as Map<String, dynamic>?;
     }
     return null;
   }

@@ -136,7 +136,7 @@ class AuthNotifier extends Notifier<AuthState> {
     
     state = state.copyWith(viewState: AuthViewState.loading, errorMessage: '');
     try {
-      await _authService.sendPasswordResetEmail(email);
+      await _authService.sendPasswordReset(email);
       state = state.copyWith(
         viewState: AuthViewState.login,
         errorMessage: 'Password reset link sent to $email.',
