@@ -12,6 +12,7 @@ import 'package:it_feels_music/features/library/listening_history_provider.dart'
 import 'package:it_feels_music/features/ai/ai_settings_provider.dart';
 import 'package:it_feels_music/features/settings/profile_provider.dart';
 import 'package:it_feels_music/features/auth/auth_provider.dart';
+import 'package:it_feels_music/features/auth/ban_provider.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/subscription/subscription_provider.dart';
 
@@ -32,6 +33,7 @@ final profileProvider = NotifierProvider<ProfileNotifier, ProfileState>(ProfileN
 final customPlaylistProvider = NotifierProvider<CustomPlaylistNotifier, CustomPlaylistState>(CustomPlaylistNotifier.new);
 final downloadProvider = NotifierProvider<DownloadNotifier, DownloadState>(DownloadNotifier.new);
 final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
+final banProvider = NotifierProvider<BanNotifier, BanState>(BanNotifier.new);
 final aiSettingsProvider = NotifierProvider<AISettingsNotifier, AISettingsState>(AISettingsNotifier.new);
 
 // Group 3: Media & Discovery Notifiers

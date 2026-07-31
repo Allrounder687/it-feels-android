@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
 class SubscriptionService {
@@ -59,9 +60,17 @@ class SubscriptionService {
 
     // 2. Check Custom Firestore Coupon / Entitlement fallback
     try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Check local cache first for FAMILY pass to prevent network flakes from downgrading
+      if (prefs.getBool('isPremiumFamily_${uid}') == true) {
+        return true;
+      }
+
       // Check for FAMILY coupon on user doc directly
       final userDoc = await _firestore.collection('users').doc(uid).get();
       if (userDoc.exists && userDoc.data()?['isPremiumFamily'] == true) {
+        await prefs.setBool('isPremiumFamily_${uid}', true);
         return true;
       }
 
@@ -77,6 +86,11 @@ class SubscriptionService {
       }
     } catch (e) {
       debugPrint("Firestore Entitlement Error: $e");
+      // Fallback to local cache in case of offline/error
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('isPremiumFamily_${uid}') == true) {
+        return true;
+      }
     }
     return false;
   }
@@ -120,6 +134,9 @@ class SubscriptionService {
     // Special Lifetime Coupon "FAMILY"
     if (cleanCode == 'FAMILY') {
       try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isPremiumFamily_${uid}', true);
+
         await _firestore.collection('users').doc(uid).set({
           'isPremiumFamily': true,
         }, SetOptions(merge: true));

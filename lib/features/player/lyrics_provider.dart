@@ -117,9 +117,11 @@ class LyricsNotifier extends Notifier<LyricsState> {
       );
 
       final res = await _lyricsService.fetchLyrics(song);
+      final notFound = res == null || (!res.hasStatic && !res.hasSynced);
       state = state.copyWith(
         lyricsResult: res,
         isLoading: false,
+        lyricsNotFound: notFound,
       );
     }
 

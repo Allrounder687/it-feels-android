@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -24,7 +25,11 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
-      return await _auth.signInWithCredential(credential);
+      final cred = await _auth.signInWithCredential(credential);
+      if (cred.user != null) {
+        await _syncUserToFirestore(cred.user!);
+      }
+      return cred;
     } catch (e) {
       rethrow;
     }
@@ -32,10 +37,14 @@ class AuthService {
   // Sign In
   Future<UserCredential?> signInWithEmail(String email, String password) async {
     try {
-      return await _auth.signInWithEmailAndPassword(
+      final cred = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      if (cred.user != null) {
+        await _syncUserToFirestore(cred.user!);
+      }
+      return cred;
     } catch (e) {
       rethrow;
     }
@@ -50,6 +59,9 @@ class AuthService {
       );
       if (credential.user != null && !credential.user!.emailVerified) {
         await credential.user!.sendEmailVerification();
+      }
+      if (credential.user != null) {
+        await _syncUserToFirestore(credential.user!);
       }
       return credential;
     } catch (e) {
@@ -79,5 +91,28 @@ class AuthService {
   // Send Password Reset
   Future<void> sendPasswordReset(String email) async {
     await _auth.sendPasswordResetEmail(email: email);
+  }
+
+  Future<void> _syncUserToFirestore(User user) async {
+    try {
+      final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final snapshot = await docRef.get();
+      
+      if (!snapshot.exists) {
+        await docRef.set({
+          'email': user.email,
+          'uid': user.uid,
+          'createdAt': FieldValue.serverTimestamp(),
+          'lastLogin': FieldValue.serverTimestamp(),
+          'isBanned': false,
+        });
+      } else {
+        await docRef.update({
+          'lastLogin': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      print('Error syncing user to Firestore: $e');
+    }
   }
 }

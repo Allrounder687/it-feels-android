@@ -41,9 +41,12 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
         final currentSong = playerProvLocal.currentSong;
         final position = playerProvLocal.position;
 
-        if (currentSong != null) {
-          ref.read(lyricsProvider.notifier).loadLyricsIfNeeded(currentSong, position);
-        }
+        ref.listen(audioPlayerProvider.select((p) => p.position), (previous, next) {
+          final song = ref.read(audioPlayerProvider).currentSong;
+          if (song != null) {
+            ref.read(lyricsProvider.notifier).loadLyricsIfNeeded(song, next);
+          }
+        });
 
         return Scaffold(
           backgroundColor: context.themeBackgroundColor,

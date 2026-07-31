@@ -3,6 +3,7 @@ import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:it_feels_music/services/subscription_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late FakeFirebaseFirestore fakeFirestore;
   late SubscriptionService subscriptionService;
 

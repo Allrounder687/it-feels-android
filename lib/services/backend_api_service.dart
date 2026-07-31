@@ -521,19 +521,49 @@ class BackendApiService {
         }
       }
       
-      // If the yt-dlp proxy is configured, prioritize it for 4K video streams!
-      if (ytDlpBackendUrl.isNotEmpty) {
-        final ytDlpData = await _fetchFromYtDlpBackend(cleanId);
-        if (ytDlpData['streams'] != null && (ytDlpData['streams'] as List).isNotEmpty) {
-          debugPrint('[BackendApiService] Successfully fetched 4K streams from yt-dlp proxy!');
-          return ytDlpData;
-        } else {
-           throw Exception("yt-dlp backend failed to extract streams. It might be cold-starting or facing a temporary block.");
+      // Extract streams natively on the device using youtube_explode_dart
+      final manifest = await _yt.videos.streamsClient.getManifest(cleanId);
+      final videoTitle = (await _yt.videos.get(cleanId)).title;
+
+      final List<Map<String, dynamic>> streams = [];
+      
+      // Get Muxed (Video + Audio) streams
+      for (final streamInfo in manifest.muxed) {
+        final qualityLabel = streamInfo.videoQuality.name;
+        streams.add({
+          'quality': qualityLabel,
+          'url': streamInfo.url.toString(),
+          'mimeType': 'video/mp4',
+          'videoOnly': false,
+        });
+      }
+      
+      // Get Video-Only streams for higher qualities
+      for (final streamInfo in manifest.videoOnly) {
+        final qualityLabel = streamInfo.videoQuality.name;
+        if (!streams.any((s) => s['quality'] == qualityLabel)) {
+           streams.add({
+            'quality': qualityLabel,
+            'url': streamInfo.url.toString(),
+            'mimeType': 'video/mp4',
+            'videoOnly': true,
+          });
         }
-      } else {
-         throw Exception("ytDlpBackendUrl is not configured. Cannot extract YouTube streams securely.");
       }
 
+      String audioUrl = '';
+      if (manifest.audioOnly.isNotEmpty) {
+        audioUrl = manifest.audioOnly.withHighestBitrate().url.toString();
+      }
+
+      if (streams.isNotEmpty) {
+        debugPrint('[BackendApiService] Successfully extracted streams via native YoutubeExplode fallback!');
+        return {
+          'title': videoTitle,
+          'streams': streams,
+          'audioUrl': audioUrl,
+        };
+      }
     } catch (e) {
       debugPrint('[BackendApiService] _directYoutubeExplodeStreamFallback error: $e');
     }
