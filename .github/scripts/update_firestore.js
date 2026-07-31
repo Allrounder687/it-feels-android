@@ -32,10 +32,9 @@ async function updateConfig() {
     const docRef = db.collection('client_config').doc('android');
     await docRef.set({
       latest_version: latestVersion,
-      min_version_code: minVersionCode,
       update_url: updateUrl,
       release_notes: releaseNotes
-    }, { merge: true }); // Merge preserves ios_update_url if present
+    }, { merge: true }); // Merge preserves ios_update_url and min_version_code if present
     
     console.log('SUCCESS: OTA configuration updated successfully in Firestore.');
     process.exit(0);

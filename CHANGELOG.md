@@ -4,6 +4,7 @@ All notable changes to **IT Feels Music** will be documented in this file.
 ## [3.3.3] - CI Pipeline Fix
 
 ### Fixed
+- **OTA Release Pipeline:** Removed `min_version_code` overwrite from the automated deployment script so users are no longer forced to update unless manually triggered via Admin Dashboard.
 - **OTA Release Pipeline:** Added keystore decoding step in GitHub Actions to fix Android APK build failure (`validateSigningRelease` error) caused by missing `key.jks`.
 
 ## [3.2.0] - Admin Telemetry & Live Social
