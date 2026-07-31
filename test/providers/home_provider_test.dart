@@ -1,15 +1,18 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/features/home/home_provider.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 class MockMusicApiService extends Mock implements MusicApiService {}
 
 void main() {
   late MockMusicApiService mockApiService;
+  late ProviderContainer container;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({'default_category': 'Trending'});
@@ -17,9 +20,11 @@ void main() {
     if (!locator.isRegistered<MusicApiService>()) {
       locator.registerSingleton<MusicApiService>(mockApiService);
     }
+    container = ProviderContainer();
   });
 
   tearDown(() {
+    container.dispose();
     locator.reset();
   });
 
@@ -40,14 +45,14 @@ void main() {
       when(() => mockApiService.searchPlaylists(any(), count: any(named: 'count'))).thenAnswer((_) async => <Playlist>[]);
       when(() => mockApiService.searchAlbums(any(), count: any(named: 'count'))).thenAnswer((_) async => <Playlist>[]);
 
-      final notifier = HomeNotifier();
-      expect(notifier.state.isLoading, true);
+      container.read(homeProvider);
+      expect(container.read(homeProvider).isLoading, true);
 
       await Future.delayed(const Duration(milliseconds: 100));
 
-      expect(notifier.state.isLoading, false);
-      expect(notifier.state.trendingSongs.length, 1);
-      expect(notifier.state.trendingSongs.first.title, 'Trending 1');
+      expect(container.read(homeProvider).isLoading, false);
+      expect(container.read(homeProvider).trendingSongs.length, 1);
+      expect(container.read(homeProvider).trendingSongs.first.title, 'Trending 1');
     });
 
     test('selectCategory changes category and triggers fetch if needed', () async {
@@ -60,11 +65,11 @@ void main() {
       when(() => mockApiService.searchAll('Podcasts')).thenAnswer((_) async => {'songs': <Song>[], 'playlists': <Playlist>[]});
       when(() => mockApiService.searchPlaylists('Podcasts')).thenAnswer((_) async => <Playlist>[]);
 
-      final notifier = HomeNotifier();
+      final notifier = container.read(homeProvider.notifier);
       await Future.delayed(const Duration(milliseconds: 100));
 
       await notifier.selectCategory('Podcasts');
-      expect(notifier.state.selectedCategory, 'Podcasts');
+      expect(container.read(homeProvider).selectedCategory, 'Podcasts');
       
       verify(() => mockApiService.searchAll('Podcasts')).called(1);
     });

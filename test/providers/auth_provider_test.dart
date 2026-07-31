@@ -141,7 +141,7 @@ void main() {
       container.read(authProvider);
 
       userStreamController.add(mockUser);
-      await Future.delayed(Duration.zero);
+      await Future.delayed(const Duration(milliseconds: 50));
 
       final state = container.read(authProvider);
       expect(state.isAuthenticated, true);
