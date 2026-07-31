@@ -148,8 +148,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   Widget _buildTabContent(
     HomeProvider homeProv,
     AudioPlayerProvider playerProvider,
-    DownloadProvider downloadProviderLocal,
-    CustomPlaylistProvider customPlaylistProviderLocal,
+    DownloadState downloadProviderLocal,
+    CustomPlaylistState customPlaylistProviderLocal,
     List<Song> trending,
     List<Playlist> playlists,
   ) {

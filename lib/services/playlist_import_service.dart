@@ -26,7 +26,7 @@ class PlaylistImportService {
 
   Future<void> startBackgroundImport(
     String url, 
-    CustomPlaylistProvider playlistProvider, 
+    CustomPlaylistState playlistProvider, 
     MusicApiService apiService
   ) async {
     // 1. Initial State

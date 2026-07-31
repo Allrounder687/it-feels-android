@@ -303,7 +303,7 @@ class SongOptionsSheet extends ConsumerWidget {
     );
   }
 
-  void _showAddToPlaylistDialog(BuildContext context, CustomPlaylistProvider provider) {
+  void _showAddToPlaylistDialog(BuildContext context, CustomPlaylistState provider) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
