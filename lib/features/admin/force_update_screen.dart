@@ -181,6 +181,56 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                     ),
                   ],
                 )
+              else if (Platform.isIOS)
+                Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () async {
+                        final url = widget.iosUpdateUrl ?? widget.updateUrl;
+                        final uri = Uri.parse('apple-magnifier://install?url=$url');
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        } else {
+                          await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 56),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: Text("Install via TrollStore", style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final url = widget.iosUpdateUrl ?? widget.updateUrl;
+                        final uri = Uri.parse('altstore://install?url=$url');
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        } else {
+                          await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 56),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: Text("Install via AltStore", style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () => launchUrl(Uri.parse(widget.iosUpdateUrl ?? widget.updateUrl), mode: LaunchMode.externalApplication),
+                      child: Text(
+                        "Download IPA (Safari)",
+                        style: GoogleFonts.inter(fontSize: 16, color: Colors.white70, decoration: TextDecoration.underline),
+                      ),
+                    ),
+                  ],
+                )
               else
                 ElevatedButton(
                   onPressed: _downloadAndInstall,
@@ -193,7 +243,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                     ),
                   ),
                   child: Text(
-                    Platform.isIOS ? "Download Update (Safari)" : _statusMessage,
+                    _statusMessage,
                     style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
