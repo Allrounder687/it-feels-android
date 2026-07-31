@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_core_platform_interface/firebase_core_platform_interface.dart';
 import 'package:it_feels_music/features/player/lyrics_screen.dart';
 import 'package:it_feels_music/features/player/lyrics_provider.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
@@ -61,8 +60,6 @@ class FakeSong extends Fake implements Song {}
 void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    setupFirebaseCoreMocks();
-    await Firebase.initializeApp();
     registerFallbackValue(FakeSong());
     registerFallbackValue(Duration.zero);
   });
