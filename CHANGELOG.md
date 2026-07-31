@@ -1,6 +1,11 @@
 # Changelog
 
 All notable changes to **IT Feels Music** will be documented in this file.
+## [3.3.3] - CI Pipeline Fix
+
+### Fixed
+- **OTA Release Pipeline:** Added keystore decoding step in GitHub Actions to fix Android APK build failure (`validateSigningRelease` error) caused by missing `key.jks`.
+
 ## [3.2.0] - Admin Telemetry & Live Social
 
 ### Added & Refactored
