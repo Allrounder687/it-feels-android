@@ -5,6 +5,7 @@ import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:it_feels_music/services/notification_service.dart';
 import 'package:it_feels_music/services/cloud_sync_service.dart';
 import 'package:it_feels_music/services/telemetry_service.dart';
+import 'package:it_feels_music/features/social/social_service.dart';
 
 final GetIt locator = GetIt.instance;
 
