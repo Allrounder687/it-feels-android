@@ -168,7 +168,7 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                         icon: const Icon(Icons.play_arrow_rounded, size: 28),
                         label: Text("Play All", style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700)),
                         onPressed: () {
-                          playerProvider.playSong(songs.first, queue: songs, index: 0);
+                          ref.read(audioPlayerProvider.notifier).playSong(songs.first, queue: songs, index: 0);
                         },
                       ),
                   ],
@@ -224,7 +224,7 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                                   ],
                                 ),
                                 onTap: () {
-                                  playerProvider.playSong(song, queue: songs, index: index);
+                                  ref.read(audioPlayerProvider.notifier).playSong(song, queue: songs, index: index);
                                 },
                               ),
                             ),

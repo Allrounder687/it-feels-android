@@ -219,7 +219,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                                     ),
                                     child: GestureDetector(
                                         onTap: () {
-                                          playerProvLocal.seek(line.time);
+                                          ref.read(audioPlayerProvider.notifier).seek(line.time);
                                         },
                                         onLongPress: () {
                                           if (currentSong != null) {
@@ -307,7 +307,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                                     duration: playerProvLocal.duration,
                                     activeColor: AppColors.midnightAccent,
                                     inactiveColor: context.themeTextColor24,
-                                    onSeek: (pos) => playerProvLocal.seek(pos),
+                                    onSeek: (pos) => ref.read(audioPlayerProvider.notifier).seek(pos),
                                   );
                                 },
                               ),

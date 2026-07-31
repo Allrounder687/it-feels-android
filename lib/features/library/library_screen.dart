@@ -382,7 +382,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 },
               ),
               onTap: () {
-                playerProvider.playSong(song, queue: songs, index: index);
+                ref.read(audioPlayerProvider.notifier).playSong(song, queue: songs, index: index);
               },
               onLongPress: () {
                 SongOptionsSheet.show(context, song, playlistContext: songs);

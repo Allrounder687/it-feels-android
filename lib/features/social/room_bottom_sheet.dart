@@ -41,7 +41,7 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
-        await audioProvider.startBroadcasting(user.uid);
+        await ref.read(audioPlayerProvider.notifier).startBroadcasting(user.uid);
       } catch (e) {
         debugPrint('Error starting broadcast: $e');
         if (mounted) {
@@ -61,7 +61,7 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
     setState(() => _isLoading = true);
     final audioProvider = ref.read(audioPlayerProvider);
     try {
-      await audioProvider.joinSession(pin);
+      await ref.read(audioPlayerProvider.notifier).joinSession(pin);
       if (mounted) Navigator.pop(context);
     } catch (e) {
       debugPrint('Error joining session: $e');
@@ -236,7 +236,7 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
         const SizedBox(height: 16),
         ElevatedButton(
           onPressed: () {
-            audioProvider.leaveSession();
+            ref.read(audioPlayerProvider.notifier).leaveSession();
             Navigator.pop(context);
           },
           style: ElevatedButton.styleFrom(

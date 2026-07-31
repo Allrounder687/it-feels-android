@@ -88,7 +88,7 @@ class _SmartRecommendationsRowState extends ConsumerState<SmartRecommendationsRo
               final song = _recommendations[index];
               return GestureDetector(
                 onTap: () {
-                  playerProvider.playSong(song, queue: _recommendations, index: index);
+                  ref.read(audioPlayerProvider.notifier).playSong(song, queue: _recommendations, index: index);
                 },
                 onLongPress: () {
                   SongOptionsSheet.show(context, song, playlistContext: _recommendations);

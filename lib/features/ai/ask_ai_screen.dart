@@ -95,7 +95,7 @@ class _AskAIScreenState extends ConsumerState<AskAIScreen> {
                         icon: const Icon(Icons.play_arrow_rounded, size: 28),
                         label: Text("Play Now & Clear Queue", style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold)),
                         onPressed: () {
-                          audioProvider.playSong(response.resultSongs!.first, queue: response.resultSongs, index: 0);
+                          ref.read(audioPlayerProvider.notifier).playSong(response.resultSongs!.first, queue: response.resultSongs, index: 0);
                           Navigator.pop(bottomSheetContext);
                           Navigator.pop(context);
                         },
@@ -114,7 +114,7 @@ class _AskAIScreenState extends ConsumerState<AskAIScreen> {
                               icon: const Icon(Icons.queue_music, size: 20),
                               label: Text("Queue", style: GoogleFonts.outfit(fontSize: 14)),
                               onPressed: () {
-                                audioProvider.addSongsToQueue(response.resultSongs!);
+                                ref.read(audioPlayerProvider.notifier).addSongsToQueue(response.resultSongs!);
                                 Navigator.pop(bottomSheetContext); // close bottom sheet
                                 Navigator.pop(context); // close ask ai screen
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -158,7 +158,7 @@ class _AskAIScreenState extends ConsumerState<AskAIScreen> {
       } else {
         // Play the generated playlist directly if queue is empty
         final firstSong = response.resultSongs!.first;
-        audioProvider.playSong(firstSong, queue: response.resultSongs, index: 0);
+        ref.read(audioPlayerProvider.notifier).playSong(firstSong, queue: response.resultSongs, index: 0);
         Navigator.pop(context); // Go back home/player
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

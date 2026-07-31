@@ -300,7 +300,7 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                       final newPos = ctrl.value.position - const Duration(seconds: 10);
                                       ctrl.seekTo(newPos);
                                       if (!settingsProviderLocal.useVideoAudioSource) {
-                                        audioProvider.seek(newPos);
+                                        ref.read(audioPlayerProvider.notifier).seek(newPos);
                                       }
                                     }
                                   },
@@ -324,13 +324,13 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                         if (ctrl.value.isPlaying) {
                                           ctrl.pause();
                                           if (!settingsProviderLocal.useVideoAudioSource) {
-                                            audioProvider.pause();
+                                            ref.read(audioPlayerProvider.notifier).pause();
                                           }
                                         } else {
                                           ctrl.play();
                                           if (!settingsProviderLocal.useVideoAudioSource) {
-                                            audioProvider.seek(ctrl.value.position);
-                                            audioProvider.play();
+                                            ref.read(audioPlayerProvider.notifier).seek(ctrl.value.position);
+                                            ref.read(audioPlayerProvider.notifier).play();
                                           }
                                         }
                                         setState(() {});
@@ -347,7 +347,7 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                       final newPos = ctrl.value.position + const Duration(seconds: 10);
                                       ctrl.seekTo(newPos);
                                       if (!settingsProviderLocal.useVideoAudioSource) {
-                                        audioProvider.seek(newPos);
+                                        ref.read(audioPlayerProvider.notifier).seek(newPos);
                                       }
                                     }
                                   },
@@ -371,7 +371,7 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                           _startHideControlsTimer();
                                           ctrl.seekTo(newPos);
                                           if (!settingsProviderLocal.useVideoAudioSource) {
-                                            audioProvider.seek(newPos);
+                                            ref.read(audioPlayerProvider.notifier).seek(newPos);
                                           }
                                         },
                                       );

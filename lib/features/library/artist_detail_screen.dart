@@ -214,7 +214,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                                 ),
                                 onPressed: () {
                                   if (_topSongs.isNotEmpty) {
-                                    playerProvider.playSong(_topSongs[0], queue: _topSongs, index: 0);
+                                    ref.read(audioPlayerProvider.notifier).playSong(_topSongs[0], queue: _topSongs, index: 0);
                                   }
                                 },
                               ),
@@ -290,7 +290,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                                 },
                               ),
                               onTap: () {
-                                playerProvider.playSong(song, queue: _topSongs, index: index);
+                                ref.read(audioPlayerProvider.notifier).playSong(song, queue: _topSongs, index: index);
                               },
                               onLongPress: () {
                                 SongOptionsSheet.show(context, song, playlistContext: _topSongs);

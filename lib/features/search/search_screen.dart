@@ -284,7 +284,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                               },
                                             ),
                                             onTap: () {
-                                              playerProviderObj.playSong(song, queue: songs, index: songs.indexOf(song));
+                                              ref.read(audioPlayerProvider.notifier).playSong(song, queue: songs, index: songs.indexOf(song));
                                             },
                                             onLongPress: () {
                                               SongOptionsSheet.show(context, song, playlistContext: songs);

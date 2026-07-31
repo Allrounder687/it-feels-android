@@ -59,7 +59,7 @@ class SleepTimerSheet extends ConsumerWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      audioProvider.cancelSleepTimer();
+                      ref.read(audioPlayerProvider.notifier).cancelSleepTimer();
                       Navigator.pop(context);
                     },
                     style: TextButton.styleFrom(
@@ -86,7 +86,7 @@ class SleepTimerSheet extends ConsumerWidget {
                 ? Icon(Icons.check_circle, color: audioProvider.themeAccentColor)
                 : Icon(Icons.circle_outlined, color: context.themeMutedTextColor),
             onTap: () {
-              audioProvider.setSleepAfterCurrentTrack();
+              ref.read(audioPlayerProvider.notifier).setSleepAfterCurrentTrack();
               Navigator.pop(context);
             },
           ),

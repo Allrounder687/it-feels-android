@@ -162,7 +162,7 @@ class MiniPlayer extends ConsumerWidget {
 
                             // Play/Pause Button
                             GestureDetector(
-                              onTap: () => playerProvider.togglePlayPause(),
+                              onTap: () => ref.read(audioPlayerProvider.notifier).togglePlayPause(),
                               behavior: HitTestBehavior.opaque,
                               child: Container(
                                 padding: const EdgeInsets.all(8),
@@ -173,7 +173,7 @@ class MiniPlayer extends ConsumerWidget {
                                 child: AnimatedPlayPauseButton(
                                   isPlaying: playerProvider.isPlaying,
                                   onPressed: () =>
-                                      playerProvider.togglePlayPause(),
+                                      ref.read(audioPlayerProvider.notifier).togglePlayPause(),
                                   color: context.themeTextColor,
                                   size: 24,
                                 ),

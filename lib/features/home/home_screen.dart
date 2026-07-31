@@ -165,7 +165,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
-                          onPressed: () => player.playSong(heroSong, queue: [heroSong], index: 0),
+                          onPressed: () => ref.read(audioPlayerProvider.notifier).playSong(heroSong, queue: [heroSong], index: 0),
                           icon: const Icon(Icons.play_arrow_rounded, color: Colors.black),
                           label: Text(
                             "Play Now",
@@ -295,7 +295,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               itemBuilder: (context, index) {
                 final song = songs[index];
                 return GestureDetector(
-                  onTap: () => playerProvider.playSong(song, queue: songs, index: index),
+                  onTap: () => ref.read(audioPlayerProvider.notifier).playSong(song, queue: songs, index: index),
                   onLongPress: () => SongOptionsSheet.show(context, song, playlistContext: songs),
                   child: Row(
                     children: [

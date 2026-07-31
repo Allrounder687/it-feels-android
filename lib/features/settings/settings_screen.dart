@@ -401,17 +401,17 @@ class SettingsScreen extends ConsumerWidget {
                   ref.read(settingsProvider.notifier).setTheme(val);
                   final player = ref.read(audioPlayerProvider);
                   if (val == "System (Material You)") {
-                    player.setAppThemeMode(AppThemeMode.materialYou);
+                    ref.read(audioPlayerProvider.notifier).setAppThemeMode(AppThemeMode.materialYou);
                   } else if (val == "Midnight Dark") {
-                    player.setAppThemeMode(AppThemeMode.midnight);
+                    ref.read(audioPlayerProvider.notifier).setAppThemeMode(AppThemeMode.midnight);
                   } else if (val == "Burgundy Dark") {
-                    player.setAppThemeMode(AppThemeMode.burgundy);
+                    ref.read(audioPlayerProvider.notifier).setAppThemeMode(AppThemeMode.burgundy);
                   } else if (val == "Pitch Black (AMOLED)") {
-                    player.setAppThemeMode(AppThemeMode.amoled);
+                    ref.read(audioPlayerProvider.notifier).setAppThemeMode(AppThemeMode.amoled);
                   } else if (val == "Light Mode") {
-                    player.setAppThemeMode(AppThemeMode.light);
+                    ref.read(audioPlayerProvider.notifier).setAppThemeMode(AppThemeMode.light);
                   } else {
-                    player.setAppThemeMode(AppThemeMode.dynamic);
+                    ref.read(audioPlayerProvider.notifier).setAppThemeMode(AppThemeMode.dynamic);
                   }
                 },
               ),

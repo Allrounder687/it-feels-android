@@ -75,11 +75,13 @@ Future<void> main() async {
     ),
   );
 
+  locator.registerSingleton<AudioPlayerHandler>(_audioHandler);
+
   appProviderContainer = ProviderContainer(
     overrides: [
-      audioPlayerProvider.overrideWith((ref) => AudioPlayerProvider(
-        audioHandler: _audioHandler,
-        apiService: locator<MusicApiService>(),
+      audioPlayerProvider.overrideWith(() => AudioPlayerNotifier(
+        _audioHandler,
+        locator<MusicApiService>(),
       )),
     ],
   );

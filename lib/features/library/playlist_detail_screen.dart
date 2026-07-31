@@ -208,7 +208,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                 ),
                                 onPressed: () {
                                   if (_songs.isNotEmpty) {
-                                    playerProvider.playSong(_songs[0], queue: _songs, index: 0);
+                                    ref.read(audioPlayerProvider.notifier).playSong(_songs[0], queue: _songs, index: 0);
                                   }
                                 },
                               ),
@@ -230,7 +230,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                 onPressed: () {
                                   if (_songs.isNotEmpty) {
                                     final shuffled = List<Song>.from(_songs)..shuffle();
-                                    playerProvider.playSong(shuffled[0], queue: shuffled, index: 0);
+                                    ref.read(audioPlayerProvider.notifier).playSong(shuffled[0], queue: shuffled, index: 0);
                                   }
                                 },
                               ),
@@ -332,7 +332,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                       },
                                     ),
                               onTap: () {
-                                playerProvider.playSong(song, queue: _songs, index: index);
+                                ref.read(audioPlayerProvider.notifier).playSong(song, queue: _songs, index: index);
                               },
                               onLongPress: () {
                                 SongOptionsSheet.show(context, song, playlistContext: _songs);

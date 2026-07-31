@@ -127,7 +127,7 @@ class SongOptionsSheet extends ConsumerWidget {
             title: "Play Now",
             onTap: () {
               Navigator.pop(context);
-              playerProv.playSong(song, queue: playlistContext ?? [song]);
+              ref.read(audioPlayerProvider.notifier).playSong(song, queue: playlistContext ?? [song]);
             },
           ),
 
@@ -138,7 +138,7 @@ class SongOptionsSheet extends ConsumerWidget {
             title: "Play Next",
             onTap: () {
               Navigator.pop(context);
-              playerProv.playNext(song);
+              ref.read(audioPlayerProvider.notifier).playNext(song);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text("Playing next: ${song.title}"),
@@ -155,7 +155,7 @@ class SongOptionsSheet extends ConsumerWidget {
             title: "Add to Queue",
             onTap: () {
               Navigator.pop(context);
-              playerProv.addToQueue(song);
+              ref.read(audioPlayerProvider.notifier).addToQueue(song);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text("Added to queue: ${song.title}"),
@@ -223,7 +223,7 @@ class SongOptionsSheet extends ConsumerWidget {
             title: isFav ? "Remove from Favorites" : "Add to Favorites",
             onTap: () {
               Navigator.pop(context);
-              playerProv.toggleFavorite(song);
+              ref.read(audioPlayerProvider.notifier).toggleFavorite(song);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(isFav

@@ -56,16 +56,16 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
       } else {
         // Keep high quality audio playing from music player!
         ref.read(videoPlayerProvider.notifier).setMuted(true);
-        audioProvider.seek(position);
+        ref.read(audioPlayerProvider.notifier).seek(position);
         if (!audioProvider.isPlaying) {
-          audioProvider.play();
+          ref.read(audioPlayerProvider.notifier).play();
         }
       }
       
       ref.read(videoPlayerProvider.notifier).setOnVideoStarted(() {
         if (_isVideoMode && !settingsProv.useVideoAudioSource) {
           if (!audioProvider.isPlaying) {
-            audioProvider.play();
+            ref.read(audioPlayerProvider.notifier).play();
           }
         }
       });
@@ -81,9 +81,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
       // Switching to audio
       final position = videoProvider.videoController?.value.position ?? Duration.zero;
       videoProvider.videoController?.pause();
-      audioProvider.seek(position);
+      ref.read(audioPlayerProvider.notifier).seek(position);
       if (!audioProvider.isPlaying) {
-        audioProvider.play();
+        ref.read(audioPlayerProvider.notifier).play();
       }
     }
   }
@@ -547,7 +547,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                       child: Row(
                         children: [
                           GestureDetector(
-                            onTap: () => playerProvider.toggleFavorite(currentSong),
+                            onTap: () => ref.read(audioPlayerProvider.notifier).toggleFavorite(currentSong),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                               decoration: BoxDecoration(
@@ -683,7 +683,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                     videoProvider.videoController?.seekTo(newPos);
                                     final settingsProv = ref.read(settingsProvider);
                                     if (!settingsProv.useVideoAudioSource) {
-                                      playerProvider.seek(newPos);
+                                      ref.read(audioPlayerProvider.notifier).seek(newPos);
                                     }
                                   },
                                 ),
@@ -721,7 +721,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                 duration: playerProvider.duration,
                                 activeColor: accentColor,
                                 inactiveColor: context.themeTextColor24,
-                                onSeek: (newPos) => playerProvider.seek(newPos),
+                                onSeek: (newPos) => ref.read(audioPlayerProvider.notifier).seek(newPos),
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -764,7 +764,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                 final newPos = pos - const Duration(seconds: 10);
                                 videoProvider.videoController?.seekTo(newPos);
                                 if (!settingsProv.useVideoAudioSource) {
-                                  playerProvider.seek(newPos);
+                                  ref.read(audioPlayerProvider.notifier).seek(newPos);
                                 }
                               } else {
                                 playerProvider.seekBackward();
@@ -774,7 +774,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                           BouncyIconButton(
                             child: Icon(Icons.skip_previous_rounded, color: context.themeTextColor, size: isWide ? 42 : 36),
                             onPressed: () {
-                              playerProvider.skipToPrevious();
+                              ref.read(audioPlayerProvider.notifier).skipToPrevious();
                             },
                           ),
                           BouncyIconButton(
@@ -791,14 +791,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   } else {
                                     ctrl.play();
                                     if (!settingsProv.useVideoAudioSource) {
-                                      playerProvider.seek(ctrl.value.position);
+                                      ref.read(audioPlayerProvider.notifier).seek(ctrl.value.position);
                                       playerProvider.play();
                                     }
                                   }
                                   setState(() {});
                                 }
                               } else {
-                                playerProvider.togglePlayPause();
+                                ref.read(audioPlayerProvider.notifier).togglePlayPause();
                               }
                             },
                             padding: EdgeInsets.zero,
@@ -826,7 +826,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                           } else {
                                             videoProvider.videoController!.play();
                                             if (!settingsProv.useVideoAudioSource) {
-                                              playerProvider.seek(value.position);
+                                              ref.read(audioPlayerProvider.notifier).seek(value.position);
                                               playerProvider.play();
                                             }
                                           }
@@ -838,7 +838,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   )
                                 : AnimatedPlayPauseButton(
                                     isPlaying: playerProvider.isPlaying,
-                                    onPressed: () => playerProvider.togglePlayPause(),
+                                    onPressed: () => ref.read(audioPlayerProvider.notifier).togglePlayPause(),
                                     color: context.themeInvertedTextColor,
                                     size: isWide ? 44 : 38,
                                   ),
@@ -847,7 +847,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                           BouncyIconButton(
                             child: Icon(Icons.skip_next_rounded, color: context.themeTextColor, size: isWide ? 42 : 36),
                             onPressed: () {
-                              playerProvider.skipToNext();
+                              ref.read(audioPlayerProvider.notifier).skipToNext();
                             },
                           ),
                           BouncyIconButton(
@@ -859,7 +859,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                 final newPos = pos + const Duration(seconds: 10);
                                 videoProvider.videoController?.seekTo(newPos);
                                 if (!settingsProv.useVideoAudioSource) {
-                                  playerProvider.seek(newPos);
+                                  ref.read(audioPlayerProvider.notifier).seek(newPos);
                                 }
                               } else {
                                 playerProvider.seekForward();
@@ -900,7 +900,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                               color: playerProvider.isShuffle ? accentColor : context.themeMutedTextColor, 
                               size: 24,
                             ),
-                            onPressed: () => playerProvider.toggleShuffle(),
+                            onPressed: () => ref.read(audioPlayerProvider.notifier).toggleShuffle(),
                           ),
                           BouncyIconButton(
                             child: Icon(Icons.queue_music_rounded, color: context.themeMutedTextColor, size: 24),
@@ -919,7 +919,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                               color: playerProvider.isRepeat ? accentColor : context.themeMutedTextColor, 
                               size: 24,
                             ),
-                            onPressed: () => playerProvider.toggleRepeat(),
+                            onPressed: () => ref.read(audioPlayerProvider.notifier).toggleRepeat(),
                           ),
                         ],
                       ),

@@ -69,7 +69,7 @@ class _SeeAllSongsScreenState extends ConsumerState<SeeAllSongsScreen> {
             icon: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 32),
             onPressed: () {
               if (filteredSongs.isNotEmpty) {
-                playerProvider.playSong(filteredSongs[0], queue: filteredSongs, index: 0);
+                ref.read(audioPlayerProvider.notifier).playSong(filteredSongs[0], queue: filteredSongs, index: 0);
               }
             },
           ),
@@ -191,7 +191,7 @@ class _SeeAllSongsScreenState extends ConsumerState<SeeAllSongsScreen> {
                                 },
                               ),
                               onTap: () {
-                                playerProvider.playSong(song, queue: filteredSongs, index: index);
+                                ref.read(audioPlayerProvider.notifier).playSong(song, queue: filteredSongs, index: index);
                               },
                               onLongPress: () {
                                 SongOptionsSheet.show(context, song, playlistContext: filteredSongs);

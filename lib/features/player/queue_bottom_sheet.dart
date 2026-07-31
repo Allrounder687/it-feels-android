@@ -90,7 +90,7 @@ class QueueBottomSheet extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         itemCount: queue.length,
                         onReorder: (oldIndex, newIndex) {
-                          playerProvider.reorderQueue(oldIndex, newIndex);
+                          ref.read(audioPlayerProvider.notifier).reorderQueue(oldIndex, newIndex);
                         },
                         itemBuilder: (context, index) {
                           final song = queue[index];
@@ -146,7 +146,7 @@ class QueueBottomSheet extends ConsumerWidget {
                                       )
                                     : Icon(Icons.drag_handle_rounded, color: context.themeTextColor.withValues(alpha: 0.3)),
                                 onTap: () {
-                                  playerProvider.playSong(song, queue: queue, index: index);
+                                  ref.read(audioPlayerProvider.notifier).playSong(song, queue: queue, index: index);
                                 },
                               ),
                             ),

@@ -1,7 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:it_feels_music/core/utils/service_locator.dart';
-import 'package:it_feels_music/data/services/music_api_service.dart';
-import 'package:it_feels_music/data/services/lyrics_service.dart';
 
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/library/download_provider.dart';
@@ -19,30 +16,29 @@ import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/subscription/subscription_provider.dart';
 
 // -------------------------------------------------------------------------
-// RIVERPOD ARCHITECTURE LAYER
+// RIVERPOD ARCHITECTURE LAYER - ALL NOTIFIERS & IMMUTABLE STATES
 // -------------------------------------------------------------------------
 
-final audioPlayerProvider = ChangeNotifierProvider<AudioPlayerProvider>((ref) {
-  throw UnimplementedError('audioPlayerProvider must be overridden in ProviderScope');
-});
+// Core Audio Player Engine Notifier
+final audioPlayerProvider = NotifierProvider<AudioPlayerNotifier, AudioPlayerState>(AudioPlayerNotifier.new);
 
-// Group 1: Immutable Notifiers
+// Group 1: Preferences & Settings Notifiers
 final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(SettingsNotifier.new);
 final hiddenSongsProvider = NotifierProvider<HiddenSongsNotifier, HiddenSongsState>(HiddenSongsNotifier.new);
 final listeningHistoryProvider = NotifierProvider<ListeningHistoryNotifier, ListeningHistoryState>(ListeningHistoryNotifier.new);
 final profileProvider = NotifierProvider<ProfileNotifier, ProfileState>(ProfileNotifier.new);
 
-// Group 2: Immutable Notifiers
+// Group 2: Library & Auth Notifiers
 final customPlaylistProvider = NotifierProvider<CustomPlaylistNotifier, CustomPlaylistState>(CustomPlaylistNotifier.new);
 final downloadProvider = NotifierProvider<DownloadNotifier, DownloadState>(DownloadNotifier.new);
 final authProvider = NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
 final aiSettingsProvider = NotifierProvider<AISettingsNotifier, AISettingsState>(AISettingsNotifier.new);
 
-// Group 3: Immutable Notifiers
+// Group 3: Media & Discovery Notifiers
 final homeProvider = NotifierProvider<HomeNotifier, HomeState>(HomeNotifier.new);
 final searchProvider = NotifierProvider<SearchNotifier, SearchState>(SearchNotifier.new);
 final lyricsProvider = NotifierProvider<LyricsNotifier, LyricsState>(LyricsNotifier.new);
 final videoPlayerProvider = NotifierProvider<VideoPlayerNotifier, VideoPlayerState>(VideoPlayerNotifier.new);
 
-// Remaining Bridge Providers
+// Subscription Provider
 final subscriptionProvider = ChangeNotifierProvider<SubscriptionProvider>((ref) => SubscriptionProvider());

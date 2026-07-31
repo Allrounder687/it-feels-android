@@ -31,14 +31,14 @@ class DrivingModeScreen extends ConsumerWidget {
               if (details.primaryVelocity != null) {
                 if (details.primaryVelocity! < 0) {
                   // Swipe Left -> Next
-                  playerProvider.skipToNext();
+                  ref.read(audioPlayerProvider.notifier).skipToNext();
                 } else if (details.primaryVelocity! > 0) {
                   // Swipe Right -> Previous
-                  playerProvider.skipToPrevious();
+                  ref.read(audioPlayerProvider.notifier).skipToPrevious();
                 }
               }
             },
-            onTap: () => playerProvider.togglePlayPause(),
+            onTap: () => ref.read(audioPlayerProvider.notifier).togglePlayPause(),
             child: Container(
               color: Colors.black,
               width: double.infinity,

@@ -89,7 +89,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
                         min: 0.5,
                         max: 2.0,
                         divisions: 15,
-                        onChanged: (val) => audioProvider.setPlaybackSpeed(val),
+                        onChanged: (val) => ref.read(audioPlayerProvider.notifier).setPlaybackSpeed(val),
                       ),
                     ),
                   ],
@@ -107,7 +107,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
                         min: 0.5,
                         max: 2.0,
                         divisions: 15,
-                        onChanged: (val) => audioProvider.setPlaybackPitch(val),
+                        onChanged: (val) => ref.read(audioPlayerProvider.notifier).setPlaybackPitch(val),
                       ),
                     ),
                   ],
@@ -122,8 +122,8 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: context.themeCardColor),
                 onPressed: () {
-                  audioProvider.setPlaybackSpeed(1.0);
-                  audioProvider.setPlaybackPitch(1.0);
+                  ref.read(audioPlayerProvider.notifier).setPlaybackSpeed(1.0);
+                  ref.read(audioPlayerProvider.notifier).setPlaybackPitch(1.0);
                 },
                 child: const Text("Reset Speed/Pitch"),
               ),
@@ -150,7 +150,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
                     return;
                   }
                 }
-                audioProvider.setDspEngine(val);
+                ref.read(audioPlayerProvider.notifier).setDspEngine(val);
               },
               activeThumbColor: context.themeAccentColor,
               tileColor: context.themeTextColor.withValues(alpha: 0.05),
@@ -169,7 +169,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
             title: Text("UI Haptics", style: GoogleFonts.inter(color: context.themeTextColor)),
             subtitle: Text("Subtle vibrations on Play/Pause, Skip, etc.", style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
             value: audioProvider.uiHapticsEnabled,
-            onChanged: (val) => audioProvider.setUiHaptics(val),
+            onChanged: (val) => ref.read(audioPlayerProvider.notifier).setUiHaptics(val),
             activeThumbColor: context.themeAccentColor,
             tileColor: context.themeTextColor.withValues(alpha: 0.05),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -179,7 +179,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
             title: Text("Audio-Sync Haptics (Experimental)", style: GoogleFonts.inter(color: context.themeTextColor)),
             subtitle: Text("Simulates beat drops. Warning: May cause battery drain.", style: GoogleFonts.inter(color: Colors.orangeAccent, fontSize: 12)),
             value: audioProvider.audioSyncHapticsEnabled,
-            onChanged: (val) => audioProvider.setAudioSyncHaptics(val),
+            onChanged: (val) => ref.read(audioPlayerProvider.notifier).setAudioSyncHaptics(val),
             activeThumbColor: context.themeAccentColor,
             tileColor: context.themeTextColor.withValues(alpha: 0.05),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -205,7 +205,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
                     divisions: 12,
                     label: '${audioProvider.crossfadeDuration.toInt()}s',
                     onChanged: (val) {
-                      audioProvider.setCrossfadeDuration(val);
+                      ref.read(audioPlayerProvider.notifier).setCrossfadeDuration(val);
                     },
                   ),
                 ),
