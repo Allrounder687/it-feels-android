@@ -72,6 +72,10 @@ class VideoPlayerState {
 }
 
 class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
+  void setOnVideoStarted(VoidCallback? callback) {
+    state = state.copyWith(onVideoStarted: callback);
+  }
+
   bool _isRecovering = false;
   int _recoveryAttempts = 0;
 

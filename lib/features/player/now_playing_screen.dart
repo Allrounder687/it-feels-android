@@ -62,7 +62,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         }
       }
       
-      videoProvider.onVideoStarted = () {
+      ref.read(videoPlayerProvider.notifier).setOnVideoStarted(() {
         if (_isVideoMode && !settingsProv.useVideoAudioSource) {
           if (!audioProvider.isPlaying) {
             audioProvider.play();

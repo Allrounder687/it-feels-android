@@ -70,7 +70,7 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
     }
   }
 
-  void _showQualityPicker(BuildContext context, VideoPlayerProvider videoProvider) {
+  void _showQualityPicker(BuildContext context, VideoPlayerState videoProvider) {
     if (videoProvider.streams.isEmpty) return;
     
     showModalBottomSheet(

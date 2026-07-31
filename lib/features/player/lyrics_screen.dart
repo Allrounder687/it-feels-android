@@ -187,7 +187,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                       : lyricsProvLocal.mode == LyricsMode.synced &&
                               lyricsProvLocal.result.hasSynced
                           ? ScrollablePositionedList.builder(
-                              itemScrollController: lyricsProvLocal.itemScrollController,
+                              itemScrollController: ref.read(lyricsProvider.notifier).itemScrollController,
                               padding: EdgeInsets.symmetric(horizontal: 28, vertical: MediaQuery.of(context).size.height * 0.3),
                               itemCount: lyricsProvLocal.result.syncedLyrics.length,
                               itemBuilder: (context, index) {

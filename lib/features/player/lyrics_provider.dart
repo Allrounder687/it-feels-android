@@ -132,7 +132,7 @@ class LyricsNotifier extends Notifier<LyricsState> {
     }
   }
 
-  void scrollToActiveIndex() {
+  void scrollToActiveIndex({bool force = false}) {
     if (itemScrollController.isAttached && state.activeIndex >= 0) {
       itemScrollController.scrollTo(
         index: state.activeIndex,
