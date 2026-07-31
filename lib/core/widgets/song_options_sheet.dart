@@ -14,6 +14,7 @@ import 'package:it_feels_music/main.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
 
 class SongOptionsSheet extends ConsumerWidget {
   final Song song;
@@ -154,6 +155,7 @@ class SongOptionsSheet extends ConsumerWidget {
             },
           ),
           
+          /*
           // Action: Send to Friend
           _buildOptionTile(context,
             icon: Icons.send_rounded,
@@ -161,9 +163,10 @@ class SongOptionsSheet extends ConsumerWidget {
             title: "Send to Friend",
             onTap: () {
               Navigator.pop(context);
-              _showSendToFriendDialog(context);
+              // _showSendToFriendDialog(context);
             },
           ),
+          */
 
           // Action 3: Add to Queue
           _buildOptionTile(context, 
@@ -356,6 +359,73 @@ class SongOptionsSheet extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _showSendToFriendDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final socialService = locator<SocialService>();
+        return AlertDialog(
+          backgroundColor: context.themeSurfaceColor,
+          title: Text("Send to Friend", style: GoogleFonts.outfit(color: context.themeTextColor)),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 300,
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: socialService.getFriendsStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data?.data() == null) {
+                  return Center(child: Text("No friends added yet.", style: GoogleFonts.inter(color: context.themeMutedTextColor)));
+                }
+
+                final data = snapshot.data!.data() as Map<String, dynamic>;
+                final friends = List<String>.from(data['friends'] ?? []);
+
+                if (friends.isEmpty) {
+                  return Center(child: Text("No friends added yet.", style: GoogleFonts.inter(color: context.themeMutedTextColor)));
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: friends.length,
+                  itemBuilder: (context, index) {
+                    final friendUid = friends[index];
+                    return FutureBuilder<Map<String, dynamic>?>(
+                      future: socialService.getFriendDetails(friendUid),
+                      builder: (context, friendSnapshot) {
+                        if (!friendSnapshot.hasData) return const SizedBox.shrink();
+                        final friendData = friendSnapshot.data!;
+                        return ListTile(
+                          title: Text(friendData['name'] ?? 'Unknown', style: GoogleFonts.inter(color: context.themeTextColor)),
+                          subtitle: Text(friendData['username'] ?? '', style: GoogleFonts.inter(color: context.themeMutedTextColor)),
+                          onTap: () {
+                            socialService.sendSong(friendUid, song);
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Sent to ${friendData['name']}")),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text("Cancel", style: TextStyle(color: context.themeMutedTextColor)),
+            ),
+          ],
+        );
+      },
     );
   }
 }
