@@ -7,6 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'dart:ui';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
+import 'package:it_feels_music/features/subscription/subscription_provider.dart';
+import 'package:it_feels_music/features/subscription/paywall_bottom_sheet.dart';
 
 class RoomBottomSheet extends ConsumerStatefulWidget {
   final bool isHost;
@@ -38,6 +40,15 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
   }
 
   Future<void> _startHosting() async {
+    final isPremium = ref.read(subscriptionProvider).isPremium;
+    if (!isPremium) {
+      if (mounted) {
+        Navigator.pop(context);
+        PaywallBottomSheet.show(context, featureName: "Listen Together");
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -145,6 +156,41 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
               "For Listen Together to work, users need to be logged in.",
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final isPremium = ref.watch(subscriptionProvider).isPremium;
+    if (!isPremium) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const Icon(Icons.workspace_premium_rounded, size: 48, color: Colors.amber),
+            const SizedBox(height: 12),
+            const Text(
+              "Premium Required",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "Only IT Feels Premium users can create and host Listen Together rooms.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                PaywallBottomSheet.show(context, featureName: "Listen Together");
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amber,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text("Upgrade Now"),
             ),
           ],
         ),

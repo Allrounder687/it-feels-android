@@ -5,8 +5,24 @@ import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-class AdminDashboardScreen extends StatelessWidget {
+enum AdminFilter { all, online, premium, banned }
+
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  AdminFilter _currentFilter = AdminFilter.all;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   String _formatDuration(int seconds) {
     if (seconds < 60) return '${seconds}s';
@@ -22,6 +38,17 @@ class AdminDashboardScreen extends StatelessWidget {
       );
     } catch (e) {
       debugPrint('[AdminDashboard] Failed to toggle ban: $e');
+    }
+  }
+
+  void _togglePremium(String uid, bool currentStatus) async {
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(uid).set(
+        {'isPremiumFamily': !currentStatus},
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      debugPrint('[AdminDashboard] Failed to toggle premium: $e');
     }
   }
 
@@ -44,9 +71,56 @@ class AdminDashboardScreen extends StatelessWidget {
             color: context.themeTextColor,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.campaign, color: context.themeTextColor),
+            onPressed: () => _showBroadcastDialog(context),
+            tooltip: 'Send Global Broadcast',
+          ),
+        ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('users').orderBy('lastActive', descending: true).snapshots(),
+      body: Column(
+        children: [
+          // Search & Filters
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _searchController,
+                  onChanged: (value) => setState(() {}),
+                  style: TextStyle(color: context.themeTextColor),
+                  decoration: InputDecoration(
+                    hintText: 'Search by email, UID, or device...',
+                    hintStyle: TextStyle(color: context.themeMutedTextColor),
+                    prefixIcon: Icon(Icons.search, color: context.themeMutedTextColor),
+                    filled: true,
+                    fillColor: context.themeSurfaceColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildFilterChip("All", AdminFilter.all),
+                      _buildFilterChip("Online", AdminFilter.online),
+                      _buildFilterChip("Premium", AdminFilter.premium),
+                      _buildFilterChip("Banned", AdminFilter.banned),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance.collection('users').orderBy('lastActive', descending: true).snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent));
@@ -55,7 +129,46 @@ class AdminDashboardScreen extends StatelessWidget {
             return Center(child: Text("Error fetching data: ${snapshot.error}", style: TextStyle(color: context.themeTextColor)));
           }
 
-          final docs = snapshot.data?.docs ?? [];
+          var docs = snapshot.data?.docs ?? [];
+          
+          // Apply Filters
+          docs = docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>? ?? {};
+            final uid = doc.id;
+            final email = data['email'] ?? uid;
+            final deviceModel = data['deviceInfo'] ?? data['deviceModel'] ?? 'Unknown Device';
+            final isOnline = data['isOnline'] ?? false;
+            final isBanned = data['isBanned'] ?? false;
+            final isPremium = data['isPremiumFamily'] ?? false;
+
+            // Search query
+            final query = _searchController.text.toLowerCase();
+            if (query.isNotEmpty) {
+              if (!email.toLowerCase().contains(query) && 
+                  !uid.toLowerCase().contains(query) &&
+                  !deviceModel.toLowerCase().contains(query)) {
+                return false;
+              }
+            }
+
+            // Choice filter
+            switch (_currentFilter) {
+              case AdminFilter.all:
+                break;
+              case AdminFilter.online:
+                if (!isOnline) return false;
+                break;
+              case AdminFilter.premium:
+                if (!isPremium) return false;
+                break;
+              case AdminFilter.banned:
+                if (!isBanned) return false;
+                break;
+            }
+
+            return true;
+          }).toList();
+
           if (docs.isEmpty) {
             return Center(
               child: Text(
@@ -74,12 +187,17 @@ class AdminDashboardScreen extends StatelessWidget {
               
               final isOnline = data['isOnline'] ?? false;
               final isBanned = data['isBanned'] ?? false;
-              final deviceModel = data['deviceModel'] ?? 'Unknown Device';
+              final isPremium = data['isPremiumFamily'] ?? false;
+              final email = data['email'] ?? uid; // Fallback to UID if email not present
+              final deviceModel = data['deviceInfo'] ?? data['deviceModel'] ?? 'Unknown Device';
               final totalSeconds = data['totalUsageSeconds'] ?? 0;
-              final locationMap = data['location'] as Map<String, dynamic>?;
-              final locationStr = locationMap != null 
-                  ? '${locationMap['city'] ?? ''}, ${locationMap['country'] ?? ''}'.trim()
-                  : 'Unknown Location';
+              final rawLocation = data['location'];
+              String locationStr = 'Unknown Location';
+              if (rawLocation is String) {
+                locationStr = rawLocation;
+              } else if (rawLocation is Map) {
+                locationStr = '${rawLocation['city'] ?? ''}, ${rawLocation['country'] ?? ''}'.trim();
+              }
                   
               final lastActiveRaw = data['lastActive'];
               final lastActiveTime = lastActiveRaw is Timestamp ? lastActiveRaw.toDate() : null;
@@ -124,7 +242,7 @@ class AdminDashboardScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            uid,
+                            email,
                             style: GoogleFonts.inter(
                               color: context.themeTextColor,
                               fontWeight: FontWeight.w700,
@@ -155,12 +273,25 @@ class AdminDashboardScreen extends StatelessWidget {
                       ),
                     ),
                     
-                    // Ban Toggle
-                    Switch(
-                      value: isBanned,
-                      activeColor: Colors.redAccent,
-                      inactiveTrackColor: context.themeBackgroundColor,
-                      onChanged: (val) => _toggleBan(uid, isBanned),
+                    // Actions
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            isPremium ? Icons.star : Icons.star_border, 
+                            color: isPremium ? Colors.amber : Colors.grey
+                          ),
+                          onPressed: () => _togglePremium(uid, isPremium),
+                          tooltip: 'Toggle Premium',
+                        ),
+                        Switch(
+                          value: isBanned,
+                          activeColor: Colors.redAccent,
+                          inactiveTrackColor: context.themeBackgroundColor,
+                          onChanged: (val) => _toggleBan(uid, isBanned),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -169,6 +300,104 @@ class AdminDashboardScreen extends StatelessWidget {
           );
         },
       ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, AdminFilter filter) {
+    final isSelected = _currentFilter == filter;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: ChoiceChip(
+        label: Text(
+          label, 
+          style: TextStyle(
+            color: isSelected ? context.themeInvertedTextColor : context.themeTextColor,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
+          )
+        ),
+        selected: isSelected,
+        onSelected: (selected) {
+          if (selected) {
+            setState(() {
+              _currentFilter = filter;
+            });
+          }
+        },
+        selectedColor: context.themeAccentColor,
+        backgroundColor: context.themeSurfaceColor,
+        side: BorderSide(
+          color: isSelected ? Colors.transparent : context.themeMutedTextColor.withValues(alpha: 0.3),
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+    );
+  }
+
+  void _showBroadcastDialog(BuildContext context) {
+    final titleController = TextEditingController();
+    final messageController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: context.themeSurfaceColor,
+          title: Text("Send Broadcast", style: TextStyle(color: context.themeTextColor)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                style: TextStyle(color: context.themeTextColor),
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  labelStyle: TextStyle(color: context.themeMutedTextColor),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: messageController,
+                style: TextStyle(color: context.themeTextColor),
+                maxLines: 3,
+                decoration: InputDecoration(
+                  labelText: 'Message',
+                  labelStyle: TextStyle(color: context.themeMutedTextColor),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cancel", style: TextStyle(color: context.themeMutedTextColor)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: context.themeAccentColor),
+              onPressed: () async {
+                final title = titleController.text.trim();
+                final msg = messageController.text.trim();
+                if (title.isNotEmpty && msg.isNotEmpty) {
+                  await FirebaseFirestore.instance.collection('broadcasts').add({
+                    'title': title,
+                    'message': msg,
+                    'timestamp': FieldValue.serverTimestamp(),
+                  });
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Broadcast sent successfully!')),
+                    );
+                  }
+                }
+              },
+              child: Text("Send", style: TextStyle(color: context.themeInvertedTextColor)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

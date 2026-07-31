@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:it_feels_music/core/utils/hinglish_transliterator.dart';
@@ -40,86 +41,118 @@ class LyricsService {
     } catch (_) {}
   }
 
-  /// Fetch lyrics for a song (Proxy API -> LRCLIB / Saavn Fallback)
+  /// Fetch lyrics for a song (Races Proxy, LRCLIB, and Saavn concurrently)
   Future<LyricsResult> fetchLyrics(Song song, {Function(String)? onError}) async {
     if (_lyricsCache.containsKey(song.id)) {
       return _lyricsCache[song.id]!;
     }
-    // 0. Try Backend Proxy API if enabled
-    if (BackendApiService.useProxyBackend) {
-      try {
-        final proxyResult = await BackendApiService.getLyrics(
-          song.title,
-          song.artist,
-          album: song.album,
-          duration: song.duration,
-        );
 
-        if (proxyResult != null) {
-          final syncedStr = proxyResult['synced'];
-          final plainStr = proxyResult['plain'];
+    final completer = Completer<LyricsResult?>();
+    int pendingCount = 0;
 
-          List<LyricLine> parsedSynced = [];
-          if (syncedStr != null && syncedStr.isNotEmpty) {
-            parsedSynced = LrcParser.parse(syncedStr)
-                .map((l) => LyricLine(
-                      time: l.time,
-                      text: HinglishTransliterator.transliterate(l.text),
-                    ))
-                .toList();
-          }
-
-          final staticText = (plainStr != null && plainStr.isNotEmpty)
-              ? HinglishTransliterator.transliterate(plainStr)
-              : null;
-
-          if (parsedSynced.isNotEmpty || staticText != null) {
-            final res = LyricsResult(
-              staticLyrics: staticText,
-              syncedLyrics: parsedSynced,
-            );
-            _lyricsCache[song.id] = res;
-            return res;
+    void tryComplete(LyricsResult? res) {
+      if (!completer.isCompleted) {
+        if (res != null && (res.hasSynced || res.hasStatic)) {
+          completer.complete(res);
+        } else {
+          pendingCount--;
+          if (pendingCount <= 0 && !completer.isCompleted) {
+            completer.complete(null);
           }
         }
-      } catch (e) {
-        debugPrint('[LyricsService] Backend proxy lyrics error: $e');
       }
     }
 
-    String? staticLrc;
-    List<LyricLine> syncedLrc = [];
+    if (BackendApiService.useProxyBackend) {
+      pendingCount++;
+      _fetchProxy(song).then(tryComplete).catchError((_) => tryComplete(null));
+    }
+    
+    pendingCount++;
+    _fetchLrcLib(song).then(tryComplete).catchError((_) => tryComplete(null));
+    
+    pendingCount++;
+    _fetchSaavn(song, onError: onError).then(tryComplete).catchError((_) => tryComplete(null));
 
-    // 1. Try Music API static lyrics
+    if (pendingCount == 0) return LyricsResult();
+
+    final result = await completer.future ?? LyricsResult();
+    _lyricsCache[song.id] = result;
+    return result;
+  }
+
+  Future<LyricsResult?> _fetchProxy(Song song) async {
+    try {
+      final proxyResult = await BackendApiService.getLyrics(
+        song.title,
+        song.artist,
+        album: song.album,
+        duration: song.duration,
+      );
+
+      if (proxyResult != null) {
+        final syncedStr = proxyResult['synced'];
+        final plainStr = proxyResult['plain'];
+
+        List<LyricLine> parsedSynced = [];
+        if (syncedStr != null && syncedStr.isNotEmpty) {
+          parsedSynced = LrcParser.parse(syncedStr)
+              .map((l) => LyricLine(
+                    time: l.time,
+                    text: HinglishTransliterator.transliterate(l.text),
+                  ))
+              .toList();
+        }
+
+        final staticText = (plainStr != null && plainStr.isNotEmpty)
+            ? HinglishTransliterator.transliterate(plainStr)
+            : null;
+
+        if (parsedSynced.isNotEmpty || staticText != null) {
+          return LyricsResult(
+            staticLyrics: staticText,
+            syncedLyrics: parsedSynced,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[LyricsService] Backend proxy lyrics error: $e');
+    }
+    return null;
+  }
+
+  Future<LyricsResult?> _fetchSaavn(Song song, {Function(String)? onError}) async {
     try {
       final saavnId = song.saavnId.isNotEmpty ? song.saavnId : (song.id.startsWith('saavn:') ? song.id.split(':')[1] : song.id);
       if (saavnId.isNotEmpty && saavnId.length > 3 && !saavnId.startsWith('youtube:')) {
         final saavnUrl = Uri.parse(
             '$_saavnBaseUrl?__call=lyrics.getLyrics&_format=json&ctx=web6dot0&api_version=4&lyrics_id=$saavnId');
-        final response = await http.get(saavnUrl, headers: _headers).timeout(const Duration(seconds: 5));
+        final response = await http.get(saavnUrl, headers: _headers).timeout(const Duration(seconds: 4));
 
         if (response.statusCode == 200) {
           final data = await compute(jsonDecode, response.body);
           if (data['lyrics'] != null) {
             final rawStatic = _cleanText(data['lyrics'].toString());
-            staticLrc = HinglishTransliterator.transliterate(rawStatic);
+            return LyricsResult(staticLyrics: HinglishTransliterator.transliterate(rawStatic));
           }
         }
       }
     } catch (e) {
       debugPrint('[LyricsService] Music API lyrics error: $e');
-      if (onError != null) onError('Failed to load Music API lyrics');
     }
+    return null;
+  }
 
-    // 2. Try LRCLIB for synced LRC lyrics
+  Future<LyricsResult?> _fetchLrcLib(Song song) async {
     try {
       final cleanTitle = song.title.replaceAll(RegExp(r'\s*\([^)]*\)'), '').replaceAll(RegExp(r'\s*\[[^\]]*\]'), '').trim();
       final cleanArtist = song.artist.split(',').first.split('&').first.trim();
       final query = '$cleanArtist $cleanTitle'.trim();
+      if (query.isEmpty) return null;
       
       final lrclibUrl = Uri.parse(
           'https://lrclib.net/api/search?q=${Uri.encodeComponent(query)}');
-      final response = await http.get(lrclibUrl).timeout(const Duration(seconds: 6));
+      final response = await http.get(lrclibUrl).timeout(const Duration(seconds: 4));
 
       if (response.statusCode == 200) {
         final data = await compute(jsonDecode, response.body);
@@ -129,20 +162,15 @@ class LyricsService {
             final trackName = item['trackName']?.toString() ?? '';
             final artistName = item['artistName']?.toString() ?? '';
             
-            // Clean strings for comparison
             final targetTrack = trackName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
             final targetSongTitle = cleanTitle.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
             final targetArtist = artistName.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
             final targetSongArtist = cleanArtist.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
 
-            // Calculate similarity
             final titleSimilarity = targetTrack.similarityTo(targetSongTitle);
             final artistSimilarity = targetArtist.similarityTo(targetSongArtist);
 
-            // Skip if the result is completely unrelated to our song
-            if (titleSimilarity < 0.3 && artistSimilarity < 0.2) {
-              continue;
-            }
+            if (titleSimilarity < 0.3 && artistSimilarity < 0.2) continue;
 
             final rawSynced = item['syncedLyrics']?.toString();
             if (rawSynced != null && rawSynced.isNotEmpty) {
@@ -156,26 +184,21 @@ class LyricsService {
           }
 
           if (bestLrc != null) {
-            syncedLrc = LrcParser.parse(bestLrc);
+            var syncedLrc = LrcParser.parse(bestLrc);
             syncedLrc = syncedLrc
                 .map((line) => LyricLine(
                       time: line.time,
                       text: HinglishTransliterator.transliterate(line.text),
                     ))
                 .toList();
+            return LyricsResult(syncedLyrics: syncedLrc);
           }
         }
       }
     } catch (e) {
       debugPrint('[LyricsService] LRCLIB synced lyrics error: $e');
     }
-
-    final res = LyricsResult(
-      staticLyrics: staticLrc,
-      syncedLyrics: syncedLrc,
-    );
-    _lyricsCache[song.id] = res;
-    return res;
+    return null;
   }
 
   static String _cleanText(String input) {

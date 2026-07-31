@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class TelemetryService with WidgetsBindingObserver {
   String? _uid;
+  String? _userEmail;
   bool _isTracking = false;
   Stopwatch? _sessionStopwatch;
   
@@ -18,6 +19,7 @@ class TelemetryService with WidgetsBindingObserver {
 
   Future<void> startTracking(User user) async {
     _uid = user.uid;
+    _userEmail = user.email;
     if (_isTracking) return;
     
     _isTracking = true;
@@ -97,6 +99,10 @@ class TelemetryService with WidgetsBindingObserver {
     try {
       final docRef = FirebaseFirestore.instance.collection('users').doc(_uid);
       final updateData = <String, dynamic>{};
+      
+      if (_userEmail != null) {
+        updateData['email'] = _userEmail;
+      }
       
       // Get Device Info
       final deviceInfo = DeviceInfoPlugin();

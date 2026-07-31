@@ -299,7 +299,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               TextButton(
                                 onPressed: () {
                                   ref.read(authProvider.notifier).signOut();
-                                  Navigator.pop(context);
+                                  Navigator.pop(context); // Close dialog
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Logged out successfully', style: TextStyle(color: context.themeBackgroundColor)),
+                                        backgroundColor: context.themeTextColor,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
                                 },
                                 child: const Text('Sign Out', style: TextStyle(color: Colors.red)),
                               ),

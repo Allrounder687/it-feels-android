@@ -2,16 +2,12 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
-- **Unified Multi-Backend Search Engine:** Re-architected `SearchNotifier` to concurrently execute and merge search results from the global Saavn API and the native custom IT-Feels Catalog. Dynamically implemented a deep purple `IT-FEELS` UI badge renderer and a smart relevance-balancing injection algorithm (Index 1 insertion) to prevent local indie tracks from completely overriding exact global billboard hits.
-- **Silent Background Video Engine (Zero-Wait UX):** Massively overhauled `NowPlayingScreen` and `VideoPlayerNotifier` state lifecycles to fix ghost video memory leaks. Skipping tracks in video mode now instantly falls back to 60fps high-res album art while silently pre-fetching and buffering native 720p muxed mp4 streams via `youtube_explode_dart` in the background. Designed a responsive glowing "Video" tab UI state that dynamically lights up upon background initialization for a zero-wait UX.
-- **Android Auto & MediaBrowserService Integration:** Enhanced `AudioPlayerHandler` with full support for Android Auto car dashboards. Built multi-category browsing (`Recently Played`, `Favorites`) under `getChildren` and implemented `playFromMediaId` for zero-friction one-tap track playback directly from vehicle head units.
-- **World-Class Architecture Upgrade:** 
-  1. **Zero-Buffering Audio Engine:** Replaced `AudioSource.uri` with `LockCachingAudioSource` for automatic local disk caching of all streams.
-  2. **Concurrent Network Racing:** Rebuilt `BackendApiService` to race `youtube_explode` natively vs the Piped API via `Future.any()`, solving all latency and rate-limit issues.
-  3. **True Background Downloading:** Integrated `background_downloader` into `DownloadService` allowing downloads to persist in the Android WorkManager after app kill.
-  4. **Live Karaoke Auto-Scroll:** Verified and activated time-synced lyrics with `ScrollablePositionedList`.
-  5. **Advanced Telemetry:** Built `TelemetryService` (capturing device, IP location, session duration) and anonymous guest user tracking linked to Firestore.
-  6. **Mock Test Re-Alignment:** Fixed brittle `BackendApiService` unit tests by replacing strict string equality mocks with resilient type assertions for the racing engine.
+- **Admin Telemetry & Live Social Expansion (v3.2.0):** 
+  1. **Concurrent Lyrics Racing:** Overhauled `LyricsService` from a slow sequential waterfall to a concurrent `Completer` race against 3 API sources, resolving lyrics in under a second.
+  2. **Admin Filters & Dashboards:** Converted dashboard to stateful UI with offline local search filters (ChoiceChips) for heavy traffic.
+  3. **Global Broadcasts & Reactive Promos:** Built `InAppBroadcastListener` to blanket the app in real-time snackbars triggered from the dashboard. Wired the Firebase stream to instantly trigger Confetti celebrations on remote Premium upgrades.
+  4. **Force Update OTA Engine:** Built `ConfigService` and `ForceUpdateScreen` blocking users based on Firebase `min_version_code` mapping to `package_info_plus`.
+  5. **Live Listening Parties:** Finalized real-time synced rooms. Locked hosting logic behind `subscriptionProvider` while permitting free-tier entry.
 
 ## Agent Directives (Rules)
 - **Strict Development Workflow:** ALWAYS follow this exact cycle for new features: 1) Write the code. 2) Create unit/integration tests to verify functionality and prevent regressions. 3) Run and verify the tests pass. 4) Document the changes in `README.md`, `CHANGELOG.md`, and any relevant `.gemini/skills/` files. 5) Run a local `git commit` locking in the verified feature.

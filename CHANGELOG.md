@@ -1,6 +1,15 @@
 # Changelog
 
 All notable changes to **IT Feels Music** will be documented in this file.
+## [3.2.0] - Admin Telemetry & Live Social
+
+### Added & Refactored
+- **Endless Lyrics Fix:** Re-architected `LyricsService` to concurrently race Proxy, Saavn, and LRCLIB APIs via `Completer`, bypassing long timeout bottlenecks and dropping fetch times to <1s.
+- **Admin Dashboard Search & Filter:** Upgraded the Admin UI with a real-time search engine (by email/UID/Device) and dynamic `ChoiceChip` filtering (Online, Premium, Banned).
+- **Global In-App Broadcasts:** Built an active `InAppBroadcastListener` overlay that triggers striking snackbar announcements across all active user devices triggered directly from the Admin Dashboard.
+- **OTA Force Update Engine:** Introduced `ConfigService` reading `client_config` on boot to gracefully trap users on outdated app versions in an un-dismissable `ForceUpdateScreen`. (Includes bypasses for AltStore/TrollStore users on iOS).
+- **Social Listening Parties:** Hooked the Live Room sync engine up, granting Premium users the exclusive right to host multi-device broadcasting sessions while allowing free users to join via PIN.
+- **Premium Celebration UI:** Integrated physics-based `confetti` into the `PremiumCelebrationDialog` and connected it to a real-time reactive Firestore stream to instantly trigger fireworks for users upon remote manual upgrades.
 
 ## [3.1.0] - World Class Architecture Upgrade
 

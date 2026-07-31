@@ -68,7 +68,11 @@ class AuthNotifier extends Notifier<AuthState> {
         _cloudSyncService.stopSync();
         _telemetryService.stopTracking();
         // Automatically sign in anonymously if no user is present (Guest mode)
-        _authService.signInAnonymously();
+        try {
+          _authService.signInAnonymously();
+        } catch (e) {
+          debugPrint('Anonymous sign-in failed: $e');
+        }
       }
     });
 
