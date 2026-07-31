@@ -88,6 +88,7 @@ dependencies:
   confetti: ^0.8.0
   package_info_plus: ^9.0.1
   open_file_plus: ^3.4.1+1
+  url_launcher: ^6.3.2
 
 
 
