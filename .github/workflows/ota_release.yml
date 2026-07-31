@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*' # Triggers when you push a tag like v3.3.0
+      - 'android-v*'
 
 jobs:
   build-and-release:

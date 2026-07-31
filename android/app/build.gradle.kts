@@ -10,7 +10,7 @@ plugins {
 
 android {
     namespace = "com.itfeels.music"
-    compileSdk = 37
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

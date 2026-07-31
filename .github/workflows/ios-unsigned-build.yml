@@ -3,10 +3,9 @@ name: iOS Unsigned Build
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
-      - it-feels-branch
-      - feature/backend-proxy-migration
+    tags:
+      - 'v*'
+      - 'ios-v*'
 
 jobs:
   build-ios:
