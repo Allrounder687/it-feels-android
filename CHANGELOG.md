@@ -4,6 +4,7 @@ All notable changes to **IT Feels Music** will be documented in this file.
 ## [3.3.3] - CI Pipeline Fix
 
 ### Fixed
+- **Auth Flow (0 Cognitive Overload):** Redesigned email verification logic so that new users are instantly dropped into the app with full Telemetry and Cloud Sync running. Verification emails are now sent silently in the background without blocking the user.
 - **Admin Dashboard:** Initialized `lastActive` and `totalUsageSeconds` for all new signups in `AuthService` so that users pending email verification immediately appear in dashboard sorting queries.
 - **OTA Release Pipeline:** Removed `min_version_code` overwrite from the automated deployment script so users are no longer forced to update unless manually triggered via Admin Dashboard.
 - **OTA Release Pipeline:** Added keystore decoding step in GitHub Actions to fix Android APK build failure (`validateSigningRelease` error) caused by missing `key.jks`.

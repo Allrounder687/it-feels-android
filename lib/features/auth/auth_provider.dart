@@ -56,13 +56,12 @@ class AuthNotifier extends Notifier<AuthState> {
         final isPasswordProvider = (user.providerData ?? []).any((info) => info.providerId == 'password');
         if (isPasswordProvider && !user.emailVerified) {
           state = state.copyWith(viewState: AuthViewState.emailVerificationPending);
-          _cloudSyncService.stopSync();
-          _telemetryService.stopTracking();
         } else {
           state = state.copyWith(viewState: AuthViewState.authenticated);
-          _cloudSyncService.initializeSync(user);
-          _telemetryService.startTracking(user);
         }
+        // Zero Cognitive Overload: Start essential services immediately regardless of verification
+        _cloudSyncService.initializeSync(user);
+        _telemetryService.startTracking(user);
       } else {
         state = state.copyWith(viewState: AuthViewState.login);
         _cloudSyncService.stopSync();
