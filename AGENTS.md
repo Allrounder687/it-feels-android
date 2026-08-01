@@ -2,7 +2,11 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
-- **Social Enhancements & Player Fixes Release (v3.5.9):**
+- **Social Tab Crash Hotfix (v3.5.11):**
+  - **Crash Fix**: Resolved a critical layout exception in the Social Tab caused by Firebase Realtime Database occasionally returning lists instead of maps. Wrapped items and type casts in `try-catch` blocks to prevent the `TabBarView` from rendering the ErrorWidget (a blank grey screen).
+  - **Version Bump:** Incremented version to `3.5.11+43`.
+
+- **Social Enhancements & Player Fixes Release (v3.5.9 / v3.5.10):**
   - **Modern Chat Bubbles**: Revamped the Social Inbox to use native iMessage-like gradient chat bubbles.
   - **Active Rooms Carousel**: Integrated a global carousel in the Friends tab to display active Listen Together rooms, filtering for public rooms hosted by premium users.
   - **Friend Profiles**: Added interactive profiles accessible via the friends list, allowing users to view and import public playlists.

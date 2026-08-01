@@ -1,3 +1,9 @@
+## v3.5.11+43
+- **Bug Fixes**: Fixed a critical crash in the Social Tab where the entire screen would turn blank (ErrorWidget) if Firebase returned a List instead of a Map, or if a user profile was missing fields.
+
+## v3.5.10+42
+- **Config**: Updated `google-services.json` to fix Google Sign-in SHA-1 authentication issues.
+
 ## v3.5.9+41
 - **Social Features**: Revamped Inbox with chat bubbles, added a global Active Rooms Carousel, and introduced interactive Friend Profiles with public playlist sharing.
 - **Bug Fixes**: Fixed infinite loading in playlist sharing, restored precise LRCLIB lyrics sync, and resolved the persistent video tab glow bug.
