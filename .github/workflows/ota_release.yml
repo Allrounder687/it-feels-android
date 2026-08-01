@@ -48,7 +48,7 @@ jobs:
         run: shorebird release android --artifact apk
 
       - name: Rename APK file
-        run: mv build/app/outputs/apk/release/app-release.apk it-feels-android-${{ github.ref_name }}.apk
+        run: mv build/app/outputs/flutter-apk/app-release.apk it-feels-android-${{ github.ref_name }}.apk
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
