@@ -5,6 +5,7 @@ import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 class CastBottomSheet extends ConsumerWidget {
   const CastBottomSheet({super.key});
@@ -63,9 +64,11 @@ class CastBottomSheet extends ConsumerWidget {
             future: castService.searchDevices(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
+                return const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
-                  child: CircularProgressIndicator(),
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
                 );
               }
               final devices = snapshot.data ?? [];

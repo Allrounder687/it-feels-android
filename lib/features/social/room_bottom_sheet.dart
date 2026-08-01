@@ -9,6 +9,10 @@ import 'dart:ui';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 
 import 'package:it_feels_music/features/subscription/paywall_bottom_sheet.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:it_feels_music/features/social/social_service.dart';
 
 class RoomBottomSheet extends ConsumerStatefulWidget {
   final bool isHost;
