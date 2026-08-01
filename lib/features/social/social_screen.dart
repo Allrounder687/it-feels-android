@@ -339,7 +339,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                     _socialService.deleteMessage(docId);
                   },
                   child: Container(
-                    margin: const EdgeInsets.only(left: 16, right: 48, top: 4, bottom: 4),
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
