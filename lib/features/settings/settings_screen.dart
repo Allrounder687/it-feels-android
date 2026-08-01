@@ -69,7 +69,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 value: settings.isDataSaverEnabled,
-                activeColor: context.themeAccentColor,
+                activeTrackColor: context.themeAccentColor,
                 onChanged: (val) => ref.read(settingsProvider.notifier).setDataSaverEnabled(val),
               ),
 
@@ -144,7 +144,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 value: settings.useVideoAudioSource,
-                activeColor: context.themeAccentColor,
+                activeTrackColor: context.themeAccentColor,
                 onChanged: (val) => ref.read(settingsProvider.notifier).setUseVideoAudioSource(val),
               ),
 
@@ -295,7 +295,7 @@ class SettingsScreen extends ConsumerWidget {
 
               SwitchListTile.adaptive(
                 value: settings.useProxyBackend,
-                activeColor: context.themeAccentColor,
+                activeTrackColor: context.themeAccentColor,
                 title: Text(
                   "Use Serverless Proxy Backend",
                   style: GoogleFonts.outfit(
@@ -320,7 +320,7 @@ class SettingsScreen extends ConsumerWidget {
 
               SwitchListTile.adaptive(
                 value: settings.enableMusicVideos,
-                activeColor: context.themeAccentColor,
+                activeTrackColor: context.themeAccentColor,
                 title: Text(
                   "Enable Music Videos & Video Tab",
                   style: GoogleFonts.outfit(

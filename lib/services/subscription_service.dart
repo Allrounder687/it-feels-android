@@ -53,7 +53,7 @@ class SubscriptionService {
     // 0. Check local device-wide premium flag (persists across app updates & guest resets)
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool('isPremiumDevice') == true || (uid.isNotEmpty && prefs.getBool('isPremiumFamily_${uid}') == true)) {
+      if (prefs.getBool('isPremiumDevice') == true || (uid.isNotEmpty && prefs.getBool('isPremiumFamily_$uid') == true)) {
         return true;
       }
     } catch (_) {}
@@ -75,14 +75,14 @@ class SubscriptionService {
       final prefs = await SharedPreferences.getInstance();
       
       // Global device level premium flag so app updates / guest resets don't revoke premium
-      if (prefs.getBool('isPremiumDevice') == true || prefs.getBool('isPremiumFamily_${uid}') == true) {
+      if (prefs.getBool('isPremiumDevice') == true || prefs.getBool('isPremiumFamily_$uid') == true) {
         return true;
       }
 
       // Check for FAMILY coupon on user doc directly
       final userDoc = await _firestore.collection('users').doc(uid).get();
       if (userDoc.exists && userDoc.data()?['isPremiumFamily'] == true) {
-        await prefs.setBool('isPremiumFamily_${uid}', true);
+        await prefs.setBool('isPremiumFamily_$uid', true);
         await prefs.setBool('isPremiumDevice', true);
         return true;
       }
@@ -102,7 +102,7 @@ class SubscriptionService {
       debugPrint("Firestore Entitlement Error: $e");
       // Fallback to local cache in case of offline/error
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool('isPremiumDevice') == true || prefs.getBool('isPremiumFamily_${uid}') == true) {
+      if (prefs.getBool('isPremiumDevice') == true || prefs.getBool('isPremiumFamily_$uid') == true) {
         return true;
       }
     }
@@ -159,7 +159,7 @@ class SubscriptionService {
     if (cleanCode == 'FAMILY') {
       try {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isPremiumFamily_${uid}', true);
+        await prefs.setBool('isPremiumFamily_$uid', true);
         await prefs.setBool('isPremiumDevice', true);
 
         await _firestore.collection('users').doc(uid).set({

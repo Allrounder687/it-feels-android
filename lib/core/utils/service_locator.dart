@@ -7,12 +7,16 @@ import 'package:it_feels_music/services/cloud_sync_service.dart';
 import 'package:it_feels_music/services/telemetry_service.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
+import 'package:it_feels_music/services/database_service.dart';
 
 final GetIt locator = GetIt.instance;
 
 /// Sets up the service locator for Dependency Injection.
 /// Call this before runApp() in main.dart.
 Future<void> setupServiceLocator() async {
+  // Initialize Isar Database
+  await DatabaseService.init();
+
   // Setup structured logging
   locator.registerLazySingleton<Logger>(() => Logger(
         printer: PrettyPrinter(
@@ -33,6 +37,4 @@ Future<void> setupServiceLocator() async {
   locator.registerLazySingleton<NotificationService>(() => NotificationService());
   locator.registerLazySingleton<SocialService>(() => SocialService());
   locator.registerLazySingleton<it_feels_music_cast_service.CastService>(() => it_feels_music_cast_service.CastService());
-
-  // (Optional) You can register ViewModels or other Providers here if you migrate away from ChangeNotifierProvider in the future.
 }
