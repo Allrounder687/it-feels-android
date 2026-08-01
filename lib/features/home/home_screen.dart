@@ -299,6 +299,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               final crossAxisCount = isWide ? 4 : 3;
               final carouselHeight = isWide ? 290.0 : 220.0;
               
+              // In a horizontal GridView:
+              // crossAxis is vertical (height), mainAxis is horizontal (width).
+              // We want each item to be wide enough to take up most of the screen, so titles aren't truncated.
+              final itemWidth = screenWidth * (isWide ? 0.40 : 0.85);
+              
+              // Calculate effective row height
+              // crossAxisSpacing is the vertical spacing between rows (12.0)
+              final rowHeight = (carouselHeight - (crossAxisCount - 1) * 12.0) / crossAxisCount;
+              final aspectRatio = rowHeight / itemWidth;
+              
               return SizedBox(
                 height: carouselHeight,
                 child: GridView.builder(
@@ -306,9 +316,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
-                    childAspectRatio: 0.25,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 12,
+                    childAspectRatio: aspectRatio,
+                    mainAxisSpacing: 16, // Horizontal spacing between items
+                    crossAxisSpacing: 12, // Vertical spacing between rows
                   ),
               itemCount: songs.length > 15 ? 15 : songs.length,
               itemBuilder: (context, index) {

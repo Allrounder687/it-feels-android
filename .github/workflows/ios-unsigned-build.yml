@@ -37,7 +37,14 @@ jobs:
           
       - name: Install dependencies
         run: |
-          flutter config --no-enable-swift-package-manager
+          flutter config --enable-swift-package-manager
+          
+          # Patch Flutter SDK SPM generator to force iOS 15.0 deployment target instead of hardcoded 13.0
+          echo "Patching Flutter SDK SPM minimum iOS deployment target to 15.0..."
+          find "$FLUTTER_ROOT" -type f -name "*.dart" -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
+          find "$FLUTTER_ROOT" -type f -name "*.dart" -exec sed -i '' "s/'13\.0'/'15\.0'/g" {} + || true
+          find "$FLUTTER_ROOT" -type f -name "*.tmpl" -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
+          
           flutter clean
           flutter pub get
 
@@ -161,10 +168,11 @@ jobs:
           
           # 3. FORCE SPM Package.swift to iOS 15 (Fix for Flutter 3.24+ hardcoding 13.0)
           echo "Finding and patching Package.swift files..."
-          find ios -name "Package.swift" -type f -exec sed -i '' 's/"12\.0"/"15\.0"/g' {} + || true
-          find ios -name "Package.swift" -type f -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
-          find ios -name "Package.swift" -type f -exec sed -i '' 's/"14\.0"/"15\.0"/g' {} + || true
-          find ios -name "Package.swift" -type f -exec cat {} + || true
+          find . -name "Package.swift" -type f -exec sed -i '' 's/"12\.0"/"15\.0"/g' {} + || true
+          find . -name "Package.swift" -type f -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
+          find . -name "Package.swift" -type f -exec sed -i '' 's/"14\.0"/"15\.0"/g' {} + || true
+          find /Users/runner -name "Package.swift" -type f -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
+          find . -name "Package.swift" -type f -exec cat {} + || true
           
           # 4. Re-inject into xcconfig in case flutter build rewrote them
           for conf in Release Debug Profile Generated; do
