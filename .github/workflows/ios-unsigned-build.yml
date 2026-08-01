@@ -155,16 +155,23 @@ jobs:
           # 2. Install CocoaPods dependencies & Generate SPM Package
           flutter build ios --config-only
           
-          # 3. FORCE SPM Package.swift to iOS 15 (Fix for Flutter 3.24+ hardcoding 13.0)
-          if [ -f "ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift" ]; then
-            sed -i '' 's/"12\.0"/"15\.0"/g' ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
-            sed -i '' 's/"13\.0"/"15\.0"/g' ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
-            sed -i '' 's/"14\.0"/"15\.0"/g' ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
-          fi
-
           cd ios
           pod install
           cd ..
+          
+          # 3. FORCE SPM Package.swift to iOS 15 (Fix for Flutter 3.24+ hardcoding 13.0)
+          echo "Finding and patching Package.swift files..."
+          find ios -name "Package.swift" -type f -exec sed -i '' 's/"12\.0"/"15\.0"/g' {} + || true
+          find ios -name "Package.swift" -type f -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
+          find ios -name "Package.swift" -type f -exec sed -i '' 's/"14\.0"/"15\.0"/g' {} + || true
+          find ios -name "Package.swift" -type f -exec cat {} + || true
+          
+          # 4. Re-inject into xcconfig in case flutter build rewrote them
+          for conf in Release Debug Profile Generated; do
+            if [ -f "ios/Flutter/$conf.xcconfig" ]; then
+              echo "IPHONEOS_DEPLOYMENT_TARGET=15.0" >> "ios/Flutter/$conf.xcconfig"
+            fi
+          done
           
           # BACKUP: Standard Flutter build (in case Shorebird causes issues)
           # flutter build ios --release --no-codesign
