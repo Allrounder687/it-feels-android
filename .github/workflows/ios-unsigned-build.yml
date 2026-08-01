@@ -152,8 +152,16 @@ jobs:
             fi
           done
 
-          # 2. Install CocoaPods dependencies
+          # 2. Install CocoaPods dependencies & Generate SPM Package
           flutter build ios --config-only
+          
+          # 3. FORCE SPM Package.swift to iOS 15 (Fix for Flutter 3.24+ hardcoding 13.0)
+          if [ -f "ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift" ]; then
+            sed -i '' 's/"12\.0"/"15\.0"/g' ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
+            sed -i '' 's/"13\.0"/"15\.0"/g' ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
+            sed -i '' 's/"14\.0"/"15\.0"/g' ios/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
+          fi
+
           cd ios
           pod install
           cd ..
@@ -161,7 +169,7 @@ jobs:
           # BACKUP: Standard Flutter build (in case Shorebird causes issues)
           # flutter build ios --release --no-codesign
           
-          # 3. Build Release iOS app without code signing using Shorebird
+          # 4. Build Release iOS app without code signing using Shorebird
           shorebird release ios --no-codesign
           # 4. Fallback Native Xcode Build if needed
           if [ ! -d "build/ios/iphoneos/Runner.app" ]; then
