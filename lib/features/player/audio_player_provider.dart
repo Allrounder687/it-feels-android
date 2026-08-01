@@ -232,6 +232,26 @@ class AudioPlayerState {
     }
   }
 
+  Color get themeNavPillColor {
+    switch (appThemeMode) {
+      case AppThemeMode.light:
+        return const Color(0xFF2563EB);
+      case AppThemeMode.burgundy:
+        return AppColors.burgundyPrimary;
+      default:
+        return AppColors.midnightPrimary;
+    }
+  }
+
+  Color get themeNavPillTextColor {
+    switch (appThemeMode) {
+      case AppThemeMode.light:
+        return Colors.white;
+      default:
+        return Colors.black;
+    }
+  }
+
   AudioPlayerState copyWith({
     Song? currentSong,
     bool clearCurrentSong = false,

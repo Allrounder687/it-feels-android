@@ -168,8 +168,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
             ),
             TabBar(
               controller: _tabController,
-              indicatorColor: AppColors.midnightAccent,
-              labelColor: AppColors.midnightAccent,
+              indicatorColor: context.themeAccentColor,
+              labelColor: context.themeAccentColor,
               unselectedLabelColor: context.themeMutedTextColor,
               tabs: const [
                 Tab(text: "INBOX 📥"),
@@ -191,10 +191,10 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                             Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: AppColors.midnightAccent.withValues(alpha: 0.15),
+                                color: context.themeAccentColor.withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.people_alt_rounded, size: 48, color: AppColors.midnightAccent),
+                              child: Icon(Icons.people_alt_rounded, size: 48, color: context.themeAccentColor),
                             ),
                             const SizedBox(height: 20),
                             Text(
@@ -221,8 +221,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                               icon: const Icon(Icons.login_rounded, size: 20),
                               label: const Text("Sign In / Register", style: TextStyle(fontWeight: FontWeight.bold)),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.midnightAccent,
-                                foregroundColor: Colors.black,
+                                backgroundColor: context.themeAccentColor,
+                                foregroundColor: context.themeInvertedTextColor,
                                 elevation: 0,
                                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

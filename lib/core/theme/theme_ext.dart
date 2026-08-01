@@ -18,4 +18,6 @@ extension ThemeContext on BuildContext {
   Color get themePillColor => appProviderContainer.read(audioPlayerProvider).themePillColor;
   Color get themeUnselectedPillColor => appProviderContainer.read(audioPlayerProvider).themeUnselectedPillColor;
   Color get themeUnselectedPillTextColor => appProviderContainer.read(audioPlayerProvider).themeUnselectedPillTextColor;
+  Color get themeNavPillColor => appProviderContainer.read(audioPlayerProvider).themeNavPillColor;
+  Color get themeNavPillTextColor => appProviderContainer.read(audioPlayerProvider).themeNavPillTextColor;
 }

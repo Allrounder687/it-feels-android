@@ -73,12 +73,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       // Search Input Pill
                       Container(
                         decoration: BoxDecoration(
-                          color: AppColors.midnightPill,
+                          color: context.themeUnselectedPillColor,
                           borderRadius: BorderRadius.circular(28),
                         ),
                         child: TextField(
                           controller: _searchController,
-                          style: GoogleFonts.inter(color: context.themeTextColor),
+                          style: GoogleFonts.inter(color: context.themeUnselectedPillTextColor),
                           decoration: InputDecoration(
                             hintText: "Search songs, artists, albums, playlists...",
                             hintStyle: GoogleFonts.inter(color: context.themeMutedTextColor),
@@ -121,13 +121,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           margin: const EdgeInsets.only(right: 8),
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isSelected ? context.themeAccentColor : AppColors.midnightPill,
+                            color: isSelected ? context.themeAccentColor : context.themeUnselectedPillColor,
                             borderRadius: BorderRadius.circular(19),
                           ),
                           child: Text(
                             categories[index],
                             style: GoogleFonts.inter(
-                              color: isSelected ? context.themeInvertedTextColor : context.themeTextColor,
+                              color: isSelected ? context.themeInvertedTextColor : context.themeUnselectedPillTextColor,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
