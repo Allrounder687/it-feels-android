@@ -220,6 +220,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWideScreen = constraints.maxWidth >= 600;
+          final isNarrowScreen = constraints.maxWidth < 380;
 
           if (isWideScreen) {
             return Row(
@@ -334,7 +335,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                             child: BackdropFilter(
                               filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                               child: Container(
-                                height: 76,
+                                height: isNarrowScreen ? 70 : 76,
                                 margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
                                 decoration: BoxDecoration(
                                   color: context.themeSurfaceColor.withValues(alpha: 0.7),
@@ -350,11 +351,11 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                                   children: [
-                                    _buildNavItem(0, Icons.home_rounded, "Home"),
-                                    _buildNavItem(1, Icons.search_rounded, "Search"),
-                                    _buildNavItem(2, Icons.library_music_rounded, "Library"),
-                                    if (enableVideos) _buildNavItem(3, Icons.video_library_rounded, "Videos"),
-                                    _buildNavItem(4, Icons.people_rounded, "Social"),
+                                    _buildNavItem(0, Icons.home_rounded, "Home", hideLabel: isNarrowScreen),
+                                    _buildNavItem(1, Icons.search_rounded, "Search", hideLabel: isNarrowScreen),
+                                    _buildNavItem(2, Icons.library_music_rounded, "Library", hideLabel: isNarrowScreen),
+                                    if (enableVideos) _buildNavItem(3, Icons.video_library_rounded, "Videos", hideLabel: isNarrowScreen),
+                                    _buildNavItem(4, Icons.people_rounded, "Social", hideLabel: isNarrowScreen),
                                   ],
                                 ),
                               ),
@@ -372,9 +373,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label, {bool isVertical = false}) {
+  Widget _buildNavItem(int index, IconData icon, String label, {bool isVertical = false, bool hideLabel = false}) {
     final isSelected = widget.navigationShell.currentIndex == index;
-    return Consumer(builder: (context, ref, child) { final playerProvider = ref.watch(audioPlayerProvider); 
+    return Consumer(builder: (context, ref, child) { 
         final content = GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () {
@@ -387,8 +388,8 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               padding: EdgeInsets.symmetric(
-                horizontal: isVertical ? 12 : 20,
-                vertical: isVertical ? 16 : 16,
+                horizontal: isVertical ? 12 : (hideLabel ? 12 : 18),
+                vertical: isVertical ? 16 : 14,
               ),
               decoration: BoxDecoration(
                 color: isSelected ? context.themeNavPillColor : Colors.transparent,
@@ -402,7 +403,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                             ? Consumer(
                                 builder: (context, ref, _) {
                                   final count = ref.watch(unreadCountProvider).value ?? 0;
-                                  final iconWidget = Icon(icon, color: isSelected ? context.themeNavPillTextColor : context.themeMutedTextColor, size: 32);
+                                  final iconWidget = Icon(icon, color: isSelected ? context.themeNavPillTextColor : context.themeMutedTextColor, size: 28);
                                   if (count > 0) return Badge(label: Text(count.toString()), backgroundColor: Colors.redAccent, child: iconWidget);
                                   return iconWidget;
                                 },
@@ -410,9 +411,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                             : Icon(
                                 icon,
                                 color: isSelected ? context.themeNavPillTextColor : context.themeMutedTextColor,
-                                size: 32,
+                                size: 28,
                               ),
-                        if (isSelected) ...[
+                        if (isSelected && !hideLabel) ...[
                           const SizedBox(height: 6),
                           Text(
                             label,
@@ -434,7 +435,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                             ? Consumer(
                                 builder: (context, ref, _) {
                                   final count = ref.watch(unreadCountProvider).value ?? 0;
-                                  final iconWidget = Icon(icon, color: isSelected ? context.themeNavPillTextColor : context.themeMutedTextColor, size: 32);
+                                  final iconWidget = Icon(icon, color: isSelected ? context.themeNavPillTextColor : context.themeMutedTextColor, size: 26);
                                   if (count > 0) return Badge(label: Text(count.toString()), backgroundColor: Colors.redAccent, child: iconWidget);
                                   return iconWidget;
                                 },
@@ -442,9 +443,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                             : Icon(
                                 icon,
                                 color: isSelected ? context.themeNavPillTextColor : context.themeMutedTextColor,
-                                size: 32,
+                                size: 26,
                               ),
-                        if (isSelected) ...[
+                        if (isSelected && !hideLabel) ...[
                           const SizedBox(width: 6),
                           Flexible(
                             child: Text(
@@ -454,7 +455,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                               style: GoogleFonts.inter(
                                 color: context.themeNavPillTextColor,
                                 fontWeight: FontWeight.w700,
-                                fontSize: 13,
+                                fontSize: 12,
                               ),
                             ),
                           ),

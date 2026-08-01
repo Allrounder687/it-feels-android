@@ -51,5 +51,14 @@ void main() {
       nextSong = (songs.isNotEmpty && currentIndex + 1 < songs.length) ? songs[currentIndex + 1] : null;
       expect(nextSong, isNull);
     });
+
+    test('Daily Mix title cleaning logic', () {
+      final plTitle = 'Daily Mix: Arijit Singh';
+      String displayTitle = plTitle;
+      if (displayTitle.startsWith("Daily Mix: ")) {
+        displayTitle = "${displayTitle.replaceFirst("Daily Mix: ", "")} Mix";
+      }
+      expect(displayTitle, 'Arijit Singh Mix');
+    });
   });
 }

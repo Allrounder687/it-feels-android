@@ -37,7 +37,7 @@ jobs:
           
       - name: Install dependencies
         run: |
-          flutter config --enable-swift-package-manager
+          flutter config --no-enable-swift-package-manager
           flutter clean
           flutter pub get
 

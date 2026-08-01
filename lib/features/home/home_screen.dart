@@ -75,10 +75,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return "Good Morning";
-    if (hour < 17) return "Good Afternoon";
-    if (hour < 21) return "Good Evening";
-    return "Late Night Vibes";
+    if (hour < 12) return "Good Morning ☀️";
+    if (hour < 17) return "Good Afternoon ☕";
+    if (hour < 21) return "Good Evening 👋";
+    return "Late Night Vibes 🌙";
   }
 
   Widget _buildHeroBanner(BuildContext context, Song heroSong, AudioPlayerState player) {
@@ -198,6 +198,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildPlaylistCarousel(BuildContext context, String title, List<Playlist> playlists) {
     if (playlists.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth >= 600;
+    final cardWidth = isWide ? 160.0 : 130.0;
+    final carouselHeight = isWide ? 210.0 : 175.0;
+
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,17 +216,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           SizedBox(
-            height: 180,
+            height: carouselHeight,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: playlists.length,
               itemBuilder: (context, index) {
                 final pl = playlists[index];
+                
+                // Clean up Daily Mix prefixes for a cleaner layout
+                String displayTitle = pl.title;
+                if (displayTitle.startsWith("Daily Mix: ")) {
+                  displayTitle = "${displayTitle.replaceFirst("Daily Mix: ", "")} Mix";
+                }
+
                 return GestureDetector(
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PlaylistDetailScreen(playlist: pl))),
                   child: Container(
-                    width: 140,
+                    width: cardWidth,
                     margin: const EdgeInsets.only(right: 14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,13 +247,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 : Container(color: context.themeCardColor),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          pl.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(color: context.themeTextColor, fontSize: 13, fontWeight: FontWeight.w600),
-                        ),
+                        if (title != "Curated Moods") ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            displayTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: context.themeTextColor, 
+                              fontSize: isWide ? 13 : 12, 
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -352,11 +371,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (selectedCat == "For You") {
           activeSongs = historyProvider.recentlyPlayed.where((s) => !hiddenProvider.isHidden(s.id)).toList();
         }
-        
+        final hour = DateTime.now().hour;
+        Color topGradientColor;
+        if (hour < 12) topGradientColor = const Color(0xFFFFC107).withValues(alpha: 0.15); // Morning Gold
+        else if (hour < 17) topGradientColor = const Color(0xFF4CAF50).withValues(alpha: 0.10); // Afternoon Teal/Green
+        else topGradientColor = const Color(0xFF3F51B5).withValues(alpha: 0.15); // Evening Indigo
+
         return Scaffold(
           backgroundColor: context.themeBackgroundColor,
-          body: SafeArea(
-            child: CustomScrollView(
+          body: Stack(
+            children: [
+              // Dynamic Background Mesh Blob
+              Positioned(
+                top: -150,
+                left: -50,
+                right: -50,
+                height: 400,
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: topGradientColor,
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                  child: const SizedBox(),
+                ),
+              ),
+              SafeArea(
+                child: CustomScrollView(
               slivers: [
 
 
@@ -444,16 +489,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             margin: const EdgeInsets.only(right: 10),
                             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                             decoration: BoxDecoration(
-                              gradient: isSelected
-                                  ? const LinearGradient(colors: [Color(0xFFE91E63), Color(0xFF9C27B0)], begin: Alignment.topLeft, end: Alignment.bottomRight)
-                                  : null,
-                              color: isSelected ? null : context.themeUnselectedPillColor,
+                              color: isSelected ? context.themeTextColor : context.themeUnselectedPillColor,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: isSelected ? Colors.transparent : context.themeTextColor10, width: 0.5),
                             ),
                             child: Text(
                               _filters[index],
-                              style: GoogleFonts.inter(color: isSelected ? Colors.white : context.themeUnselectedPillTextColor, fontSize: 13, fontWeight: FontWeight.w700),
+                              style: GoogleFonts.inter(color: isSelected ? context.themeBackgroundColor : context.themeUnselectedPillTextColor, fontSize: 13, fontWeight: FontWeight.w700),
                             ),
                           ),
                         );
@@ -522,6 +564,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 SliverToBoxAdapter(child: SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom)),
               ],
             ),
+          ),
+            ],
           ),
         );
       },
