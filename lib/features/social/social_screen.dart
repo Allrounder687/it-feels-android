@@ -301,180 +301,180 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
           padding: const EdgeInsets.all(16),
           itemCount: items.length,
           itemBuilder: (context, index) {
-            try {
             return Consumer(
               builder: (context, ref, child) {
-                final item = items[index];
-                final data = item.data() as Map<String, dynamic>;
-                final docId = item.id;
-                final msgType = data['type'] as String? ?? 'song';
-                final isPlaylist = msgType == 'playlist';
-                final isRoomInvite = msgType == 'room_invite';
-                final isReaction = msgType == 'reaction';
+                try {
+                  final item = items[index];
+                  final data = item.data() as Map<String, dynamic>;
+                  final docId = item.id;
+                  final msgType = data['type'] as String? ?? 'song';
+                  final isPlaylist = msgType == 'playlist';
+                  final isRoomInvite = msgType == 'room_invite';
+                  final isReaction = msgType == 'reaction';
 
-                Song? song;
-                CustomPlaylist? playlist;
-                Map<String, dynamic> payload = data['payload'] is Map ? Map<String, dynamic>.from(data['payload']) : {};
-                
-                if (isPlaylist) {
-                  playlist = CustomPlaylist.fromJson(payload);
-                } else if (msgType == 'song') {
-                  song = Song.fromJson(payload);
-                }
+                  Song? song;
+                  CustomPlaylist? playlist;
+                  Map<String, dynamic> payload = data['payload'] is Map ? Map<String, dynamic>.from(data['payload']) : {};
+                  
+                  if (isPlaylist) {
+                    playlist = CustomPlaylist.fromJson(payload);
+                  } else if (msgType == 'song') {
+                    song = Song.fromJson(payload);
+                  }
 
-                final senderName = data['senderName'] ?? 'Someone';
-                final reactions = Map<String, String>.from(data['reactions'] ?? {});
-                final isRead = data['isRead'] as bool? ?? true;
-                
-                return Dismissible(
-                  key: Key(docId),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20.0),
-                    color: Colors.redAccent,
-                    child: const Icon(Icons.delete, color: Colors.white),
-                  ),
-                  onDismissed: (direction) {
-                    _socialService.deleteMessage(docId);
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          context.themeSurfaceColor,
-                          context.themeAccentColor.withValues(alpha: 0.1),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                        bottomRight: Radius.circular(16),
-                        bottomLeft: Radius.circular(4),
-                      ),
-                      border: isRead ? null : Border.all(color: context.themeAccentColor, width: 1.0),
+                  final senderName = data['senderName'] ?? 'Someone';
+                  final reactions = Map<String, String>.from(data['reactions'] ?? {});
+                  final isRead = data['isRead'] as bool? ?? true;
+                  
+                  return Dismissible(
+                    key: Key(docId),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 20.0),
+                      color: Colors.redAccent,
+                      child: const Icon(Icons.delete, color: Colors.white),
                     ),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          minVerticalPadding: 0,
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: isPlaylist
-                                ? Container(
-                                    width: 44, height: 44, color: context.themeAccentColor.withValues(alpha: 0.2),
-                                    child: Icon(Icons.queue_music_rounded, color: context.themeAccentColor, size: 24),
-                                  )
-                                : isRoomInvite
-                                    ? Container(
-                                        width: 44, height: 44, color: Colors.amber.withValues(alpha: 0.2),
-                                        child: const Icon(Icons.groups_rounded, color: Colors.amber, size: 24),
-                                      )
-                                    : isReaction
-                                        ? Container(
-                                            width: 44, height: 44, color: Colors.pinkAccent.withValues(alpha: 0.2),
-                                            child: Center(child: Text(payload['emoji'] ?? '❤️', style: const TextStyle(fontSize: 24))),
-                                          )
-                                        : CustomImageWidget(imageUrl: song?.coverArt ?? '', width: 44, height: 44),
-                          ),
-                          title: Text(
-                            isPlaylist
-                                ? playlist!.title
-                                : isRoomInvite
-                                    ? "Listen Together 🎧"
-                                    : isReaction
-                                        ? "$senderName reacted ${payload['emoji'] ?? ''}"
-                                        : (song?.title ?? 'Track'),
-                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: context.themeTextColor),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: Text(
-                            isPlaylist
-                                ? "Sent by $senderName • ${playlist!.songs.length} songs"
-                                : isRoomInvite
-                                    ? "Invited by $senderName"
-                                    : isReaction
-                                        ? "on ${payload['targetTitle'] ?? 'Track'}"
-                                        : "Sent by $senderName",
-                            style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 11),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          trailing: isPlaylist 
-                            ? IconButton(
-                                icon: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 28),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () {
-                                  _socialService.markAsRead(docId);
-                                  ref.read(customPlaylistProvider.notifier).createPlaylistWithSongs(playlist!.title, playlist.songs);
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Saved to Library!")));
-                                },
-                              )
-                            : isRoomInvite
-                                ? ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: context.themeAccentColor,
-                                      foregroundColor: context.themeInvertedTextColor,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
-                                      minimumSize: const Size(60, 26),
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    onPressed: () {
-                                      _socialService.markAsRead(docId);
-                                      final roomId = payload['roomId'] as String?;
-                                      final host = payload['hostName'] as String? ?? senderName;
-                                      if (roomId != null && roomId.isNotEmpty) {
-                                        _handleJoinRoom(roomId, host);
-                                      }
-                                    },
-                                    child: const Text("Join", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-                                  )
-                                : isReaction
-                                    ? const SizedBox.shrink()
-                                    : IconButton(
-                                        icon: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 32),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: () {
-                                          _socialService.markAsRead(docId);
-                                          if (song != null) {
-                                            ref.read(audioPlayerProvider.notifier).playSong(song);
-                                          }
-                                        },
-                                      ),
+                    onDismissed: (direction) {
+                      _socialService.deleteMessage(docId);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            context.themeSurfaceColor,
+                            context.themeAccentColor.withValues(alpha: 0.1),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 10, right: 10, bottom: 6, top: 0),
-                          child: Row(
-                            children: [
-                              _buildReactionButton(docId, "🔥", reactions[myUid] == "🔥"),
-                              _buildReactionButton(docId, "❤️", reactions[myUid] == "❤️"),
-                              _buildReactionButton(docId, "🎵", reactions[myUid] == "🎵"),
-                              const Spacer(),
-                              if (reactions.isNotEmpty)
-                                Text(
-                                  reactions.values.toSet().join(" "),
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                            ],
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                          bottomRight: Radius.circular(16),
+                          bottomLeft: Radius.circular(4),
+                        ),
+                        border: isRead ? null : Border.all(color: context.themeAccentColor, width: 1.0),
+                      ),
+                      child: Column(
+                        children: [
+                          ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            minVerticalPadding: 0,
+                            leading: ClipRRect(
+                              borderRadius: BorderRadius.circular(6),
+                              child: isPlaylist
+                                  ? Container(
+                                      width: 44, height: 44, color: context.themeAccentColor.withValues(alpha: 0.2),
+                                      child: Icon(Icons.queue_music_rounded, color: context.themeAccentColor, size: 24),
+                                    )
+                                  : isRoomInvite
+                                      ? Container(
+                                          width: 44, height: 44, color: Colors.amber.withValues(alpha: 0.2),
+                                          child: const Icon(Icons.groups_rounded, color: Colors.amber, size: 24),
+                                        )
+                                      : isReaction
+                                          ? Container(
+                                              width: 44, height: 44, color: Colors.pinkAccent.withValues(alpha: 0.2),
+                                              child: Center(child: Text(payload['emoji'] ?? '❤️', style: const TextStyle(fontSize: 24))),
+                                            )
+                                          : CustomImageWidget(imageUrl: song?.coverArt ?? '', width: 44, height: 44),
+                            ),
+                            title: Text(
+                              isPlaylist
+                                  ? playlist!.title
+                                  : isRoomInvite
+                                      ? "Listen Together 🎧"
+                                      : isReaction
+                                          ? "$senderName reacted ${payload['emoji'] ?? ''}"
+                                          : (song?.title ?? 'Track'),
+                              style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: context.themeTextColor),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              isPlaylist
+                                  ? "Sent by $senderName • ${playlist!.songs.length} songs"
+                                  : isRoomInvite
+                                      ? "Invited by $senderName"
+                                      : isReaction
+                                          ? "on ${payload['targetTitle'] ?? 'Track'}"
+                                          : "Sent by $senderName",
+                              style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 11),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            trailing: isPlaylist 
+                              ? IconButton(
+                                  icon: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 28),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () {
+                                    _socialService.markAsRead(docId);
+                                    ref.read(customPlaylistProvider.notifier).createPlaylistWithSongs(playlist!.title, playlist.songs);
+                                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Saved to Library!")));
+                                  },
+                                )
+                              : isRoomInvite
+                                  ? ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: context.themeAccentColor,
+                                        foregroundColor: context.themeInvertedTextColor,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                                        minimumSize: const Size(60, 26),
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      onPressed: () {
+                                        _socialService.markAsRead(docId);
+                                        final roomId = payload['roomId'] as String?;
+                                        final host = payload['hostName'] as String? ?? senderName;
+                                        if (roomId != null && roomId.isNotEmpty) {
+                                          _handleJoinRoom(roomId, host);
+                                        }
+                                      },
+                                      child: const Text("Join", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                                    )
+                                  : isReaction
+                                      ? const SizedBox.shrink()
+                                      : IconButton(
+                                          icon: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 32),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          onPressed: () {
+                                            _socialService.markAsRead(docId);
+                                            if (song != null) {
+                                              ref.read(audioPlayerProvider.notifier).playSong(song);
+                                            }
+                                          },
+                                        ),
                           ),
-                        )
-                      ],
+                          Padding(
+                            padding: const EdgeInsets.only(left: 10, right: 10, bottom: 6, top: 0),
+                            child: Row(
+                              children: [
+                                _buildReactionButton(docId, "🔥", reactions[myUid] == "🔥"),
+                                _buildReactionButton(docId, "❤️", reactions[myUid] == "❤️"),
+                                _buildReactionButton(docId, "🎵", reactions[myUid] == "🎵"),
+                                const Spacer(),
+                                if (reactions.isNotEmpty)
+                                  Text(
+                                    reactions.values.toSet().join(" "),
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                              ],
+                            ),
+                          )
+                        ],
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } catch (e) {
+                  return const SizedBox.shrink();
+                }
               },
             );
-            } catch (e) {
-              return const SizedBox.shrink();
-            }
           },
         );
       },
