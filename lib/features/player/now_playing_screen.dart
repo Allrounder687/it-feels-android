@@ -24,6 +24,7 @@ import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
 import 'package:it_feels_music/features/cast/cast_bottom_sheet.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 
 class NowPlayingScreen extends ConsumerStatefulWidget {
   const NowPlayingScreen({super.key});
@@ -367,7 +368,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                     final isWide = constraints.maxWidth >= 700;
                     final artSize = isWide 
                         ? (constraints.maxWidth * 0.45).clamp(200.0, constraints.maxHeight * 0.75)
-                        : (constraints.maxWidth * 0.80).clamp(150.0, constraints.maxHeight * 0.36);
+                        : (constraints.maxWidth * 0.78).clamp(140.0, constraints.maxHeight * 0.34);
 
                     // Redesigned 3-Zone Clean Header Bar
                     final topAppBar = Row(
@@ -889,11 +890,11 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
                     // Redesigned Adaptive Acrylic Control Capsule
                     final primaryControls = Container(
-                      height: isWide ? 86 : 76,
+                      height: isWide ? 86 : 74,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
                         color: surfaceColor.withValues(alpha: 0.65),
-                        borderRadius: BorderRadius.circular(isWide ? 43 : 38),
+                        borderRadius: BorderRadius.circular(isWide ? 43 : 37),
                         border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                         boxShadow: [
                           BoxShadow(
@@ -955,8 +956,8 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             },
                             padding: EdgeInsets.zero,
                             child: Container(
-                              width: isWide ? 68 : 58,
-                              height: isWide ? 68 : 58,
+                              width: isWide ? 68 : 56,
+                              height: isWide ? 68 : 56,
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
                                 color: accentColor,
@@ -991,7 +992,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                           }
                                         },
                                         color: context.themeInvertedTextColor,
-                                        size: isWide ? 40 : 34,
+                                        size: isWide ? 40 : 32,
                                       );
                                     }
                                   )
@@ -999,7 +1000,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                     isPlaying: playerProvider.isPlaying,
                                     onPressed: () => ref.read(audioPlayerProvider.notifier).togglePlayPause(),
                                     color: context.themeInvertedTextColor,
-                                    size: isWide ? 40 : 34,
+                                    size: isWide ? 40 : 32,
                                   ),
                             ),
                           ),
@@ -1139,6 +1140,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                       ),
                     );
 
+                    // Live Lyrics Preview Card
+                    final liveLyricsCard = _LiveLyricsPreviewCard(
+                      song: currentSong,
+                      position: playerProvider.position,
+                      surfaceColor: surfaceColor,
+                      accentColor: accentColor,
+                    );
+
                     if (isWide) {
                       return Column(
                         children: [
@@ -1164,14 +1173,16 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         songInfo,
-                                        const SizedBox(height: 20),
+                                        const SizedBox(height: 16),
                                         actionPills,
-                                        const SizedBox(height: 28),
+                                        const SizedBox(height: 24),
                                         buildProgress(),
-                                        const SizedBox(height: 20),
+                                        const SizedBox(height: 16),
                                         primaryControls,
-                                        const SizedBox(height: 20),
+                                        const SizedBox(height: 16),
                                         secondaryControls,
+                                        const SizedBox(height: 16),
+                                        liveLyricsCard,
                                       ],
                                     ),
                                   ),
@@ -1185,7 +1196,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
                     // Mobile Layout
                     final screenHeight = MediaQuery.of(context).size.height;
-                    final dynamicSpacer = SizedBox(height: (screenHeight * 0.015).clamp(8.0, 20.0));
+                    final dynamicSpacer = SizedBox(height: (screenHeight * 0.012).clamp(6.0, 16.0));
 
                     return SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -1198,14 +1209,16 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             albumArt,
                             dynamicSpacer,
                             songInfo,
-                            const SizedBox(height: 10),
-                            actionPills,
-                            const SizedBox(height: 10),
-                            buildProgress(),
                             const SizedBox(height: 8),
+                            actionPills,
+                            const SizedBox(height: 8),
+                            buildProgress(),
+                            const SizedBox(height: 6),
                             primaryControls,
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 8),
                             secondaryControls,
+                            dynamicSpacer,
+                            liveLyricsCard,
                             dynamicSpacer,
                             bottomDragHandle,
                           ],
@@ -1224,6 +1237,173 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
   void _showCastBottomSheet(BuildContext context) {
     CastBottomSheet.show(context);
+  }
+}
+
+class _LiveLyricsPreviewCard extends ConsumerWidget {
+  final Song song;
+  final Duration position;
+  final Color surfaceColor;
+  final Color accentColor;
+
+  const _LiveLyricsPreviewCard({
+    required this.song,
+    required this.position,
+    required this.surfaceColor,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lyricsState = ref.watch(lyricsProvider);
+
+    // Auto load lyrics if needed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(lyricsProvider.notifier).loadLyricsIfNeeded(song, position);
+    });
+
+    final lyricsResult = lyricsState.lyricsResult;
+    final isLoading = lyricsState.isLoading;
+    final isNotFound = lyricsState.lyricsNotFound;
+
+    String currentLine = "";
+    String nextLine = "";
+
+    if (lyricsResult != null && lyricsResult.hasSynced) {
+      final activeIdx = lyricsState.getActiveLineIndex(position);
+      if (activeIdx >= 0 && activeIdx < lyricsResult.syncedLyrics.length) {
+        currentLine = lyricsResult.syncedLyrics[activeIdx].text;
+        if (activeIdx + 1 < lyricsResult.syncedLyrics.length) {
+          nextLine = lyricsResult.syncedLyrics[activeIdx + 1].text;
+        }
+      }
+    } else if (lyricsResult != null && lyricsResult.hasStatic) {
+      final lines = lyricsResult.plainText.split('\n').where((l) => l.trim().isNotEmpty).toList();
+      if (lines.isNotEmpty) currentLine = lines.first;
+      if (lines.length > 1) nextLine = lines[1];
+    }
+
+    return GestureDetector(
+      onTap: () {
+        final sub = ref.read(subscriptionProvider);
+        if (sub.isPremium) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const LyricsScreen()),
+          );
+        } else {
+          PaywallBottomSheet.show(context, featureName: "Lyrics");
+        }
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: surfaceColor.withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.mic_rounded, color: accentColor, size: 15),
+                    const SizedBox(width: 6),
+                    Text(
+                      'LIVE LYRICS',
+                      style: GoogleFonts.inter(
+                        color: accentColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Text(
+                      'FULL SCREEN',
+                      style: GoogleFonts.inter(
+                        color: context.themeMutedTextColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(Icons.north_east_rounded, color: context.themeMutedTextColor, size: 12),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (isLoading)
+              Row(
+                children: [
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: accentColor),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Searching lyrics...',
+                    style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13),
+                  ),
+                ],
+              )
+            else if (isNotFound || currentLine.isEmpty)
+              Text(
+                'Tap to view lyrics & sing along 🎶',
+                style: GoogleFonts.inter(
+                  color: context.themeMutedTextColor,
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                ),
+              )
+            else
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Text(
+                      currentLine,
+                      key: ValueKey(currentLine),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.outfit(
+                        color: context.themeTextColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (nextLine.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      nextLine,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: context.themeMutedTextColor.withValues(alpha: 0.6),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
