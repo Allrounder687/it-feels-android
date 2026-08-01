@@ -2,9 +2,10 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
-- **Social Tab Crash Hotfix (v3.5.11):**
+- **Social Tab Crash Hotfix (v3.5.12):**
+  - **Syntax Fix**: Resolved syntax errors and StreamBuilder type mismatches introduced in the previous hotfix.
   - **Crash Fix**: Resolved a critical layout exception in the Social Tab caused by Firebase Realtime Database occasionally returning lists instead of maps. Wrapped items and type casts in `try-catch` blocks to prevent the `TabBarView` from rendering the ErrorWidget (a blank grey screen).
-  - **Version Bump:** Incremented version to `3.5.11+43`.
+  - **Version Bump:** Incremented version to `3.5.12+45`.
 
 - **Social Enhancements & Player Fixes Release (v3.5.9 / v3.5.10):**
   - **Modern Chat Bubbles**: Revamped the Social Inbox to use native iMessage-like gradient chat bubbles.
@@ -33,6 +34,6 @@ This file tracks major technical decisions, features implemented, and architectu
   5. **Live Listening Parties:** Finalized real-time synced rooms. Locked hosting logic behind `subscriptionProvider` while permitting free-tier entry.
 
 - **Strict Development Workflow:** ALWAYS follow this exact cycle for new features: 1) Write the code. 2) Create unit/integration tests to verify functionality and prevent regressions. 3) Run and verify the tests pass. 4) Document the changes in `README.md`, `CHANGELOG.md`, and any relevant `.gemini/skills/` files. 5) Run a local `git commit` locking in the verified feature.
-- **CI/CD OTA Release Protocol:** When completing a major milestone or when the user explicitly requests an app update release, you MUST bump the `version` in `pubspec.yaml` (e.g., `3.3.0+10`) and run `deploy_ota.bat`. This automatically pushes the `v3.3.0` Git tag, triggering the GitHub Actions CI/CD pipeline which builds the release APK and silently injects the new version details directly into Firestore (`client_config`) for global OTA distribution.
+- **CI/CD OTA Release Protocol:** Do NOT use the `deploy_ota.bat` script. When completing a major milestone or when the user explicitly requests an app update release, you MUST manually bump the `version` in `pubspec.yaml` (e.g., `3.3.0+10`), commit the change, and then manually create and push the Git tag (e.g., `v3.3.0` for both platforms, or `ios-v3.3.0` / `android-v3.3.0` for specific platforms) via the CLI. This triggers the GitHub Actions CI/CD pipeline which builds the release and silently injects the new version details directly into Firestore (`client_config`) for global OTA distribution.
 - **Version Management:** Do NOT bump `pubspec.yaml` `version` for small hotfixes/edits unless you intend to push a global OTA update. Only bump `pubspec.yaml` for major feature releases or major milestones. For small updates and bug fixes, document changes directly under the current version section in `CHANGELOG.md`.
 - **Responsive & Edge-to-Edge Design:** ALWAYS wrap top-level layout boundaries or floating widgets in `SafeArea` to respect system insets (notches, status bars, and navigation pills). NEVER hardcode fixed heights/widths for containers meant to fill the screen; instead use `Expanded`, `Flexible`, `LayoutBuilder`, or relative `MediaQuery.of(context).size` values to guarantee flawless adaptation across all Android form factors.
