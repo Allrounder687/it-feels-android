@@ -155,3 +155,6 @@ flutter_launcher_icons:
   image_path: "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
   adaptive_icon_background: "#090D16"
   adaptive_icon_foreground: "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
+
+dependency_overrides:
+  bonsoir: ^3.0.0

@@ -5,6 +5,11 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
+## [3.5.1] - CI Pipeline Hotfix
+
+### Fixed
+- **CI Pipeline:** Fixed GitHub Actions build failure caused by the `cast` package failing to compile due to a breaking change in the `bonsoir` v7 update. Added a dependency override for `bonsoir: ^3.0.0` to restore CI builds.
+
 ## [3.5.0] - Cast & Advanced Social Features
 
 ### Added
