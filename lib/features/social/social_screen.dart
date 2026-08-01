@@ -23,7 +23,7 @@ class SocialScreen extends StatefulWidget {
 class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final SocialService _socialService = locator<SocialService>();
-  final String myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+  String get myUid => FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
   void initState() {
@@ -120,13 +120,20 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
               ],
             ),
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildInboxTab(),
-                  _buildFriendsTab(),
-                ],
-              ),
+              child: myUid.isEmpty
+                  ? Center(
+                      child: Text(
+                        "Please log in to use Social features.",
+                        style: GoogleFonts.inter(color: context.themeTextColor, fontSize: 16),
+                      ),
+                    )
+                  : TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildInboxTab(),
+                        _buildFriendsTab(),
+                      ],
+                    ),
             ),
           ],
         ),
@@ -287,7 +294,8 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
             builder: (context, snapshot) {
               String myUsername = "Loading...";
               if (snapshot.hasData && snapshot.data!.exists) {
-                myUsername = (snapshot.data!.data() as Map<String, dynamic>)['username'] ?? 'No Username';
+                final docData = snapshot.data!.data() as Map<String, dynamic>?;
+                myUsername = docData?['username'] ?? 'No Username';
               }
               return InkWell(
                 onTap: () {
@@ -354,7 +362,7 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: AppColors.midnightAccent,
-                          child: Text(name[0].toUpperCase(), style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                          child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                         ),
                         title: Text(name, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
                         subtitle: StreamBuilder<DatabaseEvent>(
