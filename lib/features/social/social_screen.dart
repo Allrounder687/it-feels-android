@@ -28,6 +28,21 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
   final SocialService _socialService = locator<SocialService>();
   String get myUid => FirebaseAuth.instance.currentUser?.uid ?? '';
 
+  Stream<QuerySnapshot>? _inboxStream;
+  Stream<List<Map<String, dynamic>>>? _friendsStream;
+  Stream<DatabaseEvent>? _publicRoomsStream;
+  String? _cachedUid;
+
+  void _ensureStreams() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (_cachedUid != uid || _inboxStream == null) {
+      _cachedUid = uid;
+      _inboxStream = _socialService.getInboxStream();
+      _friendsStream = _socialService.getFriendsStream();
+    }
+    _publicRoomsStream ??= locator<RoomService>().getPublicRooms();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -262,8 +277,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
   }
 
   Widget _buildInboxTab() {
+    _ensureStreams();
     return StreamBuilder<QuerySnapshot>(
-      stream: _socialService.getInboxStream(),
+      stream: _inboxStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent));
@@ -473,8 +489,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
   }
 
   Widget _buildActiveRoomsCarousel() {
+    _ensureStreams();
     return StreamBuilder<DatabaseEvent>(
-      stream: locator<RoomService>().getPublicRooms(),
+      stream: _publicRoomsStream,
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
           return const SizedBox.shrink();
@@ -649,8 +666,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
           ),
         ),
         Expanded(
-          child: StreamBuilder<DocumentSnapshot>(
-            stream: _socialService.getFriendsStream(),
+          child: StreamBuilder<List<Map<String, dynamic>>>(
+            stream: _friendsStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
