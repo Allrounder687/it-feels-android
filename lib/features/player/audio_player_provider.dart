@@ -329,7 +329,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   late AudioPlayerHandler audioHandler;
   late MusicApiService apiService;
   final LyricsService _lyricsService = LyricsService();
-  final RoomService _roomService = RoomService();
+  final RoomService _roomService = locator<RoomService>();
 
   Timer? _sleepTimer;
   Timer? _audioSyncHapticTimer;

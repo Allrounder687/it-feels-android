@@ -656,6 +656,10 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                             Text("Your Handle", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
                             Text("$myUsername • UID: $myUid", style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
                           ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }
