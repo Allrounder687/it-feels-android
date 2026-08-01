@@ -1268,6 +1268,7 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
 
     String currentLine = "";
     String nextLine = "";
+    String thirdLine = "";
 
     if (lyricsResult != null && lyricsResult.hasSynced) {
       final activeIdx = lyricsState.getActiveLineIndex(position);
@@ -1276,11 +1277,15 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
         if (activeIdx + 1 < lyricsResult.syncedLyrics.length) {
           nextLine = lyricsResult.syncedLyrics[activeIdx + 1].text;
         }
+        if (activeIdx + 2 < lyricsResult.syncedLyrics.length) {
+          thirdLine = lyricsResult.syncedLyrics[activeIdx + 2].text;
+        }
       }
     } else if (lyricsResult != null && lyricsResult.hasStatic && lyricsResult.staticLyrics != null) {
       final lines = lyricsResult.staticLyrics!.split('\n').where((l) => l.trim().isNotEmpty).toList();
       if (lines.isNotEmpty) currentLine = lines.first;
       if (lines.length > 1) nextLine = lines[1];
+      if (lines.length > 2) thirdLine = lines[2];
     }
 
     return GestureDetector(
@@ -1394,6 +1399,19 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
                       style: GoogleFonts.inter(
                         color: context.themeMutedTextColor.withValues(alpha: 0.6),
                         fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                  if (thirdLine.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      thirdLine,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: context.themeMutedTextColor.withValues(alpha: 0.35),
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
