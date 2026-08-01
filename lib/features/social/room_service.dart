@@ -63,6 +63,42 @@ class RoomService {
     await _rtdb.ref('rooms/$roomId').remove();
   }
 
+  // Request to join a room
+  Future<void> requestJoinRoom(String roomId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    
+    final firestore = FirebaseFirestore.instance;
+    final myDoc = await firestore.collection('users').doc(user.uid).get();
+    final myName = myDoc.data()?['name'] ?? 'A friend';
+    
+    await _rtdb.ref('rooms/$roomId/join_requests/${user.uid}').set({
+      'name': myName,
+      'timestamp': ServerValue.timestamp,
+    });
+  }
+
+  // Host listens to join requests
+  Stream<DatabaseEvent> listenToJoinRequests(String roomId) {
+    return _rtdb.ref('rooms/$roomId/join_requests').onChildAdded;
+  }
+
+  // Accept join request
+  Future<void> acceptJoinRequest(String roomId, String guestId) async {
+    await _rtdb.ref('rooms/$roomId/allowed_guests/$guestId').set(true);
+    await _rtdb.ref('rooms/$roomId/join_requests/$guestId').remove();
+  }
+
+  // Decline join request
+  Future<void> declineJoinRequest(String roomId, String guestId) async {
+    await _rtdb.ref('rooms/$roomId/join_requests/$guestId').remove();
+  }
+
+  // Guest listens to allowed status
+  Stream<DatabaseEvent> listenToAllowedStatus(String roomId, String guestId) {
+    return _rtdb.ref('rooms/$roomId/allowed_guests/$guestId').onValue;
+  }
+
   // Generate a random 6 digit numeric code
   String _generateRoomCode() {
     final rand = Random();

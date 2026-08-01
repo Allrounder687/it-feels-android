@@ -4,12 +4,14 @@ class BouncyIconButton extends StatefulWidget {
   final Widget child;
   final VoidCallback onPressed;
   final EdgeInsetsGeometry padding;
+  final String? tooltip;
 
   const BouncyIconButton({
     super.key,
     required this.child,
     required this.onPressed,
     this.padding = const EdgeInsets.all(8.0),
+    this.tooltip,
   });
 
   @override
@@ -54,7 +56,7 @@ class _BouncyIconButtonState extends State<BouncyIconButton> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    Widget button = GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
@@ -67,5 +69,13 @@ class _BouncyIconButtonState extends State<BouncyIconButton> with SingleTickerPr
         ),
       ),
     );
+
+    if (widget.tooltip != null) {
+      return Tooltip(
+        message: widget.tooltip!,
+        child: button,
+      );
+    }
+    return button;
   }
 }

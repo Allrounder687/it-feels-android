@@ -12,7 +12,10 @@ import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
-
+import 'package:it_feels_music/data/models/custom_playlist.dart';
+import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
+import 'package:it_feels_music/features/social/room_service.dart';
+import 'package:it_feels_music/features/player/audio_player_provider.dart';
 class SocialScreen extends StatefulWidget {
   const SocialScreen({super.key});
 
@@ -79,6 +82,51 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
         );
       },
     );
+  }
+
+  void _handleJoinRoom(String roomId, String hostName) {
+    locator<RoomService>().requestJoinRoom(roomId);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        final sub = locator<RoomService>().listenToAllowedStatus(roomId, myUid).listen((event) {
+          if (event.snapshot.value == true) {
+            if (ctx.mounted) {
+              Navigator.pop(ctx);
+              ref.read(audioPlayerProvider.notifier).joinSession(roomId);
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Joined $hostName's room!")));
+            }
+          }
+        });
+
+        return AlertDialog(
+          backgroundColor: context.themeSurfaceColor,
+          title: Text("Connecting...", style: TextStyle(color: context.themeTextColor)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: AppColors.midnightAccent),
+              const SizedBox(height: 16),
+              Text("Waiting for $hostName to accept your request.", style: TextStyle(color: context.themeMutedTextColor), textAlign: TextAlign.center),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                sub.cancel();
+                locator<RoomService>().declineJoinRequest(roomId, myUid);
+                Navigator.pop(ctx);
+              },
+              child: const Text("Cancel"),
+            ),
+          ],
+        );
+      },
+    ).then((_) {
+      // Ensure subscription is cancelled if dialog is dismissed
+      // The listen is already cancelled in the onPressed, but we should make sure
+    });
   }
 
   @override
@@ -167,7 +215,14 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
                 final item = items[index];
                 final data = item.data() as Map<String, dynamic>;
                 final docId = item.id;
-                final song = Song.fromJson(data['payload'] as Map<String, dynamic>);
+                final isPlaylist = data['type'] == 'playlist';
+                Song? song;
+                CustomPlaylist? playlist;
+                if (isPlaylist) {
+                  playlist = CustomPlaylist.fromJson(data['payload'] as Map<String, dynamic>);
+                } else {
+                  song = Song.fromJson(data['payload'] as Map<String, dynamic>);
+                }
                 final senderName = data['senderName'] ?? 'Someone';
                 final reactions = Map<String, String>.from(data['reactions'] ?? {});
                 final isRead = data['isRead'] as bool? ?? true;
@@ -197,17 +252,31 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
                           contentPadding: const EdgeInsets.all(12),
                           leading: ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: CustomImageWidget(imageUrl: song.coverArt, width: 56, height: 56),
+                            child: isPlaylist
+                                ? Container(
+                                    width: 56, height: 56, color: AppColors.midnightPrimary.withValues(alpha: 0.2),
+                                    child: const Icon(Icons.queue_music_rounded, color: AppColors.midnightPrimary, size: 32),
+                                  )
+                                : CustomImageWidget(imageUrl: song!.coverArt, width: 56, height: 56),
                           ),
-                          title: Text(song.title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
-                          subtitle: Text("Sent by $senderName", style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.midnightAccent, size: 42),
-                            onPressed: () {
-                              _socialService.markAsRead(docId);
-                              ref.read(audioPlayerProvider.notifier).playSong(song);
-                            },
-                          ),
+                          title: Text(isPlaylist ? playlist!.title : song!.title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
+                          subtitle: Text("Sent by $senderName${isPlaylist ? ' • ${playlist!.songs.length} songs' : ''}", style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
+                          trailing: isPlaylist 
+                            ? IconButton(
+                                icon: const Icon(Icons.download_rounded, color: AppColors.midnightAccent, size: 36),
+                                onPressed: () {
+                                  _socialService.markAsRead(docId);
+                                  ref.read(customPlaylistProvider.notifier).createPlaylistWithSongs(playlist!.title, playlist.songs);
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Playlist saved to Library!")));
+                                },
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.midnightAccent, size: 42),
+                                onPressed: () {
+                                  _socialService.markAsRead(docId);
+                                  ref.read(audioPlayerProvider.notifier).playSong(song!);
+                                },
+                              ),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -357,63 +426,124 @@ class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderSt
                   return FutureBuilder<Map<String, dynamic>?>(
                     future: _socialService.getFriendDetails(friendUid),
                     builder: (context, friendSnap) {
-                      final name = friendSnap.data?['name'] ?? 'Friend';
+                      final firestoreData = (snapshot.data!.data() as Map<String, dynamic>?) ?? {};
+                      final friendNames = Map<String, String>.from(firestoreData['friend_names'] ?? {});
+                      final nickname = friendNames[friendUid];
+                      
+                      final realName = friendSnap.data?['name'] ?? 'Friend';
+                      final displayName = nickname ?? realName;
                       final username = friendSnap.data?['username'] ?? '';
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundColor: AppColors.midnightAccent,
-                          child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                          child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                         ),
-                        title: Text(name, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
+                        title: Text(displayName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
                         subtitle: StreamBuilder<DatabaseEvent>(
                           stream: _socialService.getPresenceStream(friendUid),
                           builder: (context, presenceSnap) {
                             if (presenceSnap.hasData && presenceSnap.data!.snapshot.value != null) {
                               final presenceData = Map<String, dynamic>.from(presenceSnap.data!.snapshot.value as Map);
+                              
                               if (presenceData['is_playing'] == true) {
-                                return Row(
-                                  mainAxisSize: MainAxisSize.min,
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        "Listening to ${presenceData['song_title']}",
-                                        style: GoogleFonts.inter(color: Colors.greenAccent, fontSize: 12),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            "Listening to ${presenceData['song_title']}",
+                                            style: GoogleFonts.inter(color: Colors.greenAccent, fontSize: 12),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
                                     ),
+                                    if (presenceData['room_id'] != null) ...[
+                                      const SizedBox(height: 4),
+                                      InkWell(
+                                        onTap: () {
+                                          _handleJoinRoom(presenceData['room_id'], displayName);
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.midnightPrimary,
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: const Text("Join Room", style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 );
                               }
                             }
-                            return Text(username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12));
+                            return Text(nickname != null ? "($realName) • $username" : username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12));
                           },
                         ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.person_remove_rounded, color: Colors.redAccent),
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                backgroundColor: context.themeSurfaceColor,
-                                title: Text("Remove Friend", style: TextStyle(color: context.themeTextColor)),
-                                content: Text("Are you sure you want to remove $name?", style: TextStyle(color: context.themeMutedTextColor)),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                                    onPressed: () {
-                                      _socialService.removeFriend(friendUid);
-                                      Navigator.pop(ctx);
-                                    },
-                                    child: const Text("Remove", style: TextStyle(color: Colors.white)),
+                        trailing: PopupMenuButton<String>(
+                          icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
+                          onSelected: (val) {
+                            if (val == 'remove') {
+                              showDialog(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  backgroundColor: context.themeSurfaceColor,
+                                  title: Text("Remove Friend", style: TextStyle(color: context.themeTextColor)),
+                                  content: Text("Are you sure you want to remove $displayName?", style: TextStyle(color: context.themeMutedTextColor)),
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                      onPressed: () {
+                                        _socialService.removeFriend(friendUid);
+                                        Navigator.pop(ctx);
+                                      },
+                                      child: const Text("Remove", style: TextStyle(color: Colors.white)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            } else if (val == 'rename') {
+                              final tc = TextEditingController(text: nickname ?? realName);
+                              showDialog(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  backgroundColor: context.themeSurfaceColor,
+                                  title: Text("Set Nickname", style: TextStyle(color: context.themeTextColor)),
+                                  content: TextField(
+                                    controller: tc,
+                                    style: TextStyle(color: context.themeTextColor),
+                                    decoration: InputDecoration(
+                                      hintText: "Nickname",
+                                      hintStyle: TextStyle(color: context.themeMutedTextColor),
+                                    ),
                                   ),
-                                ],
-                              ),
-                            );
+                                  actions: [
+                                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.midnightPrimary),
+                                      onPressed: () {
+                                        _socialService.setFriendNickname(friendUid, tc.text.trim());
+                                        Navigator.pop(ctx);
+                                      },
+                                      child: const Text("Save", style: TextStyle(color: Colors.white)),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
                           },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(value: 'rename', child: Text("Set Nickname")),
+                            const PopupMenuItem(value: 'remove', child: Text("Remove Friend", style: TextStyle(color: Colors.redAccent))),
+                          ],
                         ),
                       );
                     },

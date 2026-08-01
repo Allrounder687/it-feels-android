@@ -118,6 +118,20 @@ class SocialService {
     return null;
   }
 
+  // Set Friend Nickname
+  Future<void> setFriendNickname(String friendUid, String nickname) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    
+    try {
+      await _firestore.collection('users').doc(user.uid).set({
+        'friend_names': { friendUid: nickname }
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint("Error setting friend nickname: $e");
+    }
+  }
+
   // Send a song to a friend's inbox
   Future<void> sendSong(String friendUid, Song song) async {
     final user = _auth.currentUser;
@@ -147,6 +161,38 @@ class SocialService {
       );
     } catch (e) {
       debugPrint("Error sending song: $e");
+    }
+  }
+
+  // Send a playlist to a friend's inbox
+  Future<void> sendPlaylist(String friendUid, Map<String, dynamic> playlistJson) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    
+    try {
+      final myDoc = await _firestore.collection('users').doc(user.uid).get();
+      final myName = myDoc.data()?['name'] ?? 'A friend';
+
+      final docRef = _firestore.collection('users').doc(friendUid).collection('inbox').doc();
+      await docRef.set({
+        'senderId': user.uid,
+        'senderName': myName,
+        'type': 'playlist',
+        'payload': playlistJson,
+        'timestamp': FieldValue.serverTimestamp(),
+        'reactions': {},
+        'isRead': false,
+      });
+
+      // Notify the friend
+      final notifService = locator<NotificationService>();
+      await notifService.notifyFriendsOfRoom(
+        [friendUid], 
+        myName, 
+        'inbox_${docRef.id}' 
+      );
+    } catch (e) {
+      debugPrint("Error sending playlist: $e");
     }
   }
 
@@ -209,21 +255,47 @@ class SocialService {
     if (user == null) return;
 
     try {
-      await _firestore
-          .collection('users')
-          .doc(user.uid)
-          .collection('inbox')
-          .doc(messageId)
-          .set({
-            'reactions': { user.uid: emoji }
-          }, SetOptions(merge: true));
+      final docRef = _firestore.collection('users').doc(user.uid).collection('inbox').doc(messageId);
+      final docSnap = await docRef.get();
+      
+      await docRef.set({
+        'reactions': { user.uid: emoji }
+      }, SetOptions(merge: true));
+
+      // Share reaction: Send a notification back to the sender
+      if (docSnap.exists) {
+        final data = docSnap.data()!;
+        final senderId = data['senderId'];
+        if (senderId != null && senderId != user.uid) {
+          final myDoc = await _firestore.collection('users').doc(user.uid).get();
+          final myName = myDoc.data()?['name'] ?? 'A friend';
+          
+          String title = data['type'] == 'playlist' 
+              ? (data['payload']['title'] ?? 'Playlist') 
+              : (data['payload']['title'] ?? 'Song');
+
+          await _firestore.collection('users').doc(senderId).collection('inbox').add({
+            'senderId': user.uid,
+            'senderName': myName,
+            'type': 'reaction',
+            'payload': {
+              'emoji': emoji,
+              'targetTitle': title,
+            },
+            'timestamp': FieldValue.serverTimestamp(),
+            'reactions': {},
+            'isRead': false,
+          });
+        }
+      }
+
     } catch (e) {
       debugPrint("Error reacting to message: $e");
     }
   }
 
   // Update real-time presence (what they are listening to)
-  Future<void> updatePresence(Song? song, bool isPlaying) async {
+  Future<void> updatePresence(Song? song, bool isPlaying, {String? roomId}) async {
     final user = _auth.currentUser;
     if (user == null) return;
 
@@ -235,6 +307,7 @@ class SocialService {
         'song_title': song.title,
         'artist': song.artist,
         'timestamp': ServerValue.timestamp,
+        if (roomId != null) 'room_id': roomId,
       });
       presenceRef.onDisconnect().remove();
     } else {

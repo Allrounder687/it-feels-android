@@ -281,6 +281,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Timer? _sleepTimer;
   Timer? _audioSyncHapticTimer;
   StreamSubscription<DatabaseEvent>? _roomSubscription;
+  StreamSubscription<DatabaseEvent>? _joinRequestSubscription;
   int _lastSyncedSecond = -1;
   bool _hasShownEmailVerification = false;
 
@@ -308,6 +309,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       _sleepTimer?.cancel();
       _audioSyncHapticTimer?.cancel();
       _roomSubscription?.cancel();
+      _joinRequestSubscription?.cancel();
     });
 
     return const AudioPlayerState();
@@ -650,7 +652,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     audioHandler.player.playerStateStream.listen((pState) async {
       final isPlaying = pState.playing;
       state = state.copyWith(isPlaying: isPlaying);
-      locator<SocialService>().updatePresence(state.currentSong, isPlaying);
+      locator<SocialService>().updatePresence(state.currentSong, isPlaying, roomId: state.currentRoomId);
 
       if (isPlaying && state.audioSyncHapticsEnabled) {
         _startAudioSyncHaptics();
@@ -800,7 +802,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
     if (streamUrl != null) {
       await audioHandler.playSong(song, streamUrl);
-      locator<SocialService>().updatePresence(song, true);
+      locator<SocialService>().updatePresence(song, true, roomId: state.currentRoomId);
     } else {
       debugPrint('[AudioPlayerNotifier] Failed to resolve stream for ${song.title}');
     }
@@ -810,12 +812,12 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
   Future<void> play() async {
     await audioHandler.play();
-    locator<SocialService>().updatePresence(state.currentSong, true);
+    locator<SocialService>().updatePresence(state.currentSong, true, roomId: state.currentRoomId);
   }
 
   Future<void> pause() async {
     await audioHandler.pause();
-    locator<SocialService>().updatePresence(state.currentSong, false);
+    locator<SocialService>().updatePresence(state.currentSong, false, roomId: state.currentRoomId);
   }
 
   Future<void> togglePlayPause() async {
@@ -829,10 +831,10 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
     if (state.isPlaying) {
       await audioHandler.pause();
-      locator<SocialService>().updatePresence(state.currentSong, false);
+      locator<SocialService>().updatePresence(state.currentSong, false, roomId: state.currentRoomId);
     } else {
       await audioHandler.play();
-      locator<SocialService>().updatePresence(state.currentSong, true);
+      locator<SocialService>().updatePresence(state.currentSong, true, roomId: state.currentRoomId);
     }
     _saveMemory();
   }
@@ -998,6 +1000,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     if (state.currentSong == null) return null;
     final roomId = await _roomService.createRoom(uid, state.currentSong!, state.position, state.isPlaying);
     state = state.copyWith(currentRoomId: roomId, isHost: true);
+    locator<SocialService>().updatePresence(state.currentSong, state.isPlaying, roomId: roomId);
     
     // Zero-cognitive load friending: Notify all friends
     try {
@@ -1015,6 +1018,33 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       debugPrint("Error fetching friends to notify: $e");
     }
     
+    // Listen for join requests
+    _joinRequestSubscription?.cancel();
+    _joinRequestSubscription = _roomService.listenToJoinRequests(roomId).listen((event) {
+      if (event.snapshot.value != null) {
+        final guestId = event.snapshot.key!;
+        final data = Map<String, dynamic>.from(event.snapshot.value as Map);
+        final guestName = data['name'] ?? 'Someone';
+        
+        rootScaffoldMessengerKey.currentState?.showSnackBar(
+          SnackBar(
+            content: Text('$guestName wants to join your room!', style: const TextStyle(color: Colors.white)),
+            backgroundColor: AppColors.midnightPrimary,
+            duration: const Duration(seconds: 10),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            action: SnackBarAction(
+              label: 'Accept',
+              textColor: Colors.white,
+              onPressed: () {
+                _roomService.acceptJoinRequest(roomId, guestId);
+              },
+            ),
+          ),
+        );
+      }
+    });
+
     return roomId;
   }
 
@@ -1077,6 +1107,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       _roomService.endRoom(state.currentRoomId!);
     }
     _roomSubscription?.cancel();
+    _joinRequestSubscription?.cancel();
     state = state.copyWith(clearCurrentRoomId: true, isHost: false);
   }
 

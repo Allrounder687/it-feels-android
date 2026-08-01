@@ -6,6 +6,7 @@
 
 #include "generated_plugin_registrant.h"
 
+#include <bonsoir_windows/bonsoir_windows_plugin_c_api.h>
 #include <cloud_firestore/cloud_firestore_plugin_c_api.h>
 #include <dynamic_color/dynamic_color_plugin_c_api.h>
 #include <firebase_auth/firebase_auth_plugin_c_api.h>
@@ -19,6 +20,8 @@
 #include <volume_controller/volume_controller_plugin_c_api.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
+  BonsoirWindowsPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("BonsoirWindowsPluginCApi"));
   CloudFirestorePluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("CloudFirestorePluginCApi"));
   DynamicColorPluginCApiRegisterWithRegistrar(

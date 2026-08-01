@@ -11,6 +11,9 @@ import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/widgets/mini_player.dart';
 import 'package:it_feels_music/features/player/now_playing_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/features/social/social_service.dart' as it_feels_music_social_service;
+import 'package:cloud_firestore/cloud_firestore.dart' as it_feels_music_firestore;
+import 'package:it_feels_music/core/utils/service_locator.dart';
 
 class CustomPlaylistDetailScreen extends ConsumerWidget {
   final CustomPlaylist playlist;
@@ -95,6 +98,12 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                   if (newName != null && newName != currentPlaylist.title) {
                     ref.read(customPlaylistProvider.notifier).renamePlaylist(currentPlaylist.id, newName);
                   }
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.send_rounded, color: Colors.blueAccent),
+                onPressed: () {
+                  _showSendToFriendDialog(context, currentPlaylist);
                 },
               ),
               IconButton(
@@ -234,6 +243,78 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _showSendToFriendDialog(BuildContext context, CustomPlaylist playlist) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final socialService = locator<it_feels_music_social_service.SocialService>();
+        return AlertDialog(
+          backgroundColor: context.themeSurfaceColor,
+          title: Text("Send Playlist", style: GoogleFonts.outfit(color: context.themeTextColor)),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 300,
+            child: StreamBuilder<it_feels_music_firestore.DocumentSnapshot>(
+              stream: socialService.getFriendsStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data?.data() == null) {
+                  return Center(child: Text("No friends added yet.", style: GoogleFonts.inter(color: context.themeMutedTextColor)));
+                }
+
+                final data = snapshot.data!.data() as Map<String, dynamic>;
+                final friends = List<String>.from(data['friends'] ?? []);
+
+                if (friends.isEmpty) {
+                  return Center(child: Text("No friends added yet.", style: GoogleFonts.inter(color: context.themeMutedTextColor)));
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: friends.length,
+                  itemBuilder: (context, index) {
+                    final friendUid = friends[index];
+                    return FutureBuilder<Map<String, dynamic>?>(
+                      future: socialService.getFriendDetails(friendUid),
+                      builder: (context, friendSnapshot) {
+                        if (!friendSnapshot.hasData) return const SizedBox.shrink();
+                        final friendData = friendSnapshot.data!;
+                        
+                        final friendNames = Map<String, String>.from(data['friend_names'] ?? {});
+                        final nickname = friendNames[friendUid];
+                        final displayName = nickname ?? friendData['name'] ?? 'Unknown';
+
+                        return ListTile(
+                          title: Text(displayName, style: GoogleFonts.inter(color: context.themeTextColor)),
+                          subtitle: Text(friendData['username'] ?? '', style: GoogleFonts.inter(color: context.themeMutedTextColor)),
+                          onTap: () {
+                            socialService.sendPlaylist(friendUid, playlist);
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Sent to $displayName")),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text("Cancel", style: TextStyle(color: context.themeMutedTextColor)),
+            ),
+          ],
         );
       },
     );
