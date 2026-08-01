@@ -48,6 +48,7 @@ post_install do |installer|
       config.build_settings['DEAD_CODE_STRIPPING'] = 'NO'
       config.build_settings['STRIP_INSTALLED_PRODUCT'] = 'NO'
       config.build_settings['DEVELOPMENT_TEAM'] = 'A1B2C3D4E5'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
     end
   end
 end
