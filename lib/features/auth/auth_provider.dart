@@ -185,12 +185,19 @@ class AuthNotifier extends Notifier<AuthState> {
       return false;
     } catch (e) {
       debugPrint("Google Sign In Exception: $e");
-      final rawMsg = e.toString().replaceAll('Exception: ', '');
-      final cleanMsg = rawMsg.contains('PlatformException')
-          ? 'Google Sign-In canceled or Play Services unconfigured.'
-          : rawMsg;
+      final str = e.toString();
+      String cleanMsg;
+      if (str.contains('10:') || str.contains('DEVELOPER_ERROR')) {
+        cleanMsg = 'Google Sign-In configuration error (ApiException 10). Your SHA-1 key must be registered in Firebase Console for package com.itfeels.music.';
+      } else if (str.contains('12500')) {
+        cleanMsg = 'Google Sign-In failed (ApiException 12500). Check Google Play Services.';
+      } else if (str.contains('PlatformException')) {
+        cleanMsg = 'Google Sign-In failed ($str). Check Firebase Console SHA-1 configuration.';
+      } else {
+        cleanMsg = str.replaceAll('Exception: ', '');
+      }
       state = state.copyWith(
-        errorMessage: cleanMsg.isNotEmpty ? cleanMsg : 'Google Sign-In error.',
+        errorMessage: cleanMsg,
         viewState: previousState,
       );
       return false;
