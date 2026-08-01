@@ -30,6 +30,11 @@ jobs:
           channel: 'stable'
           cache: true
           
+      - name: Setup Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+          
       - name: Install dependencies
         run: flutter pub get
 
@@ -142,8 +147,10 @@ jobs:
           pod install
           cd ..
           
-          # 3. Build Release iOS app without code signing
-          flutter build ios --release --no-codesign
+          # 3. Build Release iOS app without code signing using Shorebird
+          shorebird release ios --no-codesign
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
 
           # 4. Fallback Native Xcode Build if needed
           if [ ! -d "build/ios/iphoneos/Runner.app" ]; then
