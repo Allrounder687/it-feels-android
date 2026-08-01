@@ -37,7 +37,8 @@ jobs:
           
       - name: Install dependencies
         run: |
-          flutter config --no-enable-swift-package-manager
+          flutter config --enable-swift-package-manager
+          flutter clean
           flutter pub get
 
       - name: Cache CocoaPods
@@ -140,12 +141,16 @@ jobs:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
         run: |
           # 1. Ensure xcconfig contains DEVELOPMENT_TEAM & Code Signing overrides
-          echo "DEVELOPMENT_TEAM=A1B2C3D4E5" >> ios/Flutter/Release.xcconfig
-          echo "CODE_SIGNING_ALLOWED=NO" >> ios/Flutter/Release.xcconfig
-          echo "CODE_SIGNING_REQUIRED=NO" >> ios/Flutter/Release.xcconfig
-          echo "CODE_SIGN_IDENTITY=" >> ios/Flutter/Release.xcconfig
-          echo "EXPANDED_CODE_SIGN_IDENTITY=" >> ios/Flutter/Release.xcconfig
-          echo "IPHONEOS_DEPLOYMENT_TARGET=15.0" >> ios/Flutter/Release.xcconfig
+          for conf in Release Debug Profile Generated; do
+            if [ -f "ios/Flutter/$conf.xcconfig" ]; then
+              echo "DEVELOPMENT_TEAM=A1B2C3D4E5" >> "ios/Flutter/$conf.xcconfig"
+              echo "CODE_SIGNING_ALLOWED=NO" >> "ios/Flutter/$conf.xcconfig"
+              echo "CODE_SIGNING_REQUIRED=NO" >> "ios/Flutter/$conf.xcconfig"
+              echo "CODE_SIGN_IDENTITY=" >> "ios/Flutter/$conf.xcconfig"
+              echo "EXPANDED_CODE_SIGN_IDENTITY=" >> "ios/Flutter/$conf.xcconfig"
+              echo "IPHONEOS_DEPLOYMENT_TARGET=15.0" >> "ios/Flutter/$conf.xcconfig"
+            fi
+          done
 
           # 2. Install CocoaPods dependencies
           flutter build ios --config-only
