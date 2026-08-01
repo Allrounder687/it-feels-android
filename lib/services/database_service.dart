@@ -6,17 +6,24 @@ import 'package:it_feels_music/data/models/song_model.dart';
 class DatabaseService {
   static Isar? _isar;
   static bool _isInitialized = false;
+  static const String _dbName = 'it_feels_db';
 
   static Future<void> init() async {
-    if (_isInitialized && _isar != null && _isar!.isOpen) return;
+    if (isInitialized) return;
 
     try {
-      if (Isar.instanceNames.isNotEmpty) {
-        final existing = Isar.getInstance();
-        if (existing != null && existing.isOpen) {
-          _isar = existing;
+      final existing = Isar.getInstance(_dbName);
+      if (existing != null && existing.isOpen) {
+        _isar = existing;
+        try {
+          _isar!.songs;
           _isInitialized = true;
           return;
+        } catch (_) {
+          // If instance is corrupted, close it
+          await existing.close();
+          _isar = null;
+          _isInitialized = false;
         }
       }
 
@@ -24,30 +31,46 @@ class DatabaseService {
       _isar = await Isar.open(
         [SongSchema],
         directory: dir.path,
+        name: _dbName,
         inspector: false,
       );
       _isInitialized = true;
     } catch (e) {
       debugPrint('[DatabaseService] Error initializing Isar DB: $e');
       try {
-        if (Isar.instanceNames.isNotEmpty) {
-          final existing = Isar.getInstance();
-          if (existing != null && existing.isOpen) {
-            _isar = existing;
+        final existing = Isar.getInstance(_dbName);
+        if (existing != null && existing.isOpen) {
+          _isar = existing;
+          try {
+            _isar!.songs;
             _isInitialized = true;
-          }
+            return;
+          } catch (_) {}
         }
       } catch (_) {}
+      _isar = null;
+      _isInitialized = false;
     }
   }
 
   static Future<void> ensureInitialized() async {
-    if (!_isInitialized || _isar == null || !_isar!.isOpen) {
+    if (!isInitialized) {
       await init();
     }
   }
 
-  static bool get isInitialized => _isInitialized && _isar != null && _isar!.isOpen;
+  static bool get isInitialized {
+    if (!_isInitialized || _isar == null || !_isar!.isOpen) return false;
+    try {
+      _isar!.songs;
+      return true;
+    } catch (_) {
+      _isInitialized = false;
+      _isar = null;
+      return false;
+    }
+  }
+
   Isar? get isar => _isar;
 
   // ----------------------------------------------------
@@ -57,7 +80,7 @@ class DatabaseService {
   Future<void> saveSong(Song song) async {
     try {
       await ensureInitialized();
-      if (_isar == null || !_isar!.isOpen) return;
+      if (!isInitialized) return;
       await _isar!.writeTxn(() async {
         await _isar!.songs.put(song); // Insert or update based on isarId/id
       });
@@ -69,7 +92,7 @@ class DatabaseService {
   Future<void> saveSongs(List<Song> songs) async {
     try {
       await ensureInitialized();
-      if (_isar == null || !_isar!.isOpen) return;
+      if (!isInitialized) return;
       await _isar!.writeTxn(() async {
         await _isar!.songs.putAll(songs);
       });
@@ -81,7 +104,7 @@ class DatabaseService {
   Future<Song?> getSong(String saavnId) async {
     try {
       await ensureInitialized();
-      if (_isar == null || !_isar!.isOpen) return null;
+      if (!isInitialized) return null;
       return await _isar!.songs.where().idEqualTo(saavnId).findFirst();
     } catch (e) {
       debugPrint('[DatabaseService] getSong error: $e');
@@ -97,7 +120,7 @@ class DatabaseService {
     if (query.isEmpty) return [];
     try {
       await ensureInitialized();
-      if (_isar == null || !_isar!.isOpen) return [];
+      if (!isInitialized) return [];
 
       final cleanQuery = Song.cleanText(query).toLowerCase();
       final queryWords = cleanQuery.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
@@ -123,7 +146,7 @@ class DatabaseService {
   Future<List<Song>> getOnRepeat({int limit = 30}) async {
     try {
       await ensureInitialized();
-      if (_isar == null || !_isar!.isOpen) return [];
+      if (!isInitialized) return [];
       final twoWeeksAgo = DateTime.now().subtract(const Duration(days: 14));
       
       return await _isar!.songs
@@ -143,7 +166,7 @@ class DatabaseService {
   Future<List<Song>> getTopPlayedSongs({int limit = 20}) async {
     try {
       await ensureInitialized();
-      if (_isar == null || !_isar!.isOpen) return [];
+      if (!isInitialized) return [];
       return await _isar!.songs
           .filter()
           .playCountGreaterThan(0)
@@ -159,7 +182,7 @@ class DatabaseService {
   Future<List<Song>> getForgottenFavorites({int limit = 30}) async {
     try {
       await ensureInitialized();
-      if (_isar == null || !_isar!.isOpen) return [];
+      if (!isInitialized) return [];
       final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 90));
       
       return await _isar!.songs
@@ -179,7 +202,7 @@ class DatabaseService {
   Future<List<Song>> getAllFavorites() async {
     try {
       await ensureInitialized();
-      if (_isar == null || !_isar!.isOpen) return [];
+      if (!isInitialized) return [];
       return await _isar!.songs
           .filter()
           .isFavoriteEqualTo(true)
@@ -194,7 +217,7 @@ class DatabaseService {
   Future<List<Song>> getDownloadedSongs() async {
     try {
       await ensureInitialized();
-      if (_isar == null || !_isar!.isOpen) return [];
+      if (!isInitialized) return [];
       return await _isar!.songs
           .filter()
           .offlineStatusEqualTo(OfflineStatus.downloaded)
@@ -213,7 +236,7 @@ class DatabaseService {
   Future<void> incrementPlayCount(Song songObj) async {
     try {
       await ensureInitialized();
-      if (_isar == null || !_isar!.isOpen) return;
+      if (!isInitialized) return;
       await _isar!.writeTxn(() async {
         var song = await _isar!.songs.where().idEqualTo(songObj.id).findFirst();
         if (song != null) {
@@ -234,7 +257,7 @@ class DatabaseService {
   Future<void> toggleFavorite(String saavnId) async {
     try {
       await ensureInitialized();
-      if (_isar == null || !_isar!.isOpen) return;
+      if (!isInitialized) return;
       await _isar!.writeTxn(() async {
         final song = await _isar!.songs.where().idEqualTo(saavnId).findFirst();
         if (song != null) {
