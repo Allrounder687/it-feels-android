@@ -3,6 +3,7 @@ import 'package:it_feels_music/main.dart';
 import 'package:flutter/foundation.dart';
 import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
+import 'package:it_feels_music/data/services/spotify_scraper_service.dart';
 
 class PlaylistImportProgress {
   final int total;
@@ -36,8 +37,8 @@ class PlaylistImportService {
     );
 
     // 2. Extract tracks using scraper
-    // final tracks = await SpotifyScraperService.extractTracksFromUrl(url);
-    final List<Map<String, String>> tracks = []; // Mocked for now to fix build
+    final tracks = await SpotifyScraperService.extractTracksFromUrl(url);
+    
     if (tracks.isEmpty) {
       importProgress.value = PlaylistImportProgress(
         total: 0, current: 0, status: 'Failed to extract tracks.', isDone: true

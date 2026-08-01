@@ -21,7 +21,8 @@ import 'package:it_feels_music/features/player/fullscreen_video_screen.dart';
 import 'package:it_feels_music/features/home/driving_mode_screen.dart';
 import 'package:video_player/video_player.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
-import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
+import 'package:it_feels_music/features/cast/cast_service.dart'
+    as it_feels_music_cast_service;
 import 'package:it_feels_music/features/cast/cast_bottom_sheet.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
@@ -39,7 +40,12 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
   String? _lastPlayedSongId;
   bool _hasViewedVideoForCurrentSong = false;
 
-  Future<void> _toggleMode(bool toVideo, AudioPlayerState audioProvider, VideoPlayerState videoProvider, SettingsState settingsProv) async {
+  Future<void> _toggleMode(
+    bool toVideo,
+    AudioPlayerState audioProvider,
+    VideoPlayerState videoProvider,
+    SettingsState settingsProv,
+  ) async {
     if (_isVideoMode == toVideo) return;
     final currentSong = audioProvider.currentSong;
     if (currentSong == null) return;
@@ -55,7 +61,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
       // Switching to video
       final position = audioProvider.position;
       final useVideoAudio = settingsProv.useVideoAudioSource;
-      
+
       if (useVideoAudio) {
         ref.read(audioPlayerProvider.notifier).pause();
         ref.read(videoPlayerProvider.notifier).setMuted(false);
@@ -67,7 +73,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
           ref.read(audioPlayerProvider.notifier).play();
         }
       }
-      
+
       ref.read(videoPlayerProvider.notifier).setOnVideoStarted(() {
         if (_isVideoMode && !settingsProv.useVideoAudioSource) {
           if (!audioProvider.isPlaying) {
@@ -76,13 +82,20 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         }
       });
 
-      ref.read(videoPlayerProvider.notifier).playVideo(
-        currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}',
-        currentSong.title,
-        currentSong.artist,
-        query: BackendApiService.cleanSearchQuery(currentSong.title, currentSong.artist),
-        startPosition: position,
-      );
+      ref
+          .read(videoPlayerProvider.notifier)
+          .playVideo(
+            currentSong.id.contains(':')
+                ? currentSong.id
+                : 'search:${currentSong.id}',
+            currentSong.title,
+            currentSong.artist,
+            query: BackendApiService.cleanSearchQuery(
+              currentSong.title,
+              currentSong.artist,
+            ),
+            startPosition: position,
+          );
     } else {
       // Switching to audio
       final useVideoAudio = settingsProv.useVideoAudioSource;
@@ -105,7 +118,10 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     return '$minutes:$seconds';
   }
 
-  void _showQualityPickerBottomSheet(BuildContext context, VideoPlayerState videoProvider) {
+  void _showQualityPickerBottomSheet(
+    BuildContext context,
+    VideoPlayerState videoProvider,
+  ) {
     if (videoProvider.streams.isEmpty) return;
 
     showModalBottomSheet(
@@ -123,7 +139,11 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.hd_rounded, color: context.themeTextColor, size: 24),
+                  Icon(
+                    Icons.hd_rounded,
+                    color: context.themeTextColor,
+                    size: 24,
+                  ),
                   const SizedBox(width: 10),
                   Text(
                     'Select Video Quality',
@@ -147,19 +167,34 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
                     return ListTile(
                       dense: true,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      tileColor: isSelected ? context.themeAccentColor.withValues(alpha: 0.15) : Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      tileColor: isSelected
+                          ? context.themeAccentColor.withValues(alpha: 0.15)
+                          : Colors.transparent,
                       title: Text(
                         quality,
                         style: GoogleFonts.inter(
-                          color: isSelected ? context.themeAccentColor : context.themeTextColor,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? context.themeAccentColor
+                              : context.themeTextColor,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           fontSize: 16,
                         ),
                       ),
-                      trailing: isSelected ? Icon(Icons.check_circle_rounded, color: context.themeAccentColor) : null,
+                      trailing: isSelected
+                          ? Icon(
+                              Icons.check_circle_rounded,
+                              color: context.themeAccentColor,
+                            )
+                          : null,
                       onTap: () {
-                        ref.read(videoPlayerProvider.notifier).changeQuality(quality);
+                        ref
+                            .read(videoPlayerProvider.notifier)
+                            .changeQuality(quality);
                         Navigator.pop(context);
                       },
                     );
@@ -201,25 +236,55 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                   ),
                 ),
                 ListTile(
-                  leading: Icon(Icons.directions_car_filled_rounded, color: context.themeTextColor),
-                  title: Text('Driving Mode', style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600)),
+                  leading: Icon(
+                    Icons.directions_car_filled_rounded,
+                    color: context.themeTextColor,
+                  ),
+                  title: Text(
+                    'Driving Mode',
+                    style: GoogleFonts.inter(
+                      color: context.themeTextColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const DrivingModeScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DrivingModeScreen(),
+                      ),
+                    );
                   },
                 ),
                 ListTile(
                   leading: Icon(
-                    playerProvider.isSleepTimerActive || playerProvider.sleepAfterCurrentTrack
+                    playerProvider.isSleepTimerActive ||
+                            playerProvider.sleepAfterCurrentTrack
                         ? Icons.bedtime_rounded
                         : Icons.bedtime_outlined,
-                    color: playerProvider.isSleepTimerActive || playerProvider.sleepAfterCurrentTrack
+                    color:
+                        playerProvider.isSleepTimerActive ||
+                            playerProvider.sleepAfterCurrentTrack
                         ? accentColor
                         : context.themeTextColor,
                   ),
-                  title: Text('Sleep Timer', style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600)),
+                  title: Text(
+                    'Sleep Timer',
+                    style: GoogleFonts.inter(
+                      color: context.themeTextColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   trailing: playerProvider.isSleepTimerActive
-                      ? Text('Active', style: GoogleFonts.inter(color: accentColor, fontSize: 12, fontWeight: FontWeight.bold))
+                      ? Text(
+                          'Active',
+                          style: GoogleFonts.inter(
+                            color: accentColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
                       : null,
                   onTap: () {
                     Navigator.pop(context);
@@ -236,39 +301,67 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                     playerProvider.currentVibe == AudioVibe.normal
                         ? Icons.graphic_eq
                         : playerProvider.currentVibe == AudioVibe.slowedReverb
-                            ? Icons.nightlight_round
-                            : Icons.bolt,
+                        ? Icons.nightlight_round
+                        : Icons.bolt,
                     color: playerProvider.currentVibe == AudioVibe.normal
                         ? context.themeTextColor
                         : accentColor,
                   ),
-                  title: Text('Audio Vibes', style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600)),
+                  title: Text(
+                    'Audio Vibes',
+                    style: GoogleFonts.inter(
+                      color: context.themeTextColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   subtitle: Text(
                     playerProvider.currentVibe == AudioVibe.slowedReverb
                         ? '🌙 Slowed + Reverb'
                         : playerProvider.currentVibe == AudioVibe.nightcore
-                            ? '⚡ Nightcore (Sped Up)'
-                            : '🎵 Normal Audio',
-                    style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                        ? '⚡ Nightcore (Sped Up)'
+                        : '🎵 Normal Audio',
+                    style: GoogleFonts.inter(
+                      color: context.themeMutedTextColor,
+                      fontSize: 12,
+                    ),
                   ),
                   onTap: () {
                     final current = playerProvider.currentVibe;
                     if (current == AudioVibe.normal) {
-                      ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.slowedReverb);
+                      ref
+                          .read(audioPlayerProvider.notifier)
+                          .setAudioVibe(AudioVibe.slowedReverb);
                     } else if (current == AudioVibe.slowedReverb) {
-                      ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.nightcore);
+                      ref
+                          .read(audioPlayerProvider.notifier)
+                          .setAudioVibe(AudioVibe.nightcore);
                     } else {
-                      ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.normal);
+                      ref
+                          .read(audioPlayerProvider.notifier)
+                          .setAudioVibe(AudioVibe.normal);
                     }
                     Navigator.pop(context);
                   },
                 ),
                 ListTile(
                   leading: Icon(
-                    locator<it_feels_music_cast_service.CastService>().isConnected ? Icons.cast_connected_rounded : Icons.cast_rounded,
-                    color: locator<it_feels_music_cast_service.CastService>().isConnected ? accentColor : context.themeTextColor,
+                    locator<it_feels_music_cast_service.CastService>()
+                            .isConnected
+                        ? Icons.cast_connected_rounded
+                        : Icons.cast_rounded,
+                    color:
+                        locator<it_feels_music_cast_service.CastService>()
+                            .isConnected
+                        ? accentColor
+                        : context.themeTextColor,
                   ),
-                  title: Text('Cast Audio', style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600)),
+                  title: Text(
+                    'Cast Audio',
+                    style: GoogleFonts.inter(
+                      color: context.themeTextColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _showCastBottomSheet(context);
@@ -276,8 +369,17 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                 ),
                 if (currentSong != null)
                   ListTile(
-                    leading: Icon(Icons.more_horiz_rounded, color: context.themeTextColor),
-                    title: Text('More Options', style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600)),
+                    leading: Icon(
+                      Icons.more_horiz_rounded,
+                      color: context.themeTextColor,
+                    ),
+                    title: Text(
+                      'More Options',
+                      style: GoogleFonts.inter(
+                        color: context.themeTextColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       SongOptionsSheet.show(context, currentSong);
@@ -295,7 +397,10 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, child) {
-        ref.listen(audioPlayerProvider.select((p) => p.position), (previous, next) {
+        ref.listen(audioPlayerProvider.select((p) => p.position), (
+          previous,
+          next,
+        ) {
           final song = ref.read(audioPlayerProvider).currentSong;
           if (song != null) {
             ref.read(lyricsProvider.notifier).loadLyricsIfNeeded(song, next);
@@ -332,13 +437,20 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                 _isVideoMode = false;
               });
               final settingsProv = ref.read(settingsProvider);
-              ref.read(videoPlayerProvider.notifier).playVideo(
-                currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}',
-                currentSong.title,
-                currentSong.artist,
-                query: BackendApiService.cleanSearchQuery(currentSong.title, currentSong.artist),
-                startPosition: ref.read(audioPlayerProvider).position,
-              );
+              ref
+                  .read(videoPlayerProvider.notifier)
+                  .playVideo(
+                    currentSong.id.contains(':')
+                        ? currentSong.id
+                        : 'search:${currentSong.id}',
+                    currentSong.title,
+                    currentSong.artist,
+                    query: BackendApiService.cleanSearchQuery(
+                      currentSong.title,
+                      currentSong.artist,
+                    ),
+                    startPosition: ref.read(audioPlayerProvider).position,
+                  );
             }
           });
         } else if (currentSong.id != _lastPlayedSongId) {
@@ -348,7 +460,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
         final isFav = playerProvider.isFavorite(currentSong.id);
         final isDown = downloadProviderLocal.isDownloaded(currentSong.id);
-        final isDownloading = downloadProviderLocal.isDownloading(currentSong.id);
+        final isDownloading = downloadProviderLocal.isDownloading(
+          currentSong.id,
+        );
 
         final queue = playerProvider.queue;
         final currentIndex = playerProvider.currentIndex;
@@ -362,7 +476,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
           backgroundColor: canvasController != null ? Colors.black : bgColor,
           body: Stack(
             children: [
-              if (canvasController != null && canvasController.value.isInitialized && !_isVideoMode)
+              if (canvasController != null &&
+                  canvasController.value.isInitialized &&
+                  !_isVideoMode)
                 Positioned.fill(
                   child: FittedBox(
                     fit: BoxFit.cover,
@@ -373,897 +489,1355 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                     ),
                   ),
                 ),
-              if (canvasController != null && canvasController.value.isInitialized && !_isVideoMode)
+              if (canvasController != null &&
+                  canvasController.value.isInitialized &&
+                  !_isVideoMode)
                 Positioned.fill(
-                  child: Container(
-                    color: bgColor.withValues(alpha: 0.7),
-                  ),
+                  child: Container(color: bgColor.withValues(alpha: 0.7)),
                 ),
               SafeArea(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onVerticalDragEnd: (details) {
-                if (details.primaryVelocity != null) {
-                  if (details.primaryVelocity! > 150) {
-                    Navigator.pop(context); // Swipe down to close
-                  } else if (details.primaryVelocity! < -150) {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => const QueueBottomSheet(),
-                    );
-                  }
-                }
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isWide = constraints.maxWidth >= 700;
-                    final artSize = isWide 
-                        ? (constraints.maxWidth * 0.45).clamp(200.0, constraints.maxHeight * 0.75)
-                        : (constraints.maxWidth * 0.78).clamp(140.0, constraints.maxHeight * 0.34);
-
-                    // Redesigned 3-Zone Clean Header Bar
-                    final topAppBar = Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.keyboard_arrow_down_rounded, color: context.themeTextColor, size: 30),
-                          onPressed: () => Navigator.pop(context),
-                          tooltip: 'Close Player',
-                        ),
-                        // Glassmorphic Segmented Toggle (Song / Video)
-                        Builder(
-                          builder: (context) {
-                            final settingsProv = ref.read(settingsProvider);
-                            return Container(
-                              padding: const EdgeInsets.all(3),
-                              decoration: BoxDecoration(
-                                color: surfaceColor.withValues(alpha: 0.6),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () => _toggleMode(false, ref.read(audioPlayerProvider), videoProvider, settingsProv),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(milliseconds: 200),
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: !_isVideoMode ? accentColor : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(20),
-                                      ),
-                                      child: Text(
-                                        'Song',
-                                        style: GoogleFonts.inter(
-                                          color: !_isVideoMode ? context.themeInvertedTextColor : context.themeMutedTextColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  GestureDetector(
-                                    onTap: () => _toggleMode(true, ref.read(audioPlayerProvider), videoProvider, settingsProv),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(milliseconds: 200),
-                                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: _isVideoMode ? accentColor : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(20),
-                                        boxShadow: (!_isVideoMode && !_hasViewedVideoForCurrentSong && videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
-                                            ? [BoxShadow(color: accentColor.withValues(alpha: 0.8), blurRadius: 10, spreadRadius: 2)]
-                                            : null,
-                                      ),
-                                      child: Text(
-                                        'Video',
-                                        style: GoogleFonts.inter(
-                                          color: _isVideoMode || (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized) 
-                                              ? context.themeInvertedTextColor : context.themeMutedTextColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                        // Top Right Menu Overflow Button
-                        IconButton(
-                          icon: Icon(Icons.more_vert_rounded, color: context.themeTextColor, size: 26),
-                          onPressed: () => _showPlayerOptionsMenu(context),
-                          tooltip: 'Options',
-                        ),
-                      ],
-                    );
-
-                    final albumArt = AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 400),
-                      switchInCurve: Curves.easeInOut,
-                      switchOutCurve: Curves.easeInOut,
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        return FadeTransition(opacity: animation, child: child);
-                      },
-                      child: _isVideoMode 
-                        ? AspectRatio(
-                            aspectRatio: (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
-                                ? videoProvider.videoController!.value.aspectRatio
-                                : 16 / 9,
-                            child: Container(
-                              key: const ValueKey('video_player'),
-                              decoration: BoxDecoration(
-                                color: Colors.black,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: videoProvider.isLoading 
-                                        ? Center(child: CircularProgressIndicator(color: accentColor))
-                                        : videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized
-                                          ? VideoPlayer(videoProvider.videoController!)
-                                          : Center(child: Text('Video unavailable', style: GoogleFonts.inter(color: Colors.white))),
-                                    ),
-                                    if (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
-                                      Positioned(
-                                        right: 8,
-                                        bottom: 8,
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            GestureDetector(
-                                              onTap: () {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text('Downloading video for ${currentSong.title}...'),
-                                                    behavior: SnackBarBehavior.floating,
-                                                  ),
-                                                );
-                                              },
-                                              child: Container(
-                                                padding: const EdgeInsets.all(6),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.black.withValues(alpha: 0.65),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(Icons.file_download_rounded, color: Colors.white, size: 16),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            GestureDetector(
-                                              onTap: () {
-                                                _showQualityPickerBottomSheet(context, videoProvider);
-                                              },
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.black.withValues(alpha: 0.65),
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Text(
-                                                  videoProvider.selectedQuality,
-                                                  style: GoogleFonts.inter(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            GestureDetector(
-                                              onTap: () {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (_) => FullscreenVideoScreen(song: currentSong),
-                                                  ),
-                                                );
-                                              },
-                                              child: Container(
-                                                padding: const EdgeInsets.all(6),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.black.withValues(alpha: 0.65),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 20),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          )
-                        : Stack(
-                            key: const ValueKey('audio_art'),
-                            alignment: Alignment.center,
-                            children: [
-                              Positioned.fill(
-                                child: PulseGlowBackground(
-                                  color: accentColor,
-                                  isPlaying: playerProvider.isPlaying,
-                                ),
-                              ),
-                              Hero(
-                                tag: 'cover_${currentSong.id}',
-                                child: Container(
-                                  width: artSize,
-                                  height: artSize,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(isWide ? 36 : 24),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: context.themeInvertedTextColor.withValues(alpha: 0.35),
-                                        blurRadius: isWide ? 40 : 24,
-                                        offset: Offset(0, isWide ? 20 : 12),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(isWide ? 36 : 24),
-                                    child: currentSong.coverArt.isNotEmpty
-                                        ? CustomImageWidget(
-                                            imageUrl: currentSong.coverArt,
-                                            fit: BoxFit.cover,
-                                            errorWidget: (context, url, error) => Container(color: surfaceColor),
-                                          )
-                                        : Container(color: surfaceColor),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                    );
-
-                    final songInfo = Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
-                          currentSong.title,
-                          maxLines: 1,
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.outfit(
-                            fontSize: isWide ? 32 : 22,
-                            fontWeight: FontWeight.w800,
-                            color: context.themeTextColor,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                currentSong.artist,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  fontSize: isWide ? 16 : 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: context.themeMutedTextColor,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Inlined Sleek Audio Quality Tag
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.amber.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
-                              ),
-                              child: Text(
-                                (currentSong.streamUrl?.toLowerCase().endsWith('.flac') ?? false) || (currentSong.streamUrl?.toLowerCase().endsWith('.alac') ?? false)
-                                    ? 'LOSSLESS'
-                                    : (currentSong.streamUrl?.toLowerCase().endsWith('.wav') ?? false)
-                                        ? 'HIGH-RES'
-                                        : '320 KBPS',
-                                style: GoogleFonts.inter(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.amber,
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    );
-
-                    // Redesigned Glassmorphic Action Row
-                    final actionPills = SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          GestureDetector(
-                            onTap: () => ref.read(audioPlayerProvider.notifier).toggleFavorite(currentSong),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: surfaceColor.withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                    color: isFav ? Colors.pinkAccent : context.themeMutedTextColor,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    isFav ? "Liked" : "Like",
-                                    style: GoogleFonts.inter(
-                                      color: context.themeTextColor,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          GestureDetector(
-                            onTap: () async {
-                              if (isDown) {
-                                await ref.read(downloadProvider.notifier).removeDownload(currentSong);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("Removed ${currentSong.title} from downloads")),
-                                  );
-                                }
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text("Downloading ${currentSong.title}...")),
-                                );
-                                final ok = await ref.read(downloadProvider.notifier).downloadSong(currentSong);
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(ok ? "Downloaded ${currentSong.title}" : "Download failed")),
-                                  );
-                                }
-                              }
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: surfaceColor.withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                              ),
-                              child: Row(
-                                children: [
-                                  isDownloading
-                                      ? SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(strokeWidth: 2, color: context.themeTextColor),
-                                        )
-                                      : Icon(
-                                          isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
-                                          color: isDown ? accentColor : context.themeMutedTextColor,
-                                          size: 18,
-                                        ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    isDown ? "Downloaded" : "Download",
-                                    style: GoogleFonts.inter(
-                                      color: context.themeTextColor,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          InkWell(
-                            onTap: () {
-                              final sub = ref.read(subscriptionProvider);
-                              if (sub.isPremium) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const LyricsScreen()),
-                                );
-                              } else {
-                                PaywallBottomSheet.show(context, featureName: "Lyrics");
-                              }
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: surfaceColor.withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.lyrics_outlined, color: context.themeMutedTextColor, size: 18),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    "Lyrics",
-                                    style: GoogleFonts.inter(
-                                      color: context.themeTextColor,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          // New Share Button Pill
-                          InkWell(
-                            onTap: () {
-                              Share.share(
-                                'Listening to "${currentSong.title}" by ${currentSong.artist} on It Feels Music! 🎶',
-                                subject: 'Check out this song',
-                              );
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: surfaceColor.withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.share_outlined, color: context.themeMutedTextColor, size: 18),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    "Share",
-                                    style: GoogleFonts.inter(
-                                      color: context.themeTextColor,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    Widget buildProgress() {
-                      if (_isVideoMode && videoProvider.videoController != null) {
-                        return ValueListenableBuilder<VideoPlayerValue>(
-                          valueListenable: videoProvider.videoController!,
-                          builder: (context, value, child) {
-                            return Column(
-                              children: [
-                                WavySeekBar(
-                                  position: value.position,
-                                  duration: value.duration,
-                                  activeColor: accentColor,
-                                  inactiveColor: context.themeTextColor24,
-                                  onSeek: (newPos) {
-                                    videoProvider.videoController?.seekTo(newPos);
-                                    final settingsProv = ref.read(settingsProvider);
-                                    if (!settingsProv.useVideoAudioSource) {
-                                      ref.read(audioPlayerProvider.notifier).seek(newPos);
-                                    }
-                                  },
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        _formatDuration(value.position),
-                                        style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
-                                      ),
-                                      Text(
-                                        _formatDuration(value.duration),
-                                        style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        );
-                      }
-
-                      return StreamBuilder<Duration>(
-                        stream: ref.read(audioPlayerProvider.notifier).audioHandler.player.positionStream,
-                        initialData: playerProvider.position,
-                        builder: (context, snapshot) {
-                          final currentPos = snapshot.data ?? playerProvider.position;
-                          return Column(
-                            children: [
-                              WavySeekBar(
-                                position: currentPos,
-                                duration: playerProvider.duration,
-                                activeColor: accentColor,
-                                inactiveColor: context.themeTextColor24,
-                                onSeek: (newPos) => ref.read(audioPlayerProvider.notifier).seek(newPos),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      _formatDuration(currentPos),
-                                      style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
-                                    ),
-                                    Text(
-                                      _formatDuration(playerProvider.duration),
-                                      style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    }
-
-                    // Redesigned Adaptive Acrylic Control Capsule
-                    final primaryControls = Container(
-                      height: isWide ? 86 : 74,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: surfaceColor.withValues(alpha: 0.65),
-                        borderRadius: BorderRadius.circular(isWide ? 43 : 37),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          BouncyIconButton(
-                            child: Icon(Icons.replay_10_rounded, color: context.themeMutedTextColor, size: isWide ? 30 : 26),
-                            onPressed: () {
-                              final settingsProv = ref.read(settingsProvider);
-                              if (_isVideoMode) {
-                                final pos = videoProvider.videoController?.value.position ?? Duration.zero;
-                                final newPos = pos - const Duration(seconds: 10);
-                                videoProvider.videoController?.seekTo(newPos);
-                                if (!settingsProv.useVideoAudioSource) {
-                                  ref.read(audioPlayerProvider.notifier).seek(newPos);
-                                }
-                              } else {
-                                ref.read(audioPlayerProvider.notifier).seekBackward();
-                              }
-                            },
-                          ),
-                          BouncyIconButton(
-                            child: Icon(Icons.skip_previous_rounded, color: context.themeTextColor, size: isWide ? 40 : 34),
-                            onPressed: () {
-                              ref.read(audioPlayerProvider.notifier).skipToPrevious();
-                            },
-                          ),
-                          // Glowing Accent Play/Pause Button
-                          BouncyIconButton(
-                            onPressed: () {
-                              final settingsProv = ref.read(settingsProvider);
-                              if (_isVideoMode) {
-                                final ctrl = videoProvider.videoController;
-                                if (ctrl != null) {
-                                  if (ctrl.value.isPlaying) {
-                                    ctrl.pause();
-                                    if (!settingsProv.useVideoAudioSource) {
-                                      ref.read(audioPlayerProvider.notifier).pause();
-                                    }
-                                  } else {
-                                    ctrl.play();
-                                    if (!settingsProv.useVideoAudioSource) {
-                                      ref.read(audioPlayerProvider.notifier).seek(ctrl.value.position);
-                                      ref.read(audioPlayerProvider.notifier).play();
-                                    }
-                                  }
-                                  setState(() {});
-                                }
-                              } else {
-                                ref.read(audioPlayerProvider.notifier).togglePlayPause();
-                              }
-                            },
-                            padding: EdgeInsets.zero,
-                            child: Container(
-                              width: isWide ? 68 : 56,
-                              height: isWide ? 68 : 56,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: accentColor,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: accentColor.withValues(alpha: 0.4),
-                                    blurRadius: 16,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              child: _isVideoMode && videoProvider.videoController != null
-                                ? ValueListenableBuilder<VideoPlayerValue>(
-                                    valueListenable: videoProvider.videoController!,
-                                    builder: (context, value, child) {
-                                      final settingsProv = ref.read(settingsProvider);
-                                      return AnimatedPlayPauseButton(
-                                        isPlaying: value.isPlaying,
-                                        onPressed: () {
-                                          if (value.isPlaying) {
-                                            videoProvider.videoController!.pause();
-                                            if (!settingsProv.useVideoAudioSource) {
-                                              ref.read(audioPlayerProvider.notifier).pause();
-                                            }
-                                          } else {
-                                            videoProvider.videoController!.play();
-                                            if (!settingsProv.useVideoAudioSource) {
-                                              ref.read(audioPlayerProvider.notifier).seek(value.position);
-                                              ref.read(audioPlayerProvider.notifier).play();
-                                            }
-                                          }
-                                        },
-                                        color: context.themeInvertedTextColor,
-                                        size: isWide ? 40 : 32,
-                                      );
-                                    }
-                                  )
-                                : AnimatedPlayPauseButton(
-                                    isPlaying: playerProvider.isPlaying,
-                                    onPressed: () => ref.read(audioPlayerProvider.notifier).togglePlayPause(),
-                                    color: context.themeInvertedTextColor,
-                                    size: isWide ? 40 : 32,
-                                  ),
-                            ),
-                          ),
-                          BouncyIconButton(
-                            child: Icon(Icons.skip_next_rounded, color: context.themeTextColor, size: isWide ? 40 : 34),
-                            onPressed: () {
-                              ref.read(audioPlayerProvider.notifier).skipToNext();
-                            },
-                          ),
-                          BouncyIconButton(
-                            child: Icon(Icons.forward_10_rounded, color: context.themeMutedTextColor, size: isWide ? 30 : 26),
-                            onPressed: () {
-                              final settingsProv = ref.read(settingsProvider);
-                              if (_isVideoMode) {
-                                final pos = videoProvider.videoController?.value.position ?? Duration.zero;
-                                final newPos = pos + const Duration(seconds: 10);
-                                videoProvider.videoController?.seekTo(newPos);
-                                if (!settingsProv.useVideoAudioSource) {
-                                  ref.read(audioPlayerProvider.notifier).seek(newPos);
-                                }
-                              } else {
-                                ref.read(audioPlayerProvider.notifier).seekForward();
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    );
-
-                    final secondaryControls = Padding(
-                      padding: EdgeInsets.symmetric(horizontal: isWide ? 20 : 36),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          BouncyIconButton(
-                            child: Icon(
-                              Icons.cell_tower_rounded, 
-                              color: playerProvider.isInRoom ? Colors.greenAccent : context.themeMutedTextColor, 
-                              size: 24,
-                            ),
-                            onPressed: () {
-                              if (playerProvider.isInRoom && playerProvider.isHost) {
-                                RoomBottomSheet.show(context, isHost: true);
-                              } else if (!playerProvider.isInRoom) {
-                                RoomBottomSheet.show(context, isHost: true);
-                              } else {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('You are already listening to a broadcast.'))
-                                );
-                              }
-                            },
-                          ),
-                          BouncyIconButton(
-                            child: Icon(
-                              Icons.shuffle_rounded, 
-                              color: playerProvider.isShuffle ? accentColor : context.themeMutedTextColor, 
-                              size: 24,
-                            ),
-                            onPressed: () => ref.read(audioPlayerProvider.notifier).toggleShuffle(),
-                          ),
-                          BouncyIconButton(
-                            child: Icon(Icons.queue_music_rounded, color: context.themeMutedTextColor, size: 24),
-                            onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                backgroundColor: Colors.transparent,
-                                builder: (_) => const QueueBottomSheet(),
-                              );
-                            },
-                          ),
-                          BouncyIconButton(
-                            child: Icon(
-                              playerProvider.isRepeat ? Icons.repeat_one_rounded : Icons.repeat_rounded, 
-                              color: playerProvider.isRepeat ? accentColor : context.themeMutedTextColor, 
-                              size: 24,
-                            ),
-                            onPressed: () => ref.read(audioPlayerProvider.notifier).toggleRepeat(),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    // Redesigned Up Next Queue Peek Handle
-                    final bottomDragHandle = GestureDetector(
-                      onTap: () {
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onVerticalDragEnd: (details) {
+                    if (details.primaryVelocity != null) {
+                      if (details.primaryVelocity! > 150) {
+                        Navigator.pop(context); // Swipe down to close
+                      } else if (details.primaryVelocity! < -150) {
                         showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
                           builder: (_) => const QueueBottomSheet(),
                         );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: surfaceColor.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                      }
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 6,
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isWide = constraints.maxWidth >= 700;
+                        final artSize = isWide
+                            ? (constraints.maxWidth * 0.45).clamp(
+                                200.0,
+                                constraints.maxHeight * 0.75,
+                              )
+                            : (constraints.maxWidth * 0.78).clamp(
+                                140.0,
+                                constraints.maxHeight * 0.34,
+                              );
+
+                        // Redesigned 3-Zone Clean Header Bar
+                        final topAppBar = Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Container(
-                              width: 32,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: context.themeMutedTextColor.withValues(alpha: 0.6),
-                                borderRadius: BorderRadius.circular(2),
+                            IconButton(
+                              icon: Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: context.themeTextColor,
+                                size: 30,
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                              tooltip: 'Close Player',
+                            ),
+                            // Glassmorphic Segmented Toggle (Song / Video)
+                            Builder(
+                              builder: (context) {
+                                final settingsProv = ref.read(settingsProvider);
+                                return Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    color: surfaceColor.withValues(alpha: 0.6),
+                                    borderRadius: BorderRadius.circular(24),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.08,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      GestureDetector(
+                                        onTap: () => _toggleMode(
+                                          false,
+                                          ref.read(audioPlayerProvider),
+                                          videoProvider,
+                                          settingsProv,
+                                        ),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: !_isVideoMode
+                                                ? accentColor
+                                                : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Song',
+                                            style: GoogleFonts.inter(
+                                              color: !_isVideoMode
+                                                  ? context
+                                                        .themeInvertedTextColor
+                                                  : context.themeMutedTextColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () => _toggleMode(
+                                          true,
+                                          ref.read(audioPlayerProvider),
+                                          videoProvider,
+                                          settingsProv,
+                                        ),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _isVideoMode
+                                                ? accentColor
+                                                : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            boxShadow:
+                                                (!_isVideoMode &&
+                                                    !_hasViewedVideoForCurrentSong &&
+                                                    videoProvider
+                                                            .videoController !=
+                                                        null &&
+                                                    videoProvider
+                                                        .videoController!
+                                                        .value
+                                                        .isInitialized)
+                                                ? [
+                                                    BoxShadow(
+                                                      color: accentColor
+                                                          .withValues(
+                                                            alpha: 0.8,
+                                                          ),
+                                                      blurRadius: 10,
+                                                      spreadRadius: 2,
+                                                    ),
+                                                  ]
+                                                : null,
+                                          ),
+                                          child: Text(
+                                            'Video',
+                                            style: GoogleFonts.inter(
+                                              color:
+                                                  _isVideoMode ||
+                                                      (videoProvider
+                                                                  .videoController !=
+                                                              null &&
+                                                          videoProvider
+                                                              .videoController!
+                                                              .value
+                                                              .isInitialized)
+                                                  ? context
+                                                        .themeInvertedTextColor
+                                                  : context.themeMutedTextColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            // Top Right Menu Overflow Button
+                            IconButton(
+                              icon: Icon(
+                                Icons.more_vert_rounded,
+                                color: context.themeTextColor,
+                                size: 26,
+                              ),
+                              onPressed: () => _showPlayerOptionsMenu(context),
+                              tooltip: 'Options',
+                            ),
+                          ],
+                        );
+
+                        final albumArt = AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 400),
+                          switchInCurve: Curves.easeInOut,
+                          switchOutCurve: Curves.easeInOut,
+                          transitionBuilder:
+                              (Widget child, Animation<double> animation) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                );
+                              },
+                          child: _isVideoMode
+                              ? AspectRatio(
+                                  aspectRatio:
+                                      (videoProvider.videoController != null &&
+                                          videoProvider
+                                              .videoController!
+                                              .value
+                                              .isInitialized)
+                                      ? videoProvider
+                                            .videoController!
+                                            .value
+                                            .aspectRatio
+                                      : 16 / 9,
+                                  child: Container(
+                                    key: const ValueKey('video_player'),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black,
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: Stack(
+                                        children: [
+                                          Positioned.fill(
+                                            child: videoProvider.isLoading
+                                                ? Center(
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          color: accentColor,
+                                                        ),
+                                                  )
+                                                : videoProvider
+                                                              .videoController !=
+                                                          null &&
+                                                      videoProvider
+                                                          .videoController!
+                                                          .value
+                                                          .isInitialized
+                                                ? VideoPlayer(
+                                                    videoProvider
+                                                        .videoController!,
+                                                  )
+                                                : Center(
+                                                    child: Text(
+                                                      'Video unavailable',
+                                                      style: GoogleFonts.inter(
+                                                        color: Colors.white,
+                                                      ),
+                                                    ),
+                                                  ),
+                                          ),
+                                          if (videoProvider.videoController !=
+                                                  null &&
+                                              videoProvider
+                                                  .videoController!
+                                                  .value
+                                                  .isInitialized)
+                                            Positioned(
+                                              right: 8,
+                                              bottom: 8,
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      ScaffoldMessenger.of(
+                                                        context,
+                                                      ).showSnackBar(
+                                                        SnackBar(
+                                                          content: Text(
+                                                            'Downloading video for ${currentSong.title}...',
+                                                          ),
+                                                          behavior:
+                                                              SnackBarBehavior
+                                                                  .floating,
+                                                        ),
+                                                      );
+                                                    },
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            6,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black
+                                                            .withValues(
+                                                              alpha: 0.65,
+                                                            ),
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons
+                                                            .file_download_rounded,
+                                                        color: Colors.white,
+                                                        size: 16,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      _showQualityPickerBottomSheet(
+                                                        context,
+                                                        videoProvider,
+                                                      );
+                                                    },
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.symmetric(
+                                                            horizontal: 10,
+                                                            vertical: 4,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black
+                                                            .withValues(
+                                                              alpha: 0.65,
+                                                            ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              12,
+                                                            ),
+                                                      ),
+                                                      child: Text(
+                                                        videoProvider
+                                                            .selectedQuality,
+                                                        style:
+                                                            GoogleFonts.inter(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontSize: 12,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (_) =>
+                                                              FullscreenVideoScreen(
+                                                                song:
+                                                                    currentSong,
+                                                              ),
+                                                        ),
+                                                      );
+                                                    },
+                                                    child: Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            6,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black
+                                                            .withValues(
+                                                              alpha: 0.65,
+                                                            ),
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons
+                                                            .fullscreen_rounded,
+                                                        color: Colors.white,
+                                                        size: 20,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : Stack(
+                                  key: const ValueKey('audio_art'),
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Positioned.fill(
+                                      child: PulseGlowBackground(
+                                        color: accentColor,
+                                        isPlaying: playerProvider.isPlaying,
+                                      ),
+                                    ),
+                                    Hero(
+                                      tag: 'cover_${currentSong.id}',
+                                      child: Container(
+                                        width: artSize,
+                                        height: artSize,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            isWide ? 36 : 24,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: context
+                                                  .themeInvertedTextColor
+                                                  .withValues(alpha: 0.35),
+                                              blurRadius: isWide ? 40 : 24,
+                                              offset: Offset(
+                                                0,
+                                                isWide ? 20 : 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            isWide ? 36 : 24,
+                                          ),
+                                          child: currentSong.coverArt.isNotEmpty
+                                              ? CustomImageWidget(
+                                                  imageUrl:
+                                                      currentSong.coverArt,
+                                                  fit: BoxFit.cover,
+                                                  errorWidget:
+                                                      (context, url, error) =>
+                                                          Container(
+                                                            color: surfaceColor,
+                                                          ),
+                                                )
+                                              : Container(color: surfaceColor),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        );
+
+                        final songInfo = Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              currentSong.title,
+                              maxLines: 1,
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.outfit(
+                                fontSize: isWide ? 32 : 22,
+                                fontWeight: FontWeight.w800,
+                                color: context.themeTextColor,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(height: 4),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.keyboard_arrow_up_rounded, color: context.themeMutedTextColor, size: 16),
-                                const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
-                                    nextSong != null
-                                        ? "UP NEXT • ${nextSong.title}"
-                                        : "YOUR QUEUE",
+                                    currentSong.artist,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.inter(
-                                      color: context.themeTextColor,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.5,
+                                      fontSize: isWide ? 16 : 14,
+                                      fontWeight: FontWeight.w500,
+                                      color: context.themeMutedTextColor,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Inlined Sleek Audio Quality Tag
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: Colors.amber.withValues(
+                                        alpha: 0.4,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    (currentSong.streamUrl
+                                                    ?.toLowerCase()
+                                                    .endsWith('.flac') ??
+                                                false) ||
+                                            (currentSong.streamUrl
+                                                    ?.toLowerCase()
+                                                    .endsWith('.alac') ??
+                                                false)
+                                        ? 'LOSSLESS'
+                                        : (currentSong.streamUrl
+                                                  ?.toLowerCase()
+                                                  .endsWith('.wav') ??
+                                              false)
+                                        ? 'HIGH-RES'
+                                        : '320 KBPS',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.amber,
+                                      letterSpacing: 1.0,
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                           ],
-                        ),
-                      ),
-                    );
+                        );
 
-                    // Live Lyrics Preview Card
-                    final liveLyricsCard = _LiveLyricsPreviewCard(
-                      song: currentSong,
-                      position: playerProvider.position,
-                      surfaceColor: surfaceColor,
-                      accentColor: accentColor,
-                    );
-
-                    if (isWide) {
-                      return Column(
-                        children: [
-                          topAppBar,
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 5,
-                                  child: Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(32.0),
-                                      child: albumArt,
+                        // Redesigned Glassmorphic Action Row
+                        final actionPills = SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              GestureDetector(
+                                onTap: () => ref
+                                    .read(audioPlayerProvider.notifier)
+                                    .toggleFavorite(currentSong),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: surfaceColor.withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.08,
+                                      ),
                                     ),
                                   ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        isFav
+                                            ? Icons.favorite_rounded
+                                            : Icons.favorite_border_rounded,
+                                        color: isFav
+                                            ? Colors.pinkAccent
+                                            : context.themeMutedTextColor,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        isFav ? "Liked" : "Like",
+                                        style: GoogleFonts.inter(
+                                          color: context.themeTextColor,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(width: 40),
-                                Expanded(
-                                  flex: 5,
-                                  child: SingleChildScrollView(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                              ),
+                              const SizedBox(width: 6),
+                              GestureDetector(
+                                onTap: () async {
+                                  if (isDown) {
+                                    await ref
+                                        .read(downloadProvider.notifier)
+                                        .removeDownload(currentSong);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            "Removed ${currentSong.title} from downloads",
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          "Downloading ${currentSong.title}...",
+                                        ),
+                                      ),
+                                    );
+                                    final ok = await ref
+                                        .read(downloadProvider.notifier)
+                                        .downloadSong(currentSong);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            ok
+                                                ? "Downloaded ${currentSong.title}"
+                                                : "Download failed",
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: surfaceColor.withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.08,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      isDownloading
+                                          ? SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: context.themeTextColor,
+                                              ),
+                                            )
+                                          : Icon(
+                                              isDown
+                                                  ? Icons.download_done_rounded
+                                                  : Icons
+                                                        .file_download_outlined,
+                                              color: isDown
+                                                  ? accentColor
+                                                  : context.themeMutedTextColor,
+                                              size: 18,
+                                            ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        isDown ? "Downloaded" : "Download",
+                                        style: GoogleFonts.inter(
+                                          color: context.themeTextColor,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              InkWell(
+                                onTap: () {
+                                  final sub = ref.read(subscriptionProvider);
+                                  if (sub.isPremium) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const LyricsScreen(),
+                                      ),
+                                    );
+                                  } else {
+                                    PaywallBottomSheet.show(
+                                      context,
+                                      featureName: "Lyrics",
+                                    );
+                                  }
+                                },
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: surfaceColor.withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.08,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.lyrics_outlined,
+                                        color: context.themeMutedTextColor,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        "Lyrics",
+                                        style: GoogleFonts.inter(
+                                          color: context.themeTextColor,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              // New Share Button Pill
+                              InkWell(
+                                onTap: () {
+                                  Share.share(
+                                    'Listening to "${currentSong.title}" by ${currentSong.artist} on It Feels Music! 🎶',
+                                    subject: 'Check out this song',
+                                  );
+                                },
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: surfaceColor.withValues(alpha: 0.5),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.08,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.share_outlined,
+                                        color: context.themeMutedTextColor,
+                                        size: 18,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        "Share",
+                                        style: GoogleFonts.inter(
+                                          color: context.themeTextColor,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        Widget buildProgress() {
+                          if (_isVideoMode &&
+                              videoProvider.videoController != null) {
+                            return ValueListenableBuilder<VideoPlayerValue>(
+                              valueListenable: videoProvider.videoController!,
+                              builder: (context, value, child) {
+                                return Column(
+                                  children: [
+                                    WavySeekBar(
+                                      position: value.position,
+                                      duration: value.duration,
+                                      activeColor: accentColor,
+                                      inactiveColor: context.themeTextColor24,
+                                      onSeek: (newPos) {
+                                        videoProvider.videoController?.seekTo(
+                                          newPos,
+                                        );
+                                        final settingsProv = ref.read(
+                                          settingsProvider,
+                                        );
+                                        if (!settingsProv.useVideoAudioSource) {
+                                          ref
+                                              .read(
+                                                audioPlayerProvider.notifier,
+                                              )
+                                              .seek(newPos);
+                                        }
+                                      },
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            _formatDuration(value.position),
+                                            style: GoogleFonts.inter(
+                                              color:
+                                                  context.themeMutedTextColor,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          Text(
+                                            _formatDuration(value.duration),
+                                            style: GoogleFonts.inter(
+                                              color:
+                                                  context.themeMutedTextColor,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          }
+
+                          return StreamBuilder<Duration>(
+                            stream: ref
+                                .read(audioPlayerProvider.notifier)
+                                .audioHandler
+                                .player
+                                .positionStream,
+                            initialData: playerProvider.position,
+                            builder: (context, snapshot) {
+                              final currentPos =
+                                  snapshot.data ?? playerProvider.position;
+                              return Column(
+                                children: [
+                                  WavySeekBar(
+                                    position: currentPos,
+                                    duration: playerProvider.duration,
+                                    activeColor: accentColor,
+                                    inactiveColor: context.themeTextColor24,
+                                    onSeek: (newPos) => ref
+                                        .read(audioPlayerProvider.notifier)
+                                        .seek(newPos),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
-                                        songInfo,
-                                        const SizedBox(height: 16),
-                                        actionPills,
-                                        const SizedBox(height: 24),
-                                        buildProgress(),
-                                        const SizedBox(height: 16),
-                                        primaryControls,
-                                        const SizedBox(height: 16),
-                                        secondaryControls,
-                                        const SizedBox(height: 16),
-                                        liveLyricsCard,
+                                        Text(
+                                          _formatDuration(currentPos),
+                                          style: GoogleFonts.inter(
+                                            color: context.themeMutedTextColor,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        Text(
+                                          _formatDuration(
+                                            playerProvider.duration,
+                                          ),
+                                          style: GoogleFonts.inter(
+                                            color: context.themeMutedTextColor,
+                                            fontSize: 12,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
+                                ],
+                              );
+                            },
+                          );
+                        }
+
+                        // Redesigned Adaptive Acrylic Control Capsule
+                        final primaryControls = Container(
+                          height: isWide ? 86 : 74,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: surfaceColor.withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(
+                              isWide ? 43 : 37,
+                            ),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.08),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 16,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              BouncyIconButton(
+                                child: Icon(
+                                  Icons.replay_10_rounded,
+                                  color: context.themeMutedTextColor,
+                                  size: isWide ? 30 : 26,
+                                ),
+                                onPressed: () {
+                                  final settingsProv = ref.read(
+                                    settingsProvider,
+                                  );
+                                  if (_isVideoMode) {
+                                    final pos =
+                                        videoProvider
+                                            .videoController
+                                            ?.value
+                                            .position ??
+                                        Duration.zero;
+                                    final newPos =
+                                        pos - const Duration(seconds: 10);
+                                    videoProvider.videoController?.seekTo(
+                                      newPos,
+                                    );
+                                    if (!settingsProv.useVideoAudioSource) {
+                                      ref
+                                          .read(audioPlayerProvider.notifier)
+                                          .seek(newPos);
+                                    }
+                                  } else {
+                                    ref
+                                        .read(audioPlayerProvider.notifier)
+                                        .seekBackward();
+                                  }
+                                },
+                              ),
+                              BouncyIconButton(
+                                child: Icon(
+                                  Icons.skip_previous_rounded,
+                                  color: context.themeTextColor,
+                                  size: isWide ? 40 : 34,
+                                ),
+                                onPressed: () {
+                                  ref
+                                      .read(audioPlayerProvider.notifier)
+                                      .skipToPrevious();
+                                },
+                              ),
+                              // Glowing Accent Play/Pause Button
+                              BouncyIconButton(
+                                onPressed: () {
+                                  final settingsProv = ref.read(
+                                    settingsProvider,
+                                  );
+                                  if (_isVideoMode) {
+                                    final ctrl = videoProvider.videoController;
+                                    if (ctrl != null) {
+                                      if (ctrl.value.isPlaying) {
+                                        ctrl.pause();
+                                        if (!settingsProv.useVideoAudioSource) {
+                                          ref
+                                              .read(
+                                                audioPlayerProvider.notifier,
+                                              )
+                                              .pause();
+                                        }
+                                      } else {
+                                        ctrl.play();
+                                        if (!settingsProv.useVideoAudioSource) {
+                                          ref
+                                              .read(
+                                                audioPlayerProvider.notifier,
+                                              )
+                                              .seek(ctrl.value.position);
+                                          ref
+                                              .read(
+                                                audioPlayerProvider.notifier,
+                                              )
+                                              .play();
+                                        }
+                                      }
+                                      setState(() {});
+                                    }
+                                  } else {
+                                    ref
+                                        .read(audioPlayerProvider.notifier)
+                                        .togglePlayPause();
+                                  }
+                                },
+                                padding: EdgeInsets.zero,
+                                child: Container(
+                                  width: isWide ? 68 : 56,
+                                  height: isWide ? 68 : 56,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: accentColor,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: accentColor.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        blurRadius: 16,
+                                        spreadRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                  child:
+                                      _isVideoMode &&
+                                          videoProvider.videoController != null
+                                      ? ValueListenableBuilder<
+                                          VideoPlayerValue
+                                        >(
+                                          valueListenable:
+                                              videoProvider.videoController!,
+                                          builder: (context, value, child) {
+                                            final settingsProv = ref.read(
+                                              settingsProvider,
+                                            );
+                                            return AnimatedPlayPauseButton(
+                                              isPlaying: value.isPlaying,
+                                              onPressed: () {
+                                                if (value.isPlaying) {
+                                                  videoProvider.videoController!
+                                                      .pause();
+                                                  if (!settingsProv
+                                                      .useVideoAudioSource) {
+                                                    ref
+                                                        .read(
+                                                          audioPlayerProvider
+                                                              .notifier,
+                                                        )
+                                                        .pause();
+                                                  }
+                                                } else {
+                                                  videoProvider.videoController!
+                                                      .play();
+                                                  if (!settingsProv
+                                                      .useVideoAudioSource) {
+                                                    ref
+                                                        .read(
+                                                          audioPlayerProvider
+                                                              .notifier,
+                                                        )
+                                                        .seek(value.position);
+                                                    ref
+                                                        .read(
+                                                          audioPlayerProvider
+                                                              .notifier,
+                                                        )
+                                                        .play();
+                                                  }
+                                                }
+                                              },
+                                              color: context
+                                                  .themeInvertedTextColor,
+                                              size: isWide ? 40 : 32,
+                                            );
+                                          },
+                                        )
+                                      : AnimatedPlayPauseButton(
+                                          isPlaying: playerProvider.isPlaying,
+                                          onPressed: () => ref
+                                              .read(
+                                                audioPlayerProvider.notifier,
+                                              )
+                                              .togglePlayPause(),
+                                          color: context.themeInvertedTextColor,
+                                          size: isWide ? 40 : 32,
+                                        ),
+                                ),
+                              ),
+                              BouncyIconButton(
+                                child: Icon(
+                                  Icons.skip_next_rounded,
+                                  color: context.themeTextColor,
+                                  size: isWide ? 40 : 34,
+                                ),
+                                onPressed: () {
+                                  ref
+                                      .read(audioPlayerProvider.notifier)
+                                      .skipToNext();
+                                },
+                              ),
+                              BouncyIconButton(
+                                child: Icon(
+                                  Icons.forward_10_rounded,
+                                  color: context.themeMutedTextColor,
+                                  size: isWide ? 30 : 26,
+                                ),
+                                onPressed: () {
+                                  final settingsProv = ref.read(
+                                    settingsProvider,
+                                  );
+                                  if (_isVideoMode) {
+                                    final pos =
+                                        videoProvider
+                                            .videoController
+                                            ?.value
+                                            .position ??
+                                        Duration.zero;
+                                    final newPos =
+                                        pos + const Duration(seconds: 10);
+                                    videoProvider.videoController?.seekTo(
+                                      newPos,
+                                    );
+                                    if (!settingsProv.useVideoAudioSource) {
+                                      ref
+                                          .read(audioPlayerProvider.notifier)
+                                          .seek(newPos);
+                                    }
+                                  } else {
+                                    ref
+                                        .read(audioPlayerProvider.notifier)
+                                        .seekForward();
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        );
+
+                        final secondaryControls = Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isWide ? 20 : 36,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              BouncyIconButton(
+                                child: Icon(
+                                  Icons.cell_tower_rounded,
+                                  color: playerProvider.isInRoom
+                                      ? Colors.greenAccent
+                                      : context.themeMutedTextColor,
+                                  size: 24,
+                                ),
+                                onPressed: () {
+                                  if (playerProvider.isInRoom &&
+                                      playerProvider.isHost) {
+                                    RoomBottomSheet.show(context, isHost: true);
+                                  } else if (!playerProvider.isInRoom) {
+                                    RoomBottomSheet.show(context, isHost: true);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'You are already listening to a broadcast.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                              BouncyIconButton(
+                                child: Icon(
+                                  Icons.shuffle_rounded,
+                                  color: playerProvider.isShuffle
+                                      ? accentColor
+                                      : context.themeMutedTextColor,
+                                  size: 24,
+                                ),
+                                onPressed: () => ref
+                                    .read(audioPlayerProvider.notifier)
+                                    .toggleShuffle(),
+                              ),
+                              BouncyIconButton(
+                                child: Icon(
+                                  Icons.queue_music_rounded,
+                                  color: context.themeMutedTextColor,
+                                  size: 24,
+                                ),
+                                onPressed: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (_) => const QueueBottomSheet(),
+                                  );
+                                },
+                              ),
+                              BouncyIconButton(
+                                child: Icon(
+                                  playerProvider.isRepeat
+                                      ? Icons.repeat_one_rounded
+                                      : Icons.repeat_rounded,
+                                  color: playerProvider.isRepeat
+                                      ? accentColor
+                                      : context.themeMutedTextColor,
+                                  size: 24,
+                                ),
+                                onPressed: () => ref
+                                    .read(audioPlayerProvider.notifier)
+                                    .toggleRepeat(),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        // Redesigned Up Next Queue Peek Handle
+                        final bottomDragHandle = GestureDetector(
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => const QueueBottomSheet(),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: surfaceColor.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.05),
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 32,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: context.themeMutedTextColor
+                                        .withValues(alpha: 0.6),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.keyboard_arrow_up_rounded,
+                                      color: context.themeMutedTextColor,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        nextSong != null
+                                            ? "UP NEXT • ${nextSong.title}"
+                                            : "YOUR QUEUE",
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.inter(
+                                          color: context.themeTextColor,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      );
-                    }
+                        );
 
-                    // Mobile Layout
-                    final screenHeight = MediaQuery.of(context).size.height;
-                    final dynamicSpacer = SizedBox(height: (screenHeight * 0.012).clamp(6.0, 16.0));
+                        // Live Lyrics Preview Card
+                        final liveLyricsCard = _LiveLyricsPreviewCard(
+                          song: currentSong,
+                          position: playerProvider.position,
+                          surfaceColor: surfaceColor,
+                          accentColor: accentColor,
+                        );
 
-                    return SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Column(
-                          children: [
-                            topAppBar,
-                            dynamicSpacer,
-                            albumArt,
-                            dynamicSpacer,
-                            songInfo,
-                            const SizedBox(height: 8),
-                            actionPills,
-                            const SizedBox(height: 8),
-                            buildProgress(),
-                            const SizedBox(height: 6),
-                            primaryControls,
-                            const SizedBox(height: 8),
-                            secondaryControls,
-                            dynamicSpacer,
-                            liveLyricsCard,
-                            dynamicSpacer,
-                            bottomDragHandle,
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                        if (isWide) {
+                          return Column(
+                            children: [
+                              topAppBar,
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      flex: 5,
+                                      child: Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(32.0),
+                                          child: albumArt,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 40),
+                                    Expanded(
+                                      flex: 5,
+                                      child: SingleChildScrollView(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            songInfo,
+                                            const SizedBox(height: 16),
+                                            actionPills,
+                                            const SizedBox(height: 24),
+                                            buildProgress(),
+                                            const SizedBox(height: 16),
+                                            primaryControls,
+                                            const SizedBox(height: 16),
+                                            secondaryControls,
+                                            const SizedBox(height: 16),
+                                            liveLyricsCard,
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        // Mobile Layout
+                        final screenHeight = MediaQuery.of(context).size.height;
+                        final dynamicSpacer = SizedBox(
+                          height: (screenHeight * 0.012).clamp(6.0, 16.0),
+                        );
+
+                        return SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Column(
+                              children: [
+                                topAppBar,
+                                dynamicSpacer,
+                                albumArt,
+                                dynamicSpacer,
+                                songInfo,
+                                const SizedBox(height: 8),
+                                actionPills,
+                                const SizedBox(height: 8),
+                                buildProgress(),
+                                const SizedBox(height: 6),
+                                primaryControls,
+                                const SizedBox(height: 8),
+                                secondaryControls,
+                                dynamicSpacer,
+                                liveLyricsCard,
+                                dynamicSpacer,
+                                bottomDragHandle,
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         );
       },
@@ -1311,8 +1885,13 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
           thirdLine = lyricsResult.syncedLyrics[activeIdx + 2].text;
         }
       }
-    } else if (lyricsResult != null && lyricsResult.hasStatic && lyricsResult.staticLyrics != null) {
-      final lines = lyricsResult.staticLyrics!.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    } else if (lyricsResult != null &&
+        lyricsResult.hasStatic &&
+        lyricsResult.staticLyrics != null) {
+      final lines = lyricsResult.staticLyrics!
+          .split('\n')
+          .where((l) => l.trim().isNotEmpty)
+          .toList();
       if (lines.isNotEmpty) currentLine = lines.first;
       if (lines.length > 1) nextLine = lines[1];
       if (lines.length > 2) thirdLine = lines[2];
@@ -1372,7 +1951,11 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 2),
-                    Icon(Icons.north_east_rounded, color: context.themeMutedTextColor, size: 12),
+                    Icon(
+                      Icons.north_east_rounded,
+                      color: context.themeMutedTextColor,
+                      size: 12,
+                    ),
                   ],
                 ),
               ],
@@ -1384,12 +1967,18 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
                   SizedBox(
                     width: 14,
                     height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: accentColor),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: accentColor,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'Searching lyrics...',
-                    style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13),
+                    style: GoogleFonts.inter(
+                      color: context.themeMutedTextColor,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               )
@@ -1427,7 +2016,9 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        color: context.themeMutedTextColor.withValues(alpha: 0.6),
+                        color: context.themeMutedTextColor.withValues(
+                          alpha: 0.6,
+                        ),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1440,7 +2031,9 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        color: context.themeMutedTextColor.withValues(alpha: 0.35),
+                        color: context.themeMutedTextColor.withValues(
+                          alpha: 0.35,
+                        ),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1451,8 +2044,6 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
           ],
         ),
       ),
-      ],
-      ),
     );
   }
 }
@@ -1461,19 +2052,28 @@ class PulseGlowBackground extends ConsumerStatefulWidget {
   final Color color;
   final bool isPlaying;
 
-  const PulseGlowBackground({super.key, required this.color, required this.isPlaying});
+  const PulseGlowBackground({
+    super.key,
+    required this.color,
+    required this.isPlaying,
+  });
 
   @override
-  ConsumerState<PulseGlowBackground> createState() => _PulseGlowBackgroundState();
+  ConsumerState<PulseGlowBackground> createState() =>
+      _PulseGlowBackgroundState();
 }
 
-class _PulseGlowBackgroundState extends ConsumerState<PulseGlowBackground> with SingleTickerProviderStateMixin {
+class _PulseGlowBackgroundState extends ConsumerState<PulseGlowBackground>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
     if (widget.isPlaying) _controller.repeat(reverse: true);
   }
 
@@ -1503,7 +2103,9 @@ class _PulseGlowBackgroundState extends ConsumerState<PulseGlowBackground> with 
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: widget.color.withValues(alpha: 0.15 + (_controller.value * 0.15)),
+                color: widget.color.withValues(
+                  alpha: 0.15 + (_controller.value * 0.15),
+                ),
                 blurRadius: 80 + (_controller.value * 60),
                 spreadRadius: 20 + (_controller.value * 30),
               ),
