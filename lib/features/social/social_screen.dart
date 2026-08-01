@@ -16,14 +16,14 @@ import 'package:it_feels_music/data/models/custom_playlist.dart';
 import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
-class SocialScreen extends StatefulWidget {
+class SocialScreen extends ConsumerStatefulWidget {
   const SocialScreen({super.key});
 
   @override
-  State<SocialScreen> createState() => _SocialScreenState();
+  ConsumerState<SocialScreen> createState() => _SocialScreenState();
 }
 
-class _SocialScreenState extends State<SocialScreen> with SingleTickerProviderStateMixin {
+class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final SocialService _socialService = locator<SocialService>();
   String get myUid => FirebaseAuth.instance.currentUser?.uid ?? '';
