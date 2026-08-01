@@ -89,7 +89,8 @@ dependencies:
   url_launcher: ^6.3.2
   open_filex: ^4.7.0
   razorpay_flutter: ^1.4.5
-  cast: ^2.1.0
+  cast:
+    path: packages/cast
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -156,5 +157,3 @@ flutter_launcher_icons:
   adaptive_icon_background: "#090D16"
   adaptive_icon_foreground: "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
 
-dependency_overrides:
-  bonsoir: ^3.0.0
