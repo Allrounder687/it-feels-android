@@ -19,7 +19,11 @@ class SubscriptionService {
 
   Future<void> initialize(String? currentUserId) async {
     if (kIsWeb) return; // Purchases not supported on web
-    
+    if (_googleApiKey.contains('API_KEY_HERE') || _appleApiKey.contains('API_KEY_HERE')) {
+      debugPrint("[SubscriptionService] Placeholder RevenueCat key detected. Direct Distribution mode active.");
+      return;
+    }
+
     await Purchases.setLogLevel(LogLevel.debug);
 
     PurchasesConfiguration? configuration;
@@ -38,13 +42,17 @@ class SubscriptionService {
   }
 
   Future<void> login(String uid) async {
-    if (kIsWeb) return;
-    await Purchases.logIn(uid);
+    if (kIsWeb || _googleApiKey.contains('API_KEY_HERE')) return;
+    try {
+      await Purchases.logIn(uid);
+    } catch (_) {}
   }
 
   Future<void> logout() async {
-    if (kIsWeb) return;
-    await Purchases.logOut();
+    if (kIsWeb || _googleApiKey.contains('API_KEY_HERE')) return;
+    try {
+      await Purchases.logOut();
+    } catch (_) {}
   }
 
   Future<bool> checkPremiumStatus(String uid) async {

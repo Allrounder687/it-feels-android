@@ -8,16 +8,32 @@ class DatabaseService {
   static bool _isInitialized = false;
 
   static Future<void> init() async {
-    if (_isInitialized && _isar != null) return;
+    if (_isInitialized && _isar != null && _isar!.isOpen) return;
+
     try {
+      if (Isar.instanceNames.isNotEmpty) {
+        _isar = Isar.getInstance();
+        if (_isar != null && _isar!.isOpen) {
+          _isInitialized = true;
+          return;
+        }
+      }
+
       final dir = await getApplicationDocumentsDirectory();
       _isar = await Isar.open(
         [SongSchema],
         directory: dir.path,
+        inspector: false,
       );
       _isInitialized = true;
     } catch (e) {
       debugPrint('[DatabaseService] Error initializing Isar DB: $e');
+      if (Isar.instanceNames.isNotEmpty) {
+        _isar = Isar.getInstance();
+        if (_isar != null && _isar!.isOpen) {
+          _isInitialized = true;
+        }
+      }
     }
   }
 
