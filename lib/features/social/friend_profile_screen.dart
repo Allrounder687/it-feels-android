@@ -62,6 +62,7 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(audioPlayerProvider); // Watch for theme changes
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(

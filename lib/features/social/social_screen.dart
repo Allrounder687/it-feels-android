@@ -150,6 +150,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(audioPlayerProvider); // Watch for theme changes
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
       body: SafeArea(
