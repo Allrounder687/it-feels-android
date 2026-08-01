@@ -9,7 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:it_feels_music/services/config_service.dart';
 import 'package:it_feels_music/features/admin/force_update_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-
+import 'package:it_feels_music/features/settings/lastfm_settings_screen.dart';
 import 'package:it_feels_music/features/ai/ai_settings_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
@@ -185,6 +185,20 @@ class SettingsScreen extends ConsumerWidget {
                     context,
                     MaterialPageRoute(
                       builder: (_) => const HiddenSongsScreen(),
+                    ),
+                  );
+                },
+              ),
+              _buildActionTile(
+                context: context,
+                title: "Last.fm Scrobbling",
+                subtitle: "Connect your account to sync listening history",
+                icon: Icons.queue_music,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const LastfmSettingsScreen(),
                     ),
                   );
                 },

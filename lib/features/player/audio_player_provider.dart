@@ -83,6 +83,7 @@ class AudioPlayerState {
   final double playbackSpeed;
   final double playbackPitch;
   final AudioVibe currentVibe;
+  final bool hasScrobbledForCurrentSong;
 
   const AudioPlayerState({
     this.currentSong,
@@ -116,6 +117,7 @@ class AudioPlayerState {
     this.playbackSpeed = 1.0,
     this.playbackPitch = 1.0,
     this.currentVibe = AudioVibe.normal,
+    this.hasScrobbledForCurrentSong = false,
   });
 
   bool get isInRoom => currentRoomId != null;
@@ -288,6 +290,7 @@ class AudioPlayerState {
     double? playbackSpeed,
     double? playbackPitch,
     AudioVibe? currentVibe,
+    bool? hasScrobbledForCurrentSong,
   }) {
     return AudioPlayerState(
       currentSong: clearCurrentSong ? null : (currentSong ?? this.currentSong),
@@ -321,6 +324,7 @@ class AudioPlayerState {
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       playbackPitch: playbackPitch ?? this.playbackPitch,
       currentVibe: currentVibe ?? this.currentVibe,
+      hasScrobbledForCurrentSong: hasScrobbledForCurrentSong ?? this.hasScrobbledForCurrentSong,
     );
   }
 }
@@ -757,6 +761,18 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         BackendApiService.sendTelemetryPlay(state.currentSong!);
       }
 
+      if (!state.hasScrobbledForCurrentSong && state.currentSong != null) {
+        final durationInSeconds = state.duration.inSeconds;
+        final halfway = durationInSeconds > 0 ? durationInSeconds / 2 : double.infinity;
+        final fourMinutes = 240.0;
+        if (pos.inSeconds >= halfway || pos.inSeconds >= fourMinutes) {
+          state = state.copyWith(hasScrobbledForCurrentSong: true);
+          try {
+            locator<LastfmService>().scrobble(state.currentSong!, DateTime.now());
+          } catch (_) {}
+        }
+      }
+
       if (state.currentRoomId != null && state.isHost && state.currentSong != null && state.isPlaying && pos.inSeconds % 5 == 0 && _lastSyncedSecond != pos.inSeconds) {
         _lastSyncedSecond = pos.inSeconds;
         _roomService.updateRoomState(state.currentRoomId!, state.currentSong!, pos, state.isPlaying);
@@ -774,8 +790,13 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     state = state.copyWith(
       currentSong: song,
       hasSentTelemetryForCurrentSong: false,
+      hasScrobbledForCurrentSong: false,
     );
     
+    try {
+      locator<LastfmService>().updateNowPlaying(song);
+    } catch (_) {}
+
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && user.email != null && !user.emailVerified && !_hasShownEmailVerification) {
       _hasShownEmailVerification = true;

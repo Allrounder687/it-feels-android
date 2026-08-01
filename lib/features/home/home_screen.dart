@@ -14,6 +14,7 @@ import 'package:it_feels_music/features/ai/ai_settings_provider.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/library/playlist_detail_screen.dart';
 import 'package:it_feels_music/features/library/see_all_screen.dart';
+import 'package:it_feels_music/features/radio/radio_screen.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
 import 'package:it_feels_music/features/settings/profile_screen.dart';
 import 'package:it_feels_music/features/ai/ask_ai_screen.dart';
@@ -432,6 +433,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            IconButton(
+                              icon: Icon(Icons.radio_rounded, color: context.themeTextColor, size: 22),
+                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RadioScreen())),
+                              tooltip: 'Global Radio',
+                            ),
                             if (ref.watch(aiSettingsProvider).isConfigured)
                               IconButton(
                                 icon: Icon(Icons.auto_awesome_rounded, color: context.themeTextColor, size: 22),

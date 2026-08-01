@@ -1,9 +1,9 @@
-## v3.5.11 
-- 2 
- 
-## v3.5.11+43
-- **Bug Fixes**: Fixed a critical crash in the Social Tab where the entire screen would turn blank (ErrorWidget) if Firebase returned a List instead of a Map, or if a user profile was missing fields.
+## v3.5.12+45
+- **New Feature**: Added Last.fm Integration! Users can now securely connect their Last.fm account via Settings to automatically scrobble their listening history and update their Now Playing status in real-time.
+- **New Feature**: Introduced the **Global Radio**! Users can now browse and listen to over 40,000 live AM/FM/Web radio stations from around the world directly in the app. Access it via the new radio icon on the Home screen.
+- **Bug Fixes**: Fixed a critical crash in the Social Tab where the entire screen would turn blank (ErrorWidget) if Firebase returned a List instead of a Map, or if a user profile was missing fields. Properly placed try-catch block inside Consumer builder.
 
+## v3.5.11+43
 ## v3.5.10+42
 - **Config**: Updated `google-services.json` to fix Google Sign-in SHA-1 authentication issues.
 
