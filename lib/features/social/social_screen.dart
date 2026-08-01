@@ -177,20 +177,72 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
               ],
             ),
             Expanded(
-              child: myUid.isEmpty
-                  ? Center(
-                      child: Text(
-                        "Please log in to use Social features.",
-                        style: GoogleFonts.inter(color: context.themeTextColor, fontSize: 16),
+              child: StreamBuilder<User?>(
+                stream: FirebaseAuth.instance.authStateChanges(),
+                builder: (context, snapshot) {
+                  final user = snapshot.data;
+                  if (user == null || user.isAnonymous) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: AppColors.midnightAccent.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.people_alt_rounded, size: 48, color: AppColors.midnightAccent),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              "Connect & Share Music",
+                              style: GoogleFonts.outfit(
+                                color: context.themeTextColor,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Sign in to your account to send tracks, listen together in real-time rooms, and add friends.",
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(
+                                color: context.themeMutedTextColor,
+                                fontSize: 14,
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            ElevatedButton.icon(
+                              onPressed: () => AuthBottomSheet.show(context),
+                              icon: const Icon(Icons.login_rounded, size: 20),
+                              label: const Text("Sign In / Register", style: TextStyle(fontWeight: FontWeight.bold)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.midnightAccent,
+                                foregroundColor: Colors.black,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    )
-                  : TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildInboxTab(),
-                        _buildFriendsTab(),
-                      ],
-                    ),
+                    );
+                  }
+
+                  return TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildInboxTab(),
+                      _buildFriendsTab(),
+                    ],
+                  );
+                },
+              ),
             ),
           ],
         ),

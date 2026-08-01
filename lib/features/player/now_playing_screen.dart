@@ -315,122 +315,155 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                           },
                         ),
                         Flexible(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            reverse: true,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                BouncyIconButton(
-                                  onPressed: () {
-                                    Navigator.push(context, MaterialPageRoute(builder: (_) => const DrivingModeScreen()));
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: surfaceColor,
-                                      borderRadius: BorderRadius.circular(12),
+                          child: Stack(
+                            alignment: Alignment.centerLeft,
+                            children: [
+                              ShaderMask(
+                                shaderCallback: (Rect bounds) {
+                                  return const LinearGradient(
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                    colors: [Colors.transparent, Colors.black, Colors.black],
+                                    stops: [0.0, 0.15, 1.0],
+                                  ).createShader(bounds);
+                                },
+                                blendMode: BlendMode.dstIn,
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  reverse: true,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 18),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        BouncyIconButton(
+                                          onPressed: () {
+                                            Navigator.push(context, MaterialPageRoute(builder: (_) => const DrivingModeScreen()));
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: surfaceColor,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(Icons.directions_car_filled_rounded, color: context.themeTextColor, size: 24),
+                                          ),
+                                          tooltip: 'Driving Mode',
+                                        ),
+                                        BouncyIconButton(
+                                          onPressed: () {
+                                            showModalBottomSheet(
+                                              context: context,
+                                              isScrollControlled: true,
+                                              backgroundColor: Colors.transparent,
+                                              builder: (_) => const SleepTimerSheet(),
+                                            );
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: surfaceColor,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(
+                                              playerProvider.isSleepTimerActive || playerProvider.sleepAfterCurrentTrack
+                                                  ? Icons.bedtime_rounded
+                                                  : Icons.bedtime_outlined,
+                                              color: playerProvider.isSleepTimerActive || playerProvider.sleepAfterCurrentTrack
+                                                  ? accentColor
+                                                  : context.themeTextColor,
+                                              size: 24,
+                                            ),
+                                          ),
+                                          tooltip: 'Sleep Timer',
+                                        ),
+                                        BouncyIconButton(
+                                          onPressed: () {
+                                            final current = playerProvider.currentVibe;
+                                            if (current == AudioVibe.normal) {
+                                              ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.slowedReverb);
+                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🌙 Slowed + Reverb'), duration: Duration(seconds: 1)));
+                                            } else if (current == AudioVibe.slowedReverb) {
+                                              ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.nightcore);
+                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('⚡ Nightcore (Sped Up)'), duration: Duration(seconds: 1)));
+                                            } else {
+                                              ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.normal);
+                                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎵 Normal Audio'), duration: Duration(seconds: 1)));
+                                            }
+                                          },
+                                          tooltip: 'Audio Vibes',
+                                          child: Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: surfaceColor,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(
+                                              playerProvider.currentVibe == AudioVibe.normal
+                                                  ? Icons.graphic_eq
+                                                  : playerProvider.currentVibe == AudioVibe.slowedReverb
+                                                      ? Icons.nightlight_round
+                                                      : Icons.bolt,
+                                              color: playerProvider.currentVibe == AudioVibe.normal
+                                                  ? context.themeTextColor
+                                                  : accentColor,
+                                              size: 24,
+                                            ),
+                                          ),
+                                        ),
+                                        BouncyIconButton(
+                                          onPressed: () {
+                                            _showCastBottomSheet(context);
+                                          },
+                                          tooltip: 'Cast Audio',
+                                          child: Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: surfaceColor,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(
+                                              locator<it_feels_music_cast_service.CastService>().isConnected ? Icons.cast_connected_rounded : Icons.cast_rounded,
+                                              color: locator<it_feels_music_cast_service.CastService>().isConnected ? accentColor : context.themeTextColor,
+                                              size: 24,
+                                            ),
+                                          ),
+                                        ),
+                                        BouncyIconButton(
+                                          onPressed: () {
+                                            SongOptionsSheet.show(context, currentSong);
+                                          },
+                                          tooltip: 'Options',
+                                          child: Container(
+                                            padding: const EdgeInsets.all(10),
+                                            decoration: BoxDecoration(
+                                              color: surfaceColor,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Icon(Icons.more_vert_rounded, color: context.themeTextColor, size: 24),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    child: Icon(Icons.directions_car_filled_rounded, color: context.themeTextColor, size: 24),
                                   ),
-                                  tooltip: 'Driving Mode',
                                 ),
-                                BouncyIconButton(
-                                  onPressed: () {
-                                    showModalBottomSheet(
-                                      context: context,
-                                      isScrollControlled: true,
-                                      backgroundColor: Colors.transparent,
-                                      builder: (_) => const SleepTimerSheet(),
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: surfaceColor,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      playerProvider.isSleepTimerActive || playerProvider.sleepAfterCurrentTrack
-                                          ? Icons.bedtime_rounded
-                                          : Icons.bedtime_outlined,
-                                      color: playerProvider.isSleepTimerActive || playerProvider.sleepAfterCurrentTrack
-                                          ? accentColor
-                                          : context.themeTextColor,
-                                      size: 24,
-                                    ),
+                              ),
+                              Positioned(
+                                left: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: BoxDecoration(
+                                    color: surfaceColor.withValues(alpha: 0.8),
+                                    shape: BoxShape.circle,
                                   ),
-                                  tooltip: 'Sleep Timer',
-                                ),
-                                BouncyIconButton(
-                                  onPressed: () {
-                                    final current = playerProvider.currentVibe;
-                                    if (current == AudioVibe.normal) {
-                                      ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.slowedReverb);
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🌙 Slowed + Reverb'), duration: Duration(seconds: 1)));
-                                    } else if (current == AudioVibe.slowedReverb) {
-                                      ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.nightcore);
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('⚡ Nightcore (Sped Up)'), duration: Duration(seconds: 1)));
-                                    } else {
-                                      ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.normal);
-                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎵 Normal Audio'), duration: Duration(seconds: 1)));
-                                    }
-                                  },
-                                  tooltip: 'Audio Vibes',
-                                  child: Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: surfaceColor,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      playerProvider.currentVibe == AudioVibe.normal
-                                          ? Icons.graphic_eq
-                                          : playerProvider.currentVibe == AudioVibe.slowedReverb
-                                              ? Icons.nightlight_round
-                                              : Icons.bolt,
-                                      color: playerProvider.currentVibe == AudioVibe.normal
-                                          ? context.themeTextColor
-                                          : accentColor,
-                                      size: 24,
-                                    ),
+                                  child: Icon(
+                                    Icons.chevron_left_rounded,
+                                    size: 14,
+                                    color: context.themeMutedTextColor.withValues(alpha: 0.6),
                                   ),
                                 ),
-                                BouncyIconButton(
-                                  onPressed: () {
-                                    _showCastBottomSheet(context);
-                                  },
-                                  tooltip: 'Cast Audio',
-                                  child: Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: surfaceColor,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      locator<it_feels_music_cast_service.CastService>().isConnected ? Icons.cast_connected_rounded : Icons.cast_rounded,
-                                      color: locator<it_feels_music_cast_service.CastService>().isConnected ? accentColor : context.themeTextColor,
-                                      size: 24,
-                                    ),
-                                  ),
-                                ),
-
-                                BouncyIconButton(
-                                  onPressed: () {
-                                    SongOptionsSheet.show(context, currentSong);
-                                  },
-                                  tooltip: 'Options',
-                                  child: Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: surfaceColor,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(Icons.more_vert_rounded, color: context.themeTextColor, size: 24),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
