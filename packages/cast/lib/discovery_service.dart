@@ -18,6 +18,7 @@ class CastDiscoveryService {
     final results = <CastDevice>[];
 
     final discovery = BonsoirDiscovery(type: _domain);
+    await discovery.initialize();
 
     discovery.eventStream!.listen((event) {
       if (event is BonsoirDiscoveryServiceFoundEvent) {
