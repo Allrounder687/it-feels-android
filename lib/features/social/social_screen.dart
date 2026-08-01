@@ -339,63 +339,59 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                     _socialService.deleteMessage(docId);
                   },
                   child: Container(
-                    margin: const EdgeInsets.only(left: 16, right: 64, top: 8, bottom: 8),
+                    margin: const EdgeInsets.only(left: 16, right: 48, top: 4, bottom: 4),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
                           context.themeSurfaceColor,
-                          context.themeAccentColor.withValues(alpha: 0.15),
+                          context.themeAccentColor.withValues(alpha: 0.1),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                        bottomRight: Radius.circular(20),
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16),
+                        bottomRight: Radius.circular(16),
                         bottomLeft: Radius.circular(4),
                       ),
-                      border: isRead ? null : Border.all(color: context.themeAccentColor, width: 1.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
+                      border: isRead ? null : Border.all(color: context.themeAccentColor, width: 1.0),
                     ),
                     child: Column(
                       children: [
                         ListTile(
-                          contentPadding: const EdgeInsets.all(12),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          minVerticalPadding: 0,
                           leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(6),
                             child: isPlaylist
                                 ? Container(
-                                    width: 56, height: 56, color: context.themeAccentColor.withValues(alpha: 0.2),
-                                    child: Icon(Icons.queue_music_rounded, color: context.themeAccentColor, size: 32),
+                                    width: 44, height: 44, color: context.themeAccentColor.withValues(alpha: 0.2),
+                                    child: Icon(Icons.queue_music_rounded, color: context.themeAccentColor, size: 24),
                                   )
                                 : isRoomInvite
                                     ? Container(
-                                        width: 56, height: 56, color: Colors.amber.withValues(alpha: 0.2),
-                                        child: const Icon(Icons.groups_rounded, color: Colors.amber, size: 32),
+                                        width: 44, height: 44, color: Colors.amber.withValues(alpha: 0.2),
+                                        child: const Icon(Icons.groups_rounded, color: Colors.amber, size: 24),
                                       )
                                     : isReaction
                                         ? Container(
-                                            width: 56, height: 56, color: Colors.pinkAccent.withValues(alpha: 0.2),
-                                            child: Center(child: Text(payload['emoji'] ?? '❤️', style: const TextStyle(fontSize: 28))),
+                                            width: 44, height: 44, color: Colors.pinkAccent.withValues(alpha: 0.2),
+                                            child: Center(child: Text(payload['emoji'] ?? '❤️', style: const TextStyle(fontSize: 24))),
                                           )
-                                        : CustomImageWidget(imageUrl: song?.coverArt ?? '', width: 56, height: 56),
+                                        : CustomImageWidget(imageUrl: song?.coverArt ?? '', width: 44, height: 44),
                           ),
                           title: Text(
                             isPlaylist
                                 ? playlist!.title
                                 : isRoomInvite
-                                    ? "Listen Together Room 🎧"
+                                    ? "Listen Together 🎧"
                                     : isReaction
                                         ? "$senderName reacted ${payload['emoji'] ?? ''}"
-                                        : (song?.title ?? 'Music Track'),
-                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor),
+                                        : (song?.title ?? 'Track'),
+                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14, color: context.themeTextColor),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           subtitle: Text(
                             isPlaylist
@@ -405,15 +401,19 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                     : isReaction
                                         ? "on ${payload['targetTitle'] ?? 'Track'}"
                                         : "Sent by $senderName",
-                            style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                            style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 11),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           trailing: isPlaylist 
                             ? IconButton(
-                                icon: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 36),
+                                icon: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 28),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
                                 onPressed: () {
                                   _socialService.markAsRead(docId);
                                   ref.read(customPlaylistProvider.notifier).createPlaylistWithSongs(playlist!.title, playlist.songs);
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Playlist saved to Library!")));
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Saved to Library!")));
                                 },
                               )
                             : isRoomInvite
@@ -421,7 +421,10 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: context.themeAccentColor,
                                       foregroundColor: context.themeInvertedTextColor,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                                      minimumSize: const Size(60, 26),
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     ),
                                     onPressed: () {
                                       _socialService.markAsRead(docId);
@@ -431,12 +434,14 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                         _handleJoinRoom(roomId, host);
                                       }
                                     },
-                                    child: const Text("Join Room", style: TextStyle(fontWeight: FontWeight.bold)),
+                                    child: const Text("Join", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                                   )
                                 : isReaction
                                     ? const SizedBox.shrink()
                                     : IconButton(
-                                        icon: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 42),
+                                        icon: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 32),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
                                         onPressed: () {
                                           _socialService.markAsRead(docId);
                                           if (song != null) {
@@ -446,7 +451,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                       ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.only(left: 10, right: 10, bottom: 6, top: 0),
                           child: Row(
                             children: [
                               _buildReactionButton(docId, "🔥", reactions[myUid] == "🔥"),
@@ -454,7 +459,10 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                               _buildReactionButton(docId, "🎵", reactions[myUid] == "🎵"),
                               const Spacer(),
                               if (reactions.isNotEmpty)
-                                Text(reactions.values.toSet().join(" "), style: const TextStyle(fontSize: 16)),
+                                Text(
+                                  reactions.values.toSet().join(" "),
+                                  style: const TextStyle(fontSize: 12),
+                                ),
                             ],
                           ),
                         )
@@ -477,13 +485,13 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
     return GestureDetector(
       onTap: () => _socialService.reactToMessage(messageId, emoji),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.all(6),
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: isSelected ? context.themeAccentColor.withValues(alpha: 0.2) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(emoji, style: const TextStyle(fontSize: 20)),
+        child: Text(emoji, style: const TextStyle(fontSize: 16)),
       ),
     );
   }
