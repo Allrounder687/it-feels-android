@@ -4,6 +4,15 @@
 # Changelog
 
 All notable changes to **IT Feels Music** will be documented in this file.
+
+## [3.5.0] - Cast & Advanced Social Features
+
+### Added
+- **Proper Working Cast Feature**: Built a custom `CastService` utilizing pure dart to scan the local network for Chromecast devices. The Now Playing screen now features a Cast button allowing seamless handoff of audio playback from the device to a TV or smart speaker.
+- **Send Playlists to Friends**: Added the ability to send entire custom playlists directly to friends in the Social tab. Recipients can view the tracks and instantly save the playlist to their own library.
+- **Listen Together (Join Flow)**: Implemented an interactive "Waiting for host to accept..." modal when attempting to join a friend's active room. The host is notified and must approve the connection.
+- **Friend Nicknames**: You can now set and display custom nicknames for your friends instead of relying solely on their generic usernames.
+- **Shared Reactions**: Emotes and track reactions are now correctly transmitted and displayed between users during shared listening sessions.
 ## [3.3.4] - Payment Gateways & Sync Bug Fixes
 
 ### Fixed

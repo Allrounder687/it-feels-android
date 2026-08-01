@@ -21,7 +21,10 @@ import 'package:it_feels_music/core/widgets/animated_play_pause_button.dart';
 import 'package:it_feels_music/features/player/fullscreen_video_screen.dart';
 import 'package:it_feels_music/features/home/driving_mode_screen.dart';
 import 'package:video_player/video_player.dart';
+import 'package:video_player/video_player.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
+import 'package:it_feels_music/core/utils/service_locator.dart';
 
 class NowPlayingScreen extends ConsumerStatefulWidget {
   const NowPlayingScreen({super.key});
@@ -387,6 +390,24 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                               ),
                             ),
                             // Removed redundant download icon from top app bar to fix layout overflow
+                            BouncyIconButton(
+                              onPressed: () {
+                                _showCastBottomSheet(context);
+                              },
+                              tooltip: 'Cast',
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: surfaceColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  locator<it_feels_music_cast_service.CastService>().isConnected ? Icons.cast_connected_rounded : Icons.cast_rounded,
+                                  color: locator<it_feels_music_cast_service.CastService>().isConnected ? accentColor : context.themeTextColor,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
 
                             BouncyIconButton(
                               onPressed: () {
@@ -1094,6 +1115,101 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+  void _showCastBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.themeSurfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        final castService = locator<it_feels_music_cast_service.CastService>();
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.cast_rounded, color: context.themeTextColor, size: 24),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Cast to Device',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: context.themeTextColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (castService.isConnected)
+                        TextButton(
+                          onPressed: () {
+                            castService.disconnect();
+                            Navigator.pop(ctx);
+                          },
+                          child: const Text('Disconnect', style: TextStyle(color: Colors.redAccent)),
+                        )
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  FutureBuilder<List<dynamic>>(
+                    future: castService.searchDevices(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      final devices = snapshot.data ?? [];
+                      if (devices.isEmpty) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          child: Center(
+                            child: Text(
+                              "No Cast devices found on your network.\nMake sure you're connected to Wi-Fi.",
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.inter(color: context.themeMutedTextColor),
+                            ),
+                          ),
+                        );
+                      }
+                      return Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: devices.length,
+                          itemBuilder: (context, index) {
+                            final device = devices[index];
+                            return ListTile(
+                              leading: const Icon(Icons.tv_rounded),
+                              title: Text(device.name, style: GoogleFonts.inter(color: context.themeTextColor)),
+                              subtitle: Text(device.host, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
+                              onTap: () async {
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Connecting to ${device.name}...')));
+                                await castService.connectToDevice(device);
+                                
+                                // Automatically load current song
+                                final song = ref.read(audioPlayerProvider).currentSong;
+                                if (song != null) {
+                                  ref.read(audioPlayerProvider.notifier).playSong(song);
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

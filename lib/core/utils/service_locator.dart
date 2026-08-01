@@ -6,6 +6,7 @@ import 'package:it_feels_music/services/notification_service.dart';
 import 'package:it_feels_music/services/cloud_sync_service.dart';
 import 'package:it_feels_music/services/telemetry_service.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
+import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
 
 final GetIt locator = GetIt.instance;
 
@@ -31,6 +32,7 @@ Future<void> setupServiceLocator() async {
   locator.registerLazySingleton<LyricsService>(() => LyricsService());
   locator.registerLazySingleton<NotificationService>(() => NotificationService());
   locator.registerLazySingleton<SocialService>(() => SocialService());
+  locator.registerLazySingleton<it_feels_music_cast_service.CastService>(() => it_feels_music_cast_service.CastService());
 
   // (Optional) You can register ViewModels or other Providers here if you migrate away from ChangeNotifierProvider in the future.
 }

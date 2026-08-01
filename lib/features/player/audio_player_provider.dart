@@ -24,6 +24,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/services/notification_service.dart';
+import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
 
 enum AppThemeMode {
   dynamic,
@@ -801,7 +802,12 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     state = state.copyWith(isLoading: false);
 
     if (streamUrl != null) {
-      await audioHandler.playSong(song, streamUrl);
+      if (locator<it_feels_music_cast_service.CastService>().isConnected) {
+        await audioHandler.pause(); // Ensure local is paused
+        await locator<it_feels_music_cast_service.CastService>().loadMedia(song, streamUrl, Duration.zero, true);
+      } else {
+        await audioHandler.playSong(song, streamUrl);
+      }
       locator<SocialService>().updatePresence(song, true, roomId: state.currentRoomId);
     } else {
       debugPrint('[AudioPlayerNotifier] Failed to resolve stream for ${song.title}');
@@ -811,12 +817,20 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> play() async {
-    await audioHandler.play();
+    if (locator<it_feels_music_cast_service.CastService>().isConnected) {
+      await locator<it_feels_music_cast_service.CastService>().play();
+    } else {
+      await audioHandler.play();
+    }
     locator<SocialService>().updatePresence(state.currentSong, true, roomId: state.currentRoomId);
   }
 
   Future<void> pause() async {
-    await audioHandler.pause();
+    if (locator<it_feels_music_cast_service.CastService>().isConnected) {
+      await locator<it_feels_music_cast_service.CastService>().pause();
+    } else {
+      await audioHandler.pause();
+    }
     locator<SocialService>().updatePresence(state.currentSong, false, roomId: state.currentRoomId);
   }
 
@@ -830,17 +844,29 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     }
 
     if (state.isPlaying) {
-      await audioHandler.pause();
+      if (locator<it_feels_music_cast_service.CastService>().isConnected) {
+        await locator<it_feels_music_cast_service.CastService>().pause();
+      } else {
+        await audioHandler.pause();
+      }
       locator<SocialService>().updatePresence(state.currentSong, false, roomId: state.currentRoomId);
     } else {
-      await audioHandler.play();
+      if (locator<it_feels_music_cast_service.CastService>().isConnected) {
+        await locator<it_feels_music_cast_service.CastService>().play();
+      } else {
+        await audioHandler.play();
+      }
       locator<SocialService>().updatePresence(state.currentSong, true, roomId: state.currentRoomId);
     }
     _saveMemory();
   }
 
   Future<void> seek(Duration pos) async {
-    await audioHandler.seek(pos);
+    if (locator<it_feels_music_cast_service.CastService>().isConnected) {
+      await locator<it_feels_music_cast_service.CastService>().seek(pos);
+    } else {
+      await audioHandler.seek(pos);
+    }
   }
 
   Future<void> skipToNext([BuildContext? context]) async {
