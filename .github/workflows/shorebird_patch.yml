@@ -42,4 +42,4 @@ jobs:
       - name: Publish Shorebird Patch
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird patch android --force
+        run: shorebird patch android
