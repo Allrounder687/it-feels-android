@@ -560,6 +560,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
             ),
           ],
         );
+        } catch (e) {
+          return const SizedBox.shrink();
+        }
       },
     );
   }
@@ -639,13 +642,14 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                         ),
                       ),
                     ],
+                  ),
                 ),
               );
             }
           ),
         ),
         Expanded(
-          child: StreamBuilder<List<Map<String, dynamic>>>(
+          child: StreamBuilder<DocumentSnapshot>(
             stream: _socialService.getFriendsStream(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -654,7 +658,15 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
               if (snapshot.hasError) {
                 return Center(child: Text("Failed to load friends.", style: GoogleFonts.inter(color: context.themeMutedTextColor)));
               }
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+
+              final docData = snapshot.hasData && snapshot.data!.exists 
+                  ? snapshot.data!.data() as Map<String, dynamic>? 
+                  : null;
+                  
+              final List<dynamic> rawFriends = docData?['friends'] as List? ?? [];
+              final friends = rawFriends.map((e) => Map<String, dynamic>.from(e)).toList();
+
+              if (friends.isEmpty) {
                 return Center(
                   child: Text("You haven't added any friends yet.\nUse the button above to add some!", 
                     textAlign: TextAlign.center, 
@@ -663,7 +675,6 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                 );
               }
 
-              final friends = snapshot.data!;
               return ListView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: friends.length,
