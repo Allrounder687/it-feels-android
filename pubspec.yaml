@@ -91,10 +91,10 @@ dependencies:
   razorpay_flutter: ^1.4.5
   cast:
     path: packages/cast
+  integration_test:
+    sdk: flutter
 dev_dependencies:
   flutter_test:
-    sdk: flutter
-  integration_test:
     sdk: flutter
   mocktail: ^1.0.4
 
