@@ -25,6 +25,7 @@ import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/services/notification_service.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 enum AppThemeMode {
   dynamic,
@@ -1075,7 +1076,8 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
   Future<String?> startBroadcasting(String uid) async {
     if (state.currentSong == null) return null;
-    final roomId = await _roomService.createRoom(uid, state.currentSong!, state.position, state.isPlaying);
+    final isPremium = ref.read(subscriptionProvider).isPremium;
+    final roomId = await _roomService.createRoom(uid, state.currentSong!, state.position, state.isPlaying, isPublic: isPremium);
     state = state.copyWith(currentRoomId: roomId, isHost: true);
     locator<SocialService>().updatePresence(state.currentSong, state.isPlaying, roomId: roomId);
     

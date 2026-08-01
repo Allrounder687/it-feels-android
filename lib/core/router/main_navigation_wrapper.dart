@@ -388,7 +388,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               padding: EdgeInsets.symmetric(
-                horizontal: isVertical ? 12 : (hideLabel ? 12 : 18),
+                horizontal: isVertical ? 12 : (hideLabel ? 12 : 14),
                 vertical: isVertical ? 16 : 14,
               ),
               decoration: BoxDecoration(
@@ -455,7 +455,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                               style: GoogleFonts.inter(
                                 color: context.themeNavPillTextColor,
                                 fontWeight: FontWeight.w700,
-                                fontSize: 12,
+                                fontSize: 11.5,
                               ),
                             ),
                           ),

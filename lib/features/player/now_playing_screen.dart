@@ -36,6 +36,7 @@ class NowPlayingScreen extends ConsumerStatefulWidget {
 class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
   bool _isVideoMode = false;
   String? _lastPlayedSongId;
+  bool _hasViewedVideoForCurrentSong = false;
 
   Future<void> _toggleMode(bool toVideo, AudioPlayerState audioProvider, VideoPlayerState videoProvider, SettingsState settingsProv) async {
     if (_isVideoMode == toVideo) return;
@@ -44,6 +45,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
     setState(() {
       _isVideoMode = toVideo;
+      if (toVideo) {
+        _hasViewedVideoForCurrentSong = true;
+      }
     });
 
     if (toVideo) {
@@ -290,6 +294,13 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, child) {
+        ref.listen(audioPlayerProvider.select((p) => p.position), (previous, next) {
+          final song = ref.read(audioPlayerProvider).currentSong;
+          if (song != null) {
+            ref.read(lyricsProvider.notifier).loadLyricsIfNeeded(song, next);
+          }
+        });
+
         final playerProvider = ref.watch(audioPlayerProvider);
         final downloadProviderLocal = ref.watch(downloadProvider);
         final videoProvider = ref.watch(videoPlayerProvider);
@@ -313,6 +324,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
         if (_isVideoMode && currentSong.id != _lastPlayedSongId) {
           _lastPlayedSongId = currentSong.id;
+          _hasViewedVideoForCurrentSong = false;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() {
@@ -330,6 +342,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
           });
         } else if (currentSong.id != _lastPlayedSongId) {
           _lastPlayedSongId = currentSong.id;
+          _hasViewedVideoForCurrentSong = false;
         }
 
         final isFav = playerProvider.isFavorite(currentSong.id);
@@ -420,7 +433,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                       decoration: BoxDecoration(
                                         color: _isVideoMode ? accentColor : Colors.transparent,
                                         borderRadius: BorderRadius.circular(20),
-                                        boxShadow: (!_isVideoMode && videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
+                                        boxShadow: (!_isVideoMode && !_hasViewedVideoForCurrentSong && videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
                                             ? [BoxShadow(color: accentColor.withValues(alpha: 0.8), blurRadius: 10, spreadRadius: 2)]
                                             : null,
                                       ),
@@ -1256,11 +1269,6 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lyricsState = ref.watch(lyricsProvider);
-
-    // Auto load lyrics if needed
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(lyricsProvider.notifier).loadLyricsIfNeeded(song, position);
-    });
 
     final lyricsResult = lyricsState.lyricsResult;
     final isLoading = lyricsState.isLoading;

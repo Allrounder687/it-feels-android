@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -106,167 +107,185 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                 ? const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent))
                 : CustomScrollView(
                     slivers: [
-                  // App Bar with Back Button
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        top: MediaQuery.viewPaddingOf(context).top + 8,
-                        bottom: 8,
-                        left: 16,
-                        right: 16,
+                  // Immersive Dynamic Header
+                  SliverAppBar(
+                    expandedHeight: 340,
+                    pinned: true,
+                    backgroundColor: context.themeBackgroundColor,
+                    leading: IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: context.themeBackgroundColor.withValues(alpha: 0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.arrow_back, color: context.themeTextColor, size: 20),
                       ),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            icon: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: AppColors.midnightPill,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(Icons.arrow_back, color: context.themeTextColor, size: 20),
-                            ),
-                            onPressed: () => Navigator.pop(context),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    actions: [
+                      IconButton(
+                        icon: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: context.themeBackgroundColor.withValues(alpha: 0.5),
+                            shape: BoxShape.circle,
                           ),
-                          Expanded(
-                            child: Text(
-                              _title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.outfit(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: context.themeTextColor,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 48),
-                        ],
+                          child: Icon(Icons.file_download_outlined, color: context.themeTextColor, size: 20),
+                        ),
+                        tooltip: "Download All",
+                        onPressed: () async {
+                          if (_songs.isEmpty) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("Downloading ${_songs.length} songs...")),
+                          );
+                          await ref.read(downloadProvider.notifier).downloadBatch(_songs);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Batch download completed!")),
+                            );
+                          }
+                        },
                       ),
+                      const SizedBox(width: 8),
+                    ],
+                    flexibleSpace: LayoutBuilder(
+                      builder: (BuildContext context, BoxConstraints constraints) {
+                        final top = constraints.biggest.height;
+                        final minHeight = MediaQuery.of(context).padding.top + kToolbarHeight;
+                        final scrollPercent = ((top - minHeight) / (340 - minHeight)).clamp(0.0, 1.0);
+                        final isCollapsed = top <= minHeight + 20;
+
+                        return FlexibleSpaceBar(
+                          titlePadding: const EdgeInsets.only(left: 64, right: 64, bottom: 16),
+                          title: isCollapsed
+                              ? Text(
+                                  _title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.themeTextColor,
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                          background: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              // Blurred Artwork Background
+                              if (_coverArt.isNotEmpty)
+                                CustomImageWidget(
+                                  imageUrl: _coverArt,
+                                  fit: BoxFit.cover,
+                                ),
+                              Positioned.fill(
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                                  child: Container(color: context.themeBackgroundColor.withValues(alpha: 0.6)),
+                                ),
+                              ),
+                              // Foreground Artwork and Text (Fades out when scrolling up)
+                              Opacity(
+                                opacity: scrollPercent,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Container(
+                                      width: 180,
+                                      height: 180,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.3),
+                                            blurRadius: 30,
+                                            offset: const Offset(0, 15),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: _coverArt.isNotEmpty
+                                            ? CustomImageWidget(imageUrl: _coverArt, fit: BoxFit.cover)
+                                            : Container(color: context.themeCardColor),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                                      child: Text(
+                                        _title,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 24,
+                                          fontWeight: FontWeight.w800,
+                                          color: context.themeTextColor,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "${_songs.length} Tracks",
+                                      style: GoogleFonts.inter(
+                                        color: context.themeMutedTextColor,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 32),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
 
-                  // Header Artwork, Title & Play All / Shuffle / Download Buttons
+                  // Play and Shuffle Buttons Apple Music Style
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      child: Row(
                         children: [
-                          // Large Artwork Card
-                          Container(
-                            width: 200,
-                            height: 200,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(28),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: context.themeInvertedTextColor.withValues(alpha: 0.4),
-                                  blurRadius: 24,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(28),
-                              child: _coverArt.isNotEmpty
-                                  ? CustomImageWidget(
-                                      imageUrl: _coverArt,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Container(color: context.themeCardColor),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: context.themeCardColor.withValues(alpha: 0.8),
+                                foregroundColor: context.themeTextColor,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: Icon(Icons.play_arrow_rounded, size: 24, color: context.themeAccentColor),
+                              label: Text("Play", style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16)),
+                              onPressed: () {
+                                if (_songs.isNotEmpty) ref.read(audioPlayerProvider.notifier).playSong(_songs[0], queue: _songs, index: 0);
+                              },
                             ),
                           ),
-                          const SizedBox(height: 16),
-
-                          Text(
-                            _title,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.outfit(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w800,
-                              color: context.themeTextColor,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: context.themeCardColor.withValues(alpha: 0.8),
+                                foregroundColor: context.themeTextColor,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: Icon(Icons.shuffle_rounded, size: 20, color: context.themeAccentColor),
+                              label: Text("Shuffle", style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16)),
+                              onPressed: () {
+                                if (_songs.isNotEmpty) {
+                                  final shuffled = List<Song>.from(_songs)..shuffle();
+                                  ref.read(audioPlayerProvider.notifier).playSong(shuffled[0], queue: shuffled, index: 0);
+                                }
+                              },
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "${_songs.length} Tracks",
-                            style: GoogleFonts.inter(
-                              color: context.themeMutedTextColor,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Play All, Shuffle & Download Buttons Row
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: [
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: context.themeAccentColor,
-                                  foregroundColor: context.themeInvertedTextColor,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                ),
-                                icon: const Icon(Icons.play_arrow_rounded, size: 22),
-                                label: Text(
-                                  "Play All",
-                                  style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                                ),
-                                onPressed: () {
-                                  if (_songs.isNotEmpty) {
-                                    ref.read(audioPlayerProvider.notifier).playSong(_songs[0], queue: _songs, index: 0);
-                                  }
-                                },
-                              ),
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.midnightPill,
-                                  foregroundColor: context.themeTextColor,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                ),
-                                icon: const Icon(Icons.shuffle_rounded, size: 20),
-                                label: Text(
-                                  "Shuffle",
-                                  style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                                ),
-                                onPressed: () {
-                                  if (_songs.isNotEmpty) {
-                                    final shuffled = List<Song>.from(_songs)..shuffle();
-                                    ref.read(audioPlayerProvider.notifier).playSong(shuffled[0], queue: shuffled, index: 0);
-                                  }
-                                },
-                              ),
-                              IconButton(
-                                style: IconButton.styleFrom(
-                                  backgroundColor: AppColors.midnightPill,
-                                  padding: const EdgeInsets.all(12),
-                                ),
-                                icon: Icon(Icons.file_download_outlined, color: context.themeTextColor),
-                                tooltip: "Download All",
-                                onPressed: () async {
-                                  if (_songs.isEmpty) return;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("Downloading ${_songs.length} songs...")),
-                                  );
-                                  await ref.read(downloadProvider.notifier).downloadBatch(_songs);
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text("Batch download completed!")),
-                                    );
-                                  }
-                                },
-                              ),
-                            ],
                           ),
                         ],
                       ),

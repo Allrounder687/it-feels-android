@@ -14,13 +14,14 @@ class RoomService {
   );
   
   // Create a new Listen Together Room
-  Future<String> createRoom(String hostId, Song currentSong, Duration position, bool isPlaying) async {
+  Future<String> createRoom(String hostId, Song currentSong, Duration position, bool isPlaying, {bool isPublic = false}) async {
     final roomId = _generateRoomCode();
     final roomRef = _rtdb.ref('rooms/$roomId');
     await roomRef.keepSynced(true);
     
     await roomRef.set({
       'hostId': hostId,
+      'isPublic': isPublic,
       'songId': currentSong.id,
       'saavnId': currentSong.saavnId,
       'title': currentSong.title,
@@ -56,6 +57,11 @@ class RoomService {
     final ref = _rtdb.ref('rooms/$roomId');
     ref.keepSynced(true);
     return ref.onValue;
+  }
+
+  // Get public rooms
+  Stream<DatabaseEvent> getPublicRooms() {
+    return _rtdb.ref('rooms').orderByChild('isPublic').equalTo(true).onValue;
   }
 
   // End room

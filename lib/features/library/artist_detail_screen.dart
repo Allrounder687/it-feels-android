@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -105,120 +106,139 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
             ? const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent))
             : CustomScrollView(
                 slivers: [
-                  // App Bar
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            icon: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: const BoxDecoration(
-                                color: AppColors.midnightPill,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(Icons.arrow_back, color: context.themeTextColor, size: 20),
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                          Expanded(
-                            child: Text(
-                              widget.artistName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.outfit(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: context.themeTextColor,
-                              ),
-                            ),
-                          ),
-                        ],
+                  // Immersive Dynamic Header
+                  SliverAppBar(
+                    expandedHeight: 340,
+                    pinned: true,
+                    backgroundColor: context.themeBackgroundColor,
+                    leading: IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: context.themeBackgroundColor.withValues(alpha: 0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.arrow_back, color: context.themeTextColor, size: 20),
                       ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    flexibleSpace: LayoutBuilder(
+                      builder: (BuildContext context, BoxConstraints constraints) {
+                        final top = constraints.biggest.height;
+                        final minHeight = MediaQuery.of(context).padding.top + kToolbarHeight;
+                        final scrollPercent = ((top - minHeight) / (340 - minHeight)).clamp(0.0, 1.0);
+                        final isCollapsed = top <= minHeight + 20;
+
+                        return FlexibleSpaceBar(
+                          titlePadding: const EdgeInsets.only(left: 64, right: 64, bottom: 16),
+                          title: isCollapsed
+                              ? Text(
+                                  widget.artistName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: context.themeTextColor,
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                          background: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              // Blurred Artist Image Background
+                              if (widget.artistImage?.isNotEmpty == true)
+                                CustomImageWidget(
+                                  imageUrl: widget.artistImage!,
+                                  fit: BoxFit.cover,
+                                ),
+                              Positioned.fill(
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                                  child: Container(color: context.themeBackgroundColor.withValues(alpha: 0.7)),
+                                ),
+                              ),
+                              // Foreground Avatar and Text
+                              Opacity(
+                                opacity: scrollPercent,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Container(
+                                      width: 140,
+                                      height: 140,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.4),
+                                            blurRadius: 30,
+                                            offset: const Offset(0, 15),
+                                          ),
+                                        ],
+                                      ),
+                                      child: ClipOval(
+                                        child: widget.artistImage?.isNotEmpty == true
+                                            ? CustomImageWidget(imageUrl: widget.artistImage!, fit: BoxFit.cover)
+                                            : Container(color: context.themeCardColor, child: Icon(Icons.person, color: context.themeTextColor, size: 60)),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                                      child: Text(
+                                        widget.artistName,
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.w800,
+                                          color: context.themeTextColor,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "Verified Artist",
+                                      style: GoogleFonts.inter(
+                                        color: context.themeAccentColor,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 24),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
 
-                  // Header Artwork Avatar & Action Buttons
+                  // Play Buttons Apple Music Style
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      child: Row(
                         children: [
-                          // Circular Artist Image Avatar
-                          Container(
-                            width: 160,
-                            height: 160,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: context.themeInvertedTextColor.withValues(alpha: 0.4),
-                                  blurRadius: 24,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: ClipOval(
-                              child: widget.artistImage?.isNotEmpty == true
-                                  ? CustomImageWidget(
-                                      imageUrl: widget.artistImage!,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Container(
-                                      color: context.themeCardColor,
-                                      child: Icon(Icons.person, color: context.themeTextColor, size: 64),
-                                    ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          Text(
-                            widget.artistName,
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.outfit(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: context.themeTextColor,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Verified Artist",
-                            style: GoogleFonts.inter(
-                              color: context.themeAccentColor,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Play & Shuffle Row
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: context.themeAccentColor,
-                                  foregroundColor: context.themeInvertedTextColor,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                ),
-                                icon: const Icon(Icons.play_arrow_rounded, size: 22),
-                                label: Text(
-                                  "Play Top Songs",
-                                  style: GoogleFonts.inter(fontWeight: FontWeight.w700),
-                                ),
-                                onPressed: () {
-                                  if (_topSongs.isNotEmpty) {
-                                    ref.read(audioPlayerProvider.notifier).playSong(_topSongs[0], queue: _topSongs, index: 0);
-                                  }
-                                },
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: context.themeCardColor.withValues(alpha: 0.8),
+                                foregroundColor: context.themeTextColor,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
-                            ],
+                              icon: Icon(Icons.play_arrow_rounded, size: 24, color: context.themeAccentColor),
+                              label: Text("Play Top Songs", style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16)),
+                              onPressed: () {
+                                if (_topSongs.isNotEmpty) ref.read(audioPlayerProvider.notifier).playSong(_topSongs[0], queue: _topSongs, index: 0);
+                              },
+                            ),
                           ),
                         ],
                       ),

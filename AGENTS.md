@@ -2,6 +2,13 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Social Enhancements & Player Fixes Release (v3.5.9):**
+  - **Modern Chat Bubbles**: Revamped the Social Inbox to use native iMessage-like gradient chat bubbles.
+  - **Active Rooms Carousel**: Integrated a global carousel in the Friends tab to display active Listen Together rooms, filtering for public rooms hosted by premium users.
+  - **Friend Profiles**: Added interactive profiles accessible via the friends list, allowing users to view and import public playlists.
+  - **Player & Sync Fixes**: Fixed infinite loading in playlist sharing, restored LRCLIB sync accuracy by replacing post-frame callbacks with Riverpod listeners, and resolved the sticky video glow bug.
+  - **Version Bump:** Incremented version to `3.5.9+41`.
+
 - **Account Entitlement, Isar Multi-Isolate & Firebase Resiliency Release (v3.5.8):**
   - **Account-Bound Entitlements**: Bound premium status strictly to authenticated user IDs in Firestore (`/users/<uid>`), isolating guests and secondary accounts.
   - **Isar Multi-Isolate & Hot Restart Safety**: Added 200ms fallback retry and isolate detection in `DatabaseService` to prevent `Collection id is invalid` crashes during background isolate startup or Flutter Hot Restart.

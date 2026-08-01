@@ -1,3 +1,7 @@
+## v3.5.9+41
+- **Social Features**: Revamped Inbox with chat bubbles, added a global Active Rooms Carousel, and introduced interactive Friend Profiles with public playlist sharing.
+- **Bug Fixes**: Fixed infinite loading in playlist sharing, restored precise LRCLIB lyrics sync, and resolved the persistent video tab glow bug.
+
 ## v3.5.8+40
 - **Now Playing Player UI/UX Modernization**: Redesigned the music player screen (NowPlayingScreen) with 3-zone clean top bar (consolidated overflow menu), inlined quality badge, frosted glass action pills (with added native Share capability), adaptive semi-transparent control capsule with glowing Play/Pause aura, and Up Next queue peek card.
 - **Adaptive Home Screen & Navigation Polish**: Implemented adaptive bottom navigation bar hiding text labels on narrow screen widths to prevent truncated labels (`Ho...`). Optimized Curated Moods and Daily Mixes with responsive card widths, and stripped redundant `"Daily Mix: "` prefixes in favor of `"Mix"` suffixes.

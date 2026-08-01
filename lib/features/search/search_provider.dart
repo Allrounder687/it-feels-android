@@ -6,6 +6,7 @@ import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @immutable
 class SearchState {
@@ -15,6 +16,7 @@ class SearchState {
   final List<Playlist> playlists;
   final List<Map<String, dynamic>> artists;
   final bool isSearching;
+  final List<String> recentSearches;
 
   const SearchState({
     this.query = '',
@@ -23,6 +25,7 @@ class SearchState {
     this.playlists = const [],
     this.artists = const [],
     this.isSearching = false,
+    this.recentSearches = const [],
   });
 
   SearchState copyWith({
@@ -32,6 +35,7 @@ class SearchState {
     List<Playlist>? playlists,
     List<Map<String, dynamic>>? artists,
     bool? isSearching,
+    List<String>? recentSearches,
   }) {
     return SearchState(
       query: query ?? this.query,
@@ -40,6 +44,7 @@ class SearchState {
       playlists: playlists ?? this.playlists,
       artists: artists ?? this.artists,
       isSearching: isSearching ?? this.isSearching,
+      recentSearches: recentSearches ?? this.recentSearches,
     );
   }
 }
@@ -54,7 +59,39 @@ class SearchNotifier extends Notifier<SearchState> {
     ref.onDispose(() {
       _debounceTimer?.cancel();
     });
+    _loadRecentSearches();
     return const SearchState();
+  }
+
+  Future<void> _loadRecentSearches() async {
+    final prefs = await SharedPreferences.getInstance();
+    final recent = prefs.getStringList('recent_searches') ?? [];
+    state = state.copyWith(recentSearches: recent);
+  }
+
+  Future<void> _addRecentSearch(String query) async {
+    if (query.trim().isEmpty) return;
+    
+    final prefs = await SharedPreferences.getInstance();
+    List<String> recent = prefs.getStringList('recent_searches') ?? [];
+    
+    // Remove if exists to push to top
+    recent.remove(query);
+    recent.insert(0, query);
+    
+    // Cap at 10 items
+    if (recent.length > 10) {
+      recent = recent.sublist(0, 10);
+    }
+    
+    await prefs.setStringList('recent_searches', recent);
+    state = state.copyWith(recentSearches: recent);
+  }
+
+  Future<void> clearRecentSearches() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('recent_searches');
+    state = state.copyWith(recentSearches: []);
   }
 
   void search(String newQuery, {BuildContext? context}) {
@@ -76,6 +113,8 @@ class SearchNotifier extends Notifier<SearchState> {
 
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
       if (state.query != newQuery) return;
+
+      _addRecentSearch(newQuery);
 
       try {
         final resultsFuture = apiService.searchAll(newQuery);

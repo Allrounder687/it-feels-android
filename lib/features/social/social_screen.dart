@@ -8,6 +8,7 @@ import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
+import 'package:it_feels_music/features/social/friend_profile_screen.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -91,8 +92,17 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
     );
   }
 
-  void _handleJoinRoom(String roomId, String hostName) {
-    locator<RoomService>().requestJoinRoom(roomId);
+  void _handleJoinRoom(String roomId, String hostName) async {
+    try {
+      await locator<RoomService>().requestJoinRoom(roomId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to request join room: $e")));
+      }
+      return;
+    }
+    if (!mounted) return;
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -308,11 +318,30 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                     _socialService.deleteMessage(docId);
                   },
                   child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin: const EdgeInsets.only(left: 16, right: 64, top: 8, bottom: 8),
                     decoration: BoxDecoration(
-                      color: context.themeSurfaceColor,
-                      borderRadius: BorderRadius.circular(16),
+                      gradient: LinearGradient(
+                        colors: [
+                          context.themeSurfaceColor,
+                          context.themeAccentColor.withValues(alpha: 0.15),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                        bottomLeft: Radius.circular(4),
+                      ),
                       border: isRead ? null : Border.all(color: context.themeAccentColor, width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
                     child: Column(
                       children: [
@@ -435,6 +464,86 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
     );
   }
 
+  Widget _buildActiveRoomsCarousel() {
+    return StreamBuilder<DatabaseEvent>(
+      stream: locator<RoomService>().getPublicRooms(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
+          return const SizedBox.shrink();
+        }
+        
+        final roomsMap = Map<String, dynamic>.from(snapshot.data!.snapshot.value as Map);
+        if (roomsMap.isEmpty) return const SizedBox.shrink();
+
+        final rooms = roomsMap.entries.map((e) => {'id': e.key, ...Map<String, dynamic>.from(e.value as Map)}).toList();
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text("Active Listening Rooms", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor, fontSize: 16)),
+            ),
+            SizedBox(
+              height: 140,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: rooms.length,
+                itemBuilder: (context, index) {
+                  final room = rooms[index];
+                  final hostName = 'Host'; 
+                  final coverArt = room['coverArt'] ?? '';
+                  final title = room['title'] ?? 'Music';
+                  final roomId = room['id'] as String;
+                  
+                  return GestureDetector(
+                    onTap: () => _handleJoinRoom(roomId, hostName),
+                    child: Container(
+                      width: 120,
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: context.themeSurfaceColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: context.themeAccentColor.withValues(alpha: 0.5), width: 1.5),
+                        boxShadow: [
+                          BoxShadow(color: context.themeAccentColor.withValues(alpha: 0.2), blurRadius: 8, spreadRadius: 1),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: CustomImageWidget(imageUrl: coverArt, width: 60, height: 60),
+                          ),
+                          const SizedBox(height: 8),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: context.themeTextColor)),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: context.themeAccentColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text("Join", style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
+                          )
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildFriendsTab() {
     return Column(
       children: [
@@ -516,6 +625,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
             }
           ),
         ),
+        _buildActiveRoomsCarousel(),
         Expanded(
           child: StreamBuilder<DocumentSnapshot>(
             stream: _socialService.getFriendsStream(),
@@ -551,6 +661,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                       final displayName = nickname ?? realName;
                       final username = friendSnap.data?['username'] ?? '';
                       return ListTile(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => FriendProfileScreen(friendUid: friendUid, friendName: displayName)));
+                        },
                         leading: CircleAvatar(
                           backgroundColor: AppColors.midnightAccent,
                           child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
@@ -583,18 +696,19 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                     ),
                                     if (presenceData['room_id'] != null) ...[
                                       const SizedBox(height: 4),
-                                      InkWell(
-                                        onTap: () {
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.midnightPrimary,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                          minimumSize: const Size(80, 28),
+                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        onPressed: () {
                                           _handleJoinRoom(presenceData['room_id'], displayName);
                                         },
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.midnightPrimary,
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: const Text("Join Room", style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
-                                        ),
+                                        child: const Text("Join Room", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                                       ),
                                     ],
                                   ],

@@ -361,10 +361,12 @@ class SongOptionsSheet extends ConsumerWidget {
   }
 
   void _showSendToFriendDialog(BuildContext context) {
+    final socialService = locator<SocialService>();
+    final friendsStream = socialService.getFriendsStream();
+    
     showDialog(
       context: context,
       builder: (ctx) {
-        final socialService = locator<SocialService>();
         return AlertDialog(
           backgroundColor: context.themeSurfaceColor,
           title: Text("Send to Friend", style: GoogleFonts.outfit(color: context.themeTextColor)),
@@ -372,9 +374,12 @@ class SongOptionsSheet extends ConsumerWidget {
             width: double.maxFinite,
             height: 300,
             child: StreamBuilder<DocumentSnapshot>(
-              stream: socialService.getFriendsStream(),
+              stream: friendsStream,
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (snapshot.hasError) {
+                  return Center(child: Text("Error loading friends.", style: GoogleFonts.inter(color: Colors.redAccent)));
+                }
+                if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (!snapshot.hasData || snapshot.data?.data() == null) {
