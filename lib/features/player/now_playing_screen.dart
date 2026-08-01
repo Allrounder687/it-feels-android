@@ -1277,8 +1277,8 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
           nextLine = lyricsResult.syncedLyrics[activeIdx + 1].text;
         }
       }
-    } else if (lyricsResult != null && lyricsResult.hasStatic) {
-      final lines = lyricsResult.plainText.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    } else if (lyricsResult != null && lyricsResult.hasStatic && lyricsResult.staticLyrics != null) {
+      final lines = lyricsResult.staticLyrics!.split('\n').where((l) => l.trim().isNotEmpty).toList();
       if (lines.isNotEmpty) currentLine = lines.first;
       if (lines.length > 1) nextLine = lines[1];
     }
