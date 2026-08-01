@@ -15,4 +15,7 @@ extension ThemeContext on BuildContext {
   Color get themeBackgroundColor => appProviderContainer.read(audioPlayerProvider).themeBackgroundColor;
   Color get themeSurfaceColor => appProviderContainer.read(audioPlayerProvider).themeSurfaceColor;
   Color get themeAccentColor => appProviderContainer.read(audioPlayerProvider).themeAccentColor;
+  Color get themePillColor => appProviderContainer.read(audioPlayerProvider).themePillColor;
+  Color get themeUnselectedPillColor => appProviderContainer.read(audioPlayerProvider).themeUnselectedPillColor;
+  Color get themeUnselectedPillTextColor => appProviderContainer.read(audioPlayerProvider).themeUnselectedPillTextColor;
 }

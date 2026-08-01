@@ -109,7 +109,11 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
           return Builder(
             builder: (context) {
-              final colorScheme = darkDynamic ?? ColorScheme.fromSeed(seedColor: context.themeAccentColor, brightness: Brightness.dark);
+              final appThemeMode = ref.watch(audioPlayerProvider).appThemeMode;
+              final isLight = appThemeMode == AppThemeMode.light;
+              final brightness = isLight ? Brightness.light : Brightness.dark;
+              final colorScheme = (isLight ? lightDynamic : darkDynamic) ?? ColorScheme.fromSeed(seedColor: context.themeAccentColor, brightness: brightness);
+              
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ref.read(audioPlayerProvider.notifier).setMaterialYouColors(colorScheme.surface, colorScheme.surfaceContainer, colorScheme.primary);
               });
@@ -119,10 +123,10 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                 debugShowCheckedModeBanner: false,
                 theme: ThemeData(
                   useMaterial3: true,
-                  brightness: Brightness.dark,
+                  brightness: brightness,
                   colorScheme: colorScheme,
                   scaffoldBackgroundColor: context.themeBackgroundColor,
-                  textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+                  textTheme: GoogleFonts.interTextTheme(isLight ? ThemeData.light().textTheme : ThemeData.dark().textTheme),
                 ),
                 routerConfig: appRouter,
                 builder: (context, child) {

@@ -201,6 +201,37 @@ class AudioPlayerState {
     }
   }
 
+  Color get themePillColor {
+    switch (appThemeMode) {
+      case AppThemeMode.light:
+        return const Color(0xFF2563EB);
+      case AppThemeMode.burgundy:
+        return AppColors.burgundyPill;
+      default:
+        return AppColors.midnightPill;
+    }
+  }
+
+  Color get themeUnselectedPillColor {
+    switch (appThemeMode) {
+      case AppThemeMode.light:
+        return const Color(0xFFE2E8F0);
+      case AppThemeMode.burgundy:
+        return AppColors.burgundyPill.withValues(alpha: 0.5);
+      default:
+        return AppColors.midnightPill.withValues(alpha: 0.5);
+    }
+  }
+
+  Color get themeUnselectedPillTextColor {
+    switch (appThemeMode) {
+      case AppThemeMode.light:
+        return const Color(0xFF334155);
+      default:
+        return Colors.white70;
+    }
+  }
+
   AudioPlayerState copyWith({
     Song? currentSong,
     bool clearCurrentSong = false,

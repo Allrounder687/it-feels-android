@@ -565,49 +565,45 @@ class SettingsScreen extends ConsumerWidget {
                     },
                   );
                   
+                  AppConfig? config;
                   try {
-                    final config = await ConfigService.fetchRemoteConfig();
+                    config = await ConfigService.fetchRemoteConfig();
+                  } catch (e) {
+                    debugPrint("Error checking updates: $e");
+                  } finally {
                     if (dialogCtx != null && dialogCtx!.mounted) {
                       Navigator.of(dialogCtx!).pop();
                       dialogCtx = null;
                     }
-                    
-                    if (config != null) {
-                      final requiresForce = await ConfigService.requiresForceUpdate(config);
-                      final hasSoft = await ConfigService.hasSoftUpdate(config);
-                      if ((requiresForce || hasSoft) && context.mounted) {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ForceUpdateScreen(
-                              latestVersion: config.latestVersion,
-                              updateUrl: config.updateUrl,
-                              releaseNotes: config.releaseNotes,
-                              iosUpdateUrl: config.iosUpdateUrl,
-                              isSoftUpdate: hasSoft,
-                            ),
+                  }
+
+                  if (!context.mounted) return;
+
+                  if (config != null) {
+                    final requiresForce = await ConfigService.requiresForceUpdate(config);
+                    final hasSoft = await ConfigService.hasSoftUpdate(config);
+                    if ((requiresForce || hasSoft) && context.mounted) {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ForceUpdateScreen(
+                            latestVersion: config!.latestVersion,
+                            updateUrl: config.updateUrl,
+                            releaseNotes: config.releaseNotes,
+                            iosUpdateUrl: config.iosUpdateUrl,
+                            isSoftUpdate: hasSoft,
                           ),
-                        );
-                      } else if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("You are on the latest version!")),
-                        );
-                      }
+                        ),
+                      );
                     } else if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Failed to check for updates. Check your connection.")),
+                        const SnackBar(content: Text("You are on the latest version!")),
                       );
                     }
-                  } catch (e) {
-                    if (dialogCtx != null && dialogCtx!.mounted) {
-                      Navigator.of(dialogCtx!).pop();
-                      dialogCtx = null;
-                    }
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Error checking for updates.")),
-                      );
-                    }
+                  } else if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Failed to check for updates. Check your connection.")),
+                    );
                   }
                 },
               ),

@@ -2,6 +2,10 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **CI/CD Resiliency & Fallback Release (v3.5.7):**
+  - **Shorebird Build Fallback:** Added graceful fallbacks (`shorebird release ... || flutter build ...`) in both `ota_release.yml` and `ios-unsigned-build.yml` to prevent pipeline failures when releasing code with existing Shorebird versions.
+  - **Version Bump:** Incremented version to `3.5.7+39`.
+
 - **Admin Telemetry & Live Social Expansion (v3.2.0):** 
   1. **Concurrent Lyrics Racing:** Overhauled `LyricsService` from a slow sequential waterfall to a concurrent `Completer` race against 3 API sources, resolving lyrics in under a second.
   2. **Admin Filters & Dashboards:** Converted dashboard to stateful UI with offline local search filters (ChoiceChips) for heavy traffic.

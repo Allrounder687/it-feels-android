@@ -447,13 +447,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               gradient: isSelected
                                   ? const LinearGradient(colors: [Color(0xFFE91E63), Color(0xFF9C27B0)], begin: Alignment.topLeft, end: Alignment.bottomRight)
                                   : null,
-                              color: isSelected ? null : AppColors.midnightPill.withValues(alpha: 0.5),
+                              color: isSelected ? null : context.themeUnselectedPillColor,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(color: isSelected ? Colors.transparent : context.themeTextColor10, width: 0.5),
                             ),
                             child: Text(
                               _filters[index],
-                              style: GoogleFonts.inter(color: isSelected ? context.themeInvertedTextColor : context.themeTextColor, fontSize: 13, fontWeight: FontWeight.w700),
+                              style: GoogleFonts.inter(color: isSelected ? Colors.white : context.themeUnselectedPillTextColor, fontSize: 13, fontWeight: FontWeight.w700),
                             ),
                           ),
                         );

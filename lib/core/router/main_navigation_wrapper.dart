@@ -390,7 +390,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                 vertical: isVertical ? 16 : 16,
               ),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.midnightPill : Colors.transparent,
+                color: isSelected ? context.themePillColor : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: isVertical
@@ -401,14 +401,14 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                             ? Consumer(
                                 builder: (context, ref, _) {
                                   final count = ref.watch(unreadCountProvider).value ?? 0;
-                                  final iconWidget = Icon(icon, color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor, size: 32);
+                                  final iconWidget = Icon(icon, color: isSelected ? context.themeInvertedTextColor : context.themeMutedTextColor, size: 32);
                                   if (count > 0) return Badge(label: Text(count.toString()), backgroundColor: Colors.redAccent, child: iconWidget);
                                   return iconWidget;
                                 },
                               )
                             : Icon(
                                 icon,
-                                color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor,
+                                color: isSelected ? context.themeInvertedTextColor : context.themeMutedTextColor,
                                 size: 32,
                               ),
                         if (isSelected) ...[
@@ -418,7 +418,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(
-                              color: context.themeTextColor,
+                              color: context.themeInvertedTextColor,
                               fontWeight: FontWeight.w700,
                               fontSize: 11,
                             ),
@@ -433,14 +433,14 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                             ? Consumer(
                                 builder: (context, ref, _) {
                                   final count = ref.watch(unreadCountProvider).value ?? 0;
-                                  final iconWidget = Icon(icon, color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor, size: 32);
+                                  final iconWidget = Icon(icon, color: isSelected ? context.themeInvertedTextColor : context.themeMutedTextColor, size: 32);
                                   if (count > 0) return Badge(label: Text(count.toString()), backgroundColor: Colors.redAccent, child: iconWidget);
                                   return iconWidget;
                                 },
                               )
                             : Icon(
                                 icon,
-                                color: isSelected ? AppColors.midnightAccent : context.themeMutedTextColor,
+                                color: isSelected ? context.themeInvertedTextColor : context.themeMutedTextColor,
                                 size: 32,
                               ),
                         if (isSelected) ...[
@@ -451,7 +451,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.inter(
-                                color: context.themeTextColor,
+                                color: context.themeInvertedTextColor,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
                               ),

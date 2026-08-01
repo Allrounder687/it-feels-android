@@ -71,8 +71,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       IconButton(
                         icon: Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: AppColors.midnightPill,
+                          decoration: BoxDecoration(
+                            color: context.themeUnselectedPillColor,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(Icons.settings_outlined, color: context.themeTextColor, size: 20),
@@ -107,13 +107,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           margin: const EdgeInsets.only(right: 10),
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                           decoration: BoxDecoration(
-                            color: isSelected ? context.themeAccentColor : AppColors.midnightPill,
+                            color: isSelected ? context.themeAccentColor : context.themeUnselectedPillColor,
                             borderRadius: BorderRadius.circular(21),
                           ),
                           child: Text(
                             _tabs[index],
                             style: GoogleFonts.inter(
-                              color: isSelected ? context.themeInvertedTextColor : context.themeTextColor,
+                              color: isSelected ? context.themeInvertedTextColor : context.themeUnselectedPillTextColor,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),

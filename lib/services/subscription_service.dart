@@ -50,10 +50,20 @@ class SubscriptionService {
   Future<bool> checkPremiumStatus(String uid) async {
     if (kIsWeb) return false;
     
+    // 0. Check local device-wide premium flag (persists across app updates & guest resets)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('isPremiumDevice') == true || (uid.isNotEmpty && prefs.getBool('isPremiumFamily_${uid}') == true)) {
+        return true;
+      }
+    } catch (_) {}
+
     // 1. Check RevenueCat Status
     try {
       final customerInfo = await Purchases.getCustomerInfo();
       if (customerInfo.entitlements.all[entitlementId]?.isActive == true) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isPremiumDevice', true);
         return true;
       }
     } catch (e) {

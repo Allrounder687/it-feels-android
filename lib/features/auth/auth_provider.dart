@@ -227,7 +227,7 @@ class AuthNotifier extends Notifier<AuthState> {
       await _authService.resendVerificationEmail();
       state = state.copyWith(errorMessage: 'Verification email resent successfully!');
     } catch (e) {
-      state = state.copyWith(errorMessage: 'Failed to resend verification email. Please try again later.');
+      state = state.copyWith(errorMessage: 'Failed to send email: ${e.toString().replaceAll('Instance of ', '').replaceAll('Exception: ', '')}');
     }
   }
 

@@ -13,9 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/custom_playlist.dart';
-import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/auth/auth_bottom_sheet.dart';
 class SocialScreen extends ConsumerStatefulWidget {
   const SocialScreen({super.key});
@@ -104,7 +102,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
             if (ctx.mounted) {
               Navigator.pop(ctx);
               ref.read(audioPlayerProvider.notifier).joinSession(roomId);
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Joined $hostName's room!")));
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Joined $hostName's room!")));
+              }
             }
           }
         });
@@ -312,7 +312,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                     decoration: BoxDecoration(
                       color: context.themeSurfaceColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: isRead ? null : Border.all(color: AppColors.midnightAccent, width: 1.5),
+                      border: isRead ? null : Border.all(color: context.themeAccentColor, width: 1.5),
                     ),
                     child: Column(
                       children: [
@@ -322,8 +322,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                             borderRadius: BorderRadius.circular(8),
                             child: isPlaylist
                                 ? Container(
-                                    width: 56, height: 56, color: AppColors.midnightPrimary.withValues(alpha: 0.2),
-                                    child: const Icon(Icons.queue_music_rounded, color: AppColors.midnightPrimary, size: 32),
+                                    width: 56, height: 56, color: context.themeAccentColor.withValues(alpha: 0.2),
+                                    child: Icon(Icons.queue_music_rounded, color: context.themeAccentColor, size: 32),
                                   )
                                 : isRoomInvite
                                     ? Container(
@@ -359,7 +359,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                           ),
                           trailing: isPlaylist 
                             ? IconButton(
-                                icon: const Icon(Icons.download_rounded, color: AppColors.midnightAccent, size: 36),
+                                icon: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 36),
                                 onPressed: () {
                                   _socialService.markAsRead(docId);
                                   ref.read(customPlaylistProvider.notifier).createPlaylistWithSongs(playlist!.title, playlist.songs);
@@ -369,8 +369,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                             : isRoomInvite
                                 ? ElevatedButton(
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppColors.midnightAccent,
-                                      foregroundColor: Colors.black,
+                                      backgroundColor: context.themeAccentColor,
+                                      foregroundColor: context.themeInvertedTextColor,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                     ),
                                     onPressed: () {
@@ -386,7 +386,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                 : isReaction
                                     ? const SizedBox.shrink()
                                     : IconButton(
-                                        icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.midnightAccent, size: 42),
+                                        icon: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 42),
                                         onPressed: () {
                                           _socialService.markAsRead(docId);
                                           if (song != null) {
@@ -427,7 +427,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
         margin: const EdgeInsets.symmetric(horizontal: 4),
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.midnightAccent.withValues(alpha: 0.2) : Colors.transparent,
+          color: isSelected ? context.themeAccentColor.withValues(alpha: 0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(emoji, style: const TextStyle(fontSize: 20)),

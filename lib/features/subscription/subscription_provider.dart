@@ -4,6 +4,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:it_feels_music/services/subscription_service.dart';
 
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:it_feels_music/services/razorpay_service.dart';
 
 class SubscriptionProvider extends ChangeNotifier {
@@ -68,6 +69,16 @@ class SubscriptionProvider extends ChangeNotifier {
   }
 
   Future<void> checkStatus() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('isPremiumDevice') == true) {
+        _isPremium = true;
+        _isLoading = false;
+        notifyListeners();
+        return;
+      }
+    } catch (_) {}
+
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       _isPremium = await _service.checkPremiumStatus(user.uid);
