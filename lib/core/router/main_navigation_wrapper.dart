@@ -69,17 +69,18 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
       // Check clipboard on startup
       _checkClipboardForPlaylist();
 
-      // Check for non-forced OTA updates
-      _checkSoftUpdate();
+      // Check for OTA updates (force or soft)
+      _checkUpdateStatus();
     });
   }
 
-  Future<void> _checkSoftUpdate() async {
+  Future<void> _checkUpdateStatus() async {
     try {
       final config = await ConfigService.fetchRemoteConfig();
-      if (config != null) {
+      if (config != null && mounted) {
+        final isForce = await ConfigService.requiresForceUpdate(config);
         final hasSoft = await ConfigService.hasSoftUpdate(config);
-        if (hasSoft && mounted) {
+        if ((isForce || hasSoft) && mounted) {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -88,14 +89,14 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                 updateUrl: config.updateUrl,
                 releaseNotes: config.releaseNotes,
                 iosUpdateUrl: config.iosUpdateUrl,
-                isSoftUpdate: true,
+                isSoftUpdate: !isForce,
               ),
             ),
           );
         }
       }
     } catch (e) {
-      debugPrint("Soft update check failed: $e");
+      debugPrint("Update check failed: $e");
     }
   }
 

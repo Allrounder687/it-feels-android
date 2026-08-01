@@ -131,37 +131,8 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                 routerConfig: appRouter,
                 builder: (context, child) {
                   final isBanned = ref.watch(banProvider).isBanned;
-                  return FutureBuilder<AppConfig?>(
-                    future: ConfigService.fetchRemoteConfig(),
-                    builder: (context, configSnapshot) {
-                      if (configSnapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      
-                      final config = configSnapshot.data;
-                      if (config != null) {
-                        return FutureBuilder<bool>(
-                          future: ConfigService.requiresForceUpdate(config),
-                          builder: (context, requireUpdateSnapshot) {
-                            if (requireUpdateSnapshot.data == true) {
-                              return ForceUpdateScreen(
-                                latestVersion: config.latestVersion,
-                                updateUrl: config.updateUrl,
-                                releaseNotes: config.releaseNotes,
-                                iosUpdateUrl: config.iosUpdateUrl,
-                              );
-                            }
-                            
-                            if (isBanned) return const BannedScreen();
-                            return InAppBroadcastListener(child: child ?? const SizedBox());
-                          }
-                        );
-                      }
-
-                      if (isBanned) return const BannedScreen();
-                      return InAppBroadcastListener(child: child ?? const SizedBox());
-                    }
-                  );
+                  if (isBanned) return const BannedScreen();
+                  return InAppBroadcastListener(child: child ?? const SizedBox());
                 },
               );
             },
