@@ -22,6 +22,8 @@ import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:it_feels_music/features/library/download_provider.dart';
 import 'package:it_feels_music/features/social/unread_count_provider.dart';
+import 'package:it_feels_music/services/config_service.dart';
+import 'package:it_feels_music/features/admin/force_update_screen.dart';
 
 class MainNavigationWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -66,7 +68,35 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
       
       // Check clipboard on startup
       _checkClipboardForPlaylist();
+
+      // Check for non-forced OTA updates
+      _checkSoftUpdate();
     });
+  }
+
+  Future<void> _checkSoftUpdate() async {
+    try {
+      final config = await ConfigService.fetchRemoteConfig();
+      if (config != null) {
+        final hasSoft = await ConfigService.hasSoftUpdate(config);
+        if (hasSoft && mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ForceUpdateScreen(
+                latestVersion: config.latestVersion,
+                updateUrl: config.updateUrl,
+                releaseNotes: config.releaseNotes,
+                iosUpdateUrl: config.iosUpdateUrl,
+                isSoftUpdate: true,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Soft update check failed: $e");
+    }
   }
 
   @override
@@ -246,10 +276,10 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        child: SafeArea(
-                          bottom: true,
-                          child: MeasureSize(
-                            onChange: (size) => ref.read(bottomUiProvider.notifier).updateHeight(size.height),
+                        child: MeasureSize(
+                          onChange: (size) => ref.read(bottomUiProvider.notifier).updateHeight(size.height),
+                          child: SafeArea(
+                            bottom: true,
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -281,10 +311,10 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: SafeArea(
-                    bottom: true,
-                    child: MeasureSize(
-                      onChange: (size) => ref.read(bottomUiProvider.notifier).updateHeight(size.height),
+                  child: MeasureSize(
+                    onChange: (size) => ref.read(bottomUiProvider.notifier).updateHeight(size.height),
+                    child: SafeArea(
+                      bottom: true,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [

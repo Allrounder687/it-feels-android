@@ -312,8 +312,11 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                         ),
                         Row(
                           children: [
-                            IconButton(
-                              icon: Container(
+                            BouncyIconButton(
+                              onPressed: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => const DrivingModeScreen()));
+                              },
+                              child: Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   color: surfaceColor,
@@ -321,13 +324,18 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                 ),
                                 child: Icon(Icons.directions_car_filled_rounded, color: context.themeTextColor, size: 24),
                               ),
-                              onPressed: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => const DrivingModeScreen()));
-                              },
                               tooltip: 'Driving Mode',
                             ),
-                            IconButton(
-                              icon: Container(
+                            BouncyIconButton(
+                              onPressed: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (_) => const SleepTimerSheet(),
+                                );
+                              },
+                              child: Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   color: surfaceColor,
@@ -343,17 +351,23 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   size: 24,
                                 ),
                               ),
-                              onPressed: () {
-                                showModalBottomSheet(
-                                  context: context,
-                                  isScrollControlled: true,
-                                  backgroundColor: Colors.transparent,
-                                  builder: (_) => const SleepTimerSheet(),
-                                );
-                              },
                             ),
-                            IconButton(
-                              icon: Container(
+                            BouncyIconButton(
+                              onPressed: () {
+                                final current = playerProvider.currentVibe;
+                                if (current == AudioVibe.normal) {
+                                  ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.slowedReverb);
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🌙 Slowed + Reverb'), duration: Duration(seconds: 1)));
+                                } else if (current == AudioVibe.slowedReverb) {
+                                  ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.nightcore);
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('⚡ Nightcore (Sped Up)'), duration: Duration(seconds: 1)));
+                                } else {
+                                  ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.normal);
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎵 Normal Audio'), duration: Duration(seconds: 1)));
+                                }
+                              },
+                              tooltip: 'Audio Vibes',
+                              child: Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   color: surfaceColor,
@@ -371,25 +385,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   size: 24,
                                 ),
                               ),
-                              tooltip: 'Audio Vibes',
-                              onPressed: () {
-                                final current = playerProvider.currentVibe;
-                                if (current == AudioVibe.normal) {
-                                  ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.slowedReverb);
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🌙 Slowed + Reverb'), duration: Duration(seconds: 1)));
-                                } else if (current == AudioVibe.slowedReverb) {
-                                  ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.nightcore);
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('⚡ Nightcore (Sped Up)'), duration: Duration(seconds: 1)));
-                                } else {
-                                  ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.normal);
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('🎵 Normal Audio'), duration: Duration(seconds: 1)));
-                                }
-                              },
                             ),
                             // Removed redundant download icon from top app bar to fix layout overflow
 
-                            IconButton(
-                              icon: Container(
+                            BouncyIconButton(
+                              onPressed: () {
+                                SongOptionsSheet.show(context, currentSong);
+                              },
+                              child: Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   color: surfaceColor,
@@ -397,9 +400,6 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                 ),
                                 child: Icon(Icons.more_vert_rounded, color: context.themeTextColor, size: 24),
                               ),
-                              onPressed: () {
-                                SongOptionsSheet.show(context, currentSong);
-                              },
                             ),
                           ],
                         ),

@@ -91,11 +91,30 @@ class DrivingModeScreen extends ConsumerWidget {
                           ),
                           const Spacer(),
                           
-                          // Play/Pause Icon Indicator
-                          Icon(
-                            isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded,
-                            size: 120,
-                            color: context.themeAccentColor,
+                          // Controls
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.skip_previous_rounded),
+                                color: Colors.white,
+                                iconSize: 64,
+                                onPressed: () => ref.read(audioPlayerProvider.notifier).skipToPrevious(),
+                              ),
+                              const SizedBox(width: 16),
+                              Icon(
+                                isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded,
+                                size: 120,
+                                color: context.themeAccentColor,
+                              ),
+                              const SizedBox(width: 16),
+                              IconButton(
+                                icon: const Icon(Icons.skip_next_rounded),
+                                color: Colors.white,
+                                iconSize: 64,
+                                onPressed: () => ref.read(audioPlayerProvider.notifier).skipToNext(),
+                              ),
+                            ],
                           ),
                           
                           const SizedBox(height: 48),

@@ -8,6 +8,7 @@ import 'package:it_feels_music/features/settings/audio_settings_screen.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:it_feels_music/services/config_service.dart';
 import 'package:it_feels_music/features/admin/force_update_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:it_feels_music/features/ai/ai_settings_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -554,49 +555,65 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: "See if a new version is available",
                 icon: Icons.system_update_rounded,
                 onTap: () async {
-                  await showDialog(
+                  showDialog(
                     context: context,
                     barrierDismissible: false,
                     builder: (ctx) => const Center(child: CircularProgressIndicator()),
                   );
                   
-                  final config = await ConfigService.fetchRemoteConfig();
-                  if (context.mounted) Navigator.pop(context);
-                  
-                  if (config != null) {
-                    final requiresForce = await ConfigService.requiresForceUpdate(config);
-                    final hasSoft = await ConfigService.hasSoftUpdate(config);
-                    if ((requiresForce || hasSoft) && context.mounted) {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ForceUpdateScreen(
-                            latestVersion: config.latestVersion,
-                            updateUrl: config.updateUrl,
-                            releaseNotes: config.releaseNotes,
-                            iosUpdateUrl: config.iosUpdateUrl,
+                  try {
+                    final config = await ConfigService.fetchRemoteConfig();
+                    if (context.mounted) Navigator.pop(context);
+                    
+                    if (config != null) {
+                      final requiresForce = await ConfigService.requiresForceUpdate(config);
+                      final hasSoft = await ConfigService.hasSoftUpdate(config);
+                      if ((requiresForce || hasSoft) && context.mounted) {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ForceUpdateScreen(
+                              latestVersion: config.latestVersion,
+                              updateUrl: config.updateUrl,
+                              releaseNotes: config.releaseNotes,
+                              iosUpdateUrl: config.iosUpdateUrl,
+                              isSoftUpdate: hasSoft,
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      } else if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("You are on the latest version!")),
+                        );
+                      }
                     } else if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("You are on the latest version!")),
+                        const SnackBar(content: Text("Failed to check for updates. Check your connection.")),
                       );
                     }
-                  } else if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Failed to check for updates. Check your connection.")),
-                    );
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Error checking for updates.")),
+                      );
+                    }
                   }
                 },
               ),
 
-              _buildActionTile(
-                context: context,
-                title: "It Feels Music",
-                subtitle: "Version 2.1.2 • Developer: FaiXal",
-                icon: Icons.info_outline_rounded,
-                onTap: () {},
+              FutureBuilder<PackageInfo>(
+                future: PackageInfo.fromPlatform(),
+                builder: (context, snapshot) {
+                  final version = snapshot.data?.version ?? '...';
+                  return _buildActionTile(
+                    context: context,
+                    title: "It Feels Music",
+                    subtitle: "Version $version • Developer: FaiXal",
+                    icon: Icons.info_outline_rounded,
+                    onTap: () {},
+                  );
+                },
               ),
             ],
           ),

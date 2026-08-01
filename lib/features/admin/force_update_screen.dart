@@ -12,6 +12,7 @@ class ForceUpdateScreen extends StatefulWidget {
   final String updateUrl;
   final String? releaseNotes;
   final String? iosUpdateUrl;
+  final bool isSoftUpdate;
 
   const ForceUpdateScreen({
     super.key,
@@ -19,6 +20,7 @@ class ForceUpdateScreen extends StatefulWidget {
     required this.updateUrl,
     this.releaseNotes,
     this.iosUpdateUrl,
+    this.isSoftUpdate = false,
   });
 
   @override
@@ -261,6 +263,17 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                     style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
+                
+              if (widget.isSoftUpdate && !_isDownloading) ...[
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    "Remind Me Later",
+                    style: GoogleFonts.inter(fontSize: 16, color: Colors.white70, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

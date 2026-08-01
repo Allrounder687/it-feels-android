@@ -282,6 +282,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Timer? _audioSyncHapticTimer;
   StreamSubscription<DatabaseEvent>? _roomSubscription;
   int _lastSyncedSecond = -1;
+  bool _hasShownEmailVerification = false;
 
   AudioPlayerNotifier([AudioPlayerHandler? handler, MusicApiService? api]) {
     if (handler != null) audioHandler = handler;
@@ -351,6 +352,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
           currentIndex: savedIndex,
           currentSong: current,
           position: Duration(seconds: savedPosition),
+          duration: Duration(seconds: current.duration),
         );
 
         final mediaItems = savedQueue.map<MediaItem>((s) => MediaItem(
@@ -715,7 +717,8 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     );
     
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.email != null && !user.emailVerified) {
+    if (user != null && user.email != null && !user.emailVerified && !_hasShownEmailVerification) {
+      _hasShownEmailVerification = true;
       rootScaffoldMessengerKey.currentState?.clearSnackBars();
       rootScaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(
