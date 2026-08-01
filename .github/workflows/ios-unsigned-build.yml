@@ -143,8 +143,10 @@ jobs:
           echo "CODE_SIGNING_REQUIRED=NO" >> ios/Flutter/Release.xcconfig
           echo "CODE_SIGN_IDENTITY=" >> ios/Flutter/Release.xcconfig
           echo "EXPANDED_CODE_SIGN_IDENTITY=" >> ios/Flutter/Release.xcconfig
+          echo "IPHONEOS_DEPLOYMENT_TARGET=15.0" >> ios/Flutter/Release.xcconfig
 
           # 2. Install CocoaPods dependencies
+          flutter build ios --config-only
           cd ios
           pod install
           cd ..
