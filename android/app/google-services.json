@@ -23,6 +23,14 @@
           }
         },
         {
+          "client_id": "871513419979-sra2k37lnrb73nvsjki4npoklhnh1uid.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.itfeels.music",
+            "certificate_hash": "8645ace8ee19228016c4759fa9e77d69059744c7"
+          }
+        },
+        {
           "client_id": "871513419979-dvkqt7sue206nbhl02igldnpl51cffig.apps.googleusercontent.com",
           "client_type": 3
         }
