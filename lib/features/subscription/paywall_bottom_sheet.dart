@@ -51,10 +51,12 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
     // Launch Razorpay Checkout
     final success = await subProvider.purchaseUpi(amount, days);
     
-    if (success && context.mounted) {
+    if (!context.mounted) return;
+
+    if (success) {
       Navigator.pop(context); // close paywall sheet
-      PremiumCelebrationDialog.show(this.context, isFamilyCoupon: false);
-    } else if (context.mounted && !subProvider.isPremium) {
+      PremiumCelebrationDialog.show(context, isFamilyCoupon: false);
+    } else if (!subProvider.isPremium) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment failed or cancelled.')));
     }
   }

@@ -18,28 +18,24 @@ class CastDiscoveryService {
     final results = <CastDevice>[];
 
     final discovery = BonsoirDiscovery(type: _domain);
-    await discovery.ready;
 
     discovery.eventStream!.listen((event) {
       if (event is BonsoirDiscoveryServiceFoundEvent) {
         event.service.resolve(discovery.serviceResolver);
       } else if (event is BonsoirDiscoveryServiceResolvedEvent) {
-        if (event.service.attributes == null) {
-          return;
-        }
-
         final port = event.service.port;
-        final host = event.service.toJson()['service.ip'] ?? event.service.toJson()['service.host'];
+        final host = event.service.hostAddress ?? event.service.hostname;
 
         String name = [
-          event.service.attributes?['md'],
-          event.service.attributes?['fn'],
+          event.service.attributes['md'],
+          event.service.attributes['fn'],
         ].whereType<String>().join(' - ');
+        
         if (name.isEmpty) {
           name = event.service.name;
         }
 
-        if (port == null || host == null) {
+        if (host == null) {
           return;
         }
 
@@ -49,7 +45,7 @@ class CastDiscoveryService {
             name: name,
             port: port,
             host: host,
-            extras: event.service.attributes ?? {},
+            extras: event.service.attributes,
           ),
         );
       }

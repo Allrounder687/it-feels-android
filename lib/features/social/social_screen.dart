@@ -267,7 +267,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                 onPressed: () {
                                   _socialService.markAsRead(docId);
                                   ref.read(customPlaylistProvider.notifier).createPlaylistWithSongs(playlist!.title, playlist.songs);
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Playlist saved to Library!")));
+                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Playlist saved to Library!")));
                                 },
                               )
                             : IconButton(

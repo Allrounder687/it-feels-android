@@ -5,6 +5,11 @@
 
 All notable changes to **IT Feels Music** will be documented in this file.
 
+## [3.5.2] - 2026-08-01
+
+### Fixed
+- **App Crash & UI Fixes**: Fixed CI/CD compilation errors by refactoring `cast` library to natively support `bonsoir` 7.x event classes. Removed all linting errors related to async BuildContexts and null-aware elements, ensuring OTA update is finally distributed to users so the "Send to Friend" feature becomes visible.
+
 ## [3.5.1] - CI Pipeline Hotfix
 
 ### Fixed

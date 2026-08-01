@@ -23,8 +23,8 @@ class BackendApiService {
     if (!useProxyBackend) return [];
     try {
       final uri = Uri.parse('$baseUrl/api/v1/recommendations').replace(queryParameters: {
-        if (songId != null) 'songId': songId,
-        if (artist != null) 'artist': artist,
+        'songId': ?songId,
+        'artist': ?artist,
       });
 
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
@@ -213,7 +213,7 @@ class BackendApiService {
       final uri = Uri.parse('$baseUrl/api/v1/lyrics').replace(queryParameters: {
         'track': track,
         'artist': artist,
-        if (album != null) 'album': album,
+        'album': ?album,
         if (duration != null && duration > 0) 'duration': duration.toString(),
       });
 

@@ -307,7 +307,7 @@ class SocialService {
         'song_title': song.title,
         'artist': song.artist,
         'timestamp': ServerValue.timestamp,
-        if (roomId != null) 'room_id': roomId,
+        'room_id': ?roomId,
       });
       presenceRef.onDisconnect().remove();
     } else {
