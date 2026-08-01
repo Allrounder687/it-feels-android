@@ -268,6 +268,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent));
         }
+        if (snapshot.hasError) {
+          return Center(child: Text("Failed to load inbox.", style: GoogleFonts.inter(color: context.themeMutedTextColor)));
+        }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(
             child: Text("Your inbox is empty 📭\nTell your friends to send you music!", 
@@ -282,6 +285,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
           padding: const EdgeInsets.all(16),
           itemCount: items.length,
           itemBuilder: (context, index) {
+            try {
             return Consumer(
               builder: (context, ref, child) {
                 final item = items[index];
@@ -444,6 +448,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                 );
               },
             );
+            } catch (e) {
+              return const SizedBox.shrink();
+            }
           },
         );
       },
@@ -473,12 +480,24 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
           return const SizedBox.shrink();
         }
         
-        final roomsMap = Map<String, dynamic>.from(snapshot.data!.snapshot.value as Map);
-        if (roomsMap.isEmpty) return const SizedBox.shrink();
+        try {
+          final value = snapshot.data!.snapshot.value;
+          Map<String, dynamic> roomsMap = {};
+          if (value is Map) {
+            roomsMap = Map<String, dynamic>.from(value);
+          } else if (value is List) {
+            for (int i = 0; i < value.length; i++) {
+              if (value[i] != null) {
+                roomsMap[i.toString()] = value[i];
+              }
+            }
+          }
+          
+          if (roomsMap.isEmpty) return const SizedBox.shrink();
 
-        final rooms = roomsMap.entries.map((e) => {'id': e.key, ...Map<String, dynamic>.from(e.value as Map)}).toList();
-        
-        return Column(
+          final rooms = roomsMap.entries.map((e) => {'id': e.key, ...Map<String, dynamic>.from(e.value as Map)}).toList();
+          
+          return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
@@ -620,60 +639,55 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                         ),
                       ),
                     ],
-                  ),
                 ),
               );
             }
           ),
         ),
-        _buildActiveRoomsCarousel(),
         Expanded(
-          child: StreamBuilder<DocumentSnapshot>(
+          child: StreamBuilder<List<Map<String, dynamic>>>(
             stream: _socialService.getFriendsStream(),
             builder: (context, snapshot) {
-              if (!snapshot.hasData || !snapshot.data!.exists) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-              
-              final data = snapshot.data!.data() as Map<String, dynamic>?;
-              final friends = List<String>.from(data?['friends'] ?? []);
-
-              if (friends.isEmpty) {
+              if (snapshot.hasError) {
+                return Center(child: Text("Failed to load friends.", style: GoogleFonts.inter(color: context.themeMutedTextColor)));
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
                 return Center(
-                  child: Text("You have no friends yet 🥲\nShare your UID to connect!", 
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(color: context.themeMutedTextColor),
+                  child: Text("You haven't added any friends yet.\nUse the button above to add some!", 
+                    textAlign: TextAlign.center, 
+                    style: GoogleFonts.inter(color: context.themeMutedTextColor)
                   ),
                 );
               }
 
+              final friends = snapshot.data!;
               return ListView.builder(
+                padding: const EdgeInsets.all(16),
                 itemCount: friends.length,
                 itemBuilder: (context, index) {
-                  final friendUid = friends[index];
-                  return FutureBuilder<Map<String, dynamic>?>(
-                    future: _socialService.getFriendDetails(friendUid),
-                    builder: (context, friendSnap) {
-                      final firestoreData = (snapshot.data!.data() as Map<String, dynamic>?) ?? {};
-                      final friendNames = Map<String, String>.from(firestoreData['friend_names'] ?? {});
-                      final nickname = friendNames[friendUid];
-                      
-                      final realName = friendSnap.data?['name'] ?? 'Friend';
-                      final displayName = nickname ?? realName;
-                      final username = friendSnap.data?['username'] ?? '';
-                      return ListTile(
-                        onTap: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => FriendProfileScreen(friendUid: friendUid, friendName: displayName)));
-                        },
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.midnightAccent,
-                          child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                        ),
-                        title: Text(displayName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
-                        subtitle: StreamBuilder<DatabaseEvent>(
-                          stream: _socialService.getPresenceStream(friendUid),
-                          builder: (context, presenceSnap) {
-                            if (presenceSnap.hasData && presenceSnap.data!.snapshot.value != null) {
+                  try {
+                    final friend = friends[index];
+                    final friendUid = friend['uid'] as String;
+                    final displayName = friend['displayName'] as String? ?? 'Friend';
+                    final username = friend['username'] as String? ?? '';
+                    
+                    return ListTile(
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => FriendProfileScreen(friendUid: friendUid, friendName: displayName)));
+                      },
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.midnightAccent,
+                        child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                      ),
+                      title: Text(displayName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
+                      subtitle: StreamBuilder<DatabaseEvent>(
+                        stream: _socialService.getPresenceStream(friendUid),
+                        builder: (context, presenceSnap) {
+                          if (presenceSnap.hasData && presenceSnap.data!.snapshot.value != null) {
+                            try {
                               final presenceData = Map<String, dynamic>.from(presenceSnap.data!.snapshot.value as Map);
                               
                               if (presenceData['is_playing'] == true) {
@@ -715,71 +729,44 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                   ],
                                 );
                               }
-                            }
-                            return Text(nickname != null ? "($realName) • $username" : username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12));
-                          },
-                        ),
-                        trailing: PopupMenuButton<String>(
-                          icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
-                          onSelected: (val) {
-                            if (val == 'remove') {
-                              showDialog(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  backgroundColor: context.themeSurfaceColor,
-                                  title: Text("Remove Friend", style: TextStyle(color: context.themeTextColor)),
-                                  content: Text("Are you sure you want to remove $displayName?", style: TextStyle(color: context.themeMutedTextColor)),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                                      onPressed: () {
-                                        _socialService.removeFriend(friendUid);
-                                        Navigator.pop(ctx);
-                                      },
-                                      child: const Text("Remove", style: TextStyle(color: Colors.white)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            } else if (val == 'rename') {
-                              final tc = TextEditingController(text: nickname ?? realName);
-                              showDialog(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  backgroundColor: context.themeSurfaceColor,
-                                  title: Text("Set Nickname", style: TextStyle(color: context.themeTextColor)),
-                                  content: TextField(
-                                    controller: tc,
-                                    style: TextStyle(color: context.themeTextColor),
-                                    decoration: InputDecoration(
-                                      hintText: "Nickname",
-                                      hintStyle: TextStyle(color: context.themeMutedTextColor),
-                                    ),
+                            } catch (_) {}
+                          }
+                          return Text(username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12));
+                        },
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
+                        onSelected: (val) {
+                          if (val == 'remove') {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: context.themeSurfaceColor,
+                                title: Text("Remove Friend", style: TextStyle(color: context.themeTextColor)),
+                                content: Text("Are you sure you want to remove $displayName?", style: TextStyle(color: context.themeMutedTextColor)),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                    onPressed: () {
+                                      _socialService.removeFriend(friendUid);
+                                      Navigator.pop(ctx);
+                                    },
+                                    child: const Text("Remove", style: TextStyle(color: Colors.white)),
                                   ),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.midnightPrimary),
-                                      onPressed: () {
-                                        _socialService.setFriendNickname(friendUid, tc.text.trim());
-                                        Navigator.pop(ctx);
-                                      },
-                                      child: const Text("Save", style: TextStyle(color: Colors.white)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(value: 'rename', child: Text("Set Nickname")),
-                            const PopupMenuItem(value: 'remove', child: Text("Remove Friend", style: TextStyle(color: Colors.redAccent))),
-                          ],
-                        ),
-                      );
-                    },
-                  );
+                                ],
+                              ),
+                            );
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(value: 'remove', child: Text("Remove Friend", style: TextStyle(color: Colors.redAccent))),
+                        ],
+                      ),
+                    );
+                  } catch (e) {
+                    return const SizedBox.shrink();
+                  }
                 },
               );
             },
