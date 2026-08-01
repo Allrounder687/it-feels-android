@@ -25,6 +25,7 @@ import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_musi
 import 'package:it_feels_music/features/cast/cast_bottom_sheet.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/features/player/canvas_service.dart';
 
 class NowPlayingScreen extends ConsumerStatefulWidget {
   const NowPlayingScreen({super.key});
@@ -355,9 +356,30 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
             ? queue[currentIndex + 1]
             : null;
 
+        final canvasController = ref.watch(canvasControllerProvider);
+
         return Scaffold(
-          backgroundColor: bgColor,
-          body: SafeArea(
+          backgroundColor: canvasController != null ? Colors.black : bgColor,
+          body: Stack(
+            children: [
+              if (canvasController != null && canvasController.value.isInitialized && !_isVideoMode)
+                Positioned.fill(
+                  child: FittedBox(
+                    fit: BoxFit.cover,
+                    child: SizedBox(
+                      width: canvasController.value.size.width,
+                      height: canvasController.value.size.height,
+                      child: VideoPlayer(canvasController),
+                    ),
+                  ),
+                ),
+              if (canvasController != null && canvasController.value.isInitialized && !_isVideoMode)
+                Positioned.fill(
+                  child: Container(
+                    color: bgColor.withValues(alpha: 0.7),
+                  ),
+                ),
+              SafeArea(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onVerticalDragEnd: (details) {
@@ -1428,6 +1450,8 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
               ),
           ],
         ),
+      ),
+      ],
       ),
     );
   }
