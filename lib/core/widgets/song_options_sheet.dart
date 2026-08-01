@@ -155,7 +155,6 @@ class SongOptionsSheet extends ConsumerWidget {
             },
           ),
           
-          /*
           // Action: Send to Friend
           _buildOptionTile(context,
             icon: Icons.send_rounded,
@@ -163,10 +162,9 @@ class SongOptionsSheet extends ConsumerWidget {
             title: "Send to Friend",
             onTap: () {
               Navigator.pop(context);
-              // _showSendToFriendDialog(context);
+              _showSendToFriendDialog(context);
             },
           ),
-          */
 
           // Action 3: Add to Queue
           _buildOptionTile(context, 
