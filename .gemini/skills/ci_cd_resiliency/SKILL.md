@@ -28,6 +28,12 @@ In the `ios-unsigned-build.yml` workflow under the "Install dependencies" step:
           find "$FLUTTER_ROOT" -type f -name "*.dart" -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
           find "$FLUTTER_ROOT" -type f -name "*.dart" -exec sed -i '' "s/'13\.0'/'15\.0'/g" {} + || true
           find "$FLUTTER_ROOT" -type f -name "*.tmpl" -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
+
+          # Patch Shorebird's vendored Flutter SDK (Crucial for `shorebird release ios`)
+          echo "Patching Shorebird vendored Flutter SDK SPM minimum iOS deployment target to 15.0..."
+          find "$HOME/.shorebird" -type f -name "*.dart" -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
+          find "$HOME/.shorebird" -type f -name "*.dart" -exec sed -i '' "s/'13\.0'/'15\.0'/g" {} + || true
+          find "$HOME/.shorebird" -type f -name "*.tmpl" -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
           
           flutter clean
           flutter pub get
