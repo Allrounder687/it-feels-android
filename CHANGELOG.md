@@ -1,5 +1,6 @@
 ## v3.5.8+40
 - **Now Playing Player UI/UX Modernization**: Redesigned the music player screen (NowPlayingScreen) with 3-zone clean top bar (consolidated overflow menu), inlined quality badge, frosted glass action pills (with added native Share capability), adaptive semi-transparent control capsule with glowing Play/Pause aura, and Up Next queue peek card.
+- **Release**: Added iOS and Android release for version 3.5.8.
 
 ## v3.5.7+39
 - fix: add fallback for Shorebird release step in CI/CD workflows and bump build version to 3.5.7+39
