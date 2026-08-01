@@ -1,3 +1,6 @@
+## v3.5.11 
+- 2 
+ 
 ## v3.5.11+43
 - **Bug Fixes**: Fixed a critical crash in the Social Tab where the entire screen would turn blank (ErrorWidget) if Firebase returned a List instead of a Map, or if a user profile was missing fields.
 
