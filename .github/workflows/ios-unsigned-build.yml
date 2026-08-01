@@ -147,6 +147,9 @@ jobs:
           pod install
           cd ..
           
+          # BACKUP: Standard Flutter build (in case Shorebird causes issues)
+          # flutter build ios --release --no-codesign
+          
           # 3. Build Release iOS app without code signing using Shorebird
           shorebird release ios --no-codesign
         env:
