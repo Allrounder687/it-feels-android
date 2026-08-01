@@ -6,6 +6,9 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/widgets/animated_play_pause_button.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:it_feels_music/features/cast/cast_service.dart';
+import 'package:it_feels_music/features/cast/cast_bottom_sheet.dart';
 
 class MiniPlayer extends ConsumerWidget {
   final VoidCallback onTap;
@@ -143,19 +146,19 @@ class MiniPlayer extends ConsumerWidget {
                             ),
 
                             // Cast Action Button
-                            IconButton(
-                              icon: Icon(
-                                Icons.cast_rounded,
-                                color: context.themeMutedTextColor,
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      "Searching for Cast devices...",
-                                    ),
+                            Builder(
+                              builder: (context) {
+                                final isCasting = locator<CastService>().isConnected;
+                                return IconButton(
+                                  icon: Icon(
+                                    isCasting ? Icons.cast_connected_rounded : Icons.cast_rounded,
+                                    color: isCasting ? playerProvider.themeAccentColor : context.themeMutedTextColor,
+                                    size: 20,
                                   ),
+                                  onPressed: () {
+                                    CastBottomSheet.show(context);
+                                  },
+                                  tooltip: 'Cast Audio',
                                 );
                               },
                             ),

@@ -64,8 +64,8 @@ class SubscriptionService {
     try {
       final prefs = await SharedPreferences.getInstance();
       
-      // Check local cache first for FAMILY pass to prevent network flakes from downgrading
-      if (prefs.getBool('isPremiumFamily_${uid}') == true) {
+      // Global device level premium flag so app updates / guest resets don't revoke premium
+      if (prefs.getBool('isPremiumDevice') == true || prefs.getBool('isPremiumFamily_${uid}') == true) {
         return true;
       }
 
@@ -73,6 +73,7 @@ class SubscriptionService {
       final userDoc = await _firestore.collection('users').doc(uid).get();
       if (userDoc.exists && userDoc.data()?['isPremiumFamily'] == true) {
         await prefs.setBool('isPremiumFamily_${uid}', true);
+        await prefs.setBool('isPremiumDevice', true);
         return true;
       }
 
@@ -82,6 +83,7 @@ class SubscriptionService {
         if (data != null && data['isActive'] == true) {
            final expiry = data['expiresAt'] as Timestamp?;
            if (expiry == null || expiry.toDate().isAfter(DateTime.now())) {
+             await prefs.setBool('isPremiumDevice', true);
              return true;
            }
         }
@@ -90,7 +92,7 @@ class SubscriptionService {
       debugPrint("Firestore Entitlement Error: $e");
       // Fallback to local cache in case of offline/error
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool('isPremiumFamily_${uid}') == true) {
+      if (prefs.getBool('isPremiumDevice') == true || prefs.getBool('isPremiumFamily_${uid}') == true) {
         return true;
       }
     }
@@ -113,7 +115,12 @@ class SubscriptionService {
   Future<bool> purchasePackage(Package package) async {
     try {
       final result = await Purchases.purchasePackage(package);
-      return result.customerInfo.entitlements.all[entitlementId]?.isActive == true;
+      final active = result.customerInfo.entitlements.all[entitlementId]?.isActive == true;
+      if (active) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isPremiumDevice', true);
+      }
+      return active;
     } catch (e) {
       debugPrint("Purchase Error: $e");
       return false;
@@ -123,7 +130,12 @@ class SubscriptionService {
   Future<bool> restorePurchases() async {
     try {
       final customerInfo = await Purchases.restorePurchases();
-      return customerInfo.entitlements.all[entitlementId]?.isActive == true;
+      final active = customerInfo.entitlements.all[entitlementId]?.isActive == true;
+      if (active) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('isPremiumDevice', true);
+      }
+      return active;
     } catch (e) {
       debugPrint("Restore Error: $e");
       return false;
@@ -138,6 +150,7 @@ class SubscriptionService {
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isPremiumFamily_${uid}', true);
+        await prefs.setBool('isPremiumDevice', true);
 
         await _firestore.collection('users').doc(uid).set({
           'isPremiumFamily': true,

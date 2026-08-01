@@ -284,20 +284,119 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
           ),
         ),
         const SizedBox(height: 16),
-        ElevatedButton(
-          onPressed: () {
-            ref.read(audioPlayerProvider.notifier).leaveSession();
-            Navigator.pop(context);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
-            foregroundColor: Colors.redAccent,
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          child: const Text("Stop Broadcasting"),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton.icon(
+              icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
+              label: const Text("Invite Friends 👥"),
+              onPressed: () => _showInviteFriendsDialog(context, roomId),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.amberAccent,
+                foregroundColor: Colors.black,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            ElevatedButton(
+              onPressed: () {
+                ref.read(audioPlayerProvider.notifier).leaveSession();
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent.withValues(alpha: 0.2),
+                foregroundColor: Colors.redAccent,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text("Stop"),
+            ),
+          ],
         )
       ],
+    );
+  }
+
+  void _showInviteFriendsDialog(BuildContext context, String roomId) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final socialService = locator<SocialService>();
+        final user = FirebaseAuth.instance.currentUser;
+        final myName = user?.displayName ?? user?.email?.split('@')[0] ?? 'Host';
+
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: Text("Invite Friends to Room", style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 300,
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: socialService.getFriendsStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data?.data() == null) {
+                  return Center(child: Text("No friends found. Add friends first!", style: GoogleFonts.inter(color: Colors.white70)));
+                }
+
+                final data = snapshot.data!.data() as Map<String, dynamic>;
+                final friends = List<String>.from(data['friends'] ?? []);
+
+                if (friends.isEmpty) {
+                  return Center(child: Text("No friends found. Add friends first!", style: GoogleFonts.inter(color: Colors.white70)));
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: friends.length,
+                  itemBuilder: (context, index) {
+                    final friendUid = friends[index];
+                    return FutureBuilder<Map<String, dynamic>?>(
+                      future: socialService.getFriendDetails(friendUid),
+                      builder: (context, friendSnapshot) {
+                        if (!friendSnapshot.hasData) return const SizedBox.shrink();
+                        final friendData = friendSnapshot.data!;
+                        final friendName = friendData['name'] ?? friendData['username'] ?? 'Friend';
+
+                        return ListTile(
+                          title: Text(friendName, style: GoogleFonts.inter(color: Colors.white)),
+                          subtitle: Text(friendData['username'] ?? '', style: GoogleFonts.inter(color: Colors.white54, fontSize: 12)),
+                          trailing: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amberAccent,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            child: const Text("Invite", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            onPressed: () {
+                              socialService.sendRoomInvite(friendUid, roomId, myName);
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Invitation sent to $friendName! 🚀")),
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancel", style: TextStyle(color: Colors.white70)),
+            ),
+          ],
+        );
+      },
     );
   }
 

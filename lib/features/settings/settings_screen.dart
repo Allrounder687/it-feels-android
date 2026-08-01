@@ -555,15 +555,22 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: "See if a new version is available",
                 icon: Icons.system_update_rounded,
                 onTap: () async {
+                  BuildContext? dialogCtx;
                   showDialog(
                     context: context,
                     barrierDismissible: false,
-                    builder: (ctx) => const Center(child: CircularProgressIndicator()),
+                    builder: (ctx) {
+                      dialogCtx = ctx;
+                      return const Center(child: CircularProgressIndicator());
+                    },
                   );
                   
                   try {
                     final config = await ConfigService.fetchRemoteConfig();
-                    if (context.mounted) Navigator.pop(context);
+                    if (dialogCtx != null && dialogCtx!.mounted) {
+                      Navigator.of(dialogCtx!).pop();
+                      dialogCtx = null;
+                    }
                     
                     if (config != null) {
                       final requiresForce = await ConfigService.requiresForceUpdate(config);
@@ -592,8 +599,11 @@ class SettingsScreen extends ConsumerWidget {
                       );
                     }
                   } catch (e) {
+                    if (dialogCtx != null && dialogCtx!.mounted) {
+                      Navigator.of(dialogCtx!).pop();
+                      dialogCtx = null;
+                    }
                     if (context.mounted) {
-                      Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("Error checking for updates.")),
                       );

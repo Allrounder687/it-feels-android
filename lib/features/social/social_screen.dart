@@ -16,6 +16,7 @@ import 'package:it_feels_music/data/models/custom_playlist.dart';
 import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/features/auth/auth_bottom_sheet.dart';
 class SocialScreen extends ConsumerStatefulWidget {
   const SocialScreen({super.key});
 
@@ -41,6 +42,14 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
   }
 
   void _showAddFriendDialog() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.isAnonymous) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please log in to an account to add friends.")),
+      );
+      AuthBottomSheet.show(context);
+      return;
+    }
     final TextEditingController uidController = TextEditingController();
     showDialog(
       context: context,
@@ -215,14 +224,21 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                 final item = items[index];
                 final data = item.data() as Map<String, dynamic>;
                 final docId = item.id;
-                final isPlaylist = data['type'] == 'playlist';
+                final msgType = data['type'] as String? ?? 'song';
+                final isPlaylist = msgType == 'playlist';
+                final isRoomInvite = msgType == 'room_invite';
+                final isReaction = msgType == 'reaction';
+
                 Song? song;
                 CustomPlaylist? playlist;
+                Map<String, dynamic> payload = data['payload'] is Map ? Map<String, dynamic>.from(data['payload']) : {};
+                
                 if (isPlaylist) {
-                  playlist = CustomPlaylist.fromJson(data['payload'] as Map<String, dynamic>);
-                } else {
-                  song = Song.fromJson(data['payload'] as Map<String, dynamic>);
+                  playlist = CustomPlaylist.fromJson(payload);
+                } else if (msgType == 'song') {
+                  song = Song.fromJson(payload);
                 }
+
                 final senderName = data['senderName'] ?? 'Someone';
                 final reactions = Map<String, String>.from(data['reactions'] ?? {});
                 final isRead = data['isRead'] as bool? ?? true;
@@ -257,10 +273,38 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                     width: 56, height: 56, color: AppColors.midnightPrimary.withValues(alpha: 0.2),
                                     child: const Icon(Icons.queue_music_rounded, color: AppColors.midnightPrimary, size: 32),
                                   )
-                                : CustomImageWidget(imageUrl: song!.coverArt, width: 56, height: 56),
+                                : isRoomInvite
+                                    ? Container(
+                                        width: 56, height: 56, color: Colors.amber.withValues(alpha: 0.2),
+                                        child: const Icon(Icons.groups_rounded, color: Colors.amber, size: 32),
+                                      )
+                                    : isReaction
+                                        ? Container(
+                                            width: 56, height: 56, color: Colors.pinkAccent.withValues(alpha: 0.2),
+                                            child: Center(child: Text(payload['emoji'] ?? '❤️', style: const TextStyle(fontSize: 28))),
+                                          )
+                                        : CustomImageWidget(imageUrl: song?.coverArt ?? '', width: 56, height: 56),
                           ),
-                          title: Text(isPlaylist ? playlist!.title : song!.title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
-                          subtitle: Text("Sent by $senderName${isPlaylist ? ' • ${playlist!.songs.length} songs' : ''}", style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
+                          title: Text(
+                            isPlaylist
+                                ? playlist!.title
+                                : isRoomInvite
+                                    ? "Listen Together Room 🎧"
+                                    : isReaction
+                                        ? "$senderName reacted ${payload['emoji'] ?? ''}"
+                                        : (song?.title ?? 'Music Track'),
+                            style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor),
+                          ),
+                          subtitle: Text(
+                            isPlaylist
+                                ? "Sent by $senderName • ${playlist!.songs.length} songs"
+                                : isRoomInvite
+                                    ? "Invited by $senderName"
+                                    : isReaction
+                                        ? "on ${payload['targetTitle'] ?? 'Track'}"
+                                        : "Sent by $senderName",
+                            style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                          ),
                           trailing: isPlaylist 
                             ? IconButton(
                                 icon: const Icon(Icons.download_rounded, color: AppColors.midnightAccent, size: 36),
@@ -270,13 +314,34 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Playlist saved to Library!")));
                                 },
                               )
-                            : IconButton(
-                                icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.midnightAccent, size: 42),
-                                onPressed: () {
-                                  _socialService.markAsRead(docId);
-                                  ref.read(audioPlayerProvider.notifier).playSong(song!);
-                                },
-                              ),
+                            : isRoomInvite
+                                ? ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.midnightAccent,
+                                      foregroundColor: Colors.black,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                    onPressed: () {
+                                      _socialService.markAsRead(docId);
+                                      final roomId = payload['roomId'] as String?;
+                                      final host = payload['hostName'] as String? ?? senderName;
+                                      if (roomId != null && roomId.isNotEmpty) {
+                                        _handleJoinRoom(roomId, host);
+                                      }
+                                    },
+                                    child: const Text("Join Room", style: TextStyle(fontWeight: FontWeight.bold)),
+                                  )
+                                : isReaction
+                                    ? const SizedBox.shrink()
+                                    : IconButton(
+                                        icon: const Icon(Icons.play_circle_fill_rounded, color: AppColors.midnightAccent, size: 42),
+                                        onPressed: () {
+                                          _socialService.markAsRead(docId);
+                                          if (song != null) {
+                                            ref.read(audioPlayerProvider.notifier).playSong(song);
+                                          }
+                                        },
+                                      ),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

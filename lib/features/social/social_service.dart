@@ -196,6 +196,37 @@ class SocialService {
     }
   }
 
+  // Send a room invite to a friend's inbox
+  Future<void> sendRoomInvite(String friendUid, String roomId, String hostName) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    
+    try {
+      final docRef = _firestore.collection('users').doc(friendUid).collection('inbox').doc();
+      await docRef.set({
+        'senderId': user.uid,
+        'senderName': hostName,
+        'type': 'room_invite',
+        'payload': {
+          'roomId': roomId,
+          'hostName': hostName,
+        },
+        'timestamp': FieldValue.serverTimestamp(),
+        'reactions': {},
+        'isRead': false,
+      });
+
+      final notifService = locator<NotificationService>();
+      await notifService.notifyFriendsOfRoom(
+        [friendUid], 
+        hostName, 
+        roomId 
+      );
+    } catch (e) {
+      debugPrint("Error sending room invite: $e");
+    }
+  }
+
   // Listen to inbox
   Stream<QuerySnapshot> getInboxStream() {
     final user = _auth.currentUser;

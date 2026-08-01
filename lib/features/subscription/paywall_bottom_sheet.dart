@@ -7,6 +7,8 @@ import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:it_feels_music/features/subscription/premium_celebration_dialog.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:it_feels_music/features/auth/auth_bottom_sheet.dart';
 
 class PaywallBottomSheet extends ConsumerStatefulWidget {
   final String featureName;
@@ -64,6 +66,15 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
   Future<void> _redeem(BuildContext context) async {
     if (_couponController.text.trim().isEmpty) return;
     
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.isAnonymous) {
+      setState(() {
+        _errorMessage = 'Please sign in to an account to redeem coupon codes.';
+      });
+      AuthBottomSheet.show(context);
+      return;
+    }
+
     setState(() {
       _errorMessage = null;
     });

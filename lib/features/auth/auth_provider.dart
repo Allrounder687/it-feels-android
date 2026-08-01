@@ -152,10 +152,15 @@ class AuthNotifier extends Notifier<AuthState> {
         viewState: AuthViewState.login,
         errorMessage: 'Password reset link sent to $email.',
       );
+    } on FirebaseAuthException catch (e) {
+      state = state.copyWith(
+        viewState: AuthViewState.forgotPassword,
+        errorMessage: e.message ?? 'Failed to send reset link (${e.code}).',
+      );
     } catch (e) {
       state = state.copyWith(
         viewState: AuthViewState.forgotPassword,
-        errorMessage: 'Failed to send reset link. Try again.',
+        errorMessage: 'Failed to send reset link: ${e.toString().replaceAll('Exception: ', '')}',
       );
     }
   }
@@ -172,14 +177,20 @@ class AuthNotifier extends Notifier<AuthState> {
       }
       return true;
     } on FirebaseAuthException catch (e) {
+      debugPrint("FirebaseAuthException in Google Sign-In: ${e.code} - ${e.message}");
       state = state.copyWith(
-        errorMessage: e.message ?? 'Google Sign-In failed',
+        errorMessage: e.message ?? 'Google Sign-In failed (${e.code})',
         viewState: previousState,
       );
       return false;
     } catch (e) {
+      debugPrint("Google Sign In Exception: $e");
+      final rawMsg = e.toString().replaceAll('Exception: ', '');
+      final cleanMsg = rawMsg.contains('PlatformException')
+          ? 'Google Sign-In canceled or Play Services unconfigured.'
+          : rawMsg;
       state = state.copyWith(
-        errorMessage: 'An unexpected error occurred',
+        errorMessage: cleanMsg.isNotEmpty ? cleanMsg : 'Google Sign-In error.',
         viewState: previousState,
       );
       return false;
