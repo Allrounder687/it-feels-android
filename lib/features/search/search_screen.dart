@@ -1,6 +1,7 @@
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -121,13 +122,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           margin: const EdgeInsets.only(right: 8),
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isSelected ? context.themeAccentColor : context.themeUnselectedPillColor,
+                            color: isSelected ? context.themeTextColor : AppColors.midnightPill,
                             borderRadius: BorderRadius.circular(19),
                           ),
                           child: Text(
                             categories[index],
                             style: GoogleFonts.inter(
-                              color: isSelected ? context.themeInvertedTextColor : context.themeUnselectedPillTextColor,
+                              color: isSelected ? context.themeBackgroundColor : context.themeTextColor,
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
                             ),
@@ -146,31 +147,28 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 900),
                       child: searchProviderObj.isSearching
-                          ? const Center(
-                              child: CircularProgressIndicator(color: AppColors.midnightAccent),
-                            )
+                          ? const SkeletonLoadingList()
                           : _searchController.text.isEmpty
-                          ? Center(
-                              child: Text(
-                                "Search for tracks, artists, albums, or playlists",
-                                style: GoogleFonts.inter(color: context.themeMutedTextColor),
-                              ),
-                            )
+                          ? _buildBrowseGrid(context, searchProviderObj.recentSearches)
                           : ListView(
                               padding: const EdgeInsets.symmetric(horizontal: 20),
                               children: [
                                 // Artists Direct Match Section
                                 if (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 2) ...[
-                                  Text(
-                                    "Artist Match",
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                      color: context.themeTextColor,
+                                  if (searchProviderObj.artists.isNotEmpty) _buildTopResultCard(context, searchProviderObj.artists.first),
+                                  const SizedBox(height: 16),
+
+                                  if (searchProviderObj.artists.length > 1) ...[
+                                    Text(
+                                      "Artists",
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: context.themeTextColor,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ...searchProviderObj.artists.map((artist) => Padding(
+                                    const SizedBox(height: 8),
+                                    ...searchProviderObj.artists.skip(1).map((artist) => Padding(
                                     padding: const EdgeInsets.only(bottom: 6),
                                     child: Material(
                                       color: context.themeCardColor.withValues(alpha: 0.5),
@@ -216,7 +214,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                       ),
                                     ),
                                   )),
-                                  const SizedBox(height: 16),
+                                    const SizedBox(height: 16),
+                                  ],
                                 ],
 
                                 // Songs Section
@@ -465,6 +464,342 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           letterSpacing: 0.4,
         ),
       ),
+    );
+  }
+
+  Widget _buildBrowseGrid(BuildContext context, List<String> recentSearches) {
+    final genres = [
+      {'title': 'Pop', 'color': const Color(0xFFFF4632)},
+      {'title': 'Hip-Hop', 'color': const Color(0xFFBA5D07)},
+      {'title': 'Mood', 'color': const Color(0xFF8D67AB)},
+      {'title': 'Podcasts', 'color': const Color(0xFF006450)},
+      {'title': 'Charts', 'color': const Color(0xFFE1118C)},
+      {'title': 'Dance/Electronic', 'color': const Color(0xFFD84000)},
+      {'title': 'Indie', 'color': const Color(0xFFE13300)},
+      {'title': 'Workout', 'color': const Color(0xFF777777)},
+      {'title': 'K-Pop', 'color': const Color(0xFF148A08)},
+      {'title': 'Sleep', 'color': const Color(0xFF1E3264)},
+    ];
+
+    return CustomScrollView(
+      slivers: [
+        if (recentSearches.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Recent Searches",
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: context.themeTextColor,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      ref.read(searchProvider.notifier).clearRecentSearches();
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      "Clear",
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: context.themeMutedTextColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 38,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: recentSearches.length,
+                itemBuilder: (context, index) {
+                  final term = recentSearches[index];
+                  return GestureDetector(
+                    onTap: () {
+                      _searchController.text = term;
+                      ref.read(searchProvider.notifier).search(term);
+                      FocusScope.of(context).unfocus();
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: context.themeCardColor.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(19),
+                        border: Border.all(color: context.themeTextColor24, width: 0.5),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.history, size: 14, color: context.themeMutedTextColor),
+                          const SizedBox(width: 6),
+                          Text(
+                            term,
+                            style: GoogleFonts.inter(
+                              color: context.themeTextColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+        ],
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 12),
+            child: Text(
+              "Browse Genres",
+              style: GoogleFonts.outfit(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: context.themeTextColor,
+              ),
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.6,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+        final genre = genres[index];
+        final color = genre['color'] as Color;
+        final title = genre['title'] as String;
+
+        // Pick an icon based on title
+        IconData genreIcon = Icons.music_note;
+        if (title == 'Pop') genreIcon = Icons.star_rounded;
+        if (title == 'Hip-Hop') genreIcon = Icons.mic_external_on_rounded;
+        if (title == 'Mood') genreIcon = Icons.nightlight_round;
+        if (title == 'Podcasts') genreIcon = Icons.podcasts_rounded;
+        if (title == 'Charts') genreIcon = Icons.trending_up_rounded;
+        if (title == 'Dance/Electronic') genreIcon = Icons.speaker_group_rounded;
+        if (title == 'Indie') genreIcon = Icons.coffee_rounded;
+        if (title == 'Workout') genreIcon = Icons.fitness_center_rounded;
+        if (title == 'K-Pop') genreIcon = Icons.favorite_rounded;
+        if (title == 'Sleep') genreIcon = Icons.bedtime_rounded;
+
+        return GestureDetector(
+          onTap: () {
+            _searchController.text = title;
+            ref.read(searchProvider.notifier).search(title);
+            // Hide keyboard if it was open
+            FocusScope.of(context).unfocus();
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(12),
+            clipBehavior: Clip.hardEdge,
+            child: Stack(
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Positioned(
+                  bottom: -15,
+                  right: -15,
+                  child: Transform.rotate(
+                    angle: 0.4,
+                    child: Icon(
+                      genreIcon,
+                      size: 70,
+                      color: Colors.black.withValues(alpha: 0.15),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      childCount: genres.length,
+    ),
+  ),
+),
+const SliverToBoxAdapter(child: SizedBox(height: 24)),
+      ],
+    );
+  }
+
+  Widget _buildTopResultCard(BuildContext context, Map<String, dynamic> artist) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ArtistDetailScreen(
+              artistName: artist['title'] ?? _searchController.text,
+              artistImage: artist['image'],
+              artistId: artist['id']?.toString(),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: context.themeCardColor.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.themeTextColor24, width: 0.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: context.themeAccentColor,
+              backgroundImage: artist['image']?.toString().isNotEmpty == true 
+                  ? CachedNetworkImageProvider(artist['image']) 
+                  : null,
+              child: artist['image']?.toString().isNotEmpty == true 
+                  ? null 
+                  : Icon(Icons.person, size: 40, color: context.themeInvertedTextColor),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              artist['title'] ?? _searchController.text,
+              style: GoogleFonts.outfit(
+                color: context.themeTextColor,
+                fontWeight: FontWeight.w800,
+                fontSize: 28,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: context.themeTextColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    "Artist",
+                    style: GoogleFonts.inter(
+                      color: context.themeBackgroundColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: const BoxDecoration(
+                    color: AppColors.midnightAccent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SkeletonLoadingList extends StatelessWidget {
+  const SkeletonLoadingList({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      itemCount: 8,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Shimmer.fromColors(
+            baseColor: context.themeCardColor.withValues(alpha: 0.5),
+            highlightColor: context.themeCardColor.withValues(alpha: 0.8),
+            child: Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: 150,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
