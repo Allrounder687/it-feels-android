@@ -39,17 +39,30 @@ jobs:
         run: |
           flutter config --enable-swift-package-manager
           
+          # Initialize Shorebird Flutter SDK so files exist
+          shorebird flutter --version
+          
           # Patch Flutter SDK SPM generator to force iOS 15.0 deployment target instead of hardcoded 13.0
           echo "Patching Flutter SDK SPM minimum iOS deployment target to 15.0..."
           find "$FLUTTER_ROOT" -type f -name "*.dart" -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
           find "$FLUTTER_ROOT" -type f -name "*.dart" -exec sed -i '' "s/'13\.0'/'15\.0'/g" {} + || true
           find "$FLUTTER_ROOT" -type f -name "*.tmpl" -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
+          # Force rebuild of flutter_tools
+          rm -f "$FLUTTER_ROOT/bin/cache/flutter_tools.stamp"
+          rm -f "$FLUTTER_ROOT/bin/cache/flutter_tools.snapshot"
 
-          # Patch Shorebird's vendored Flutter SDK
+          # Patch Shorebird's vendored Flutter SDK (Crucial for `shorebird release ios`)
           echo "Patching Shorebird vendored Flutter SDK SPM minimum iOS deployment target to 15.0..."
           find "$HOME/.shorebird" -type f -name "*.dart" -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
           find "$HOME/.shorebird" -type f -name "*.dart" -exec sed -i '' "s/'13\.0'/'15\.0'/g" {} + || true
           find "$HOME/.shorebird" -type f -name "*.tmpl" -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
+          # Force rebuild of Shorebird's flutter_tools
+          find "$HOME/.shorebird" -type f -name "flutter_tools.stamp" -exec rm -f {} + || true
+          find "$HOME/.shorebird" -type f -name "flutter_tools.snapshot" -exec rm -f {} + || true
+          
+          # Rebuild tools
+          flutter --version
+          shorebird flutter --version
           
           flutter clean
           flutter pub get
