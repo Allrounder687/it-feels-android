@@ -295,7 +295,7 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                           title: Text(displayName, style: GoogleFonts.inter(color: context.themeTextColor)),
                           subtitle: Text(friendData['username'] ?? '', style: GoogleFonts.inter(color: context.themeMutedTextColor)),
                           onTap: () {
-                            socialService.sendPlaylist(friendUid, playlist);
+                            socialService.sendPlaylist(friendUid, playlist.toJson());
                             Navigator.pop(ctx);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text("Sent to $displayName")),
