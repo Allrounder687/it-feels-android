@@ -7,6 +7,7 @@ This file tracks major technical decisions, features implemented, and architectu
   - **Isar Multi-Isolate & Hot Restart Safety**: Added 200ms fallback retry and isolate detection in `DatabaseService` to prevent `Collection id is invalid` crashes during background isolate startup or Flutter Hot Restart.
   - **Firebase Auth Error Guards**: Handled `admin-restricted-operation` and `too-many-requests` gracefully; bound app language via `FirebaseAuth.instance.setLanguageCode('en')`.
   - **Piped Stream Resolution Cleanup**: Pruned dead Piped API mirrors, lowered connection timeout to 2.5s, and silenced verbose failover logs.
+  - **iOS Swift Package Manager (SPM) Platform Version Fix**: Mitigated an issue where Flutter 3.24+ hardcodes SPM templates to iOS 13.0 causing exit code 65 due to modern Firebase and background_downloader requirements. Dynamically patched the Flutter SDK's internal SPM generator using `sed` to force iOS 15.0 target deployment in CI environment.
   - **Version Bump:** Incremented version to `3.5.8+40`.
 
 - **CI/CD Resiliency & Fallback Release (v3.5.7):**
