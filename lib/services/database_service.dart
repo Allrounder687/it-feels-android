@@ -12,8 +12,9 @@ class DatabaseService {
 
     try {
       if (Isar.instanceNames.isNotEmpty) {
-        _isar = Isar.getInstance();
-        if (_isar != null && _isar!.isOpen) {
+        final existing = Isar.getInstance();
+        if (existing != null && existing.isOpen) {
+          _isar = existing;
           _isInitialized = true;
           return;
         }
@@ -28,22 +29,25 @@ class DatabaseService {
       _isInitialized = true;
     } catch (e) {
       debugPrint('[DatabaseService] Error initializing Isar DB: $e');
-      if (Isar.instanceNames.isNotEmpty) {
-        _isar = Isar.getInstance();
-        if (_isar != null && _isar!.isOpen) {
-          _isInitialized = true;
+      try {
+        if (Isar.instanceNames.isNotEmpty) {
+          final existing = Isar.getInstance();
+          if (existing != null && existing.isOpen) {
+            _isar = existing;
+            _isInitialized = true;
+          }
         }
-      }
+      } catch (_) {}
     }
   }
 
   static Future<void> ensureInitialized() async {
-    if (!_isInitialized || _isar == null) {
+    if (!_isInitialized || _isar == null || !_isar!.isOpen) {
       await init();
     }
   }
 
-  static bool get isInitialized => _isInitialized && _isar != null;
+  static bool get isInitialized => _isInitialized && _isar != null && _isar!.isOpen;
   Isar? get isar => _isar;
 
   // ----------------------------------------------------
@@ -51,25 +55,38 @@ class DatabaseService {
   // ----------------------------------------------------
 
   Future<void> saveSong(Song song) async {
-    await ensureInitialized();
-    if (_isar == null) return;
-    await _isar!.writeTxn(() async {
-      await _isar!.songs.put(song); // Insert or update based on isarId/id
-    });
+    try {
+      await ensureInitialized();
+      if (_isar == null || !_isar!.isOpen) return;
+      await _isar!.writeTxn(() async {
+        await _isar!.songs.put(song); // Insert or update based on isarId/id
+      });
+    } catch (e) {
+      debugPrint('[DatabaseService] saveSong error: $e');
+    }
   }
 
   Future<void> saveSongs(List<Song> songs) async {
-    await ensureInitialized();
-    if (_isar == null) return;
-    await _isar!.writeTxn(() async {
-      await _isar!.songs.putAll(songs);
-    });
+    try {
+      await ensureInitialized();
+      if (_isar == null || !_isar!.isOpen) return;
+      await _isar!.writeTxn(() async {
+        await _isar!.songs.putAll(songs);
+      });
+    } catch (e) {
+      debugPrint('[DatabaseService] saveSongs error: $e');
+    }
   }
 
   Future<Song?> getSong(String saavnId) async {
-    await ensureInitialized();
-    if (_isar == null) return null;
-    return await _isar!.songs.where().idEqualTo(saavnId).findFirst();
+    try {
+      await ensureInitialized();
+      if (_isar == null || !_isar!.isOpen) return null;
+      return await _isar!.songs.where().idEqualTo(saavnId).findFirst();
+    } catch (e) {
+      debugPrint('[DatabaseService] getSong error: $e');
+      return null;
+    }
   }
 
   // ----------------------------------------------------
@@ -78,20 +95,25 @@ class DatabaseService {
 
   Future<List<Song>> searchSongs(String query, {int limit = 20}) async {
     if (query.isEmpty) return [];
-    await ensureInitialized();
-    if (_isar == null) return [];
+    try {
+      await ensureInitialized();
+      if (_isar == null || !_isar!.isOpen) return [];
 
-    final cleanQuery = Song.cleanText(query).toLowerCase();
-    final queryWords = cleanQuery.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+      final cleanQuery = Song.cleanText(query).toLowerCase();
+      final queryWords = cleanQuery.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
 
-    if (queryWords.isEmpty) return [];
+      if (queryWords.isEmpty) return [];
 
-    // Search where searchVector contains any of the query words
-    return await _isar!.songs
-        .filter()
-        .anyOf(queryWords, (q, String word) => q.searchVectorElementStartsWith(word))
-        .limit(limit)
-        .findAll();
+      // Search where searchVector contains any of the query words
+      return await _isar!.songs
+          .filter()
+          .anyOf(queryWords, (q, String word) => q.searchVectorElementStartsWith(word))
+          .limit(limit)
+          .findAll();
+    } catch (e) {
+      debugPrint('[DatabaseService] searchSongs error: $e');
+      return [];
+    }
   }
 
   // ----------------------------------------------------
@@ -99,64 +121,89 @@ class DatabaseService {
   // ----------------------------------------------------
 
   Future<List<Song>> getOnRepeat({int limit = 30}) async {
-    await ensureInitialized();
-    if (_isar == null) return [];
-    final twoWeeksAgo = DateTime.now().subtract(const Duration(days: 14));
-    
-    return await _isar!.songs
-        .filter()
-        .playCountGreaterThan(10)
-        .and()
-        .lastPlayedAtGreaterThan(twoWeeksAgo)
-        .sortByPlayCountDesc()
-        .limit(limit)
-        .findAll();
+    try {
+      await ensureInitialized();
+      if (_isar == null || !_isar!.isOpen) return [];
+      final twoWeeksAgo = DateTime.now().subtract(const Duration(days: 14));
+      
+      return await _isar!.songs
+          .filter()
+          .playCountGreaterThan(10)
+          .and()
+          .lastPlayedAtGreaterThan(twoWeeksAgo)
+          .sortByPlayCountDesc()
+          .limit(limit)
+          .findAll();
+    } catch (e) {
+      debugPrint('[DatabaseService] getOnRepeat error: $e');
+      return [];
+    }
   }
 
   Future<List<Song>> getTopPlayedSongs({int limit = 20}) async {
-    await ensureInitialized();
-    if (_isar == null) return [];
-    return await _isar!.songs
-        .filter()
-        .playCountGreaterThan(0)
-        .sortByPlayCountDesc()
-        .limit(limit)
-        .findAll();
+    try {
+      await ensureInitialized();
+      if (_isar == null || !_isar!.isOpen) return [];
+      return await _isar!.songs
+          .filter()
+          .playCountGreaterThan(0)
+          .sortByPlayCountDesc()
+          .limit(limit)
+          .findAll();
+    } catch (e) {
+      debugPrint('[DatabaseService] getTopPlayedSongs error: $e');
+      return [];
+    }
   }
 
   Future<List<Song>> getForgottenFavorites({int limit = 30}) async {
-    await ensureInitialized();
-    if (_isar == null) return [];
-    final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 90));
-    
-    return await _isar!.songs
-        .filter()
-        .isFavoriteEqualTo(true)
-        .and()
-        .lastPlayedAtLessThan(threeMonthsAgo)
-        .sortByLastPlayedAt() // Ascending (oldest first)
-        .limit(limit)
-        .findAll();
+    try {
+      await ensureInitialized();
+      if (_isar == null || !_isar!.isOpen) return [];
+      final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 90));
+      
+      return await _isar!.songs
+          .filter()
+          .isFavoriteEqualTo(true)
+          .and()
+          .lastPlayedAtLessThan(threeMonthsAgo)
+          .sortByLastPlayedAt() // Ascending (oldest first)
+          .limit(limit)
+          .findAll();
+    } catch (e) {
+      debugPrint('[DatabaseService] getForgottenFavorites error: $e');
+      return [];
+    }
   }
 
   Future<List<Song>> getAllFavorites() async {
-    await ensureInitialized();
-    if (_isar == null) return [];
-    return await _isar!.songs
-        .filter()
-        .isFavoriteEqualTo(true)
-        .sortByAddedAtDesc()
-        .findAll();
+    try {
+      await ensureInitialized();
+      if (_isar == null || !_isar!.isOpen) return [];
+      return await _isar!.songs
+          .filter()
+          .isFavoriteEqualTo(true)
+          .sortByAddedAtDesc()
+          .findAll();
+    } catch (e) {
+      debugPrint('[DatabaseService] getAllFavorites error: $e');
+      return [];
+    }
   }
 
   Future<List<Song>> getDownloadedSongs() async {
-    await ensureInitialized();
-    if (_isar == null) return [];
-    return await _isar!.songs
-        .filter()
-        .offlineStatusEqualTo(OfflineStatus.downloaded)
-        .sortByAddedAtDesc()
-        .findAll();
+    try {
+      await ensureInitialized();
+      if (_isar == null || !_isar!.isOpen) return [];
+      return await _isar!.songs
+          .filter()
+          .offlineStatusEqualTo(OfflineStatus.downloaded)
+          .sortByAddedAtDesc()
+          .findAll();
+    } catch (e) {
+      debugPrint('[DatabaseService] getDownloadedSongs error: $e');
+      return [];
+    }
   }
 
   // ----------------------------------------------------
@@ -164,31 +211,39 @@ class DatabaseService {
   // ----------------------------------------------------
 
   Future<void> incrementPlayCount(Song songObj) async {
-    await ensureInitialized();
-    if (_isar == null) return;
-    await _isar!.writeTxn(() async {
-      var song = await _isar!.songs.where().idEqualTo(songObj.id).findFirst();
-      if (song != null) {
-        song.playCount += 1;
-        song.lastPlayedAt = DateTime.now();
-        await _isar!.songs.put(song);
-      } else {
-        songObj.playCount = 1;
-        songObj.lastPlayedAt = DateTime.now();
-        await _isar!.songs.put(songObj);
-      }
-    });
+    try {
+      await ensureInitialized();
+      if (_isar == null || !_isar!.isOpen) return;
+      await _isar!.writeTxn(() async {
+        var song = await _isar!.songs.where().idEqualTo(songObj.id).findFirst();
+        if (song != null) {
+          song.playCount += 1;
+          song.lastPlayedAt = DateTime.now();
+          await _isar!.songs.put(song);
+        } else {
+          songObj.playCount = 1;
+          songObj.lastPlayedAt = DateTime.now();
+          await _isar!.songs.put(songObj);
+        }
+      });
+    } catch (e) {
+      debugPrint('[DatabaseService] incrementPlayCount error: $e');
+    }
   }
 
   Future<void> toggleFavorite(String saavnId) async {
-    await ensureInitialized();
-    if (_isar == null) return;
-    await _isar!.writeTxn(() async {
-      final song = await _isar!.songs.where().idEqualTo(saavnId).findFirst();
-      if (song != null) {
-        song.isFavorite = !song.isFavorite;
-        await _isar!.songs.put(song);
-      }
-    });
+    try {
+      await ensureInitialized();
+      if (_isar == null || !_isar!.isOpen) return;
+      await _isar!.writeTxn(() async {
+        final song = await _isar!.songs.where().idEqualTo(saavnId).findFirst();
+        if (song != null) {
+          song.isFavorite = !song.isFavorite;
+          await _isar!.songs.put(song);
+        }
+      });
+    } catch (e) {
+      debugPrint('[DatabaseService] toggleFavorite error: $e');
+    }
   }
 }
