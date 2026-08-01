@@ -311,9 +311,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 child: const Text('Close'),
                               ),
                               TextButton(
-                                onPressed: () {
-                                  ref.read(authProvider.notifier).signOut();
-                                  Navigator.pop(context); // Close dialog
+                                onPressed: () async {
+                                  Navigator.pop(context); // Close dialog first
+                                  await ref.read(authProvider.notifier).signOut();
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(

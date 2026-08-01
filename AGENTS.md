@@ -2,6 +2,13 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Account Entitlement, Isar Multi-Isolate & Firebase Resiliency Release (v3.5.8):**
+  - **Account-Bound Entitlements**: Bound premium status strictly to authenticated user IDs in Firestore (`/users/<uid>`), isolating guests and secondary accounts.
+  - **Isar Multi-Isolate & Hot Restart Safety**: Added 200ms fallback retry and isolate detection in `DatabaseService` to prevent `Collection id is invalid` crashes during background isolate startup or Flutter Hot Restart.
+  - **Firebase Auth Error Guards**: Handled `admin-restricted-operation` and `too-many-requests` gracefully; bound app language via `FirebaseAuth.instance.setLanguageCode('en')`.
+  - **Piped Stream Resolution Cleanup**: Pruned dead Piped API mirrors, lowered connection timeout to 2.5s, and silenced verbose failover logs.
+  - **Version Bump:** Incremented version to `3.5.8+40`.
+
 - **CI/CD Resiliency & Fallback Release (v3.5.7):**
   - **Shorebird Build Fallback:** Added graceful fallbacks (`shorebird release ... || flutter build ...`) in both `ota_release.yml` and `ios-unsigned-build.yml` to prevent pipeline failures when releasing code with existing Shorebird versions.
   - **Version Bump:** Incremented version to `3.5.7+39`.

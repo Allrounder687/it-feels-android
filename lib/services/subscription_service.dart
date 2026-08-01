@@ -56,64 +56,70 @@ class SubscriptionService {
   }
 
   Future<bool> checkPremiumStatus(String uid) async {
-    if (kIsWeb) return false;
-    
-    // 0. Check local device-wide premium flag (persists across app updates & guest resets)
+    if (kIsWeb || uid.isEmpty) return false;
+
+    // 0. Check account-bound local cache (for offline support)
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool('isPremiumDevice') == true || (uid.isNotEmpty && prefs.getBool('isPremiumFamily_$uid') == true)) {
+      if (prefs.getBool('isPremiumFamily_$uid') == true || prefs.getBool('isPremium_$uid') == true) {
         return true;
       }
     } catch (_) {}
 
-    // 1. Check RevenueCat Status
-    try {
-      final customerInfo = await Purchases.getCustomerInfo();
-      if (customerInfo.entitlements.all[entitlementId]?.isActive == true) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isPremiumDevice', true);
-        return true;
+    // 1. Check RevenueCat Status (if keys configured)
+    if (!_googleApiKey.contains('API_KEY_HERE')) {
+      try {
+        final customerInfo = await Purchases.getCustomerInfo();
+        if (customerInfo.entitlements.all[entitlementId]?.isActive == true) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('isPremium_$uid', true);
+          return true;
+        }
+      } catch (e) {
+        debugPrint("RevenueCat Error: $e");
       }
-    } catch (e) {
-      debugPrint("RevenueCat Error: $e");
     }
 
-    // 2. Check Custom Firestore Coupon / Entitlement fallback
+    // 2. Check Custom Firestore Coupon / Entitlement
     try {
-      final prefs = await SharedPreferences.getInstance();
-      
-      // Global device level premium flag so app updates / guest resets don't revoke premium
-      if (prefs.getBool('isPremiumDevice') == true || prefs.getBool('isPremiumFamily_$uid') == true) {
-        return true;
-      }
-
-      // Check for FAMILY coupon on user doc directly
       final userDoc = await _firestore.collection('users').doc(uid).get();
-      if (userDoc.exists && userDoc.data()?['isPremiumFamily'] == true) {
-        await prefs.setBool('isPremiumFamily_$uid', true);
-        await prefs.setBool('isPremiumDevice', true);
-        return true;
+      if (userDoc.exists) {
+        final data = userDoc.data();
+        if (data != null && (data['isPremiumFamily'] == true || data['isPremium'] == true)) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('isPremiumFamily_$uid', true);
+          await prefs.setBool('isPremium_$uid', true);
+          return true;
+        }
       }
 
       final doc = await _firestore.collection('users').doc(uid).collection('entitlements').doc('premium').get();
       if (doc.exists) {
         final data = doc.data();
         if (data != null && data['isActive'] == true) {
-           final expiry = data['expiresAt'] as Timestamp?;
-           if (expiry == null || expiry.toDate().isAfter(DateTime.now())) {
-             await prefs.setBool('isPremiumDevice', true);
-             return true;
-           }
+          final expiry = data['expiresAt'] as Timestamp?;
+          if (expiry == null || expiry.toDate().isAfter(DateTime.now())) {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool('isPremium_$uid', true);
+            return true;
+          }
         }
       }
     } catch (e) {
       debugPrint("Firestore Entitlement Error: $e");
-      // Fallback to local cache in case of offline/error
       final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool('isPremiumDevice') == true || prefs.getBool('isPremiumFamily_$uid') == true) {
+      if (prefs.getBool('isPremiumFamily_$uid') == true || prefs.getBool('isPremium_$uid') == true) {
         return true;
       }
     }
+
+    // If neither cloud nor user-bound cache has active entitlement, update user-bound cache to false
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isPremium_$uid', false);
+      await prefs.setBool('isPremiumFamily_$uid', false);
+    } catch (_) {}
+
     return false;
   }
 
@@ -162,6 +168,7 @@ class SubscriptionService {
 
   Future<bool> redeemCustomCoupon(String uid, String code) async {
     final cleanCode = code.trim().toUpperCase();
+    debugPrint("[SubscriptionService] Attempting to redeem coupon: '$cleanCode' for user: '$uid'");
     
     // Special Lifetime Coupon "FAMILY"
     if (cleanCode == 'FAMILY') {
@@ -180,11 +187,14 @@ class SubscriptionService {
             'expiresAt': null, // Permanent lifetime access
             'grantedBy': 'FAMILY',
           }, SetOptions(merge: true));
-        } catch (_) {} // Ignore if entitlement subcollection is locked down
+        } catch (e) {
+          debugPrint("[SubscriptionService] Warning: Subcollection entitlement write skipped: $e");
+        }
 
+        debugPrint("[SubscriptionService] SUCCESS: 'FAMILY' coupon redeemed & saved to Firestore user doc '$uid'!");
         return true;
       } catch (e) {
-        debugPrint("Error granting FAMILY coupon: $e");
+        debugPrint("[SubscriptionService] Error granting FAMILY coupon: $e");
         return false;
       }
     }

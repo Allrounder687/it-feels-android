@@ -86,5 +86,21 @@ void main() {
       final isPremium = await subscriptionService.checkPremiumStatus('user_123');
       expect(isPremium, isFalse);
     });
+
+    test('checkPremiumStatus returns false for empty or unauthenticated uid', () async {
+      final isPremium = await subscriptionService.checkPremiumStatus('');
+      expect(isPremium, isFalse);
+    });
+
+    test('account-bound premium isolation: userA is premium, userB remains free tier', () async {
+      // Grant premium to userA
+      await subscriptionService.redeemCustomCoupon('userA', 'FAMILY');
+      
+      final isUserAPremium = await subscriptionService.checkPremiumStatus('userA');
+      final isUserBPremium = await subscriptionService.checkPremiumStatus('userB');
+
+      expect(isUserAPremium, isTrue);
+      expect(isUserBPremium, isFalse);
+    });
   });
 }

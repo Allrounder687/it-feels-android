@@ -217,7 +217,11 @@ class AuthNotifier extends Notifier<AuthState> {
       } else {
         state = state.copyWith(errorMessage: 'Email not verified yet. Please check your inbox.');
       }
+    } on FirebaseAuthException catch (e) {
+      debugPrint('[AuthNotifier] checkVerificationStatus Firebase error: ${e.code} - ${e.message}');
+      state = state.copyWith(errorMessage: e.message ?? 'Failed to check verification status.');
     } catch (e) {
+      debugPrint('[AuthNotifier] checkVerificationStatus error: $e');
       state = state.copyWith(errorMessage: 'Failed to check verification status.');
     }
   }
@@ -226,8 +230,16 @@ class AuthNotifier extends Notifier<AuthState> {
     try {
       await _authService.resendVerificationEmail();
       state = state.copyWith(errorMessage: 'Verification email resent successfully!');
+    } on FirebaseAuthException catch (e) {
+      debugPrint('[AuthNotifier] resendVerificationEmail Firebase error: ${e.code} - ${e.message}');
+      if (e.code == 'too-many-requests') {
+        state = state.copyWith(errorMessage: 'Too many requests. Please wait a minute before requesting another link.');
+      } else {
+        state = state.copyWith(errorMessage: e.message ?? 'Failed to send verification email.');
+      }
     } catch (e) {
-      state = state.copyWith(errorMessage: 'Failed to send email: ${e.toString().replaceAll('Instance of ', '').replaceAll('Exception: ', '')}');
+      debugPrint('[AuthNotifier] resendVerificationEmail error: $e');
+      state = state.copyWith(errorMessage: 'Failed to send verification email.');
     }
   }
 

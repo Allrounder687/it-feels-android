@@ -1,9 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth;
+
+  AuthService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
 
   // Get current user stream
   Stream<User?> get userStream => _auth.authStateChanges();
@@ -22,7 +25,8 @@ class AuthService {
       }
       return cred;
     } catch (e) {
-      rethrow;
+      debugPrint('[AuthService] Anonymous sign-in disabled in Firebase Console: $e');
+      return null;
     }
   }
 
@@ -93,6 +97,7 @@ class AuthService {
   Future<void> resendVerificationEmail() async {
     if (_auth.currentUser != null && !_auth.currentUser!.emailVerified) {
       await _auth.currentUser!.sendEmailVerification();
+      debugPrint('[AuthService] Verification email sent successfully to: ${_auth.currentUser!.email}');
     }
   }
 

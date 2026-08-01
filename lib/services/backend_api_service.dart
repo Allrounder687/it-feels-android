@@ -395,14 +395,11 @@ class BackendApiService {
   static set ytDlpBackendUrl(String val) => _testYtDlpUrl = val;
 
   static final List<String> _pipedInstances = [
-    'https://pipedapi.adminforge.de',
-    'https://pipedapi.tokhmi.xyz',
-    'https://pipedapi.palmo.fr',
-    'https://pipedapi.drgns.space',
     'https://pipedapi.kavin.rocks',
     'https://pipedapi.reallyaweso.me',
-    'https://api.piped.privacydev.net',
-    'https://pipedapi.mha.fi',
+    'https://pipedapi.projectsegfau.lt',
+    'https://pipedapi.in.projectsegfau.lt',
+    'https://piped-api.garudalinux.org',
   ];
 
   /// Piped API Multi-Instance Failover Engine
@@ -415,7 +412,7 @@ class BackendApiService {
     for (final instance in _pipedInstances) {
       try {
         final uri = Uri.parse('$instance/streams/$cleanId');
-        final response = await httpClient.get(uri).timeout(const Duration(seconds: 6));
+        final response = await httpClient.get(uri).timeout(const Duration(milliseconds: 2500));
         if (response.statusCode == 200) {
           final data = await compute<String, dynamic>(jsonDecode, response.body);
           final title = data['title'] ?? 'Music Video';
@@ -453,9 +450,8 @@ class BackendApiService {
             };
           }
         }
-      } catch (e) {
-        debugPrint('[BackendApiService] Piped instance ($instance) failed: $e');
-        continue; // Failover to next public instance
+      } catch (_) {
+        continue; // Failover silently to next active public instance
       }
     }
 

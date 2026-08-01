@@ -109,20 +109,21 @@ class _InAppBroadcastListenerState extends State<InAppBroadcastListener> {
             await prefs.setBool('isPremiumFamily_${user.uid}', true);
             
             if (mounted) {
-              PremiumCelebrationDialog.show(context, isFamilyCoupon: true);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    "You've been upgraded to Premium courtesy of Developer: FaiXal! 🎉",
-                    style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.black),
-                  ),
-                  duration: const Duration(seconds: 8),
-                  backgroundColor: Colors.amber,
-                  behavior: SnackBarBehavior.floating,
-                  margin: const EdgeInsets.all(16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                )
-              );
+              try {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      "You've been upgraded to Premium courtesy of Developer: FaiXal! 🎉",
+                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    duration: const Duration(seconds: 8),
+                    backgroundColor: Colors.amber,
+                    behavior: SnackBarBehavior.floating,
+                    margin: const EdgeInsets.all(16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  )
+                );
+              } catch (_) {}
             }
           } else if (!isPremiumNow && _wasPremium) {
              _wasPremium = false;

@@ -654,7 +654,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                           GestureDetector(
                             onTap: () => ref.read(audioPlayerProvider.notifier).toggleFavorite(currentSong),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 color: surfaceColor.withValues(alpha: 0.5),
                                 borderRadius: BorderRadius.circular(20),
@@ -665,14 +665,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   Icon(
                                     isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                                     color: isFav ? Colors.pinkAccent : context.themeMutedTextColor,
-                                    size: 20,
+                                    size: 18,
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 5),
                                   Text(
                                     isFav ? "Liked" : "Like",
                                     style: GoogleFonts.inter(
                                       color: context.themeTextColor,
-                                      fontSize: 14,
+                                      fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -680,7 +680,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           GestureDetector(
                             onTap: () async {
                               if (isDown) {
@@ -703,7 +703,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                               }
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 color: surfaceColor.withValues(alpha: 0.5),
                                 borderRadius: BorderRadius.circular(20),
@@ -713,21 +713,21 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                 children: [
                                   isDownloading
                                       ? SizedBox(
-                                          width: 18,
-                                          height: 18,
+                                          width: 16,
+                                          height: 16,
                                           child: CircularProgressIndicator(strokeWidth: 2, color: context.themeTextColor),
                                         )
                                       : Icon(
                                           isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
                                           color: isDown ? accentColor : context.themeMutedTextColor,
-                                          size: 20,
+                                          size: 18,
                                         ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 5),
                                   Text(
                                     isDown ? "Downloaded" : "Download",
                                     style: GoogleFonts.inter(
                                       color: context.themeTextColor,
-                                      fontSize: 14,
+                                      fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -735,7 +735,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           InkWell(
                             onTap: () {
                               final sub = ref.read(subscriptionProvider);
@@ -750,7 +750,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             },
                             borderRadius: BorderRadius.circular(20),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 color: surfaceColor.withValues(alpha: 0.5),
                                 borderRadius: BorderRadius.circular(20),
@@ -758,13 +758,13 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.lyrics_outlined, color: context.themeMutedTextColor, size: 20),
-                                  const SizedBox(width: 6),
+                                  Icon(Icons.lyrics_outlined, color: context.themeMutedTextColor, size: 18),
+                                  const SizedBox(width: 5),
                                   Text(
                                     "Lyrics",
                                     style: GoogleFonts.inter(
                                       color: context.themeTextColor,
-                                      fontSize: 14,
+                                      fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -772,7 +772,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           // New Share Button Pill
                           InkWell(
                             onTap: () {
@@ -783,7 +783,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             },
                             borderRadius: BorderRadius.circular(20),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 color: surfaceColor.withValues(alpha: 0.5),
                                 borderRadius: BorderRadius.circular(20),
@@ -791,13 +791,13 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.share_outlined, color: context.themeMutedTextColor, size: 20),
-                                  const SizedBox(width: 6),
+                                  Icon(Icons.share_outlined, color: context.themeMutedTextColor, size: 18),
+                                  const SizedBox(width: 5),
                                   Text(
                                     "Share",
                                     style: GoogleFonts.inter(
                                       color: context.themeTextColor,
-                                      fontSize: 14,
+                                      fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),

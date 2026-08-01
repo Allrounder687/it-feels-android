@@ -18,6 +18,7 @@ import 'package:it_feels_music/features/auth/banned_screen.dart';
 import 'package:it_feels_music/features/admin/in_app_broadcast_listener.dart';
 
 import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'firebase_options.dart';
@@ -29,9 +30,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await dotenv.load(fileName: ".env");
-  } catch (e) {
-    debugPrint("Failed to load .env file: $e");
-  }
+  } catch (_) {}
   
   await setupServiceLocator();
 
@@ -41,6 +40,9 @@ Future<void> main() async {
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
+    try {
+      await FirebaseAuth.instance.setLanguageCode('en');
+    } catch (_) {}
     
     // Pass all uncaught "fatal" errors from the framework to Crashlytics
     FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;

@@ -12,40 +12,51 @@ class DatabaseService {
     if (isInitialized) return;
 
     try {
-      final existing = Isar.getInstance(_dbName);
-      if (existing != null && existing.isOpen) {
-        _isar = existing;
-        try {
-          _isar!.songs;
-          _isInitialized = true;
-          return;
-        } catch (_) {
-          // If instance is corrupted, close it
-          await existing.close();
-          _isar = null;
-          _isInitialized = false;
+      if (Isar.instanceNames.contains(_dbName)) {
+        final existing = Isar.getInstance(_dbName);
+        if (existing != null && existing.isOpen) {
+          try {
+            existing.songs; // Probe collections
+            _isar = existing;
+            _isInitialized = true;
+            return;
+          } catch (_) {
+            // Close leftover uninitialized native handle from previous hot restart
+            await existing.close();
+            _isar = null;
+            _isInitialized = false;
+          }
         }
       }
 
       final dir = await getApplicationDocumentsDirectory();
-      _isar = await Isar.open(
+      final openedIsar = await Isar.open(
         [SongSchema],
         directory: dir.path,
         name: _dbName,
-        inspector: false,
+        inspector: kDebugMode,
       );
-      _isInitialized = true;
-    } catch (e) {
-      debugPrint('[DatabaseService] Error initializing Isar DB: $e');
+
+      // Verify that schema collections are properly bound in this isolate
+      try {
+        openedIsar.songs;
+        _isar = openedIsar;
+        _isInitialized = true;
+      } catch (e) {
+        await openedIsar.close();
+        _isar = null;
+        _isInitialized = false;
+      }
+    } catch (_) {
+      // Handle concurrent isolate race (e.g. background FCM service isolate)
+      await Future.delayed(const Duration(milliseconds: 200));
       try {
         final existing = Isar.getInstance(_dbName);
         if (existing != null && existing.isOpen) {
+          existing.songs;
           _isar = existing;
-          try {
-            _isar!.songs;
-            _isInitialized = true;
-            return;
-          } catch (_) {}
+          _isInitialized = true;
+          return;
         }
       } catch (_) {}
       _isar = null;
