@@ -748,6 +748,21 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
+                                          if (presenceData['song_data'] != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(left: 6),
+                                              child: GestureDetector(
+                                                onTap: () {
+                                                  try {
+                                                    final song = Song.fromJson(Map<String, dynamic>.from(presenceData['song_data']));
+                                                    ref.read(audioPlayerProvider.notifier).playSong(song);
+                                                  } catch (e) {
+                                                    debugPrint("Error instantly playing: $e");
+                                                  }
+                                                },
+                                                child: const Icon(Icons.play_circle_fill_rounded, color: Colors.greenAccent, size: 20),
+                                              ),
+                                            ),
                                         ],
                                       ),
                                       if (presenceData['room_id'] != null) ...[

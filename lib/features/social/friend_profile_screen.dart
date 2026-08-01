@@ -8,6 +8,8 @@ import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:it_feels_music/data/models/custom_playlist.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 class FriendProfileScreen extends ConsumerStatefulWidget {
@@ -60,6 +62,141 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
     );
   }
 
+  Future<void> _stealQueue() async {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fetching queue...")));
+    final queue = await _socialService.getFriendQueue(widget.friendUid);
+    if (queue.isNotEmpty) {
+      ref.read(audioPlayerProvider.notifier).playSong(queue.first, queue: queue);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Listening along with ${widget.friendName}!")));
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Queue is empty or unavailable.")));
+      }
+    }
+  }
+
+  Future<void> _saveQueueAsPlaylist() async {
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fetching queue...")));
+    final queue = await _socialService.getFriendQueue(widget.friendUid);
+    if (queue.isNotEmpty) {
+      ref.read(customPlaylistProvider.notifier).createPlaylistWithSongs(
+        "${widget.friendName}'s Queue",
+        queue,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Saved queue as a playlist!")));
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Queue is empty or unavailable.")));
+      }
+    }
+  }
+
+  Widget _buildPresenceCard() {
+    return StreamBuilder<DatabaseEvent>(
+      stream: _socialService.getPresenceStream(widget.friendUid),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.snapshot.value == null) return const SizedBox.shrink();
+        
+        try {
+          final data = Map<String, dynamic>.from(snapshot.data!.snapshot.value as Map);
+          if (data['is_playing'] == true && data['song_data'] != null) {
+            final song = Song.fromJson(Map<String, dynamic>.from(data['song_data']));
+            
+            return Container(
+              margin: const EdgeInsets.only(bottom: 32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [context.themeSurfaceColor, context.themeAccentColor.withValues(alpha: 0.2)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: context.themeAccentColor, width: 1.5),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 5)),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.music_note_rounded, color: Colors.greenAccent, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          "NOW LISTENING",
+                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.greenAccent, letterSpacing: 1),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CustomImageWidget(imageUrl: song.coverArt, width: 56, height: 56),
+                    ),
+                    title: Text(song.title, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    subtitle: Text(song.artist, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    trailing: IconButton(
+                      icon: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 42),
+                      onPressed: () {
+                        ref.read(audioPlayerProvider.notifier).playSong(song);
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: context.themeAccentColor,
+                              foregroundColor: context.themeInvertedTextColor,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            onPressed: _stealQueue,
+                            icon: const Icon(Icons.headphones_rounded, size: 18),
+                            label: const Text("Listen Along", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: context.themeTextColor,
+                              side: BorderSide(color: context.themeAccentColor),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            onPressed: _saveQueueAsPlaylist,
+                            icon: const Icon(Icons.queue_music_rounded, size: 18),
+                            label: const Text("Save Queue", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                ],
+              ),
+            );
+          }
+        } catch (e) {
+          debugPrint("Error parsing presence data: $e");
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.watch(audioPlayerProvider); // Watch for theme changes
@@ -100,6 +237,8 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
                     style: GoogleFonts.inter(fontSize: 16, color: context.themeMutedTextColor),
                   ),
                 const SizedBox(height: 32),
+                
+                _buildPresenceCard(),
                 
                 Align(
                   alignment: Alignment.centerLeft,

@@ -467,6 +467,11 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       state.currentIndex, 
       positionSeconds: state.position.inSeconds,
     );
+    _syncQueueToFirebase();
+  }
+
+  void _syncQueueToFirebase() {
+    locator<SocialService>().syncQueue(state.queue.take(50).toList());
   }
 
   void _listenToEvents() {

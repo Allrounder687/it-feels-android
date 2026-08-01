@@ -337,13 +337,52 @@ class SocialService {
         'is_playing': true,
         'song_title': song.title,
         'artist': song.artist,
+        'song_data': song.toJson(),
         'timestamp': ServerValue.timestamp,
-        'room_id': ?roomId,
+        if (roomId != null) 'room_id': roomId,
       });
       presenceRef.onDisconnect().remove();
     } else {
       await presenceRef.remove();
     }
+  }
+
+  // Sync up next queue (capped to 50 songs)
+  Future<void> syncQueue(List<Song> queue) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    
+    try {
+      final queueRef = _rtdb.ref('presence_queue/${user.uid}');
+      if (queue.isEmpty) {
+        await queueRef.remove();
+      } else {
+        await queueRef.set({
+          'songs': queue.map((s) => s.toJson()).toList(),
+          'timestamp': ServerValue.timestamp,
+        });
+        queueRef.onDisconnect().remove();
+      }
+    } catch (e) {
+      debugPrint("Error syncing queue: $e");
+    }
+  }
+
+  // Get a friend's active queue
+  Future<List<Song>> getFriendQueue(String friendUid) async {
+    try {
+      final snapshot = await _rtdb.ref('presence_queue/$friendUid').get();
+      if (snapshot.exists && snapshot.value != null) {
+        final data = Map<String, dynamic>.from(snapshot.value as Map);
+        if (data['songs'] != null) {
+          final list = List<dynamic>.from(data['songs']);
+          return list.map((json) => Song.fromJson(Map<String, dynamic>.from(json))).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint("Error getting friend queue: $e");
+    }
+    return [];
   }
 
   // Get a friend's presence stream
