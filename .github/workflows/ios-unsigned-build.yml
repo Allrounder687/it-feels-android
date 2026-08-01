@@ -134,6 +134,8 @@ jobs:
 
 
       - name: Build iOS without Code Signing
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
         run: |
           # 1. Ensure xcconfig contains DEVELOPMENT_TEAM & Code Signing overrides
           echo "DEVELOPMENT_TEAM=A1B2C3D4E5" >> ios/Flutter/Release.xcconfig
@@ -152,9 +154,6 @@ jobs:
           
           # 3. Build Release iOS app without code signing using Shorebird
           shorebird release ios --no-codesign
-        env:
-          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-
           # 4. Fallback Native Xcode Build if needed
           if [ ! -d "build/ios/iphoneos/Runner.app" ]; then
             cd ios
