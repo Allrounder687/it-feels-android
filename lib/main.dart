@@ -16,8 +16,6 @@ import 'package:it_feels_music/core/router/app_router.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/auth/banned_screen.dart';
 import 'package:it_feels_music/features/admin/in_app_broadcast_listener.dart';
-import 'package:it_feels_music/services/config_service.dart';
-import 'package:it_feels_music/features/admin/force_update_screen.dart';
 
 import 'dart:ui';
 import 'package:firebase_core/firebase_core.dart';
