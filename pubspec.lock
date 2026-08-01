@@ -252,10 +252,9 @@ packages:
   cast:
     dependency: "direct main"
     description:
-      name: cast
-      sha256: de1856e1a31aa60a6fed627f827921f7ec6539c67c60d0c899e89646dcbe773e
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/cast"
+      relative: true
+    source: path
     version: "2.1.0"
   cel:
     dependency: transitive
