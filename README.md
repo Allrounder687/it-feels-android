@@ -47,6 +47,21 @@ A premium, modern Flutter Android music application built with the design aesthe
 
 ---
 
+## 📚 Documentation
+
+All comprehensive project documentation has been consolidated into the [`docs/`](docs/) directory for cleaner repository management:
+- [Agent Steering Path](docs/STEERING_PATH.md)
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [AI Agents Log](docs/AGENTS.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Changelog](docs/CHANGELOG.md)
+- [Testing Guide](docs/TESTING.md)
+- [CI/CD & OTA Updates](docs/CI_CD.md)
+- [Contributing](docs/CONTRIBUTING.md)
+- [Code of Conduct](docs/CODE_OF_CONDUCT.md)
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -81,6 +96,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 
 ## Recent Updates
+- **Agent Steering Path & Infrastructure:** Established a unified agent steering path ([`docs/STEERING_PATH.md`](docs/STEERING_PATH.md)) to align all AI agent-driven development, updated existing agent specifications (`agents/`), and developed a new `doc-writer-skill` for automated documentation management.
 - **Account Entitlement & Engine Resiliency Release (3.5.8):** Bound premium status strictly to authenticated user IDs (`/users/<uid>`), isolating guests and secondary accounts. Added isolate detection and fallback retries in `DatabaseService` to prevent `Collection id is invalid` crashes. Handled Firebase Auth error codes (`admin-restricted-operation`, `too-many-requests`) and set system locale. Optimized Piped stream extraction failover to 2.5s timeouts across healthy mirrors.
 - **Payment Gateways & Sync Bug Fixes (3.3.4):** Implemented License Key verification for external payments (Gumroad & Crypto), redesigned the zero cognitive overload auth flow for instant syncing, and resolved critical state desyncs in Listen Together rooms and CI/CD OTA Pipelines.
 - **Admin Telemetry & Live Social Expansion (3.2.0):** Overhauled LyricsService with concurrent Completer racing for <1s resolution. Upgraded the Admin Dashboard with real-time UI filtering and Global Broadcast capability. Finalized real-time synced rooms and the new Force Update OTA engine.
@@ -100,3 +116,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Flawless Playback Cache:** Robust JSON fallback mechanisms that guarantee Recently Played and Queue states resume flawlessly even after hard restarts.
 - **Tablet & Large Screen UI:** Added dynamic side-by-side player layouts, Hero Banners, and authentic glassmorphism for a stunning tablet experience.
 - **Cloudflare Edge Acceleration:** Deployed Phase 1 Cloudflare Worker enhancements including KV caching for zero-latency searches/lyrics, a dynamic Image Proxy cache for CDN acceleration, and robust API Abuse Prevention via the `X-Feels-Secret` HTTP header.
+- **Production CI/CD & Shorebird OTA:** Hardened GitHub Actions pipelines to prevent SDK contamination, secured Firebase environments via Base64 GitHub Secrets, fixed Firestore version tracking for OTA updates, and implemented native UI progress indicators for Shorebird background patches.

@@ -3,7 +3,7 @@ const admin = require('firebase-admin');
 // Parse environment variables passed by GitHub Actions
 const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT;
 const latestVersion = process.env.LATEST_VERSION;
-const minVersionCode = parseInt(process.env.VERSION_CODE, 10);
+const latestVersionCode = parseInt(process.env.VERSION_CODE, 10);
 const updateUrl = process.env.APK_URL;
 const releaseNotes = process.env.RELEASE_NOTES || "A new update is available with performance improvements and bug fixes.";
 
@@ -26,12 +26,13 @@ try {
 const db = admin.firestore();
 
 async function updateConfig() {
-  console.log(`Pushing OTA update to Firestore: v${latestVersion} (Code: ${minVersionCode})`);
+  console.log(`Pushing OTA update to Firestore: v${latestVersion} (Code: ${latestVersionCode})`);
   
   try {
     const docRef = db.collection('client_config').doc('android');
     await docRef.set({
       latest_version: latestVersion,
+      latest_version_code: latestVersionCode,
       update_url: updateUrl,
       release_notes: releaseNotes
     }, { merge: true }); // Merge preserves ios_update_url and min_version_code if present
