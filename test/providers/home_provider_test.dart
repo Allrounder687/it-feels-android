@@ -60,16 +60,13 @@ void main() {
       when(() => mockApiService.searchPlaylists(any(), count: any(named: 'count'))).thenAnswer((_) async => <Playlist>[]);
       when(() => mockApiService.searchAlbums(any(), count: any(named: 'count'))).thenAnswer((_) async => <Playlist>[]);
 
-      when(() => mockApiService.searchAll('Podcasts')).thenAnswer((_) async => {'songs': <Song>[], 'playlists': <Playlist>[]});
-      when(() => mockApiService.searchPlaylists('Podcasts')).thenAnswer((_) async => <Playlist>[]);
-
       final notifier = container.read(homeProvider.notifier);
       await Future.delayed(const Duration(milliseconds: 300));
 
       await notifier.selectCategory('Podcasts');
       expect(container.read(homeProvider).selectedCategory, 'Podcasts');
       
-      verify(() => mockApiService.searchAll('Podcasts')).called(1);
+      verify(() => mockApiService.searchSongs('Podcast', count: 20)).called(1);
     });
   });
 }
