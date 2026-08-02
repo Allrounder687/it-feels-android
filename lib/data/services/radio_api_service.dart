@@ -5,12 +5,15 @@ import 'package:logger/logger.dart';
 
 class RadioApiService {
   final Logger _logger = Logger();
+  final http.Client _client;
   // We use a reliable endpoint for radio-browser
   static const String _baseUrl = 'https://de1.api.radio-browser.info/json';
 
+  RadioApiService({http.Client? client}) : _client = client ?? http.Client();
+
   Future<List<Song>> getTopStations({int limit = 50}) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/stations/topclick/$limit'));
+      final response = await _client.get(Uri.parse('$_baseUrl/stations/topclick/$limit'));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         return data.map((json) => _mapStationToSong(json)).toList();
@@ -27,9 +30,9 @@ class RadioApiService {
       final safeQuery = Uri.encodeComponent(query.trim());
       
       final responses = await Future.wait([
-        http.get(Uri.parse('$_baseUrl/stations/search?name=$safeQuery&limit=$subLimit&order=clickcount&reverse=true')),
-        http.get(Uri.parse('$_baseUrl/stations/search?country=$safeQuery&limit=$subLimit&order=clickcount&reverse=true')),
-        http.get(Uri.parse('$_baseUrl/stations/search?tag=$safeQuery&limit=$subLimit&order=clickcount&reverse=true')),
+        _client.get(Uri.parse('$_baseUrl/stations/search?name=$safeQuery&limit=$subLimit&order=clickcount&reverse=true')),
+        _client.get(Uri.parse('$_baseUrl/stations/search?country=$safeQuery&limit=$subLimit&order=clickcount&reverse=true')),
+        _client.get(Uri.parse('$_baseUrl/stations/search?tag=$safeQuery&limit=$subLimit&order=clickcount&reverse=true')),
       ]);
 
       final List<Song> allStations = [];
@@ -56,7 +59,7 @@ class RadioApiService {
   
   Future<List<Song>> getStationsByCountry(String countryCode, {int limit = 50}) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/stations/bycountrycodeexact/$countryCode?limit=$limit'));
+      final response = await _client.get(Uri.parse('$_baseUrl/stations/bycountrycodeexact/$countryCode?limit=$limit'));
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         return data.map((json) => _mapStationToSong(json)).toList();

@@ -15,7 +15,15 @@ class SearchState {
   final List<Playlist> albums;
   final List<Playlist> playlists;
   final List<Map<String, dynamic>> artists;
+  final List<Map<String, dynamic>> videos;
   final bool isSearching;
+  final bool isLoadingMore;
+  final int songPage;
+  final int albumPage;
+  final int playlistPage;
+  final bool hasMoreSongs;
+  final bool hasMoreAlbums;
+  final bool hasMorePlaylists;
   final List<String> recentSearches;
 
   const SearchState({
@@ -24,7 +32,15 @@ class SearchState {
     this.albums = const [],
     this.playlists = const [],
     this.artists = const [],
+    this.videos = const [],
     this.isSearching = false,
+    this.isLoadingMore = false,
+    this.songPage = 1,
+    this.albumPage = 1,
+    this.playlistPage = 1,
+    this.hasMoreSongs = true,
+    this.hasMoreAlbums = true,
+    this.hasMorePlaylists = true,
     this.recentSearches = const [],
   });
 
@@ -34,7 +50,15 @@ class SearchState {
     List<Playlist>? albums,
     List<Playlist>? playlists,
     List<Map<String, dynamic>>? artists,
+    List<Map<String, dynamic>>? videos,
     bool? isSearching,
+    bool? isLoadingMore,
+    int? songPage,
+    int? albumPage,
+    int? playlistPage,
+    bool? hasMoreSongs,
+    bool? hasMoreAlbums,
+    bool? hasMorePlaylists,
     List<String>? recentSearches,
   }) {
     return SearchState(
@@ -43,7 +67,15 @@ class SearchState {
       albums: albums ?? this.albums,
       playlists: playlists ?? this.playlists,
       artists: artists ?? this.artists,
+      videos: videos ?? this.videos,
       isSearching: isSearching ?? this.isSearching,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      songPage: songPage ?? this.songPage,
+      albumPage: albumPage ?? this.albumPage,
+      playlistPage: playlistPage ?? this.playlistPage,
+      hasMoreSongs: hasMoreSongs ?? this.hasMoreSongs,
+      hasMoreAlbums: hasMoreAlbums ?? this.hasMoreAlbums,
+      hasMorePlaylists: hasMorePlaylists ?? this.hasMorePlaylists,
       recentSearches: recentSearches ?? this.recentSearches,
     );
   }
@@ -94,6 +126,14 @@ class SearchNotifier extends Notifier<SearchState> {
     state = state.copyWith(recentSearches: []);
   }
 
+  Future<void> removeRecentSearch(String query) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> recent = prefs.getStringList('recent_searches') ?? [];
+    recent.remove(query);
+    await prefs.setStringList('recent_searches', recent);
+    state = state.copyWith(recentSearches: recent);
+  }
+
   void search(String newQuery, {BuildContext? context}) {
     _debounceTimer?.cancel();
 
@@ -104,12 +144,29 @@ class SearchNotifier extends Notifier<SearchState> {
         albums: const [],
         playlists: const [],
         artists: const [],
+        videos: const [],
         isSearching: false,
+        isLoadingMore: false,
+        songPage: 1,
+        albumPage: 1,
+        playlistPage: 1,
+        hasMoreSongs: true,
+        hasMoreAlbums: true,
+        hasMorePlaylists: true,
       );
       return;
     }
 
-    state = state.copyWith(query: newQuery, isSearching: true);
+    state = state.copyWith(
+      query: newQuery, 
+      isSearching: true,
+      songPage: 1,
+      albumPage: 1,
+      playlistPage: 1,
+      hasMoreSongs: true,
+      hasMoreAlbums: true,
+      hasMorePlaylists: true,
+    );
 
     _debounceTimer = Timer(const Duration(milliseconds: 500), () async {
       if (state.query != newQuery) return;
@@ -160,11 +217,15 @@ class SearchNotifier extends Notifier<SearchState> {
           songs.insertAll(insertIndex, taggedNativeSongs);
         }
 
+        // Fetch videos if settings allow (handled by UI, but we can pre-fetch a few)
+        final videos = await BackendApiService.searchVideos(newQuery);
+
         state = state.copyWith(
           songs: songs,
           albums: albums,
           playlists: playlists,
           artists: artists,
+          videos: videos,
           isSearching: false,
         );
       } catch (e) {
@@ -172,6 +233,58 @@ class SearchNotifier extends Notifier<SearchState> {
         state = state.copyWith(isSearching: false);
       }
     });
+  }
+
+  Future<void> loadMore(int categoryIndex) async {
+    if (state.query.isEmpty || state.isSearching || state.isLoadingMore) return;
+
+    state = state.copyWith(isLoadingMore: true);
+    
+    try {
+      // 1: SONGS, 3: ALBUMS, 4: PLAYLISTS, 5: VIDEOS (we won't paginate videos for now due to backend limits)
+      if (categoryIndex == 1 && state.hasMoreSongs) {
+        final nextPage = state.songPage + 1;
+        final moreSongs = await apiService.searchSongs(state.query, page: nextPage, count: 50);
+        if (moreSongs.isEmpty) {
+          state = state.copyWith(hasMoreSongs: false, isLoadingMore: false);
+        } else {
+          state = state.copyWith(
+            songs: [...state.songs, ...moreSongs],
+            songPage: nextPage,
+            isLoadingMore: false,
+          );
+        }
+      } else if (categoryIndex == 3 && state.hasMoreAlbums) {
+        final nextPage = state.albumPage + 1;
+        final moreAlbums = await apiService.searchAlbums(state.query, page: nextPage, count: 30);
+        if (moreAlbums.isEmpty) {
+          state = state.copyWith(hasMoreAlbums: false, isLoadingMore: false);
+        } else {
+          state = state.copyWith(
+            albums: [...state.albums, ...moreAlbums],
+            albumPage: nextPage,
+            isLoadingMore: false,
+          );
+        }
+      } else if (categoryIndex == 4 && state.hasMorePlaylists) {
+        final nextPage = state.playlistPage + 1;
+        final morePlaylists = await apiService.searchPlaylists(state.query, page: nextPage, count: 30);
+        if (morePlaylists.isEmpty) {
+          state = state.copyWith(hasMorePlaylists: false, isLoadingMore: false);
+        } else {
+          state = state.copyWith(
+            playlists: [...state.playlists, ...morePlaylists],
+            playlistPage: nextPage,
+            isLoadingMore: false,
+          );
+        }
+      } else {
+        state = state.copyWith(isLoadingMore: false);
+      }
+    } catch (e) {
+      debugPrint('[SearchNotifier] loadMore error: $e');
+      state = state.copyWith(isLoadingMore: false);
+    }
   }
 }
 

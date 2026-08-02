@@ -50,6 +50,12 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
       SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
+    
+    // Defer the provider read to avoid modifying providers during the widget tree teardown
+    Future.microtask(() {
+      ref.read(videoPlayerProvider.notifier).closeVideo();
+    });
+    
     super.dispose();
   }
 
