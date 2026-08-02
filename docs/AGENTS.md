@@ -1,13 +1,11 @@
 # AI Agents Log
-This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
+This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents. For detailed guidelines on agent operation, refer to [STEERING_PATH.md](STEERING_PATH.md).
 
 ## Latest Agent Iteration
-- **Search Pagination & DI Architecture Release (v3.5.15):**
-  - **Search Enhancements:** Integrated pagination for songs, albums, and playlists, added video search capabilities, and allowed removal of individual recent search terms.
-  - **Testing Architecture:** Refactored multiple services (`RadioApiService`, `SocialService`, `LastfmService`) to support Dependency Injection, unblocking comprehensive unit testing. Added `RoomService` and `SmartStorageService` to `GetIt` locator.
-  - **Widget Teardown Fix:** Prevented state mutation exceptions during `VideoPlayerScreen` disposal by wrapping provider reads in `Future.microtask`.
-  - **CI & Settings Resiliency:** Hid critical proxy settings behind "Advanced Server Settings" warnings to prevent accidental stream breakages. Fixed Shorebird and FilePicker compilation errors in CI.
-  - **Version Bump:** Incremented version to `3.5.15+49`.
+- **Agent Steering & Infrastructure Updates (2026-08-02):**
+  1. **Unified Agent Steering Path:** Formulated `STEERING_PATH.md` to establish coding standards, responsive design practices, and operational paradigms for subsequent AI agents.
+  2. **Agent Role Refinements:** Refined specifications for `tester_verifier`, `ui_builder`, and `api_integrator` agents to align with `STEERING_PATH.md`.
+  3. **New Agent Skills Integration:** Developed `doc-writer-skill` for automated documentation outlining, summary writing, and changelog updates. Integrated this skill as a directive for the `tester_verifier` agent.
 
 - **Social Tab Crash Hotfix (v3.5.12):**
   - **Syntax Fix**: Resolved syntax errors and StreamBuilder type mismatches introduced in the previous hotfix.

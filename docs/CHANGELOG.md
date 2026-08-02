@@ -1,16 +1,26 @@
-## v3.5.15+49
-- **Search Enhancements**: Implemented pagination (load more) for songs, albums, and playlists. Integrated video search results alongside regular audio tracks. Added the ability to remove individual recent searches.
-- **Dependency Injection**: Refactored `RadioApiService`, `SocialService`, and `LastfmService` to accept injected dependencies (`http.Client`, `FirebaseFirestore`, etc.) for robust unit testing. Registered `RoomService` and `SmartStorageService` in the service locator.
-- **Bug Fixes**: Deferred `videoPlayerProvider` state changes in `VideoPlayerScreen` dispose method using `Future.microtask` to prevent teardown exceptions. Cached Firebase streams in `SocialScreen` to prevent unnecessary re-initializations.
-- **CI/CD Fixes**: Fixed Shorebird and FilePicker compilation errors, added missing untracked test files, and prevented overwriting `firebase_options` with empty secrets in CI workflows.
-- **Settings Resiliency**: Hid critical proxy settings behind "Advanced Server Settings" warnings to prevent accidental stream breakages.
+# Changelog
 
-## v3.5.11 
-- 2 
- 
+All notable changes to **IT Feels Music** will be documented in this file.
+
+## [Agent Infrastructure Updates]
+### Added
+- **Agent Steering Path (`STEERING_PATH.md`):** Introduced a comprehensive guide outlining architectural principles, development workflows, and coding standards to align all AI agent-driven development.
+- **`doc-writer-skill`:** Created a new skill in `.gemini/skills/doc_writer_skill/` to assist agents with generating, summarizing, and maintaining consistent project documentation and changelogs.
+
+### Updated
+- **Existing Agents:** Updated `tester_verifier.md`, `ui_builder.md`, and `api_integrator.md` to reference the new `STEERING_PATH.md` and explicitly utilize the new `doc-writer-skill` for documentation tasks.
+- **Agent Documentation:** Updated `AGENTS.md` and `README.md` to reflect the new AI-driven workflow enhancements.
+
+## v3.5.13+46
+- **Performance Optimization**: Completely eliminated UI and Raster thread jank in Canvas Mode (drops from 188 UI jank frames to 19). Heavy YouTube HTML regex parsing has been offloaded to a background CPU isolate using `compute()`, and background videos now automatically pull the lowest resolution stream (360p/480p) rather than 1080p60 to vastly reduce hardware decoding stalls and GPU texture upload delays on older devices. Finally, the canvas background now gracefully fades in over 500ms using `AnimatedOpacity` to eliminate layout spikes.
+- **Bug Fixes**: Fixed a critical crash in the Social Tab where the entire screen would turn blank (ErrorWidget) if Firebase returned a List instead of a Map, or if a user profile was missing fields. Properly placed try-catch block inside Consumer builder.
+
+## v3.5.12+45
+- **New Feature**: Added Last.fm Integration! Users can now securely connect their Last.fm account via Settings to automatically scrobble their listening history and update their Now Playing status in real-time.
+- **New Feature**: Introduced the **Global Radio**! Users can now browse and listen to over 40,000 live AM/FM/Web radio stations from around the world directly in the app. Access it via the new radio icon on the Home screen.
+- **New Feature**: Implemented **Canvas Mode**! Enjoy stunning, dynamic, endlessly-looping vertical video backgrounds automatically generated for the currently playing track via YouTube Shorts data, delivering a premium visual aesthetic on the Now Playing screen.
+
 ## v3.5.11+43
-- **Bug Fixes**: Fixed a critical crash in the Social Tab where the entire screen would turn blank (ErrorWidget) if Firebase returned a List instead of a Map, or if a user profile was missing fields.
-
 ## v3.5.10+42
 - **Config**: Updated `google-services.json` to fix Google Sign-in SHA-1 authentication issues.
 
@@ -344,19 +354,26 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - Core screens: Home ("Your Mix"), Now Playing, Library, Lyrics, and Search.
 
 
-## [Unreleased]
+### [Unreleased]
 ### Added
 - Integrated Android Home Screen Widget (home_widget) displaying current song, artist, and play/pause controls.
 - Added Android Auto integration hooks (MediaBrowserService and XML descriptors).
 - Implemented robust Material You Dynamic Theming tied to the currently playing song's album art.
-- Integrated ibration plugin for Haptics on media player controls.
+- Integrated  ibration plugin for Haptics on media player controls.
 - Implemented true Gapless Playback via ConcatenatingAudioSource in just_audio.
 - Added Tap-to-Seek functionality for synchronized lyrics.
 - Added missing lyrics fallback message UI.
-- Implemented share intent (ndroid.intent.action.SEND) for Spotify/music links in AndroidManifest.
+- Implemented share intent ( ndroid.intent.action.SEND) for Spotify/music links in AndroidManifest.
+- **Trophy Case & VIP Badges:** Added gamification system with a Trophy Case and VIP Badges for user profiles.
+- **OTA CI/CD Skill:** Introduced an Antigravity Skill (`deploy_ota.bat`) and CI/CD protocol for automated OTA deployments.
+- **Soft Updates:** Added automatic non-blocking soft update checks on startup.
+- **Admin Dashboard:** Added "Top Listeners" sort functionality and fixed Settings padding.
+- **Payments:** Migrated to Direct P2P Payments with Auto-Upgrade, and restored Razorpay specifically for UPI with 100% server verification.
 
 ### Fixed
+- **Dual App Installation Bug**: Restored the `.debug` `applicationIdSuffix` in `build.gradle.kts` which had gone missing, allowing debug and release builds to be installed concurrently on the same device again without overwriting each other.
 - Fixed syntax errors and type issues in Auth and Subscription bottom sheets preventing successful iOS/Android builds.
 - Improved Bottom Navigation Bar click area and icon sizes.
 - Fixed MiniPlayer visibility in custom app bar screens (Playlist, Artist, Custom Playlist details) by utilizing Scaffold's bottomNavigationBar.
 - Refactored AudioPlayerProvider as the single source of truth for app state and theming.
+- Removed outdated `upi_india` plugin breaking AGP 8+ and switched to `url_launcher` intent.

@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/features/player/video_player_provider.dart';
+import 'package:it_feels_music/features/player/video_player_screen.dart';
 import 'package:it_feels_music/features/search/search_provider.dart';
 import 'package:it_feels_music/features/library/artist_detail_screen.dart';
 import 'package:it_feels_music/features/library/playlist_detail_screen.dart';
@@ -26,11 +28,26 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   int _selectedCategoryIndex = 0;
   final List<String> _categories = ["ALL", "SONGS", "ARTISTS", "ALBUMS", "PLAYLISTS"];
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      ref.read(searchProvider.notifier).loadMore(_selectedCategoryIndex);
+    }
+  }
+
+  @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -48,6 +65,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         final songs = searchProviderObj.songs.where((s) => !hiddenProviderObj.isHidden(s.id)).toList();
         final albums = searchProviderObj.albums;
         final playlists = searchProviderObj.playlists;
+        final videos = searchProviderObj.videos;
+
+        bool hasNoResults = _searchController.text.isNotEmpty &&
+            !searchProviderObj.isSearching &&
+            songs.isEmpty &&
+            albums.isEmpty &&
+            playlists.isEmpty &&
+            searchProviderObj.artists.isEmpty &&
+            (enableVideos ? videos.isEmpty : true);
 
         return Scaffold(
           backgroundColor: context.themeBackgroundColor,
@@ -146,11 +172,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 900),
-                      child: searchProviderObj.isSearching
+                      child: searchProviderObj.isSearching && songs.isEmpty && albums.isEmpty
                           ? const SkeletonLoadingList()
                           : _searchController.text.isEmpty
                           ? _buildBrowseGrid(context, searchProviderObj.recentSearches)
+                          : hasNoResults
+                          ? _buildEmptyState(context, _searchController.text)
                           : ListView(
+                              controller: _scrollController,
                               padding: const EdgeInsets.symmetric(horizontal: 20),
                               children: [
                                 // Artists Direct Match Section
@@ -414,7 +443,80 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                           ),
                                         ),
                                       )),
+                                  const SizedBox(height: 16),
                                 ],
+
+                                // Videos Section
+                                if ((_selectedCategoryIndex == 0 || _selectedCategoryIndex == 5) && enableVideos && videos.isNotEmpty) ...[
+                                  Text(
+                                    "Videos",
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.themeTextColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ...videos.map((vid) => Padding(
+                                        padding: const EdgeInsets.only(bottom: 6),
+                                        child: Material(
+                                          color: context.themeCardColor.withValues(alpha: 0.5),
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: ListTile(
+                                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                            leading: ClipRRect(
+                                              borderRadius: BorderRadius.circular(8),
+                                              child: SizedBox(
+                                                width: 80,
+                                                height: 45,
+                                                child: CustomImageWidget(
+                                                  imageUrl: vid['thumbnail'] ?? '',
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              ),
+                                            ),
+                                            title: Text(
+                                              vid['title'] ?? 'Unknown',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.inter(
+                                                color: context.themeTextColor,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            subtitle: Text(
+                                              vid['uploader'] ?? 'YouTube',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.inter(
+                                                color: context.themeMutedTextColor,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                            trailing: const Icon(Icons.play_circle_fill_rounded, color: Colors.red),
+                                            onTap: () {
+                                              ref.read(videoPlayerProvider.notifier).playVideo(
+                                                vid['id'] ?? '',
+                                                vid['title'] ?? 'Unknown Video',
+                                                vid['uploader'] ?? 'YouTube',
+                                              );
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(builder: (_) => const VideoPlayerScreen()),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      )),
+                                  const SizedBox(height: 16),
+                                ],
+
+                                if (searchProviderObj.isLoadingMore)
+                                  const Padding(
+                                    padding: EdgeInsets.all(20.0),
+                                    child: Center(child: CircularProgressIndicator()),
+                                  ),
 
                                 SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
                               ],
@@ -427,6 +529,33 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, String query) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.search_off_rounded, size: 80, color: context.themeMutedTextColor.withValues(alpha: 0.5)),
+        const SizedBox(height: 16),
+        Text(
+          "No results found",
+          style: GoogleFonts.outfit(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: context.themeTextColor,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          "We couldn't find anything for \"$query\".\nTry searching for something else.",
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: context.themeMutedTextColor,
+          ),
+        ),
+      ],
     );
   }
 
@@ -537,7 +666,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     },
                     child: Container(
                       margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.only(left: 16, right: 8, top: 6, bottom: 6),
                       decoration: BoxDecoration(
                         color: context.themeCardColor.withValues(alpha: 0.8),
                         borderRadius: BorderRadius.circular(19),
@@ -555,6 +684,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
+                          ),
+                          const SizedBox(width: 4),
+                          GestureDetector(
+                            onTap: () {
+                              ref.read(searchProvider.notifier).removeRecentSearch(term);
+                            },
+                            child: Icon(Icons.close, size: 16, color: context.themeMutedTextColor),
                           ),
                         ],
                       ),
@@ -659,7 +795,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     ),
   ),
 ),
-const SliverToBoxAdapter(child: SizedBox(height: 24)),
+SliverToBoxAdapter(child: SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom)),
       ],
     );
   }

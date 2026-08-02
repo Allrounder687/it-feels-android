@@ -10,11 +10,22 @@ class LastfmService {
   static const String _baseUrl = 'https://ws.audioscrobbler.com/2.0/';
   static const String _sessionKeyPref = 'lastfm_session_key_v1';
   static const String _usernamePref = 'lastfm_username_v1';
-  
+
   final Logger _logger = Logger();
-  
-  String get _apiKey => dotenv.isInitialized ? (dotenv.env['LASTFM_API_KEY'] ?? '') : '';
-  String get _sharedSecret => dotenv.isInitialized ? (dotenv.env['LASTFM_SHARED_SECRET'] ?? '') : '';
+  final http.Client _client;
+  final String? _injectedApiKey;
+  final String? _injectedSharedSecret;
+
+  LastfmService({
+    http.Client? client,
+    String? apiKey,
+    String? sharedSecret,
+  })  : _client = client ?? http.Client(),
+        _injectedApiKey = apiKey,
+        _injectedSharedSecret = sharedSecret;
+
+  String get _apiKey => _injectedApiKey ?? (dotenv.isInitialized ? (dotenv.env['LASTFM_API_KEY'] ?? '') : '');
+  String get _sharedSecret => _injectedSharedSecret ?? (dotenv.isInitialized ? (dotenv.env['LASTFM_SHARED_SECRET'] ?? '') : '');
   
   bool get isConfigured => _apiKey.isNotEmpty && _sharedSecret.isNotEmpty;
 
@@ -56,7 +67,7 @@ class LastfmService {
       params['api_sig'] = _generateSignature(params);
       params['format'] = 'json';
 
-      final response = await http.post(Uri.parse(_baseUrl), body: params);
+      final response = await _client.post(Uri.parse(_baseUrl), body: params);
       
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -120,7 +131,7 @@ class LastfmService {
       params['api_sig'] = _generateSignature(params);
       params['format'] = 'json';
 
-      final response = await http.post(Uri.parse(_baseUrl), body: params);
+      final response = await _client.post(Uri.parse(_baseUrl), body: params);
       
       if (response.statusCode != 200) {
         _logger.w('Last.fm updateNowPlaying failed: \${response.body}');
@@ -157,7 +168,7 @@ class LastfmService {
       params['api_sig'] = _generateSignature(params);
       params['format'] = 'json';
 
-      final response = await http.post(Uri.parse(_baseUrl), body: params);
+      final response = await _client.post(Uri.parse(_baseUrl), body: params);
       
       if (response.statusCode == 200) {
         _logger.i('Successfully scrobbled: \${song.title} by \${song.artist}');
