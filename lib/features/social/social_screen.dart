@@ -679,8 +679,19 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                   ? snapshot.data!.data() as Map<String, dynamic>? 
                   : null;
                   
-              final List<dynamic> rawFriends = docData?['friends'] as List? ?? [];
-              final friends = rawFriends.map((e) => Map<String, dynamic>.from(e)).toList();
+              List<Map<String, dynamic>> friends = [];
+              try {
+                if (docData != null && docData['friends'] is List) {
+                  final rawFriends = docData['friends'] as List;
+                  for (var e in rawFriends) {
+                    if (e is Map) {
+                      friends.add(Map<String, dynamic>.from(e));
+                    }
+                  }
+                }
+              } catch (e) {
+                debugPrint('Error parsing friends: $e');
+              }
 
               if (friends.isEmpty) {
                 return Center(
