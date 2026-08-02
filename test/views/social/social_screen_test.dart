@@ -123,4 +123,61 @@ void main() {
     // It should render 'Valid Friend'
     expect(find.text('Valid Friend'), findsOneWidget);
   });
+
+  testWidgets('Friends list network call is cached by Riverpod and survives UI rebuilds without infinite loading', (WidgetTester tester) async {
+    when(() => mockSocialService.getInboxStream()).thenAnswer((_) => const Stream.empty());
+    when(() => mockRoomService.getPublicRooms()).thenAnswer((_) => const Stream.empty());
+
+    final mockDocSnap = MockDocumentSnapshot();
+    when(() => mockDocSnap.exists).thenReturn(true);
+    when(() => mockDocSnap.data()).thenReturn({
+      'friends': ['cached_friend_1']
+    });
+
+    when(() => mockSocialService.getFriendsStream()).thenAnswer((_) => Stream.value(mockDocSnap));
+    when(() => mockSocialService.getFriendDetails('cached_friend_1')).thenAnswer((_) async => {
+      'uid': 'cached_friend_1',
+      'displayName': 'Cached Friend',
+      'username': 'cached1'
+    });
+    when(() => mockSocialService.getPresenceStream(any())).thenAnswer((_) => const Stream.empty());
+
+    // Wrap in StatefulBuilder to trigger rebuilds
+    StateSetter? setTestState;
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: appProviderContainer,
+        child: MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                setTestState = setState;
+                return const SocialScreen();
+              }
+            )
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Tap on Friends tab
+    await tester.tap(find.text('FRIENDS 👥'));
+    await tester.pumpAndSettle();
+
+    // Verify friend is rendered
+    expect(find.text('Cached Friend'), findsOneWidget);
+
+    // Trigger 5 rapid UI rebuilds (simulating animations or presence stream updates)
+    for (int i = 0; i < 5; i++) {
+      setTestState!((){});
+      await tester.pump();
+    }
+
+    // Verify friend is STILL rendered and no loading skeleton is showing
+    expect(find.text('Cached Friend'), findsOneWidget);
+
+    // Verify that the getFriendDetails was ONLY CALLED ONCE despite 5 rebuilds!
+    verify(() => mockSocialService.getFriendDetails('cached_friend_1')).called(1);
+  });
 }
