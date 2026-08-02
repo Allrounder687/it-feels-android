@@ -27,6 +27,21 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
   late TabController _tabController;
   final SocialService _socialService = locator<SocialService>();
   String get myUid => FirebaseAuth.instance.currentUser?.uid ?? '';
+  
+  Stream<QuerySnapshot>? _inboxStream;
+  Stream<DocumentSnapshot>? _friendsStream;
+  Stream<DatabaseEvent>? _publicRoomsStream;
+  String? _cachedUid;
+
+  void _ensureStreams() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (_cachedUid != uid || _inboxStream == null) {
+      _cachedUid = uid;
+      _inboxStream = _socialService.getInboxStream();
+      _friendsStream = _socialService.getFriendsStream();
+    }
+    _publicRoomsStream ??= locator<RoomService>().getPublicRooms();
+  }
 
   @override
   void initState() {
@@ -150,6 +165,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    _ensureStreams();
     ref.watch(audioPlayerProvider); // Watch for theme changes
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
@@ -263,7 +279,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
 
   Widget _buildInboxTab() {
     return StreamBuilder<QuerySnapshot>(
-      stream: _socialService.getInboxStream(),
+      stream: _inboxStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent));
@@ -650,7 +666,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
         ),
         Expanded(
           child: StreamBuilder<DocumentSnapshot>(
-            stream: _socialService.getFriendsStream(),
+            stream: _friendsStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());

@@ -311,31 +311,6 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: 8),
 
               SwitchListTile.adaptive(
-                value: settings.useProxyBackend,
-                activeTrackColor: context.themeAccentColor,
-                title: Text(
-                  "Use Serverless Proxy Backend",
-                  style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: context.themeTextColor,
-                  ),
-                ),
-                subtitle: Text(
-                  settings.useProxyBackend
-                      ? "Active: Stream & lyrics extraction handled via Cloud Proxy"
-                      : "Inactive: Direct client scraping mode",
-                  style: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: context.themeMutedTextColor,
-                  ),
-                ),
-                onChanged: (val) {
-                  ref.read(settingsProvider.notifier).setUseProxyBackend(val);
-                },
-              ),
-
-              SwitchListTile.adaptive(
                 value: settings.enableMusicVideos,
                 activeTrackColor: context.themeAccentColor,
                 title: Text(
@@ -360,45 +335,136 @@ class SettingsScreen extends ConsumerWidget {
                 },
               ),
 
-              _buildActionTile(
-                context: context,
-                title: "Serverless Proxy URL",
-                subtitle: settings.proxyUrl,
-                icon: Icons.cloud_queue_rounded,
-                onTap: () async {
-                  final textController = TextEditingController(text: settings.proxyUrl);
-                  final newUrl = await showDialog<String>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: context.themeSurfaceColor,
-                      title: Text(
-                        "Cloud Proxy Endpoint",
-                        style: GoogleFonts.outfit(color: context.themeTextColor),
-                      ),
-                      content: TextField(
-                        controller: textController,
-                        style: TextStyle(color: context.themeTextColor),
-                        decoration: InputDecoration(
-                          hintText: "https://your-worker.workers.dev",
-                          hintStyle: TextStyle(color: context.themeMutedTextColor),
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          child: Text("Cancel", style: TextStyle(color: context.themeMutedTextColor)),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                        TextButton(
-                          child: Text("Save", style: TextStyle(color: context.themeAccentColor)),
-                          onPressed: () => Navigator.pop(ctx, textController.text.trim()),
-                        ),
-                      ],
+              Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  iconColor: context.themeMutedTextColor,
+                  collapsedIconColor: context.themeMutedTextColor,
+                  title: Text(
+                    "Advanced Server Settings",
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: context.themeMutedTextColor,
                     ),
-                  );
-                  if (newUrl != null && newUrl.isNotEmpty) {
-                    ref.read(settingsProvider.notifier).setProxyUrl(newUrl);
-                  }
-                },
+                  ),
+                  children: [
+                    ListTile(
+                      title: Text(
+                        "Use Serverless Proxy Backend",
+                        style: GoogleFonts.outfit(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: context.themeTextColor,
+                        ),
+                      ),
+                      subtitle: Text(
+                        settings.useProxyBackend
+                            ? "Active: Stream & lyrics extraction handled via Cloud Proxy"
+                            : "Inactive: Direct client scraping mode",
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: context.themeMutedTextColor,
+                        ),
+                      ),
+                      trailing: Switch.adaptive(
+                        value: settings.useProxyBackend,
+                        activeColor: context.themeAccentColor,
+                        onChanged: (val) async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: context.themeSurfaceColor,
+                              title: Text("Advanced Setting", style: GoogleFonts.outfit(color: context.themeTextColor, fontWeight: FontWeight.bold)),
+                              content: Text(
+                                "Warning: Modifying the proxy backend configuration can break streaming functionality. Only proceed if instructed by a developer.",
+                                style: GoogleFonts.inter(color: context.themeTextColor),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: Text("Cancel", style: TextStyle(color: context.themeMutedTextColor)),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: Text("Proceed", style: TextStyle(color: context.themeAccentColor)),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirm == true) {
+                            ref.read(settingsProvider.notifier).setUseProxyBackend(val);
+                          }
+                        },
+                      ),
+                    ),
+                    _buildActionTile(
+                      context: context,
+                      title: "Serverless Proxy URL",
+                      subtitle: settings.proxyUrl,
+                      icon: Icons.cloud_queue_rounded,
+                      onTap: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: context.themeSurfaceColor,
+                            title: Text("Advanced Setting", style: GoogleFonts.outfit(color: context.themeTextColor, fontWeight: FontWeight.bold)),
+                            content: Text(
+                              "Warning: Changing the Serverless Proxy URL will route all API requests to a new endpoint and may permanently break the app. Are you sure?",
+                              style: GoogleFonts.inter(color: context.themeTextColor),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: Text("Cancel", style: TextStyle(color: context.themeMutedTextColor)),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: Text("Proceed", style: TextStyle(color: context.themeAccentColor)),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (confirm != true) return;
+
+                        final textController = TextEditingController(text: settings.proxyUrl);
+                        final newUrl = await showDialog<String>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: context.themeSurfaceColor,
+                            title: Text(
+                              "Cloud Proxy Endpoint",
+                              style: GoogleFonts.outfit(color: context.themeTextColor),
+                            ),
+                            content: TextField(
+                              controller: textController,
+                              style: TextStyle(color: context.themeTextColor),
+                              decoration: InputDecoration(
+                                hintText: "https://your-worker.workers.dev",
+                                hintStyle: TextStyle(color: context.themeMutedTextColor),
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                child: Text("Cancel", style: TextStyle(color: context.themeMutedTextColor)),
+                                onPressed: () => Navigator.pop(ctx),
+                              ),
+                              TextButton(
+                                child: Text("Save", style: TextStyle(color: context.themeAccentColor)),
+                                onPressed: () => Navigator.pop(ctx, textController.text.trim()),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (newUrl != null && newUrl.isNotEmpty) {
+                          ref.read(settingsProvider.notifier).setProxyUrl(newUrl);
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 24),

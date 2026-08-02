@@ -8,12 +8,20 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 class SocialService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseDatabase _rtdb = FirebaseDatabase.instanceFor(
-    app: Firebase.app(), 
-    databaseURL: Firebase.app().options.databaseURL,
-  );
+  final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
+  final FirebaseDatabase _rtdb;
+
+  SocialService({
+    FirebaseFirestore? firestore,
+    FirebaseAuth? auth,
+    FirebaseDatabase? rtdb,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance,
+        _rtdb = rtdb ?? FirebaseDatabase.instanceFor(
+          app: Firebase.app(),
+          databaseURL: Firebase.app().options.databaseURL,
+        );
 
   // Manually add a friend via UID
   Future<bool> addFriendByUid(String friendUid) async {
