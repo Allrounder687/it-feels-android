@@ -26,7 +26,11 @@ class SocialScreen extends ConsumerStatefulWidget {
 class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final SocialService _socialService = locator<SocialService>();
-  String get myUid => FirebaseAuth.instance.currentUser?.uid ?? '';
+  
+  FirebaseAuth get auth => locator.isRegistered<FirebaseAuth>() ? locator<FirebaseAuth>() : FirebaseAuth.instance;
+  FirebaseFirestore get firestore => locator.isRegistered<FirebaseFirestore>() ? locator<FirebaseFirestore>() : FirebaseFirestore.instance;
+
+  String get myUid => auth.currentUser?.uid ?? '';
   
   Stream<QuerySnapshot>? _inboxStream;
   Stream<DocumentSnapshot>? _friendsStream;
@@ -34,7 +38,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
   String? _cachedUid;
 
   void _ensureStreams() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = auth.currentUser?.uid;
     if (_cachedUid != uid || _inboxStream == null) {
       _cachedUid = uid;
       _inboxStream = _socialService.getInboxStream();
@@ -56,7 +60,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
   }
 
   void _showAddFriendDialog() {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = auth.currentUser;
     if (user == null || user.isAnonymous) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please log in to an account to add friends.")),
@@ -205,9 +209,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
             ),
             Expanded(
               child: StreamBuilder<User?>(
-                stream: FirebaseAuth.instance.authStateChanges(),
-                builder: (context, snapshot) {
-                  final user = snapshot.data;
+                stream: auth.authStateChanges(),
+                builder: (context, authSnapshot) {
+                  final user = authSnapshot.data;
                   if (user == null || user.isAnonymous) {
                     return Center(
                       child: Padding(
@@ -587,7 +591,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
     return Column(
       children: [
         StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance.collection('client_config').doc('social').snapshots(),
+          stream: firestore.collection('client_config').doc('social').snapshots(),
           builder: (context, snapshot) {
             if (snapshot.hasData && snapshot.data!.exists) {
               final data = snapshot.data!.data() as Map<String, dynamic>?;
@@ -624,7 +628,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
         Padding(
           padding: const EdgeInsets.all(16),
           child: StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('users').doc(myUid).snapshots(),
+            stream: firestore.collection('users').doc(myUid).snapshots(),
             builder: (context, snapshot) {
               String myUsername = "Loading...";
               if (snapshot.hasData && snapshot.data!.exists) {
