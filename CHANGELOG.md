@@ -1,3 +1,8 @@
+## v3.5.16+50
+- **Social Tab Crash Hotfix**: Fixed a crash where corrupted data arrays from Firebase would cause the `SocialScreen` to render an `ErrorWidget`. The app now elegantly parses valid entries and ignores corrupted ones.
+- **Testing Architecture**: Introduced robust widget testing for `SocialScreen`. Successfully completely refactored `FirebaseFirestore` and `FirebaseAuth` instances inside widgets to be fully injected via `locator`, unblocking UI test automation.
+- **CI/CD Resiliency (iOS Shorebird Patches)**: Fixed a silent failure in the Shorebird Patch pipeline where iOS patches were skipped due to running on `ubuntu-latest`. The pipeline now safely splits patching into two jobs (`patch-android` on `ubuntu-latest` and `patch-ios` on `macos-latest`).
+
 ## v3.5.15+49
 - **Search Enhancements**: Implemented pagination (load more) for songs, albums, and playlists. Integrated video search results alongside regular audio tracks. Added the ability to remove individual recent searches.
 - **Dependency Injection**: Refactored `RadioApiService`, `SocialService`, and `LastfmService` to accept injected dependencies (`http.Client`, `FirebaseFirestore`, etc.) for robust unit testing. Registered `RoomService` and `SmartStorageService` in the service locator.
