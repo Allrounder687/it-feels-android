@@ -113,7 +113,12 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     }
 
     _recoveryAttempts = 0;
-    
+
+    // RESET mute state so videos played from the Video section or Search
+    // always start with audio enabled, regardless of NowPlayingScreen's
+    // previous toggle state.
+    state = state.copyWith(isMuted: false);
+
     // EXPLICITLY KILL OLD VIDEO TO PREVENT GLITCH
     state.videoController?.pause();
     state.videoController?.dispose();
