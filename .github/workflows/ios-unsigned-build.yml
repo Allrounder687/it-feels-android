@@ -59,7 +59,12 @@ jobs:
       - name: Inject Firebase Options
         run: |
           mkdir -p lib
-          echo "${{ secrets.FIREBASE_OPTIONS_B64 }}" | base64 -d > lib/firebase_options.dart
+          if [ -n "${{ secrets.FIREBASE_OPTIONS_B64 }}" ]; then
+            echo "${{ secrets.FIREBASE_OPTIONS_B64 }}" | base64 -d > lib/firebase_options.dart
+            echo "Injected Firebase Options from Secret"
+          else
+            echo "Using tracked firebase_options.dart"
+          fi
 
 
       - name: Build iOS without Code Signing
