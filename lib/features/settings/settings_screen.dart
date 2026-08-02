@@ -612,10 +612,10 @@ class SettingsScreen extends ConsumerWidget {
                   
                   try {
                     if (Platform.isAndroid || Platform.isIOS) {
-                      final shorebird = ShorebirdCodePush();
-                      final isShorebirdAvailable = await shorebird.isNewPatchAvailableForDownload();
+                      final shorebird = ShorebirdUpdater();
+                      final status = await shorebird.checkForUpdate();
                       
-                      if (isShorebirdAvailable && context.mounted) {
+                      if (status == UpdateStatus.outdated && context.mounted) {
                         ScaffoldMessenger.of(context).hideCurrentSnackBar();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -634,7 +634,7 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                         );
                         
-                        await shorebird.downloadUpdateIfAvailable();
+                        await shorebird.update();
                         
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
