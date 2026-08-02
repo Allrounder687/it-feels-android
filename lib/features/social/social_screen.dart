@@ -302,7 +302,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
 
         final items = snapshot.data!.docs;
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
           itemCount: items.length,
           itemBuilder: (context, index) {
             try {
@@ -683,13 +683,13 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                   ? snapshot.data!.data() as Map<String, dynamic>? 
                   : null;
                   
-              List<Map<String, dynamic>> friends = [];
+              List<String> friends = [];
               try {
                 if (docData != null && docData['friends'] is List) {
                   final rawFriends = docData['friends'] as List;
                   for (var e in rawFriends) {
-                    if (e is Map) {
-                      friends.add(Map<String, dynamic>.from(e));
+                    if (e is String) {
+                      friends.add(e);
                     }
                   }
                 }
@@ -707,14 +707,27 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
                 itemCount: friends.length,
                 itemBuilder: (context, index) {
                   try {
-                    final friend = friends[index];
-                    final friendUid = friend['uid'] as String;
-                    final displayName = friend['displayName'] as String? ?? 'Friend';
-                    final username = friend['username'] as String? ?? '';
+                    final friendUid = friends[index];
+                    
+                    return FutureBuilder<Map<String, dynamic>?>(
+                      future: _socialService.getFriendDetails(friendUid),
+                      builder: (context, friendSnap) {
+                        if (friendSnap.connectionState == ConnectionState.waiting) {
+                          return ListTile(
+                            leading: CircleAvatar(backgroundColor: context.themeAccentColor.withValues(alpha: 0.3)),
+                            title: Container(height: 12, width: 100, color: context.themeAccentColor.withValues(alpha: 0.1)),
+                          );
+                        }
+                        
+                        final friend = friendSnap.data;
+                        if (friend == null) return const SizedBox.shrink();
+
+                        final displayName = friend['displayName'] as String? ?? 'Friend';
+                        final username = friend['username'] as String? ?? '';
                     
                     return ListTile(
                       onTap: () {
@@ -806,7 +819,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                         ],
                       ),
                     );
-                  } catch (e) {
+                  },
+                );
+              } catch (e) {
                     return const SizedBox.shrink();
                   }
                 },

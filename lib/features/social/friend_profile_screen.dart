@@ -77,7 +77,7 @@ class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 140),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
