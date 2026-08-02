@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/widgets/animated_play_pause_button.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart';
@@ -17,7 +18,12 @@ class MiniPlayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Consumer(builder: (context, ref, child) { final playerProvider = ref.watch(audioPlayerProvider); 
+    return Consumer(builder: (context, ref, child) { 
+        final playerProvider = ref.watch(audioPlayerProvider); 
+        final videoProvider = ref.watch(videoPlayerProvider);
+        
+        if (videoProvider.isVideoActive) return const SizedBox.shrink();
+
         final currentSong = playerProvider.currentSong;
         if (currentSong == null) return const SizedBox.shrink();
 
