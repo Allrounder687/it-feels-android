@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:miniplayer/miniplayer.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
+import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:it_feels_music/features/player/video_player_screen.dart';
 import 'package:video_player/video_player.dart';
 
@@ -19,8 +20,10 @@ class VideoMiniplayer extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final minHeight = 70.0 + bottomPadding + 64.0; // Above bottom nav + MiniPlayer
+    // Use the actual measured bottom UI height (MiniPlayer + BottomNav)
+    // so the PIP sits flush on top of it — no hardcoded guesses.
+    final bottomUiHeight = ref.watch(bottomUiProvider);
+    final minHeight = 70.0 + (bottomUiHeight > 0 ? bottomUiHeight : 140.0);
 
     return Miniplayer(
       controller: miniplayerController,
