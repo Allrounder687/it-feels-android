@@ -117,6 +117,9 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     state.videoController?.pause();
     state.videoController?.dispose();
 
+    // FORCE PAUSE AUDIO PLAYER WHEN STARTING A VIDEO
+    ref.read(audioPlayerProvider.notifier).pause();
+
     state = state.copyWith(
       isLoading: true,
       isVideoActive: true,

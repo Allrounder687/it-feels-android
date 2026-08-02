@@ -1,4 +1,7 @@
 ## v3.5.16+50
+- **Video Player PiP**: Added global Picture-in-Picture (PiP) support for the Video Player, allowing users to minimize videos and navigate the app without interrupting playback.
+- **Audio/Video Playback**: Fixed a conflict where playing a video and audio track simultaneously would cause overlapping playback. Starting one now correctly pauses/closes the other.
+- **Trending Videos**: Fixed a bug where the Video Tab would fail to load trending videos due to YouTube API schema changes. Now uses native extraction as a fallback.
 - **Social Tab Crash Hotfix**: Fixed a crash where corrupted data arrays from Firebase would cause the `SocialScreen` to render an `ErrorWidget`. The app now elegantly parses valid entries and ignores corrupted ones.
 - **Testing Architecture**: Introduced robust widget testing for `SocialScreen`. Successfully completely refactored `FirebaseFirestore` and `FirebaseAuth` instances inside widgets to be fully injected via `locator`, unblocking UI test automation.
 - **CI/CD Resiliency (iOS Shorebird Patches)**: Fixed a silent failure in the Shorebird Patch pipeline where iOS patches were skipped due to running on `ubuntu-latest`. The pipeline now safely splits patching into two jobs (`patch-android` on `ubuntu-latest` and `patch-ios` on `macos-latest`).
