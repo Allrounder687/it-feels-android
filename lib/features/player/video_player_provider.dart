@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 @immutable
 class VideoPlayerState {
