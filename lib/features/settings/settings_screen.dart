@@ -51,6 +51,74 @@ class SettingsScreen extends ConsumerWidget {
               bottom: MediaQuery.of(context).viewPadding.bottom + 200, // Safe clearance for mini-player and nav bar
             ),
             children: [
+              Consumer(
+                builder: (context, ref, child) {
+                  final updatePending = ref.watch(shorebirdUpdatePendingProvider);
+                  if (updatePending) {
+                    return Card(
+                      color: context.themeAccentColor.withValues(alpha: 0.15),
+                      margin: const EdgeInsets.only(bottom: 24),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            Icon(Icons.restart_alt_rounded, color: context.themeAccentColor, size: 28),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Update Ready! 🎉",
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.themeTextColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "A new patch has been downloaded. Restart the app to apply fixes.",
+                                    style: GoogleFonts.inter(
+                                      fontSize: 13,
+                                      color: context.themeMutedTextColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton.icon(
+                                      onPressed: () => exit(0), // Trigger app restart
+                                      icon: const Icon(Icons.refresh_rounded, color: Colors.black),
+                                      label: Text(
+                                        "Restart Now",
+                                        style: GoogleFonts.inter(
+                                          color: Colors.black,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: context.themeAccentColor,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
               // Category 1: Audio & Streaming Quality
               _buildSectionHeader(context, "🎵 Audio & Streaming Quality"),
               const SizedBox(height: 8),
@@ -699,11 +767,12 @@ class SettingsScreen extends ConsumerWidget {
                             duration: Duration(seconds: 60),
                           ),
                         );
-                        
+
                         await shorebird.update();
-                        
+
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ref.read(shorebirdUpdatePendingProvider.notifier).state = true; // Set state to show banner
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text("Patch downloaded! Please restart the app to apply."),
