@@ -21,6 +21,7 @@ class MockFirebaseAuth extends Mock implements FirebaseAuth {}
 class MockUser extends Mock implements User {}
 class MockDocumentSnapshot extends Mock implements DocumentSnapshot {}
 class MockQuerySnapshot extends Mock implements QuerySnapshot {}
+class MockQueryDocumentSnapshot extends Mock implements QueryDocumentSnapshot {}
 class MockDatabaseEvent extends Mock implements DatabaseEvent {}
 
 class MockAudioPlayerNotifier extends AudioPlayerNotifier {
@@ -39,6 +40,14 @@ void main() {
   late FakeFirebaseFirestore fakeFirestore;
   late MockUser mockUser;
 
+  setUpAll(() {
+    appProviderContainer = ProviderContainer(
+      overrides: [
+        audioPlayerProvider.overrideWith(() => MockAudioPlayerNotifier()),
+      ],
+    );
+  });
+
   setUp(() async {
     mockSocialService = MockSocialService();
     mockRoomService = MockRoomService();
@@ -51,12 +60,6 @@ void main() {
     when(() => mockUser.uid).thenReturn('test_uid');
     when(() => mockUser.isAnonymous).thenReturn(false);
 
-    // Initialize global Riverpod container for theme extensions
-    appProviderContainer = ProviderContainer(
-      overrides: [
-        audioPlayerProvider.overrideWith(() => MockAudioPlayerNotifier()),
-      ],
-    );
 
     // Setup basic client_config to prevent null stream errors
     await fakeFirestore.collection('client_config').doc('social').set({
