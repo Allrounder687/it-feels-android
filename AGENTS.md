@@ -6,6 +6,7 @@ This file tracks major technical decisions, features implemented, and architectu
   - **CI/CD Resiliency:** Fixed a silent failure in `shorebird_patch.yml` where iOS patches were skipped because they ran on `ubuntu-latest`. **CRITICAL RULE**: iOS patches *MUST* run on Apple hardware (`macos-latest`). Separated the pipeline into `patch-android` (ubuntu-latest) and `patch-ios` (macos-latest) jobs.
   - **Testing Architecture:** Refactored `SocialScreen` and `AudioPlayerNotifier` to decouple hardcoded `FirebaseFirestore.instance` and `FirebaseAuth.instance` calls. Injected them via `locator` to fully unblock Widget Test automation environments.
   - **Crash Fix:** Enhanced the Friends Tab to handle corrupted Firebase arrays securely, avoiding `ErrorWidget` crashes.
+  - **Infinite Loading Fix:** Refactored the Friends Tab's list tile rendering to use a cached Riverpod `FutureProvider` instead of a standard `FutureBuilder`. This prevents continuous Future re-evaluations and infinite loading skeleton animations triggered by real-time presence or mini-player UI frame rebuilds.
   - **Version Bump:** Incremented version to `3.5.16+50`.
 - **Search Pagination & DI Architecture Release (v3.5.15):**
   - **Search Enhancements:** Integrated pagination for songs, albums, and playlists, added video search capabilities, and allowed removal of individual recent search terms.
