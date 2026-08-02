@@ -499,14 +499,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             margin: const EdgeInsets.only(right: 10),
                             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                             decoration: BoxDecoration(
-                              color: isSelected ? context.themeTextColor : context.themeUnselectedPillColor,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: isSelected ? Colors.transparent : context.themeTextColor10, width: 0.5),
-                            ),
-                            child: Text(
-                              _filters[index],
-                              style: GoogleFonts.inter(color: isSelected ? context.themeBackgroundColor : context.themeUnselectedPillTextColor, fontSize: 13, fontWeight: FontWeight.w700),
-                            ),
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? Colors.transparent
+                        : Theme.of(context)
+                            .dividerColor
+                            .withValues(alpha: 0.5),
+                    width: 0.5,
+                  ),
+                ),
+                child: Text(
+                  _filters[index],
+                  style: GoogleFonts.inter(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                           ),
                         );
                       },

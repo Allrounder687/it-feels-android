@@ -44,3 +44,6 @@ final videoPlayerProvider = NotifierProvider<VideoPlayerNotifier, VideoPlayerSta
 
 // Subscription Provider
 final subscriptionProvider = ChangeNotifierProvider<SubscriptionProvider>((ref) => SubscriptionProvider());
+
+// Shorebird OTA Update State
+final shorebirdUpdatePendingProvider = StateProvider<bool>((ref) => false);
