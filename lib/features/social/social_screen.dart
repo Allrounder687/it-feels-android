@@ -16,6 +16,12 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/custom_playlist.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:it_feels_music/features/auth/auth_bottom_sheet.dart';
+
+final friendDetailsProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, uid) async {
+  final socialService = locator<SocialService>();
+  return socialService.getFriendDetails(uid);
+});
+
 class SocialScreen extends ConsumerStatefulWidget {
   const SocialScreen({super.key});
 
@@ -713,115 +719,117 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                   try {
                     final friendUid = friends[index];
                     
-                    return FutureBuilder<Map<String, dynamic>?>(
-                      future: _socialService.getFriendDetails(friendUid),
-                      builder: (context, friendSnap) {
-                        if (friendSnap.connectionState == ConnectionState.waiting) {
-                          return ListTile(
+                    return Consumer(
+                      builder: (context, ref, child) {
+                        final friendSnap = ref.watch(friendDetailsProvider(friendUid));
+                        
+                        return friendSnap.when(
+                          loading: () => ListTile(
                             leading: CircleAvatar(backgroundColor: context.themeAccentColor.withValues(alpha: 0.3)),
                             title: Container(height: 12, width: 100, color: context.themeAccentColor.withValues(alpha: 0.1)),
-                          );
-                        }
-                        
-                        final friend = friendSnap.data;
-                        if (friend == null) return const SizedBox.shrink();
+                          ),
+                          error: (e, st) => const SizedBox.shrink(),
+                          data: (friend) {
+                            if (friend == null) return const SizedBox.shrink();
 
-                        final displayName = friend['displayName'] as String? ?? 'Friend';
-                        final username = friend['username'] as String? ?? '';
+                            final displayName = friend['displayName'] as String? ?? 'Friend';
+                            final username = friend['username'] as String? ?? '';
                     
-                    return ListTile(
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => FriendProfileScreen(friendUid: friendUid, friendName: displayName)));
-                      },
-                      leading: CircleAvatar(
-                        backgroundColor: AppColors.midnightAccent,
-                        child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                      ),
-                      title: Text(displayName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
-                      subtitle: StreamBuilder<DatabaseEvent>(
-                        stream: _socialService.getPresenceStream(friendUid),
-                        builder: (context, presenceSnap) {
-                          if (presenceSnap.hasData && presenceSnap.data!.snapshot.value != null) {
-                            try {
-                              final presenceData = Map<String, dynamic>.from(presenceSnap.data!.snapshot.value as Map);
-                              
-                              if (presenceData['is_playing'] == true) {
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
-                                        const SizedBox(width: 4),
-                                        Flexible(
-                                          child: Text(
-                                            "Listening to ${presenceData['song_title']}",
-                                            style: GoogleFonts.inter(color: Colors.greenAccent, fontSize: 12),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                            return ListTile(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => FriendProfileScreen(friendUid: friendUid, friendName: displayName)));
+                              },
+                              leading: CircleAvatar(
+                                backgroundColor: AppColors.midnightAccent,
+                                child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                              ),
+                              title: Text(displayName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
+                              subtitle: StreamBuilder<DatabaseEvent>(
+                                stream: _socialService.getPresenceStream(friendUid),
+                                builder: (context, presenceSnap) {
+                                  if (presenceSnap.hasData && presenceSnap.data!.snapshot.value != null) {
+                                    try {
+                                      final presenceData = Map<String, dynamic>.from(presenceSnap.data!.snapshot.value as Map);
+                                      
+                                      if (presenceData['is_playing'] == true) {
+                                        return Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
+                                                const SizedBox(width: 4),
+                                                Flexible(
+                                                  child: Text(
+                                                    "Listening to ${presenceData['song_title']}",
+                                                    style: GoogleFonts.inter(color: Colors.greenAccent, fontSize: 12),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            if (presenceData['room_id'] != null) ...[
+                                              const SizedBox(height: 4),
+                                              ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: AppColors.midnightPrimary,
+                                                  foregroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                                  minimumSize: const Size(80, 28),
+                                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                ),
+                                                onPressed: () {
+                                                  _handleJoinRoom(presenceData['room_id'], displayName);
+                                                },
+                                                child: const Text("Join Room", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                              ),
+                                            ],
+                                          ],
+                                        );
+                                      }
+                                    } catch (_) {}
+                                  }
+                                  return Text(username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12));
+                                },
+                              ),
+                              trailing: PopupMenuButton<String>(
+                                icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
+                                onSelected: (val) {
+                                  if (val == 'remove') {
+                                    showDialog(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        backgroundColor: context.themeSurfaceColor,
+                                        title: Text("Remove Friend", style: TextStyle(color: context.themeTextColor)),
+                                        content: Text("Are you sure you want to remove $displayName?", style: TextStyle(color: context.themeMutedTextColor)),
+                                        actions: [
+                                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                            onPressed: () {
+                                              _socialService.removeFriend(friendUid);
+                                              Navigator.pop(ctx);
+                                            },
+                                            child: const Text("Remove", style: TextStyle(color: Colors.white)),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (presenceData['room_id'] != null) ...[
-                                      const SizedBox(height: 4),
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.midnightPrimary,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                                          minimumSize: const Size(80, 28),
-                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        onPressed: () {
-                                          _handleJoinRoom(presenceData['room_id'], displayName);
-                                        },
-                                        child: const Text("Join Room", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                        ],
                                       ),
-                                    ],
-                                  ],
-                                );
-                              }
-                            } catch (_) {}
-                          }
-                          return Text(username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12));
-                        },
-                      ),
-                      trailing: PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
-                        onSelected: (val) {
-                          if (val == 'remove') {
-                            showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                backgroundColor: context.themeSurfaceColor,
-                                title: Text("Remove Friend", style: TextStyle(color: context.themeTextColor)),
-                                content: Text("Are you sure you want to remove $displayName?", style: TextStyle(color: context.themeMutedTextColor)),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                                    onPressed: () {
-                                      _socialService.removeFriend(friendUid);
-                                      Navigator.pop(ctx);
-                                    },
-                                    child: const Text("Remove", style: TextStyle(color: Colors.white)),
-                                  ),
+                                    );
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(value: 'remove', child: Text("Remove Friend", style: TextStyle(color: Colors.redAccent))),
                                 ],
                               ),
                             );
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(value: 'remove', child: Text("Remove Friend", style: TextStyle(color: Colors.redAccent))),
-                        ],
-                      ),
+                          },
+                        );
+                      },
                     );
-                  },
-                );
-              } catch (e) {
+                  } catch (e) {
                     return const SizedBox.shrink();
                   }
                 },
