@@ -1,15 +1,19 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/settings/hidden_songs_screen.dart';
+import 'package:it_feels_music/features/settings/storage_screen.dart';
+import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/features/settings/audio_settings_screen.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:it_feels_music/services/config_service.dart';
 import 'package:it_feels_music/features/admin/force_update_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-
+import 'package:it_feels_music/features/settings/lastfm_settings_screen.dart';
 import 'package:it_feels_music/features/ai/ai_settings_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
@@ -189,6 +193,20 @@ class SettingsScreen extends ConsumerWidget {
                   );
                 },
               ),
+              _buildActionTile(
+                context: context,
+                title: "Last.fm Scrobbling",
+                subtitle: "Connect your account to sync listening history",
+                icon: Icons.queue_music,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const LastfmSettingsScreen(),
+                    ),
+                  );
+                },
+              ),
 
               const SizedBox(height: 24),
 
@@ -204,8 +222,7 @@ class SettingsScreen extends ConsumerWidget {
                     : settings.customDownloadPath,
                 icon: Icons.folder_special_rounded,
                 onTap: () async {
-                  String? selectedDirectory = await FilePicker.platform
-                      .getDirectoryPath();
+                  String? selectedDirectory = await FilePicker.getDirectoryPath();
                   if (selectedDirectory != null) {
                     ref.read(settingsProvider.notifier).setCustomDownloadPath(selectedDirectory);
                     if (context.mounted) {
@@ -523,7 +540,27 @@ class SettingsScreen extends ConsumerWidget {
               ),
 
               const SizedBox(height: 24),
+              
+              // Category 3.5: Storage & Cache
+              _buildSectionHeader(context, "💾 Storage & Cache"),
+              const SizedBox(height: 8),
 
+              _buildActionTile(
+                context: context,
+                title: "Smart Storage Manager",
+                subtitle: "Manage offline downloads and audio cache limits",
+                icon: Icons.storage_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const StorageScreen(),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 24),
               // Category 4: Privacy & Content
               _buildSectionHeader(context, "🔒 Privacy & Content"),
               const SizedBox(height: 8),
@@ -555,25 +592,74 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: "See if a new version is available",
                 icon: Icons.system_update_rounded,
                 onTap: () async {
-                  BuildContext? dialogCtx;
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (ctx) {
-                      dialogCtx = ctx;
-                      return const Center(child: CircularProgressIndicator());
-                    },
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Row(
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          ),
+                          SizedBox(width: 16),
+                          Text("Checking for updates..."),
+                        ],
+                      ),
+                      duration: Duration(seconds: 30),
+                    ),
                   );
                   
+                  try {
+                    if (Platform.isAndroid || Platform.isIOS) {
+                      final shorebird = ShorebirdCodePush();
+                      final isShorebirdAvailable = await shorebird.isNewPatchAvailableForDownload();
+                      
+                      if (isShorebirdAvailable && context.mounted) {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Row(
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.greenAccent),
+                                ),
+                                SizedBox(width: 16),
+                                Text("Downloading background patch..."),
+                              ],
+                            ),
+                            duration: Duration(seconds: 60),
+                          ),
+                        );
+                        
+                        await shorebird.downloadUpdateIfAvailable();
+                        
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Patch downloaded! Please restart the app to apply."),
+                              duration: Duration(seconds: 5),
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                    }
+                  } catch (e) {
+                    debugPrint("Shorebird check failed: $e");
+                  }
+
                   AppConfig? config;
                   try {
                     config = await ConfigService.fetchRemoteConfig();
                   } catch (e) {
                     debugPrint("Error checking updates: $e");
                   } finally {
-                    if (dialogCtx != null && dialogCtx!.mounted) {
-                      Navigator.of(dialogCtx!).pop();
-                      dialogCtx = null;
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
                     }
                   }
 
