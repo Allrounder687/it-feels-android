@@ -766,6 +766,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> playSong(Song song, {List<Song>? queue, int index = 0, BuildContext? context}) async {
+    // FORCE CLOSE VIDEO PLAYER WHEN STARTING A SONG
+    ref.read(videoPlayerProvider.notifier).closeVideo();
+
     state = state.copyWith(
       currentSong: song,
       hasSentTelemetryForCurrentSong: false,
@@ -869,6 +872,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> play() async {
+    // FORCE CLOSE VIDEO PLAYER WHEN RESUMING AUDIO
+    ref.read(videoPlayerProvider.notifier).closeVideo();
+
     if (locator<it_feels_music_cast_service.CastService>().isConnected) {
       await locator<it_feels_music_cast_service.CastService>().play();
     } else {

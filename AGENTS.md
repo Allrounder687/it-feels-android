@@ -2,6 +2,10 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Video Player PiP & Trending Fixes (v3.5.16 Hotfix):**
+  - **Video PiP:** Re-implemented `VideoMiniplayer` via `miniplayer` package, injected at the global `MainNavigationWrapper` level to enable picture-in-picture persistence across the entire app stack.
+  - **Audio/Video Concurrency:** Rewrote provider playback logic (`audioPlayerProvider` & `videoPlayerProvider`) to mutually lock out and close competing media streams, resolving dual playback bugs.
+  - **Trending Videos Resilience:** Replaced broken `FEtrending` InnerTube post request fallback with a `youtube_explode_dart` search extraction for guaranteed "trending music videos" rendering.
 - **CI/CD iOS Shorebird Patch Fix & Social Testing (v3.5.16):**
   - **CI/CD Resiliency:** Fixed a silent failure in `shorebird_patch.yml` where iOS patches were skipped because they ran on `ubuntu-latest`. **CRITICAL RULE**: iOS patches *MUST* run on Apple hardware (`macos-latest`). Separated the pipeline into `patch-android` (ubuntu-latest) and `patch-ios` (macos-latest) jobs.
   - **Testing Architecture:** Refactored `SocialScreen` and `AudioPlayerNotifier` to decouple hardcoded `FirebaseFirestore.instance` and `FirebaseAuth.instance` calls. Injected them via `locator` to fully unblock Widget Test automation environments.

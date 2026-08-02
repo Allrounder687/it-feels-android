@@ -17,6 +17,7 @@ import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/playlist_import_service.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/core/widgets/mini_player.dart';
+import 'package:it_feels_music/features/player/video_miniplayer.dart';
 import 'package:it_feels_music/core/widgets/import_progress_banner.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
@@ -24,6 +25,7 @@ import 'package:it_feels_music/features/library/download_provider.dart';
 import 'package:it_feels_music/features/social/unread_count_provider.dart';
 import 'package:it_feels_music/services/config_service.dart';
 import 'package:it_feels_music/features/admin/force_update_screen.dart';
+import 'package:it_feels_music/core/widgets/measure_size.dart';
 
 class MainNavigationWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -273,6 +275,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                       // Active Shell Route
                       widget.navigationShell,
                       
+                      // Video Miniplayer Overlay
+                      const VideoMiniplayer(),
+
                       // Floating MiniPlayer Overlay
                       Positioned(
                         left: 0,
@@ -306,6 +311,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
             children: [
               // Active Shell Route
               widget.navigationShell,
+              
+              // Video Miniplayer Overlay
+              const VideoMiniplayer(),
 
               // Floating MiniPlayer + Bottom Navigation Bar Overlay
               if (MediaQuery.of(context).orientation == Orientation.portrait)
@@ -325,9 +333,6 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                           
                           // Mini Player Pill
                           MiniPlayer(onTap: () => context.push('/now_playing')),
-      
-                          // We moved VideoMiniplayer behind the Bottom Nav in the stack
-                          // so the tabs are tappable and overlay the transparent part of PiP.
       
                           // Floating Bottom Navigation Bar Pill Container
                           ClipRRect(

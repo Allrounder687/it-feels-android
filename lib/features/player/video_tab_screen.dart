@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/features/player/video_player_provider.dart';
+import 'package:it_feels_music/features/player/video_miniplayer.dart';
+import 'package:miniplayer/miniplayer.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -300,6 +303,7 @@ class _VideoTabScreenState extends ConsumerState<VideoTabScreen> {
               borderRadius: BorderRadius.circular(20),
               onTap: () {
                 ref.read(videoPlayerProvider.notifier).playVideo(videoId, title, uploader);
+                ref.read(videoMiniplayerControllerProvider).animateToHeight(state: PanelState.MAX);
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -488,11 +492,12 @@ class _VideoTabScreenState extends ConsumerState<VideoTabScreen> {
               onTap: () {
                 if (localPath.isNotEmpty && File(localPath).existsSync()) {
                   ref.read(videoPlayerProvider.notifier).playVideo(
-                    videoId, 
-                    title, 
-                    uploader, 
-                    localPath: localPath
-                  );
+                        videoId,
+                        title,
+                        uploader,
+                        localPath: localPath,
+                      );
+                  ref.read(videoMiniplayerControllerProvider).animateToHeight(state: PanelState.MAX);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Video file not found. It may have been deleted.')),

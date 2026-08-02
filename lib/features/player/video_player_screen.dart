@@ -11,7 +11,9 @@ import 'package:http/http.dart' as http;
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
+import 'package:it_feels_music/features/player/video_miniplayer.dart';
 import 'package:it_feels_music/services/storage_service.dart';
+import 'package:miniplayer/miniplayer.dart';
 
 class VideoPlayerScreen extends ConsumerStatefulWidget {
   const VideoPlayerScreen({super.key});
@@ -243,8 +245,8 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                   IconButton(
                                     icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 32),
                                     onPressed: () {
-                                      // Close video screen
-                                      Navigator.pop(context);
+                                      // Collapse video PiP instead of popping the route
+                                      ref.read(videoMiniplayerControllerProvider).animateToHeight(state: PanelState.MIN);
                                     },
                                   ),
                                   const Expanded(child: SizedBox()),

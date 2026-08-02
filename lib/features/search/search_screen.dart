@@ -8,6 +8,8 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
+import 'package:it_feels_music/features/player/video_miniplayer.dart';
+import 'package:miniplayer/miniplayer.dart';
 import 'package:it_feels_music/features/player/video_player_screen.dart';
 import 'package:it_feels_music/features/search/search_provider.dart';
 import 'package:it_feels_music/features/library/artist_detail_screen.dart';
@@ -497,14 +499,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                             trailing: const Icon(Icons.play_circle_fill_rounded, color: Colors.red),
                                             onTap: () {
                                               ref.read(videoPlayerProvider.notifier).playVideo(
-                                                vid['id'] ?? '',
-                                                vid['title'] ?? 'Unknown Video',
-                                                vid['uploader'] ?? 'YouTube',
-                                              );
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(builder: (_) => const VideoPlayerScreen()),
-                                              );
+                                                    vid['id'] ?? '',
+                                                    vid['title'] ?? 'Unknown Video',
+                                                    vid['uploader'] ?? 'YouTube',
+                                                  );
+                                              ref.read(videoMiniplayerControllerProvider).animateToHeight(state: PanelState.MAX);
                                             },
                                           ),
                                         ),
