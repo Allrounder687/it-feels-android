@@ -6,8 +6,8 @@ on:
       - 'patch-*' # Trigger when you push to any branch starting with patch-
 
 jobs:
-  patch:
-    name: Build and Release Patch
+  patch-android:
+    name: Build and Release Patch (Android)
     runs-on: ubuntu-latest
 
     steps:
@@ -42,9 +42,31 @@ jobs:
       - name: Publish Shorebird Patch (Android)
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird patch android
+        run: shorebird patch android --force
+
+  patch-ios:
+    name: Build and Release Patch (iOS)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Setup Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
 
       - name: Publish Shorebird Patch (iOS)
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird patch ios || echo "iOS patch skipped (baseline might not exist yet)"
+        run: shorebird patch ios --force || echo "iOS patch skipped (baseline might not exist yet)"
