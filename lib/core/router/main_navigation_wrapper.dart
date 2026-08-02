@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:go_router/go_router.dart';
@@ -76,6 +77,21 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
   }
 
   Future<void> _checkUpdateStatus() async {
+    // 1. Silent Background Shorebird Patch Check
+    try {
+      final shorebird = ShorebirdUpdater();
+      final status = await shorebird.checkForUpdate();
+      if (status == UpdateStatus.outdated) {
+        await shorebird.update();
+        if (mounted) {
+          ref.read(shorebirdUpdatePendingProvider.notifier).state = true;
+        }
+      }
+    } catch (e) {
+      debugPrint("Silent Shorebird check failed: $e");
+    }
+
+    // 2. Full Version Config Check
     try {
       final config = await ConfigService.fetchRemoteConfig();
       if (config != null && mounted) {
@@ -261,6 +277,8 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                             ],
                             const SizedBox(height: 24),
                             _buildNavItem(4, Icons.people_rounded, "Social", isVertical: true),
+                            const SizedBox(height: 24),
+                            _buildNavItem(5, Icons.settings_outlined, "Settings", isVertical: true, hasUpdate: ref.watch(shorebirdUpdatePendingProvider)),
                           ],
                         ),
                       ),
@@ -360,6 +378,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                                     _buildNavItem(2, Icons.library_music_rounded, "Library", hideLabel: isNarrowScreen),
                                     if (enableVideos) _buildNavItem(3, Icons.video_library_rounded, "Videos", hideLabel: isNarrowScreen),
                                     _buildNavItem(4, Icons.people_rounded, "Social", hideLabel: isNarrowScreen),
+                                    _buildNavItem(5, Icons.settings_outlined, "Settings", hideLabel: isNarrowScreen, hasUpdate: ref.watch(shorebirdUpdatePendingProvider)),
                                   ],
                                 ),
                               ),
@@ -377,9 +396,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label, {bool isVertical = false, bool hideLabel = false}) {
+  Widget _buildNavItem(int index, IconData icon, String label, {bool isVertical = false, bool hideLabel = false, bool hasUpdate = false}) {
     final isSelected = widget.navigationShell.currentIndex == index;
-    return Consumer(builder: (context, ref, child) { 
+    return Consumer(builder: (context, ref, child) {
         final content = GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () {
@@ -399,7 +418,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                 color: isSelected ? context.themeNavPillColor : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: isVertical
+              child: Stack(
+                children: [
+                  isVertical
                   ? Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -466,6 +487,24 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                         ],
                       ],
                     ),
+
+                  // Update Dot Indicator
+                  if (hasUpdate)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: context.themeAccentColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: context.themeBackgroundColor, width: 2),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         );

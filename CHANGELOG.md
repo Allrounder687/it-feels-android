@@ -1,4 +1,8 @@
 ## v3.5.16+50
+- **Video Player PiP Fixes**: Fixed video miniplayer layout issues in light mode. The PiP now uses theme-aware colors for divider/text/icons, video thumbnail uses AspectRatio(16:9) to prevent stretching, and properly shows play/pause + duration controls. The minHeight now accounts for audio miniplayer + nav bar height to prevent overlap.
+- **Search Screen Light Mode Theme**: Fixed category filter chips on the Search screen to use Theme.of(context).colorScheme instead of hardcoded dark colors. Selected/unselected pills now adapt correctly to light and dark themes.
+- **Home Screen Tab Theme**: Fixed For You / Music / Podcasts / Charts filter pills to use ColorScheme colors instead of hardcoded theme extension colors, ensuring proper contrast in both light and dark modes.
+- **Shorebird Silent OTA**: Added silent background Shorebird patch check on app startup. If a patch is available, it downloads automatically and shows an update indicator dot on the Settings nav item.
 - **Video Player PiP**: Added global Picture-in-Picture (PiP) support for the Video Player, allowing users to minimize videos and navigate the app without interrupting playback.
 - **Audio/Video Playback**: Fixed a conflict where playing a video and audio track simultaneously would cause overlapping playback. Starting one now correctly pauses/closes the other.
 - **Trending Videos**: Fixed a bug where the Video Tab would fail to load trending videos due to YouTube API schema changes. Now uses native extraction as a fallback.

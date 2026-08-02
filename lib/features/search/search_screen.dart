@@ -150,17 +150,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           margin: const EdgeInsets.only(right: 8),
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                           decoration: BoxDecoration(
-                            color: isSelected ? context.themeTextColor : AppColors.midnightPill,
-                            borderRadius: BorderRadius.circular(19),
-                          ),
-                          child: Text(
-                            categories[index],
-                            style: GoogleFonts.inter(
-                              color: isSelected ? context.themeBackgroundColor : context.themeTextColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(19),
+                ),
+                child: Text(
+                  categories[index],
+                  style: GoogleFonts.inter(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                         ),
                       );
                     },
