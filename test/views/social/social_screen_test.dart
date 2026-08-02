@@ -81,16 +81,21 @@ void main() {
     final mockDocSnap = MockDocumentSnapshot();
     when(() => mockDocSnap.exists).thenReturn(true);
     
-    // Injecting a raw String ('corrupt_string') inside the friends array instead of a Map
+    // Injecting raw Strings (UIDs) inside the friends array
     when(() => mockDocSnap.data()).thenReturn({
       'friends': [
-        {'uid': '1', 'displayName': 'Valid Friend'},
-        'corrupted_string_instead_of_map',
+        'valid_uid_1',
+        123, // corrupt data (int)
         null,
       ]
     });
 
     when(() => mockSocialService.getFriendsStream()).thenAnswer((_) => Stream.value(mockDocSnap));
+    when(() => mockSocialService.getFriendDetails('valid_uid_1')).thenAnswer((_) async => {
+      'uid': 'valid_uid_1',
+      'displayName': 'Valid Friend',
+      'username': 'valid1'
+    });
     when(() => mockSocialService.getPresenceStream(any())).thenAnswer((_) => const Stream.empty());
 
     // 3. Pump the Widget Tree
