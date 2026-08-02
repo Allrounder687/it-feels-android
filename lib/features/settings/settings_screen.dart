@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/settings/hidden_songs_screen.dart';
+import 'package:it_feels_music/features/settings/storage_screen.dart';
+import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/features/settings/audio_settings_screen.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:it_feels_music/services/config_service.dart';
@@ -537,7 +539,27 @@ class SettingsScreen extends ConsumerWidget {
               ),
 
               const SizedBox(height: 24),
+              
+              // Category 3.5: Storage & Cache
+              _buildSectionHeader(context, "💾 Storage & Cache"),
+              const SizedBox(height: 8),
 
+              _buildActionTile(
+                context: context,
+                title: "Smart Storage Manager",
+                subtitle: "Manage offline downloads and audio cache limits",
+                icon: Icons.storage_rounded,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const StorageScreen(),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 24),
               // Category 4: Privacy & Content
               _buildSectionHeader(context, "🔒 Privacy & Content"),
               const SizedBox(height: 8),

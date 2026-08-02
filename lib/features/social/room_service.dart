@@ -100,6 +100,26 @@ class RoomService {
     await _rtdb.ref('rooms/$roomId/join_requests/$guestId').remove();
   }
 
+  // Add song to collaborative Jam Queue
+  Future<void> addSongToJamQueue(String roomId, Song song, String addedBy) async {
+    final queueRef = _rtdb.ref('rooms/$roomId/queue').push();
+    await queueRef.set({
+      'songId': song.id,
+      'saavnId': song.saavnId,
+      'title': song.title,
+      'artist': song.artist,
+      'coverArt': song.coverArt,
+      'addedBy': addedBy,
+      'timestamp': ServerValue.timestamp,
+    });
+  }
+
+  // Listen to Jam Queue additions
+  Stream<DatabaseEvent> jamQueueStream(String roomId) {
+    return _rtdb.ref('rooms/$roomId/queue').orderByChild('timestamp').onChildAdded;
+  }
+
+
   // Guest listens to allowed status
   Stream<DatabaseEvent> listenToAllowedStatus(String roomId, String guestId) {
     return _rtdb.ref('rooms/$roomId/allowed_guests/$guestId').onValue;

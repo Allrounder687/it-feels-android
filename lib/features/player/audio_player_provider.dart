@@ -26,6 +26,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/services/notification_service.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
+import 'package:it_feels_music/features/library/download_provider.dart';
+import 'package:it_feels_music/data/services/smart_storage_service.dart';
 
 enum AppThemeMode {
   dynamic,
@@ -339,6 +341,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Timer? _audioSyncHapticTimer;
   StreamSubscription<DatabaseEvent>? _roomSubscription;
   StreamSubscription<DatabaseEvent>? _joinRequestSubscription;
+  StreamSubscription<DatabaseEvent>? _jamQueueSubscription;
   int _lastSyncedSecond = -1;
   bool _hasShownEmailVerification = false;
 
@@ -367,6 +370,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       _audioSyncHapticTimer?.cancel();
       _roomSubscription?.cancel();
       _joinRequestSubscription?.cancel();
+      _jamQueueSubscription?.cancel();
     });
 
     return const AudioPlayerState();
@@ -688,16 +692,25 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     triggerHaptic(heavy: true);
   }
 
-  void toggleFavorite(Song song) {
+  void toggleFavorite(Song song) async {
     triggerHaptic();
     final list = List<Song>.from(state.favoriteSongs);
+    bool added = false;
     if (state.isFavorite(song.id)) {
       list.removeWhere((s) => s.id == song.id);
     } else {
       list.add(song);
+      added = true;
     }
     state = state.copyWith(favoriteSongs: list);
     StorageService.saveFavorites(list);
+
+    if (added) {
+      final autoDownload = await locator<SmartStorageService>().getAutoDownloadFavorites();
+      if (autoDownload) {
+        ref.read(downloadProvider.notifier).downloadSong(song);
+      }
+    }
   }
 
   Future<void> _loadFavorites() async {
@@ -1147,6 +1160,37 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
             ),
           ),
         );
+      }
+    });
+
+    _jamQueueSubscription?.cancel();
+    _jamQueueSubscription = _roomService.jamQueueStream(roomId).listen((event) {
+      if (event.snapshot.value != null) {
+        final data = Map<String, dynamic>.from(event.snapshot.value as Map);
+        final songId = data['songId']?.toString() ?? '';
+        final title = data['title']?.toString() ?? 'Track';
+        final addedBy = data['addedBy']?.toString() ?? 'A friend';
+        
+        if (songId.isNotEmpty) {
+          final newSong = Song(
+            id: songId,
+            saavnId: data['saavnId']?.toString(),
+            title: title,
+            artist: "${data['artist']?.toString() ?? 'Unknown'} • Added by $addedBy",
+            coverArt: data['coverArt']?.toString() ?? '',
+            url: '',
+          );
+          addToQueue(newSong);
+          rootScaffoldMessengerKey.currentState?.showSnackBar(
+            SnackBar(
+              content: Text('$addedBy added $title to the Jam Queue!', style: const TextStyle(color: Colors.white)),
+              backgroundColor: Colors.deepPurpleAccent,
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
       }
     });
 

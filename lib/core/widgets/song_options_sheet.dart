@@ -15,7 +15,8 @@ import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
-
+import 'package:it_feels_music/features/settings/profile_provider.dart';
+import 'package:it_feels_music/features/social/room_service.dart';
 class SongOptionsSheet extends ConsumerWidget {
   final Song song;
   final List<Song>? playlistContext;
@@ -182,6 +183,24 @@ class SongOptionsSheet extends ConsumerWidget {
               );
             },
           ),
+
+          if (playerProv.currentRoomId != null)
+            _buildOptionTile(context,
+              icon: Icons.group_add_rounded,
+              iconColor: Colors.deepPurpleAccent,
+              title: "Add to Jam Queue",
+              onTap: () async {
+                Navigator.pop(context);
+                final profile = ref.read(profileProvider);
+                final name = profile.userName.isNotEmpty ? profile.userName : 'A Friend';
+                await locator<RoomService>().addSongToJamQueue(playerProv.currentRoomId!, song, name);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Added ${song.title} to Jam Queue")),
+                  );
+                }
+              },
+            ),
 
           // Action 4: Add to Playlist
           _buildOptionTile(context, 
