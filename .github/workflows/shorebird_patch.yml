@@ -42,7 +42,7 @@ jobs:
       - name: Publish Shorebird Patch (Android)
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird patch android --force
+        run: shorebird patch android
 
   patch-ios:
     name: Build and Release Patch (iOS)
@@ -69,4 +69,4 @@ jobs:
       - name: Publish Shorebird Patch (iOS)
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird patch ios --force || echo "iOS patch skipped (baseline might not exist yet)"
+        run: shorebird patch ios || echo "iOS patch skipped (baseline might not exist yet)"
