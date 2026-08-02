@@ -47,14 +47,6 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
   }
 
   String _formatBytes(int bytes) {
-    if (bytes <= 0) return "0 B";
-    const suffixes = ["B", "KB", "MB", "GB", "TB"];
-    var i = (bytes.toDouble().log() / 1024.0.log()).floor();
-    if (i >= suffixes.length) i = suffixes.length - 1;
-    final value = bytes / (1024 * i).clamp(1, double.infinity);
-    if (i == 0) return "${value.toStringAsFixed(0)} ${suffixes[i]}";
-    // Using simple loop if log doesn't work for math dart library without import dart:math
-    // Let's use a simpler way
     return _formatBytesSimple(bytes);
   }
 

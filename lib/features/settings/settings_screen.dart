@@ -220,8 +220,7 @@ class SettingsScreen extends ConsumerWidget {
                     : settings.customDownloadPath,
                 icon: Icons.folder_special_rounded,
                 onTap: () async {
-                  String? selectedDirectory = await FilePicker.platform
-                      .getDirectoryPath();
+                  String? selectedDirectory = await FilePicker.getDirectoryPath();
                   if (selectedDirectory != null) {
                     ref.read(settingsProvider.notifier).setCustomDownloadPath(selectedDirectory);
                     if (context.mounted) {

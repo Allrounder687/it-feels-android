@@ -3,6 +3,7 @@ import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:video_player/video_player.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 final canvasControllerProvider = StateNotifierProvider<CanvasControllerNotifier, VideoPlayerController?>((ref) {
   final notifier = CanvasControllerNotifier(ref);

@@ -28,6 +28,7 @@ import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_musi
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/library/download_provider.dart';
 import 'package:it_feels_music/data/services/smart_storage_service.dart';
+import 'package:it_feels_music/services/lastfm_service.dart';
 
 enum AppThemeMode {
   dynamic,
@@ -1174,11 +1175,14 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         if (songId.isNotEmpty) {
           final newSong = Song(
             id: songId,
-            saavnId: data['saavnId']?.toString(),
+            saavnId: data['saavnId']?.toString() ?? '',
             title: title,
             artist: "${data['artist']?.toString() ?? 'Unknown'} • Added by $addedBy",
+            album: data['album']?.toString() ?? 'Jam Session',
+            duration: int.tryParse(data['duration']?.toString() ?? '0') ?? 0,
             coverArt: data['coverArt']?.toString() ?? '',
-            url: '',
+            encryptedMediaUrl: data['url']?.toString() ?? '',
+            addedAt: DateTime.now(),
           );
           addToQueue(newSong);
           rootScaffoldMessengerKey.currentState?.showSnackBar(

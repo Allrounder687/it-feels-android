@@ -63,7 +63,7 @@ class RadioApiService {
     }
 
     return Song(
-      id: 'radio:\${json['stationuuid']}',
+      id: 'radio:${json["stationuuid"]}',
       saavnId: '',
       title: name,
       artist: json['country'] ?? 'Global Radio',
