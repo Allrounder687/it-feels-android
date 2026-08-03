@@ -12,11 +12,14 @@ class CustomTitleBar extends StatelessWidget {
       return const SizedBox.shrink();
     }
     
-    return Container(
-      color: Colors.black.withOpacity(0.5), // Semi-transparent blending
-      child: const WindowCaption(
-        brightness: Brightness.dark,
-        backgroundColor: Colors.transparent,
+    return SizedBox(
+      height: 32, // Equivalent to window_manager's kWindowCaptionHeight
+      child: Container(
+        color: Colors.black.withOpacity(0.5), // Semi-transparent blending
+        child: const WindowCaption(
+          brightness: Brightness.dark,
+          backgroundColor: Colors.transparent,
+        ),
       ),
     );
   }
