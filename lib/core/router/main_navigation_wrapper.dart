@@ -242,7 +242,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
       backgroundColor: context.themeBackgroundColor,
       body: Column(
         children: [
-          const CustomTitleBar(),
+          // Removed CustomTitleBar to use native Windows title bar
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
