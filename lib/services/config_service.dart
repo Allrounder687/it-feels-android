@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -45,6 +46,8 @@ class ConfigService {
   }
 
   static Future<bool> requiresForceUpdate(AppConfig config) async {
+    if (kDebugMode) return false;
+    
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentBuildNumber = int.tryParse(packageInfo.buildNumber) ?? 1;
