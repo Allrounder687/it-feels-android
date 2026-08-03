@@ -237,7 +237,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWideScreen = constraints.maxWidth >= 600;
-          final isNarrowScreen = constraints.maxWidth < 380;
+          final isNarrowScreen = !isWideScreen;
 
           if (isWideScreen) {
             return Row(
