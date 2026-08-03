@@ -122,9 +122,13 @@ Future<void> main() async {
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.hidden,
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
+      if (Platform.isWindows) {
+        await windowManager.setAsFrameless();
+      } else {
+        await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+      }
       await windowManager.show();
       await windowManager.focus();
     });
