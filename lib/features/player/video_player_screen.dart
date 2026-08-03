@@ -204,6 +204,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
   Widget build(BuildContext context) {
     final videoProvider = ref.watch(videoPlayerProvider);
     final topInset = MediaQuery.of(context).viewPadding.top;
+    final isWide = MediaQuery.of(context).size.width > 800;
 
     Widget playerArea = Stack(
       children: [
@@ -428,7 +429,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     }
     // We removed the Expanded(child: playerArea) for fullscreen because it's no longer inside a Column.
 
-    final isWide = MediaQuery.of(context).size.width > 800;
+    // We removed the Expanded(child: playerArea) for fullscreen because it's no longer inside a Column.
 
     final metadataWidget = Padding(
       padding: const EdgeInsets.all(16.0),
