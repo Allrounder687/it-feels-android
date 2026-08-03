@@ -13,44 +13,43 @@ class CustomTitleBar extends StatelessWidget {
     }
     
     return DragToMoveArea(
-      child: Container(
-        height: 36,
+      child: Material(
         color: const Color(0xFF181B22),
-        child: Row(
-          children: [
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'IT-Feels',
-                style: TextStyle(color: Colors.white70),
+        child: SizedBox(
+          height: 36,
+          child: Row(
+            children: [
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'IT-Feels',
+                  style: TextStyle(color: Colors.white70),
+                ),
               ),
-            ),
-            IconButton(
-              tooltip: 'Minimize',
-              onPressed: windowManager.minimize,
-              icon: const Icon(Icons.remove, color: Colors.white, size: 18),
-            ),
-            IconButton(
-              tooltip: 'Maximize',
-              onPressed: () async {
-                if (await windowManager.isMaximized()) {
-                  await windowManager.unmaximize();
-                } else {
-                  await windowManager.maximize();
-                }
-              },
-              icon: const Icon(Icons.crop_square, color: Colors.white, size: 18),
-            ),
-            IconButton(
-              tooltip: 'Close',
-              style: IconButton.styleFrom(
-                backgroundColor: const Color(0xFFC42B1C),
-                shape: const RoundedRectangleBorder(),
+              IconButton(
+                onPressed: windowManager.minimize,
+                icon: const Icon(Icons.remove, color: Colors.white, size: 18),
               ),
-              onPressed: windowManager.close,
-              icon: const Icon(Icons.close, color: Colors.white, size: 18),
-            ),
-          ],
+              IconButton(
+                onPressed: () async {
+                  if (await windowManager.isMaximized()) {
+                    await windowManager.unmaximize();
+                  } else {
+                    await windowManager.maximize();
+                  }
+                },
+                icon: const Icon(Icons.crop_square, color: Colors.white, size: 18),
+              ),
+              IconButton(
+                style: IconButton.styleFrom(
+                  backgroundColor: const Color(0xFFC42B1C),
+                  shape: const RoundedRectangleBorder(),
+                ),
+                onPressed: windowManager.close,
+                icon: const Icon(Icons.close, color: Colors.white, size: 18),
+              ),
+            ],
+          ),
         ),
       ),
     );
