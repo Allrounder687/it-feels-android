@@ -124,11 +124,6 @@ Future<void> main() async {
       skipTaskbar: false,
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
-      if (Platform.isWindows) {
-        await windowManager.setAsFrameless();
-      } else {
-        await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-      }
       await windowManager.show();
       await windowManager.focus();
     });
@@ -181,7 +176,6 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                       final isFullscreen = ref.watch(fullscreenProvider);
                       return Column(
                         children: [
-                          if (!isFullscreen) const CustomTitleBar(),
                           Expanded(
                             child: childWidget!,
                           ),
