@@ -14,6 +14,7 @@ import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/library/listening_history_provider.dart';
 import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
+import 'package:it_feels_music/features/home/custom_title_bar.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/playlist_import_service.dart';
@@ -239,8 +240,12 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
 
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
+      body: Column(
+        children: [
+          const CustomTitleBar(),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
           final isWideScreen = constraints.maxWidth >= 600;
           final isNarrowScreen = !isWideScreen;
 
@@ -412,7 +417,10 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
           );
         },
       ),
-    );
+    ),
+   ],
+  ),
+);
   }
 
   Widget _buildNavItem(int index, IconData icon, String label, {bool isVertical = false, bool hideLabel = false, bool hasUpdate = false}) {

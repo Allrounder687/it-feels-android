@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/providers/fullscreen_provider.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/player/video_miniplayer.dart';
 import 'package:it_feels_music/services/storage_service.dart';
@@ -76,6 +78,9 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     setState(() {
       _isFullscreen = !_isFullscreen;
     });
+    
+    // Update global UI provider so the title bar vanishes
+    ref.read(fullscreenProvider.notifier).state = _isFullscreen;
     
     if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
       await windowManager.ensureInitialized();
@@ -201,8 +206,25 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     final topInset = MediaQuery.of(context).viewPadding.top;
 
     Widget playerArea = Stack(
-      children: [
-                  // Video or Loading State
+                  // Ambient Glow (Theater Mode) for TV / Desktop Screens
+                  if (!videoProvider.isLoading && videoProvider.videoController != null && isWide)
+                    Positioned.fill(
+                      child: Transform.scale(
+                        scale: 1.1,
+                        child: ImageFiltered(
+                          imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                          child: Opacity(
+                            opacity: 0.6,
+                            child: Video(
+                              controller: videoProvider.videoController!,
+                              controls: NoVideoControls,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // Main Video or Loading State
                   GestureDetector(
                     onTap: _toggleControls,
                     onDoubleTapDown: (details) {
@@ -218,7 +240,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                     onVerticalDragUpdate: (details) => _onVerticalDragUpdate(details, videoProvider),
                     onVerticalDragEnd: _onVerticalDragEnd,
                     child: Container(
-                      color: Colors.black,
+                      color: Colors.transparent,
                       child: Center(
                         child: videoProvider.isLoading
                             ? const CircularProgressIndicator(color: AppColors.midnightAccent)
@@ -251,7 +273,8 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                   IconButton(
                                     icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 32),
                                     onPressed: () {
-                                      // Collapse video PiP instead of popping the route? Now we pop the route.
+                                      // If we're fullscreen, exit it first before popping
+                                      if (_isFullscreen) _toggleFullscreen();
                                       context.pop();
                                     },
                                   ),
@@ -517,58 +540,85 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
       ),
     );
 
-    return Material(
-      color: _isFullscreen ? Colors.black : context.themeBackgroundColor,
-      child: _isFullscreen
-          ? playerArea
-          : isWide
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 6,
-                      child: CustomScrollView(
-                        slivers: [
-                          SliverToBoxAdapter(child: playerArea),
-                          SliverToBoxAdapter(child: metadataWidget),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      flex: 4,
-                      child: Container(
-                        color: context.themeCardColor.withValues(alpha: 0.3),
+    return FocusableActionDetector(
+      autofocus: true,
+      shortcuts: {
+        LogicalKeySet(LogicalKeyboardKey.space): const Intent(ActivateAction.key),
+        LogicalKeySet(LogicalKeyboardKey.arrowLeft): const Intent(DirectionalFocusIntent.left),
+        LogicalKeySet(LogicalKeyboardKey.arrowRight): const Intent(DirectionalFocusIntent.right),
+        LogicalKeySet(LogicalKeyboardKey.keyF): const Intent(ScrollIntent.direction(AxisDirection.up)), // Hack intent map for F
+      },
+      actions: {
+        Intent: CallbackAction<Intent>(
+          onInvoke: (intent) {
+            if (intent is Intent && intent == const Intent(ActivateAction.key)) {
+              videoProvider.isPlaying ? ref.read(videoPlayerProvider.notifier).pause() : ref.read(videoPlayerProvider.notifier).play();
+            } else if (intent is Intent && intent == const Intent(DirectionalFocusIntent.left)) {
+              ref.read(videoPlayerProvider.notifier).seek(const Duration(seconds: -10));
+            } else if (intent is Intent && intent == const Intent(DirectionalFocusIntent.right)) {
+              ref.read(videoPlayerProvider.notifier).seek(const Duration(seconds: 10));
+            } else if (intent is Intent && intent == const Intent(ScrollIntent.direction(AxisDirection.up))) {
+              _toggleFullscreen();
+            }
+            _startHideTimer();
+            setState(() => _showControls = true);
+            return null;
+          },
+        ),
+      },
+      child: Material(
+        color: _isFullscreen ? Colors.black : context.themeBackgroundColor,
+        child: _isFullscreen
+            ? playerArea
+            : isWide
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 6,
                         child: CustomScrollView(
                           slivers: [
-                            SliverToBoxAdapter(child: upNextHeader),
+                            SliverToBoxAdapter(child: playerArea),
+                            SliverToBoxAdapter(child: metadataWidget),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        flex: 4,
+                        child: Container(
+                          color: context.themeCardColor.withValues(alpha: 0.3),
+                          child: CustomScrollView(
+                            slivers: [
+                              SliverToBoxAdapter(child: upNextHeader),
+                              relatedVideosSliverList,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    children: [
+                      playerArea,
+                      Expanded(
+                        child: CustomScrollView(
+                          slivers: [
+                            SliverToBoxAdapter(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  metadataWidget,
+                                  upNextHeader,
+                                ],
+                              ),
+                            ),
                             relatedVideosSliverList,
                           ],
                         ),
                       ),
-                    ),
-                  ],
-                )
-              : Column(
-                  children: [
-                    playerArea,
-                    Expanded(
-                      child: CustomScrollView(
-                        slivers: [
-                          SliverToBoxAdapter(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                metadataWidget,
-                                upNextHeader,
-                              ],
-                            ),
-                          ),
-                          relatedVideosSliverList,
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+      ),
     );
   }
 

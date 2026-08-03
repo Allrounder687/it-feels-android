@@ -15,9 +15,12 @@ import 'services/notification_service.dart';
 import 'package:it_feels_music/core/router/app_router.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/auth/banned_screen.dart';
+import 'package:it_feels_music/core/providers/fullscreen_provider.dart';
 import 'package:it_feels_music/features/admin/in_app_broadcast_listener.dart';
 import 'package:it_feels_music/services/local_proxy_server.dart';
+import 'package:it_feels_music/features/home/custom_title_bar.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'dart:ui';
 import 'dart:io';
@@ -115,6 +118,22 @@ Future<void> main() async {
     container: appProviderContainer,
     child: const PixelPlayerSaavnApp(),
   ));
+
+  if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
+    await windowManager.ensureInitialized();
+    WindowOptions windowOptions = const WindowOptions(
+      size: Size(1280, 720),
+      minimumSize: Size(800, 600),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.hidden, // Frameless!
+    );
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 }
 
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -153,7 +172,20 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                 builder: (context, child) {
                   final isBanned = ref.watch(banProvider).isBanned;
                   if (isBanned) return const BannedScreen();
-                  return InAppBroadcastListener(child: child ?? const SizedBox());
+                  return Consumer(
+                    builder: (context, ref, childWidget) {
+                      final isFullscreen = ref.watch(fullscreenProvider);
+                      return Column(
+                        children: [
+                          if (!isFullscreen) const CustomTitleBar(),
+                          Expanded(
+                            child: childWidget!,
+                          ),
+                        ],
+                      );
+                    },
+                    child: InAppBroadcastListener(child: child ?? const SizedBox()),
+                  );
                 },
               );
             },
