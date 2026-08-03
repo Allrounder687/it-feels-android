@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/utils/des_decryptor.dart';
+import 'package:it_feels_music/services/local_proxy_server.dart';
 
 class BackendApiService {
   // Configurable proxy base URL (defaults to user's live Cloudflare Worker URL)
@@ -395,11 +397,8 @@ class BackendApiService {
   static set ytDlpBackendUrl(String val) => _testYtDlpUrl = val;
 
   static final List<String> _pipedInstances = [
-    'https://pipedapi.kavin.rocks',
-    'https://pipedapi.reallyaweso.me',
-    'https://pipedapi.projectsegfau.lt',
-    'https://pipedapi.in.projectsegfau.lt',
-    'https://piped-api.garudalinux.org',
+    'https://api.piped.private.coffee', // Currently active in 2026
+    'https://pipedapi.kavin.rocks', // Official fallback
   ];
 
   /// Piped API Multi-Instance Failover Engine
@@ -505,26 +504,50 @@ class BackendApiService {
         }
       }
       
-      // Extract streams natively on the device using youtube_explode_dart
-      final manifest = await _yt.videos.streamsClient.getManifest(cleanId);
+      // Extract streams natively using TV/VR clients to bypass signature throttling
+      final manifest = await _yt.videos.streamsClient.getManifest(
+        cleanId,
+        ytClients: [
+          YoutubeApiClient.androidVr,
+          YoutubeApiClient.ios,
+        ],
+      );
       final videoTitle = (await _yt.videos.get(cleanId)).title;
 
       final List<Map<String, dynamic>> streams = [];
       
-      // Get Muxed (Video + Audio) streams
-      for (final streamInfo in manifest.muxed) {
-        final qualityLabel = streamInfo.videoQuality.name;
+      // Get highest-res video-only stream (up to 4K/8K)
+      if (manifest.videoOnly.isNotEmpty) {
+        final highestVideo = manifest.videoOnly.withHighestBitrate();
         streams.add({
-          'quality': qualityLabel,
-          'url': streamInfo.url.toString(),
-          'mimeType': 'video/mp4',
+          'quality': highestVideo.videoQuality.name,
+          'url': highestVideo.url.toString(),
+          'mimeType': highestVideo.container.name,
+          'videoOnly': true,
+        });
+      }
+
+      // Fallback: adaptive HLS manifest
+      if (manifest.hls.isNotEmpty) {
+        final highestHls = manifest.hls.withHighestBitrate();
+        streams.add({
+          'quality': 'HLS Adaptive',
+          'url': highestHls.url.toString(),
+          'mimeType': 'application/x-mpegURL',
           'videoOnly': false,
         });
       }
       
-      // Exclude video-only streams because standard VideoPlayer cannot multiplex them 
-      // with audio natively without a custom HLS pipeline. Muxed streams (up to 720p) 
-      // guarantee perfect audio/video sync instantly.
+      // Guaranteed 360p fallback (Muxed)
+      if (manifest.muxed.isNotEmpty) {
+        final fallback360p = manifest.muxed.withHighestBitrate();
+        streams.add({
+          'quality': '360p (Muxed Fallback)',
+          'url': fallback360p.url.toString(),
+          'mimeType': fallback360p.container.name,
+          'videoOnly': false,
+        });
+      }
 
       String audioUrl = '';
       if (manifest.audioOnly.isNotEmpty) {

@@ -19,7 +19,7 @@ import 'package:it_feels_music/features/player/sleep_timer_sheet.dart';
 import 'package:it_feels_music/core/widgets/animated_play_pause_button.dart';
 import 'package:it_feels_music/features/player/fullscreen_video_screen.dart';
 import 'package:it_feels_music/features/home/driving_mode_screen.dart';
-import 'package:video_player/video_player.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
 import 'package:it_feels_music/features/cast/cast_bottom_sheet.dart';
@@ -86,12 +86,12 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
       // Switching to audio
       final useVideoAudio = settingsProv.useVideoAudioSource;
       if (useVideoAudio) {
-        final position = videoProvider.videoController?.value.position;
+        final position = videoProvider.player?.state.position;
         if (position != null && position > Duration.zero) {
           ref.read(audioPlayerProvider.notifier).seek(position);
         }
       }
-      videoProvider.videoController?.pause();
+      videoProvider.player?.pause();
       if (!audioProvider.isPlaying) {
         ref.read(audioPlayerProvider.notifier).play();
       }
@@ -433,14 +433,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                       decoration: BoxDecoration(
                                         color: _isVideoMode ? accentColor : Colors.transparent,
                                         borderRadius: BorderRadius.circular(20),
-                                        boxShadow: (!_isVideoMode && !_hasViewedVideoForCurrentSong && videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
+                                        boxShadow: (!_isVideoMode && !_hasViewedVideoForCurrentSong && videoProvider.videoController != null)
                                             ? [BoxShadow(color: accentColor.withValues(alpha: 0.8), blurRadius: 10, spreadRadius: 2)]
                                             : null,
                                       ),
                                       child: Text(
                                         'Video',
                                         style: GoogleFonts.inter(
-                                          color: _isVideoMode || (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized) 
+                                          color: _isVideoMode || (videoProvider.videoController != null) 
                                               ? context.themeInvertedTextColor : context.themeMutedTextColor,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,
@@ -471,9 +471,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                       },
                       child: _isVideoMode 
                         ? AspectRatio(
-                            aspectRatio: (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
-                                ? videoProvider.videoController!.value.aspectRatio
-                                : 16 / 9,
+                            aspectRatio: 16 / 9,
                             child: Container(
                               key: const ValueKey('video_player'),
                               decoration: BoxDecoration(
@@ -487,11 +485,15 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                     Positioned.fill(
                                       child: videoProvider.isLoading 
                                         ? Center(child: CircularProgressIndicator(color: accentColor))
-                                        : videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized
-                                          ? VideoPlayer(videoProvider.videoController!)
+                                        : videoProvider.videoController != null
+                                          ? Video(
+                                              controller: videoProvider.videoController!,
+                                              controls: NoVideoControls,
+                                              fill: Colors.black,
+                                            )
                                           : Center(child: Text('Video unavailable', style: GoogleFonts.inter(color: Colors.white))),
                                     ),
-                                    if (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
+                                    if (videoProvider.videoController != null)
                                       Positioned(
                                         right: 8,
                                         bottom: 8,
@@ -825,18 +827,20 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
                     Widget buildProgress() {
                       if (_isVideoMode && videoProvider.videoController != null) {
-                        return ValueListenableBuilder<VideoPlayerValue>(
-                          valueListenable: videoProvider.videoController!,
-                          builder: (context, value, child) {
+                        return StreamBuilder<Duration>(
+                          stream: videoProvider.player!.stream.position,
+                          builder: (context, snapshot) {
+                            final position = snapshot.data ?? videoProvider.player!.state.position;
+                            final duration = videoProvider.player!.state.duration;
                             return Column(
                               children: [
                                 WavySeekBar(
-                                  position: value.position,
-                                  duration: value.duration,
+                                  position: position,
+                                  duration: duration,
                                   activeColor: accentColor,
                                   inactiveColor: context.themeTextColor24,
                                   onSeek: (newPos) {
-                                    videoProvider.videoController?.seekTo(newPos);
+                                    videoProvider.player?.seek(newPos);
                                     final settingsProv = ref.read(settingsProvider);
                                     if (!settingsProv.useVideoAudioSource) {
                                       ref.read(audioPlayerProvider.notifier).seek(newPos);
@@ -849,11 +853,11 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        _formatDuration(value.position),
+                                        _formatDuration(position),
                                         style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                                       ),
                                       Text(
-                                        _formatDuration(value.duration),
+                                        _formatDuration(duration),
                                         style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                                       ),
                                     ],
@@ -861,7 +865,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                 ),
                               ],
                             );
-                          },
+                          }
                         );
                       }
 
@@ -925,9 +929,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             onPressed: () {
                               final settingsProv = ref.read(settingsProvider);
                               if (_isVideoMode) {
-                                final pos = videoProvider.videoController?.value.position ?? Duration.zero;
+                                final pos = videoProvider.player?.state.position ?? Duration.zero;
                                 final newPos = pos - const Duration(seconds: 10);
-                                videoProvider.videoController?.seekTo(newPos);
+                                videoProvider.player?.seek(newPos);
                                 if (!settingsProv.useVideoAudioSource) {
                                   ref.read(audioPlayerProvider.notifier).seek(newPos);
                                 }
@@ -947,17 +951,17 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             onPressed: () {
                               final settingsProv = ref.read(settingsProvider);
                               if (_isVideoMode) {
-                                final ctrl = videoProvider.videoController;
-                                if (ctrl != null) {
-                                  if (ctrl.value.isPlaying) {
-                                    ctrl.pause();
+                                final player = videoProvider.player;
+                                if (player != null) {
+                                  if (player.state.playing) {
+                                    player.pause();
                                     if (!settingsProv.useVideoAudioSource) {
                                       ref.read(audioPlayerProvider.notifier).pause();
                                     }
                                   } else {
-                                    ctrl.play();
+                                    player.play();
                                     if (!settingsProv.useVideoAudioSource) {
-                                      ref.read(audioPlayerProvider.notifier).seek(ctrl.value.position);
+                                      ref.read(audioPlayerProvider.notifier).seek(player.state.position);
                                       ref.read(audioPlayerProvider.notifier).play();
                                     }
                                   }
@@ -983,23 +987,24 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   ),
                                 ],
                               ),
-                              child: _isVideoMode && videoProvider.videoController != null
-                                ? ValueListenableBuilder<VideoPlayerValue>(
-                                    valueListenable: videoProvider.videoController!,
-                                    builder: (context, value, child) {
+                              child: _isVideoMode && videoProvider.player != null
+                                ? StreamBuilder<bool>(
+                                    stream: videoProvider.player!.stream.playing,
+                                    builder: (context, snapshot) {
+                                      final isPlaying = snapshot.data ?? videoProvider.player!.state.playing;
                                       final settingsProv = ref.read(settingsProvider);
                                       return AnimatedPlayPauseButton(
-                                        isPlaying: value.isPlaying,
+                                        isPlaying: isPlaying,
                                         onPressed: () {
-                                          if (value.isPlaying) {
-                                            videoProvider.videoController!.pause();
+                                          if (isPlaying) {
+                                            videoProvider.player!.pause();
                                             if (!settingsProv.useVideoAudioSource) {
                                               ref.read(audioPlayerProvider.notifier).pause();
                                             }
                                           } else {
-                                            videoProvider.videoController!.play();
+                                            videoProvider.player!.play();
                                             if (!settingsProv.useVideoAudioSource) {
-                                              ref.read(audioPlayerProvider.notifier).seek(value.position);
+                                              ref.read(audioPlayerProvider.notifier).seek(videoProvider.player!.state.position);
                                               ref.read(audioPlayerProvider.notifier).play();
                                             }
                                           }
@@ -1028,9 +1033,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             onPressed: () {
                               final settingsProv = ref.read(settingsProvider);
                               if (_isVideoMode) {
-                                final pos = videoProvider.videoController?.value.position ?? Duration.zero;
+                                final pos = videoProvider.player?.state.position ?? Duration.zero;
                                 final newPos = pos + const Duration(seconds: 10);
-                                videoProvider.videoController?.seekTo(newPos);
+                                videoProvider.player?.seek(newPos);
                                 if (!settingsProv.useVideoAudioSource) {
                                   ref.read(audioPlayerProvider.notifier).seek(newPos);
                                 }

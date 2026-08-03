@@ -13,7 +13,7 @@ class NotificationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<void> initialize() async {
-    if (kIsWeb) return;
+    if (kIsWeb || (defaultTargetPlatform != TargetPlatform.android && defaultTargetPlatform != TargetPlatform.iOS)) return;
 
     // Request permissions
     NotificationSettings settings = await _messaging.requestPermission(

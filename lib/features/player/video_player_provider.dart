@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:video_player/video_player.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
@@ -9,7 +10,8 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 @immutable
 class VideoPlayerState {
-  final VideoPlayerController? videoController;
+  final Player? player;
+  final VideoController? videoController;
   final bool isVideoActive;
   final bool isLoading;
   final bool isMuted;
@@ -17,6 +19,7 @@ class VideoPlayerState {
   final String currentTitle;
   final String currentUploader;
   final List<Map<String, dynamic>> streams;
+  final String audioUrl;
   final String selectedQuality;
   final List<Map<String, dynamic>> relatedVideos;
   final VoidCallback? onVideoStarted;
@@ -24,6 +27,7 @@ class VideoPlayerState {
   final double brightness;
 
   const VideoPlayerState({
+    this.player,
     this.videoController,
     this.isVideoActive = false,
     this.isLoading = false,
@@ -32,6 +36,7 @@ class VideoPlayerState {
     this.currentTitle = '',
     this.currentUploader = '',
     this.streams = const [],
+    this.audioUrl = '',
     this.selectedQuality = '720p',
     this.relatedVideos = const [],
     this.onVideoStarted,
@@ -40,7 +45,8 @@ class VideoPlayerState {
   });
 
   VideoPlayerState copyWith({
-    VideoPlayerController? videoController,
+    Player? player,
+    VideoController? videoController,
     bool clearVideoController = false,
     bool? isVideoActive,
     bool? isLoading,
@@ -49,6 +55,7 @@ class VideoPlayerState {
     String? currentTitle,
     String? currentUploader,
     List<Map<String, dynamic>>? streams,
+    String? audioUrl,
     String? selectedQuality,
     List<Map<String, dynamic>>? relatedVideos,
     VoidCallback? onVideoStarted,
@@ -56,6 +63,7 @@ class VideoPlayerState {
     double? brightness,
   }) {
     return VideoPlayerState(
+      player: clearVideoController ? null : (player ?? this.player),
       videoController: clearVideoController ? null : (videoController ?? this.videoController),
       isVideoActive: isVideoActive ?? this.isVideoActive,
       isLoading: isLoading ?? this.isLoading,
@@ -64,6 +72,7 @@ class VideoPlayerState {
       currentTitle: currentTitle ?? this.currentTitle,
       currentUploader: currentUploader ?? this.currentUploader,
       streams: streams ?? this.streams,
+      audioUrl: audioUrl ?? this.audioUrl,
       selectedQuality: selectedQuality ?? this.selectedQuality,
       relatedVideos: relatedVideos ?? this.relatedVideos,
       onVideoStarted: onVideoStarted ?? this.onVideoStarted,
@@ -85,7 +94,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
   VideoPlayerState build() {
     _initSystemControls();
     ref.onDispose(() {
-      state.videoController?.dispose();
+      state.player?.dispose();
     });
     return const VideoPlayerState();
   }
@@ -103,12 +112,12 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
   }
 
   Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition}) async {
-    if (state.currentVideoId == videoId && state.videoController != null && state.videoController!.value.isInitialized) {
+    if (state.currentVideoId == videoId && state.player != null) {
       state = state.copyWith(isVideoActive: true);
       if (startPosition != null) {
-        await state.videoController!.seekTo(startPosition);
+        await state.player!.seek(startPosition);
       }
-      await state.videoController!.play();
+      await state.player!.play();
       return;
     }
 
@@ -120,8 +129,8 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     state = state.copyWith(isMuted: false);
 
     // EXPLICITLY KILL OLD VIDEO TO PREVENT GLITCH
-    state.videoController?.pause();
-    state.videoController?.dispose();
+    await state.player?.pause();
+    await state.player?.dispose();
 
     // FORCE PAUSE AUDIO PLAYER WHEN STARTING A VIDEO
     ref.read(audioPlayerProvider.notifier).pause();
@@ -133,6 +142,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       currentTitle: title,
       currentUploader: uploader,
       streams: const [],
+      audioUrl: '',
       relatedVideos: const [],
       clearVideoController: true, // Wipe the old controller safely
     );
@@ -157,10 +167,12 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     final streamData = results[0] as Map<String, dynamic>;
     final relVideos = List<Map<String, dynamic>>.from((results[1] as Iterable?) ?? []);
     final streamList = List<Map<String, dynamic>>.from(streamData['streams'] ?? []);
+    final audioUrl = streamData['audioUrl'] as String? ?? '';
 
     state = state.copyWith(
       relatedVideos: relVideos,
       streams: streamList,
+      audioUrl: audioUrl,
     );
     
     if (streamList.isNotEmpty) {
@@ -172,17 +184,17 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
 
   Future<void> _initPlayerWithFile(String localPath, {Duration? startPosition}) async {
     try {
-      await state.videoController?.dispose();
-      final controller = VideoPlayerController.file(
-        File(localPath),
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-      );
-      await controller.initialize();
+      await state.player?.dispose();
+      
+      final player = Player();
+      final controller = VideoController(player);
+      
+      await player.open(Media(localPath), play: true);
+      
       if (startPosition != null) {
-        await controller.seekTo(startPosition);
+        await player.seek(startPosition);
       }
-      await controller.play();
-      state = state.copyWith(videoController: controller);
+      state = state.copyWith(player: player, videoController: controller);
     } catch (e) {
       debugPrint('[VideoPlayerNotifier] Error playing offline file: $e');
     }
@@ -193,10 +205,10 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
 
     state = state.copyWith(isLoading: true);
 
-    final previousPosition = startPosition ?? state.videoController?.value.position ?? Duration.zero;
-    final wasPlaying = state.videoController?.value.isPlaying ?? true;
+    final previousPosition = startPosition ?? state.player?.state.position ?? Duration.zero;
+    final wasPlaying = state.player?.state.playing ?? true;
 
-    await state.videoController?.dispose();
+    await state.player?.dispose();
 
     var selectedStream = state.streams.firstWhere(
       (s) => s['quality'] == targetQuality,
@@ -205,20 +217,18 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     
     final quality = selectedStream['quality'];
     final streamUrl = selectedStream['url'] as String;
-    final formatHint = streamUrl.contains('.m3u8') ? VideoFormat.hls : VideoFormat.other;
     
-    final controller = VideoPlayerController.networkUrl(
-      Uri.parse(streamUrl),
-      formatHint: formatHint,
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-      httpHeaders: {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
-        'Referer': 'https://www.youtube.com/',
-      },
-    );
+    final player = Player();
+    final controller = VideoController(player);
     
     try {
-      await controller.initialize();
+      await player.open(Media(streamUrl), play: false);
+      
+      // If it's a separated video-only stream, we need to attach the audio stream
+      if (selectedStream['videoOnly'] == true && state.audioUrl.isNotEmpty) {
+        await player.setAudioTrack(AudioTrack.uri(state.audioUrl, title: 'Original', language: 'en'));
+      }
+      
     } catch (e) {
       debugPrint('[VideoPlayerNotifier] Error initializing video stream: $e');
       if (e.toString().contains('403') || e.toString().contains('Response code: 403')) {
@@ -227,26 +237,25 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       }
     }
 
-    controller.addListener(() {
-      if (controller.value.hasError) {
-        final err = controller.value.errorDescription;
-        if (err != null && (err.contains('403') || err.contains('Response code: 403'))) {
-          _handleVideoPlaybackError(controller.value.position, controller.value.isPlaying);
-        }
+    player.stream.error.listen((event) {
+      final err = event.toString();
+      if (err.contains('403') || err.contains('Response code: 403')) {
+        _handleVideoPlaybackError(player.state.position, player.state.playing);
       }
     });
 
-    await controller.setVolume(state.isMuted ? 0.0 : 1.0);
+    await player.setVolume(state.isMuted ? 0.0 : 100.0);
     
     if (previousPosition != Duration.zero) {
-      await controller.seekTo(previousPosition);
+      await player.seek(previousPosition);
     }
     
     if (wasPlaying) {
-      await controller.play();
+      await player.play();
     }
 
     state = state.copyWith(
+      player: player,
       videoController: controller,
       selectedQuality: quality,
       isLoading: false,
@@ -298,26 +307,26 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
   }
 
   void seek(Duration duration) {
-    if (state.videoController == null) return;
-    final currentPos = state.videoController!.value.position;
+    if (state.player == null) return;
+    final currentPos = state.player!.state.position;
     var targetPos = currentPos + duration;
-    var maxDur = state.videoController!.value.duration;
+    var maxDur = state.player!.state.duration;
     if (targetPos < Duration.zero) targetPos = Duration.zero;
     if (targetPos > maxDur) targetPos = maxDur;
-    state.videoController!.seekTo(targetPos);
+    state.player!.seek(targetPos);
   }
 
   void closeVideo() {
-    state.videoController?.pause();
-    state.videoController?.dispose();
+    state.player?.pause();
+    state.player?.dispose();
     state = state.copyWith(
       isVideoActive: false,
-      videoController: null,
+      clearVideoController: true,
     );
   }
 
   void setMuted(bool mute) {
-    state.videoController?.setVolume(mute ? 0.0 : 1.0);
+    state.player?.setVolume(mute ? 0.0 : 100.0);
     state = state.copyWith(isMuted: mute);
   }
 }

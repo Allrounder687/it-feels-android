@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
@@ -32,6 +33,13 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
   final TextEditingController _passwordController = TextEditingController();
   final FocusNode _passwordFocus = FocusNode();
 
+  bool get _isGoogleSignInSupported {
+    if (kIsWeb) return true;
+    return defaultTargetPlatform == TargetPlatform.android ||
+           defaultTargetPlatform == TargetPlatform.iOS ||
+           defaultTargetPlatform == TargetPlatform.macOS;
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -44,14 +52,13 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     
-    // Auto-close when authenticated
-    if (authState.isAuthenticated) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    ref.listen(authProvider, (previous, next) {
+      if (next.isAuthenticated && mounted) {
         if (Navigator.of(context).canPop()) {
           Navigator.of(context).pop();
         }
-      });
-    }
+      }
+    });
 
     final bottomUiHeight = ref.watch(bottomUiProvider);
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom + bottomUiHeight;
@@ -180,7 +187,7 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
                       } else if (authState.viewState == AuthViewState.emailVerificationPending) {
                         ref.read(authProvider.notifier).checkVerificationStatus();
                       } else {
-                        ref.read(authProvider.notifier).submitAuth(_emailController.text, _passwordController.text);
+                        ref.read(authProvider.notifier).submitAuth(_emailController.text.trim(), _passwordController.text);
                       }
                     },
               style: ElevatedButton.styleFrom(
@@ -235,7 +242,7 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
               ),
 
             // Google Sign-In Button
-            if (authState.viewState == AuthViewState.login || authState.viewState == AuthViewState.signup) ...[
+            if ((authState.viewState == AuthViewState.login || authState.viewState == AuthViewState.signup) && _isGoogleSignInSupported) ...[
               const Center(
                 child: Text(
                   'OR',

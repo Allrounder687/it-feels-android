@@ -301,8 +301,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               
               // In a horizontal GridView:
               // crossAxis is vertical (height), mainAxis is horizontal (width).
-              // We want each item to be wide enough to take up most of the screen, so titles aren't truncated.
-              final itemWidth = screenWidth * (isWide ? 0.40 : 0.85);
+              // We want each item to be wide enough to take up most of the screen on mobile, 
+              // but constrained to a reasonable max width on tablets so they don't stretch into strips.
+              final itemWidth = isWide ? 260.0 : (screenWidth * 0.85);
               
               // Calculate effective row height
               // crossAxisSpacing is the vertical spacing between rows (12.0)
