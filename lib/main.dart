@@ -116,13 +116,13 @@ Future<void> main() async {
 
   if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
     await windowManager.ensureInitialized();
-    WindowOptions windowOptions = const WindowOptions(
-      size: Size(1280, 720),
-      minimumSize: Size(800, 600),
+    WindowOptions windowOptions = WindowOptions(
+      size: const Size(1280, 720),
+      minimumSize: const Size(800, 600),
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.hidden, // Frameless!
+      titleBarStyle: Platform.isWindows ? TitleBarStyle.normal : TitleBarStyle.hidden, // Windows uses setAsFrameless() below
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       if (Platform.isWindows) {
