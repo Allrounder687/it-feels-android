@@ -81,6 +81,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         currentSong.artist,
         query: BackendApiService.cleanSearchQuery(currentSong.title, currentSong.artist),
         startPosition: position,
+        isBackgroundHandoff: true,
       );
     } else {
       // Switching to audio
@@ -1294,26 +1295,25 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
     final isLoading = lyricsState.isLoading;
     final isNotFound = lyricsState.lyricsNotFound;
 
+    String prevLine = "";
     String currentLine = "";
     String nextLine = "";
-    String thirdLine = "";
 
     if (lyricsResult != null && lyricsResult.hasSynced) {
       final activeIdx = lyricsState.getActiveLineIndex(position);
       if (activeIdx >= 0 && activeIdx < lyricsResult.syncedLyrics.length) {
+        if (activeIdx > 0) {
+          prevLine = lyricsResult.syncedLyrics[activeIdx - 1].text;
+        }
         currentLine = lyricsResult.syncedLyrics[activeIdx].text;
         if (activeIdx + 1 < lyricsResult.syncedLyrics.length) {
           nextLine = lyricsResult.syncedLyrics[activeIdx + 1].text;
-        }
-        if (activeIdx + 2 < lyricsResult.syncedLyrics.length) {
-          thirdLine = lyricsResult.syncedLyrics[activeIdx + 2].text;
         }
       }
     } else if (lyricsResult != null && lyricsResult.hasStatic && lyricsResult.staticLyrics != null) {
       final lines = lyricsResult.staticLyrics!.split('\n').where((l) => l.trim().isNotEmpty).toList();
       if (lines.isNotEmpty) currentLine = lines.first;
       if (lines.length > 1) nextLine = lines[1];
-      if (lines.length > 2) thirdLine = lines[2];
     }
 
     return GestureDetector(
@@ -1400,52 +1400,74 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
                   fontStyle: FontStyle.italic,
                 ),
               )
-            else
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: Text(
-                      currentLine,
+              else
+                SizedBox(
+                  height: 70, // Fixed height to prevent jumping
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      // Determines slide direction based on key entering/exiting
+                      final slideIn = Tween<Offset>(begin: const Offset(0.0, 0.3), end: Offset.zero).animate(animation);
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: slideIn,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Column(
                       key: ValueKey(currentLine),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
-                        color: context.themeTextColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (prevLine.isNotEmpty)
+                          Text(
+                            prevLine,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: context.themeMutedTextColor.withValues(alpha: 0.35),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        if (prevLine.isNotEmpty) const SizedBox(height: 3),
+                        Text(
+                          currentLine,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            color: context.themeTextColor,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            shadows: [
+                              BoxShadow(
+                                color: accentColor.withValues(alpha: 0.4),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              )
+                            ],
+                          ),
+                        ),
+                        if (nextLine.isNotEmpty) const SizedBox(height: 3),
+                        if (nextLine.isNotEmpty)
+                          Text(
+                            nextLine,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: context.themeMutedTextColor.withValues(alpha: 0.6),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  if (nextLine.isNotEmpty) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      nextLine,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        color: context.themeMutedTextColor.withValues(alpha: 0.6),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                  if (thirdLine.isNotEmpty) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      thirdLine,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        color: context.themeMutedTextColor.withValues(alpha: 0.35),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+                ),
           ],
         ),
       ),
