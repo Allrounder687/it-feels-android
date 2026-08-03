@@ -125,6 +125,10 @@ Future<void> main() async {
       titleBarStyle: TitleBarStyle.hidden, // Frameless!
     );
     windowManager.waitUntilReadyToShow(windowOptions, () async {
+      if (Platform.isWindows) {
+        await windowManager.setAsFrameless();
+      }
+      await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
       await windowManager.show();
       await windowManager.focus();
     });
