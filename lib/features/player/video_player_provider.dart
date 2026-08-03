@@ -186,7 +186,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     try {
       await state.player?.dispose();
       
-      final player = Player();
+      final player = Player(configuration: const PlayerConfiguration(pitch: false));
       final controller = VideoController(player);
       
       await player.open(Media(localPath), play: true);
@@ -218,7 +218,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     final quality = selectedStream['quality'];
     final streamUrl = selectedStream['url'] as String;
     
-    final player = Player();
+    final player = Player(configuration: const PlayerConfiguration(pitch: false));
     final controller = VideoController(player);
     
     try {

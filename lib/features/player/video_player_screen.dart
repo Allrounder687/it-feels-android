@@ -255,38 +255,17 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                       icon: const Icon(Icons.settings, color: Colors.white, size: 28),
                                       onSelected: (q) => ref.read(videoPlayerProvider.notifier).changeQuality(q),
                                       itemBuilder: (context) {
-                                        // Filter to unique quality groups (High, Med, Low)
-                                        final Map<String, String> distinctQualities = {};
-                                        for (var s in videoProvider.streams) {
+                                        // Display all native resolutions formatted clearly
+                                        return videoProvider.streams.map((s) {
                                           final q = s['quality'] as String? ?? '';
-                                          final lower = q.toLowerCase();
-                                          if (lower.contains('1080') || lower.contains('720') || lower.contains('hd') || lower.contains('high')) {
-                                            if (!distinctQualities.containsKey('High')) distinctQualities['High'] = q;
-                                          } else if (lower.contains('480') || lower.contains('360') || lower.contains('medium')) {
-                                            if (!distinctQualities.containsKey('Medium')) distinctQualities['Medium'] = q;
-                                          } else if (lower.contains('240') || lower.contains('144') || lower.contains('low') || lower.contains('small')) {
-                                            if (!distinctQualities.containsKey('Low')) distinctQualities['Low'] = q;
-                                          }
-                                        }
-                                        
-                                        // If none matched, fallback to raw list nicely formatted
-                                        if (distinctQualities.isEmpty) {
-                                          return videoProvider.streams.map((s) {
-                                            final q = s['quality'] as String? ?? '';
-                                            final RegExp regExp = RegExp(r'\d+');
-                                            final match = regExp.firstMatch(q);
-                                            final label = match != null ? '${match.group(0)}p' : q;
-                                            return PopupMenuItem<String>(
-                                              value: q,
-                                              child: Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
-                                            );
-                                          }).toList();
-                                        }
-
-                                        return distinctQualities.entries.map((entry) => PopupMenuItem<String>(
-                                          value: entry.value,
-                                          child: Text(entry.key, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
-                                        )).toList();
+                                          final RegExp regExp = RegExp(r'\d+');
+                                          final match = regExp.firstMatch(q);
+                                          final label = match != null ? '${match.group(0)}p' : q;
+                                          return PopupMenuItem<String>(
+                                            value: q,
+                                            child: Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                                          );
+                                        }).toList();
                                       },
                                     ),
                                 ],
