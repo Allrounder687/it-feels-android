@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
@@ -38,26 +39,26 @@ class MiniPlayer extends ConsumerWidget {
           padding: EdgeInsets.only(bottom: bottomInset),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                height: 72,
-                decoration: BoxDecoration(
-                  color: playerProvider.themeSurfaceColor.withValues(alpha: 0.7),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: context.themeInvertedTextColor.withValues(alpha: 0.45),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Stack(
-                children: [
+            child: Builder(
+              builder: (context) {
+                final child = Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: kDebugMode ? playerProvider.themeSurfaceColor : playerProvider.themeSurfaceColor.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: context.themeInvertedTextColor.withValues(alpha: 0.45),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Stack(
+                      children: [
                   // Top Progress Indicator Line (YouTube Music style)
                   Positioned(
                     left: 0,
@@ -193,14 +194,14 @@ class MiniPlayer extends ConsumerWidget {
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            ),
+                    ),
+                  ),
+                );
+                return kDebugMode ? child : BackdropFilter(filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), child: child);
+              },
             ),
           ),
         );
-      },
     );
   }
 }
