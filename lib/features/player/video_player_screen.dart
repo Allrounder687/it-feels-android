@@ -32,6 +32,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
   double _downloadProgress = 0.0;
   bool _isFullscreen = false;
   Timer? _hideTimer;
+  final FocusNode _focusNode = FocusNode();
   
   // Variables for gesture tracking
   double? _dragStartX;
@@ -41,6 +42,9 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
   void initState() {
     super.initState();
     _startHideTimer();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
   }
 
   @override
@@ -51,6 +55,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _hideTimer?.cancel();
     if (_isFullscreen) {
       SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -212,14 +217,16 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                   if (!videoProvider.isLoading && videoProvider.videoController != null && isWide)
                     Positioned.fill(
                       child: Transform.scale(
-                        scale: 1.1,
+                        scale: 1.15,
                         child: ImageFiltered(
                           imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
                           child: Opacity(
                             opacity: 0.6,
-                            child: Video(
-                              controller: videoProvider.videoController!,
-                              controls: NoVideoControls,
+                            child: Center(
+                              child: Video(
+                                controller: videoProvider.videoController!,
+                                controls: NoVideoControls,
+                              ),
                             ),
                           ),
                         ),
@@ -552,7 +559,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     );
 
     return FocusableActionDetector(
-      autofocus: true,
+      focusNode: _focusNode,
       shortcuts: {
         LogicalKeySet(LogicalKeyboardKey.space): const ActivateIntent(),
         LogicalKeySet(LogicalKeyboardKey.arrowLeft): const DirectionalFocusIntent(TraversalDirection.left),
