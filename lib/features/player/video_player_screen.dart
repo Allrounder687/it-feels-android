@@ -227,34 +227,43 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                     ),
 
                   // Main Video or Loading State
-                  GestureDetector(
-                    onTap: _toggleControls,
-                    onDoubleTapDown: (details) {
-                      _startHideTimer();
-                      final screenWidth = MediaQuery.of(context).size.width;
-                      if (details.globalPosition.dx < screenWidth / 2) {
-                        ref.read(videoPlayerProvider.notifier).seek(const Duration(seconds: -10));
-                      } else {
-                        ref.read(videoPlayerProvider.notifier).seek(const Duration(seconds: 10));
+                  MouseRegion(
+                    cursor: _showControls ? SystemMouseCursors.basic : SystemMouseCursors.none,
+                    onHover: (_) {
+                      if (!_showControls) {
+                        setState(() => _showControls = true);
+                        _startHideTimer();
                       }
                     },
-                    onVerticalDragStart: _onVerticalDragStart,
-                    onVerticalDragUpdate: (details) => _onVerticalDragUpdate(details, videoProvider),
-                    onVerticalDragEnd: _onVerticalDragEnd,
-                    child: Container(
-                      color: Colors.transparent,
-                      child: Center(
-                        child: videoProvider.isLoading
-                            ? const CircularProgressIndicator(color: AppColors.midnightAccent)
-                            : (videoProvider.videoController != null)
-                                ? Video(
-                                    controller: videoProvider.videoController!,
-                                    controls: NoVideoControls, // custom controls above
-                                  )
-                                : Text(
-                                    "Video unavailable",
-                                    style: GoogleFonts.inter(color: Colors.white70),
-                                  ),
+                    child: GestureDetector(
+                      onTap: _toggleControls,
+                      onDoubleTapDown: (details) {
+                        _startHideTimer();
+                        final screenWidth = MediaQuery.of(context).size.width;
+                        if (details.globalPosition.dx < screenWidth / 2) {
+                          ref.read(videoPlayerProvider.notifier).seek(const Duration(seconds: -10));
+                        } else {
+                          ref.read(videoPlayerProvider.notifier).seek(const Duration(seconds: 10));
+                        }
+                      },
+                      onVerticalDragStart: _onVerticalDragStart,
+                      onVerticalDragUpdate: (details) => _onVerticalDragUpdate(details, videoProvider),
+                      onVerticalDragEnd: _onVerticalDragEnd,
+                      child: Container(
+                        color: Colors.transparent,
+                        child: Center(
+                          child: videoProvider.isLoading
+                              ? const CircularProgressIndicator(color: AppColors.midnightAccent)
+                              : (videoProvider.videoController != null)
+                                  ? Video(
+                                      controller: videoProvider.videoController!,
+                                      controls: NoVideoControls, // custom controls above
+                                    )
+                                  : Text(
+                                      "Video unavailable",
+                                      style: GoogleFonts.inter(color: Colors.white70),
+                                    ),
+                        ),
                       ),
                     ),
                   ),
