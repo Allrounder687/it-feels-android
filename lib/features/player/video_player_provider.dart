@@ -250,7 +250,15 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       final player = Player(configuration: const PlayerConfiguration(pitch: false, vo: 'gpu', bufferSize: 64 * 1024 * 1024));
       final controller = VideoController(player);
       
-      await player.open(Media(localPath), play: true);
+      final media = Media(
+        localPath,
+        extras: {
+          'vd-lavc-threads': Platform.numberOfProcessors.toString(),
+          'hwdec': Platform.isWindows ? 'auto-copy' : 'auto',
+        },
+      );
+      
+      await player.open(media, play: true);
       await player.setRate(state.playbackSpeed);
       
       if (startPosition != null) {
@@ -286,18 +294,19 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       configuration: const PlayerConfiguration(
         pitch: false, 
         vo: 'gpu', 
-        bufferSize: 32 * 1024 * 1024, // 32MB optimizes instant start over deep caching
+        bufferSize: 128 * 1024 * 1024, // 128MB for 4K/8K safety
       )
     );
     final controller = VideoController(player);
     
     try {
-      // Pass instant-start demuxer flags to libmpv via Media extras
       final media = Media(
         streamUrl,
         extras: {
-          'demuxer-max-bytes': '32000000',
+          'demuxer-max-bytes': '128000000',
           'cache-pause': 'no',
+          'hwdec': Platform.isWindows ? 'auto-copy' : 'auto', // Force Hardware Decoding via GPU
+          'vd-lavc-threads': Platform.numberOfProcessors.toString(), // Utilize all available CPU cores
         },
       );
       

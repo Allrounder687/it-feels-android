@@ -909,7 +909,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     if (song != null) {
       final pos = audioHandler.player.position;
       song.playbackPositionMs = pos.inMilliseconds;
-      await locator<DatabaseService>().saveSong(song);
+      await DatabaseService().saveSong(song);
     }
   }
 

@@ -933,24 +933,26 @@ SliverToBoxAdapter(child: SizedBox(height: 168 + MediaQuery.of(context).viewPadd
                 fit: BoxFit.cover,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    vid['title'] ?? 'Unknown',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      color: context.themeTextColor,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      vid['title'] ?? 'Unknown',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: context.themeTextColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
+                    const Spacer(), // Replaces fixed SizedBox to soak up remaining space naturally
+                    Row(
+                      children: [
                       Icon(Icons.person, size: 14, color: context.themeMutedTextColor),
                       const SizedBox(width: 4),
                       Expanded(
@@ -969,6 +971,7 @@ SliverToBoxAdapter(child: SizedBox(height: 168 + MediaQuery.of(context).viewPadd
                   ),
                 ],
               ),
+            ),
             ),
           ],
         ),
