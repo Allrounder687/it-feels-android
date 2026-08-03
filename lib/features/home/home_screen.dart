@@ -105,15 +105,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Positioned.fill(
               child: heroSong.coverArt.isNotEmpty
-                  ? CustomImageWidget(imageUrl: heroSong.coverArt, fit: BoxFit.cover)
+                  ? ImageFiltered(
+                      imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: CustomImageWidget(imageUrl: heroSong.coverArt, fit: BoxFit.cover),
+                    )
                   : Container(color: context.themeSurfaceColor),
             ),
             Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.4),
-                ),
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.4),
               ),
             ),
             Padding(
@@ -410,17 +410,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 left: -50,
                 right: -50,
                 height: 400,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: topGradientColor,
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: topGradientColor,
+                    ),
                   ),
-                ),
-              ),
-              Positioned.fill(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                  child: const SizedBox(),
                 ),
               ),
               SafeArea(

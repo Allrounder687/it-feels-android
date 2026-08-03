@@ -218,25 +218,6 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
 
     Widget playerArea = Stack(
       children: [
-                  // Ambient Glow (Theater Mode) for TV / Desktop Screens
-                  if (!videoProvider.isLoading && videoProvider.videoController != null && isWide)
-                    Positioned.fill(
-                      child: Transform.scale(
-                        scale: 1.15,
-                        child: ImageFiltered(
-                          imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                          child: Opacity(
-                            opacity: 0.6,
-                            child: Center(
-                              child: Video(
-                                controller: videoProvider.videoController!,
-                                controls: NoVideoControls,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
 
                   // Main Video or Loading State
                   MouseRegion(
@@ -267,9 +248,11 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                           child: videoProvider.isLoading
                               ? const CircularProgressIndicator(color: AppColors.midnightAccent)
                               : (videoProvider.videoController != null)
-                                  ? Video(
-                                      controller: videoProvider.videoController!,
-                                      controls: NoVideoControls, // custom controls above
+                                  ? ExcludeSemantics(
+                                      child: Video(
+                                        controller: videoProvider.videoController!,
+                                        controls: NoVideoControls, // custom controls above
+                                      ),
                                     )
                                   : Text(
                                       "Video unavailable",

@@ -486,10 +486,12 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                       child: videoProvider.isLoading 
                                         ? Center(child: CircularProgressIndicator(color: accentColor))
                                         : videoProvider.videoController != null
-                                          ? Video(
-                                              controller: videoProvider.videoController!,
-                                              controls: NoVideoControls,
-                                              fill: Colors.black,
+                                          ? ExcludeSemantics(
+                                              child: Video(
+                                                controller: videoProvider.videoController!,
+                                                controls: NoVideoControls,
+                                                fill: Colors.black,
+                                              ),
                                             )
                                           : Center(child: Text('Video unavailable', style: GoogleFonts.inter(color: Colors.white))),
                                     ),
