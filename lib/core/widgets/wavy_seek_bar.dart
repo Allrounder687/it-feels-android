@@ -93,29 +93,31 @@ class _WavySeekBarState extends State<WavySeekBar> with SingleTickerProviderStat
     final posMs = widget.position.inMilliseconds.clamp(0, maxMs);
     final fraction = posMs / maxMs; // Calculate the played fraction
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth; // Get the available width for the seek bar
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque, // Ensures the entire area is tappable
-          onHorizontalDragUpdate: (details) => _handleSeek(details.localPosition, width),
-          onTapDown: (details) => _handleSeek(details.localPosition, width),
-          child: AnimatedBuilder(
-            animation: _waveController, // Rebuilds when _waveController updates
-            builder: (context, child) {
-              return CustomPaint(
-                size: Size(width, 36), // Fixed height for the seek bar
-                painter: _WavySeekBarPainter(
-                  fraction: fraction, // Progress of the seek bar
-                  wavePhase: _waveController.value * 2 * math.pi, // Current phase of the wave animation
-                  activeColor: widget.activeColor,
-                  inactiveColor: widget.inactiveColor,
-                ),
-              );
-            },
-          ),
-        );
-      },
+    return ExcludeSemantics(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth; // Get the available width for the seek bar
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque, // Ensures the entire area is tappable
+            onHorizontalDragUpdate: (details) => _handleSeek(details.localPosition, width),
+            onTapDown: (details) => _handleSeek(details.localPosition, width),
+            child: AnimatedBuilder(
+              animation: _waveController, // Rebuilds when _waveController updates
+              builder: (context, child) {
+                return CustomPaint(
+                  size: Size(width, 36), // Fixed height for the seek bar
+                  painter: _WavySeekBarPainter(
+                    fraction: fraction, // Progress of the seek bar
+                    wavePhase: _waveController.value * 2 * math.pi, // Current phase of the wave animation
+                    activeColor: widget.activeColor,
+                    inactiveColor: widget.inactiveColor,
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
     );
   }
 }

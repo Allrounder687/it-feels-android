@@ -170,13 +170,19 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     _initGuestRoomSync(roomId);
   }
 
-  Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition}) async {
+  Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition, bool isBackgroundHandoff = false}) async {
     if (state.currentVideoId == videoId && state.player != null) {
       state = state.copyWith(isVideoActive: true);
       if (startPosition != null) {
         await state.player!.seek(startPosition);
       }
       await state.player!.play();
+      
+      if (isBackgroundHandoff) {
+        ref.read(audioPlayerProvider.notifier).pause();
+      } else {
+        ref.read(audioPlayerProvider.notifier).stop();
+      }
       return;
     }
 
@@ -191,8 +197,12 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     await state.player?.pause();
     await state.player?.dispose();
 
-    // FORCE STOP AUDIO PLAYER WHEN STARTING A VIDEO
-    ref.read(audioPlayerProvider.notifier).stop();
+    // FORCE PAUSE OR STOP AUDIO PLAYER WHEN STARTING A VIDEO
+    if (isBackgroundHandoff) {
+      ref.read(audioPlayerProvider.notifier).pause();
+    } else {
+      ref.read(audioPlayerProvider.notifier).stop();
+    }
 
     state = state.copyWith(
       isLoading: true,
@@ -303,6 +313,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       final media = Media(
         streamUrl,
         extras: {
+          'start': (previousPosition.inMilliseconds / 1000).toString(),
           'demuxer-max-bytes': '128000000',
           'cache-pause': 'no',
           'hwdec': Platform.isWindows ? 'auto-copy' : 'auto', // Force Hardware Decoding via GPU
@@ -336,7 +347,10 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     await player.setRate(state.playbackSpeed);
     
     if (previousPosition != Duration.zero) {
-      await player.seek(previousPosition);
+      // Fallback: Also instruct the Dart wrapper to seek once the stream is ready
+      player.stream.duration.firstWhere((d) => d.inMilliseconds > 0).then((_) {
+        player.seek(previousPosition);
+      });
     }
     
     if (wasPlaying) {
@@ -446,7 +460,12 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
 
   Future<void> changeQuality(String quality) async {
     if (quality == state.selectedQuality) return;
-    await _initializeStreamForQuality(quality);
+    
+    // SYNCHRONOUSLY lock state so UI updates immediately (Fixes 2-attempts bug)
+    final currentPos = state.player?.state.position ?? Duration.zero;
+    state = state.copyWith(selectedQuality: quality, isLoading: true);
+    
+    await _initializeStreamForQuality(quality, startPosition: currentPos);
   }
 
   void adjustBrightness(double delta) {
@@ -471,6 +490,10 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     if (targetPos < Duration.zero) targetPos = Duration.zero;
     if (targetPos > maxDur) targetPos = maxDur;
     state.player!.seek(targetPos);
+  }
+
+  void pauseVideo() {
+    state.player?.pause();
   }
 
   void closeVideo() {

@@ -767,8 +767,16 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> playSong(Song song, {List<Song>? queue, int index = 0, BuildContext? context}) async {
-    // FORCE CLOSE VIDEO PLAYER WHEN STARTING A SONG
-    ref.read(videoPlayerProvider.notifier).closeVideo();
+    // GRACEFULLY CLOSE OR PAUSE COMPETING VIDEO PLAYER
+    final videoProv = ref.read(videoPlayerProvider.notifier);
+    final videoState = ref.read(videoPlayerProvider);
+    final targetVideoId = song.id.contains(':') ? song.id : 'search:${song.id}';
+    
+    if (videoState.currentVideoId == targetVideoId) {
+      videoProv.pauseVideo();
+    } else {
+      videoProv.closeVideo();
+    }
 
     state = state.copyWith(
       currentSong: song,
@@ -873,8 +881,16 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> play() async {
-    // FORCE CLOSE VIDEO PLAYER WHEN RESUMING AUDIO
-    ref.read(videoPlayerProvider.notifier).closeVideo();
+    // GRACEFULLY MANAGE VIDEO PLAYER
+    final videoProv = ref.read(videoPlayerProvider.notifier);
+    final videoState = ref.read(videoPlayerProvider);
+    final targetVideoId = state.currentSong != null 
+        ? (state.currentSong!.id.contains(':') ? state.currentSong!.id : 'search:${state.currentSong!.id}') 
+        : null;
+
+    if (videoState.currentVideoId != targetVideoId) {
+      videoProv.closeVideo();
+    }
 
     if (locator<it_feels_music_cast_service.CastService>().isConnected) {
       await locator<it_feels_music_cast_service.CastService>().play();
@@ -1072,6 +1088,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     try {
       final PaletteGenerator palette = await PaletteGenerator.fromImageProvider(
         NetworkImage(imageUrl),
+        size: const Size(100, 100),
       );
       
       final dominant = palette.dominantColor?.color ?? AppColors.burgundyBackground;
