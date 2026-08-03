@@ -38,54 +38,61 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   AndroidLoudnessEnhancer get loudnessEnhancer => _loudnessEnhancer;
 
   void _init() {
-    _player.playbackEventStream.listen((PlaybackEvent event) {
-      final playing = _player.playing;
-      final pState = _player.processingState;
-      AudioProcessingState audioProcessingState;
-      switch (pState) {
-        case ProcessingState.idle:
-          audioProcessingState = AudioProcessingState.idle;
-          break;
-        case ProcessingState.loading:
-          audioProcessingState = AudioProcessingState.loading;
-          break;
-        case ProcessingState.buffering:
-          audioProcessingState = AudioProcessingState.buffering;
-          break;
-        case ProcessingState.ready:
-          audioProcessingState = AudioProcessingState.ready;
-          break;
-        case ProcessingState.completed:
-          audioProcessingState = AudioProcessingState.completed;
-          break;
+    _player.playbackEventStream.listen(_broadcastState);
+    _player.playingStream.listen((_) {
+      if (_player.playbackEvent != null) {
+        _broadcastState(_player.playbackEvent);
       }
-
-      playbackState.add(playbackState.value.copyWith(
-        controls: [
-          MediaControl.skipToPrevious,
-          if (playing) MediaControl.pause else MediaControl.play,
-          MediaControl.skipToNext,
-          MediaControl.stop,
-        ],
-        systemActions: const {
-          MediaAction.seek,
-          MediaAction.seekForward,
-          MediaAction.seekBackward,
-          MediaAction.play,
-          MediaAction.pause,
-          MediaAction.skipToNext,
-          MediaAction.skipToPrevious,
-          MediaAction.stop,
-        },
-        androidCompactActionIndices: const [0, 1, 2],
-        processingState: audioProcessingState,
-        playing: playing,
-        updatePosition: _player.position,
-        bufferedPosition: _player.bufferedPosition,
-        speed: _player.speed,
-        queueIndex: event.currentIndex,
-      ));
     });
+  }
+
+  void _broadcastState(PlaybackEvent event) {
+    final playing = _player.playing;
+    final pState = _player.processingState;
+    AudioProcessingState audioProcessingState;
+    switch (pState) {
+      case ProcessingState.idle:
+        audioProcessingState = AudioProcessingState.idle;
+        break;
+      case ProcessingState.loading:
+        audioProcessingState = AudioProcessingState.loading;
+        break;
+      case ProcessingState.buffering:
+        audioProcessingState = AudioProcessingState.buffering;
+        break;
+      case ProcessingState.ready:
+        audioProcessingState = AudioProcessingState.ready;
+        break;
+      case ProcessingState.completed:
+        audioProcessingState = AudioProcessingState.completed;
+        break;
+    }
+
+    playbackState.add(playbackState.value.copyWith(
+      controls: [
+        MediaControl.skipToPrevious,
+        if (playing) MediaControl.pause else MediaControl.play,
+        MediaControl.skipToNext,
+        MediaControl.stop,
+      ],
+      systemActions: const {
+        MediaAction.seek,
+        MediaAction.seekForward,
+        MediaAction.seekBackward,
+        MediaAction.play,
+        MediaAction.pause,
+        MediaAction.skipToNext,
+        MediaAction.skipToPrevious,
+        MediaAction.stop,
+      },
+      androidCompactActionIndices: const [0, 1, 2],
+      processingState: audioProcessingState,
+      playing: playing,
+      updatePosition: _player.position,
+      bufferedPosition: _player.bufferedPosition,
+      speed: _player.speed,
+      queueIndex: event.currentIndex,
+    ));
   }
 
   Future<void> playSong(Song song, String streamUrl) async {
