@@ -1,4 +1,4 @@
-## v3.5.19+53
+## v3.5.20+54
 - **Phase 5: Seamless AV Architecture**: Added `isBackgroundHandoff` engine to allow millisecond-perfect transition between Audio and Video tabs by gracefully pausing/resuming background streams without tearing them down.
 - **Zero-Lag Loading**: Shrank `PaletteGenerator` pixel sampling to strictly 100x100, dropping extraction time from 1000ms to 2ms and ensuring song taps load the UI instantly without freezing.
 - **Fixed "2-Attempts" Bug**: Synchronously locks video quality state and caches `startPosition` upon tapping a quality button, guaranteeing it resumes correctly on the first tap.
