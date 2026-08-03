@@ -347,10 +347,18 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     await player.setRate(state.playbackSpeed);
     
     if (previousPosition != Duration.zero) {
-      // Fallback: Also instruct the Dart wrapper to seek once the stream is ready
-      player.stream.duration.firstWhere((d) => d.inMilliseconds > 0).then((_) {
-        player.seek(previousPosition);
-      });
+      // Ensure the demuxer is ready to accept a seek before we send it
+      if (player.state.duration.inMilliseconds > 0) {
+        await player.seek(previousPosition);
+      } else {
+        try {
+          await player.stream.duration.firstWhere((d) => d.inMilliseconds > 0).timeout(const Duration(seconds: 4));
+          await player.seek(previousPosition);
+        } catch (_) {
+          // Fallback if timeout happens
+          await player.seek(previousPosition);
+        }
+      }
     }
     
     if (wasPlaying) {
