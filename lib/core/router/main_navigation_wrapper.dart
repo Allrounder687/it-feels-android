@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -247,41 +248,44 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                   right: false,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(32),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                      child: Container(
-                        width: 96,
-                        margin: const EdgeInsets.only(left: 12, top: 12, bottom: 12),
-                        decoration: BoxDecoration(
-                          color: context.themeSurfaceColor.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(32),
-                          boxShadow: [
-                            BoxShadow(
-                              color: context.themeInvertedTextColor.withValues(alpha: 0.2),
-                              blurRadius: 20,
-                              offset: const Offset(8, 0),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildNavItem(0, Icons.home_rounded, "Home", isVertical: true),
-                            const SizedBox(height: 24),
-                            _buildNavItem(1, Icons.search_rounded, "Search", isVertical: true),
-                            const SizedBox(height: 24),
-                            _buildNavItem(2, Icons.library_music_rounded, "Library", isVertical: true),
-                            if (enableVideos) ...[
-                              const SizedBox(height: 24),
-                              _buildNavItem(3, Icons.video_library_rounded, "Videos", isVertical: true),
+                    child: Builder(
+                      builder: (context) {
+                        final child = Container(
+                          width: 96,
+                          margin: const EdgeInsets.only(left: 12, top: 12, bottom: 12),
+                          decoration: BoxDecoration(
+                            color: kDebugMode ? context.themeSurfaceColor : context.themeSurfaceColor.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(32),
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.themeInvertedTextColor.withValues(alpha: 0.2),
+                                blurRadius: 20,
+                                offset: const Offset(8, 0),
+                              ),
                             ],
-                            const SizedBox(height: 24),
-                            _buildNavItem(4, Icons.people_rounded, "Social", isVertical: true),
-                            const SizedBox(height: 24),
-                            _buildNavItem(5, Icons.settings_outlined, "Settings", isVertical: true, hasUpdate: ref.watch(shorebirdUpdatePendingProvider)),
-                          ],
-                        ),
-                      ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(height: 12),
+                              _buildNavItem(0, Icons.home_rounded, "Home", isVertical: true),
+                              const SizedBox(height: 24),
+                              _buildNavItem(1, Icons.search_rounded, "Search", isVertical: true),
+                              const SizedBox(height: 24),
+                              _buildNavItem(2, Icons.library_music_rounded, "Library", isVertical: true),
+                              const SizedBox(height: 24),
+                              if (enableVideos) ...[
+                                _buildNavItem(3, Icons.video_library_rounded, "Videos", isVertical: true),
+                                const SizedBox(height: 24),
+                              ],
+                              _buildNavItem(4, Icons.people_rounded, "Social", isVertical: true),
+                              const SizedBox(height: 24),
+                              _buildNavItem(5, Icons.settings_outlined, "Settings", isVertical: true, hasUpdate: ref.watch(shorebirdUpdatePendingProvider)),
+                            ],
+                          ),
+                        );
+                        return kDebugMode ? child : BackdropFilter(filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), child: child);
+                      },
                     ),
                   ),
                 ),
@@ -354,34 +358,36 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                           // Floating Bottom Navigation Bar Pill Container
                           ClipRRect(
                             borderRadius: BorderRadius.circular(32),
-                            child: BackdropFilter(
-                              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                              child: Container(
-                                height: isNarrowScreen ? 70 : 76,
-                                margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
-                                decoration: BoxDecoration(
-                                  color: context.themeSurfaceColor.withValues(alpha: 0.7),
-                                  borderRadius: BorderRadius.circular(32),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: context.themeInvertedTextColor.withValues(alpha: 0.4),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                  children: [
-                                    _buildNavItem(0, Icons.home_rounded, "Home", hideLabel: isNarrowScreen),
-                                    _buildNavItem(1, Icons.search_rounded, "Search", hideLabel: isNarrowScreen),
-                                    _buildNavItem(2, Icons.library_music_rounded, "Library", hideLabel: isNarrowScreen),
-                                    if (enableVideos) _buildNavItem(3, Icons.video_library_rounded, "Videos", hideLabel: isNarrowScreen),
-                                    _buildNavItem(4, Icons.people_rounded, "Social", hideLabel: isNarrowScreen),
-                                    _buildNavItem(5, Icons.settings_outlined, "Settings", hideLabel: isNarrowScreen, hasUpdate: ref.watch(shorebirdUpdatePendingProvider)),
-                                  ],
-                                ),
-                              ),
+                            child: Builder(
+                              builder: (context) {
+                                final child = Container(
+                                  height: isNarrowScreen ? 70 : 76,
+                                  margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+                                  decoration: BoxDecoration(
+                                    color: kDebugMode ? context.themeSurfaceColor : context.themeSurfaceColor.withValues(alpha: 0.7),
+                                    borderRadius: BorderRadius.circular(32),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: context.themeInvertedTextColor.withValues(alpha: 0.4),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 8),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    children: [
+                                      _buildNavItem(0, Icons.home_rounded, "Home", hideLabel: isNarrowScreen),
+                                      _buildNavItem(1, Icons.search_rounded, "Search", hideLabel: isNarrowScreen),
+                                      _buildNavItem(2, Icons.library_music_rounded, "Library", hideLabel: isNarrowScreen),
+                                      if (enableVideos) _buildNavItem(3, Icons.video_library_rounded, "Videos", hideLabel: isNarrowScreen),
+                                      _buildNavItem(4, Icons.people_rounded, "Social", hideLabel: isNarrowScreen),
+                                      _buildNavItem(5, Icons.settings_outlined, "Settings", hideLabel: isNarrowScreen, hasUpdate: ref.watch(shorebirdUpdatePendingProvider)),
+                                    ],
+                                  ),
+                                );
+                                return kDebugMode ? child : BackdropFilter(filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), child: child);
+                              },
                             ),
                           ),
                         ],
