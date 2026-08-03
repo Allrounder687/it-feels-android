@@ -3,7 +3,12 @@ name: Shorebird Patch Pipeline
 on:
   push:
     branches:
-      - 'patch-*' # Trigger when you push to any branch starting with patch-
+      - 'patch-*'
+    tags:
+      - 'patch-v*'
+      - 'v*'
+      - 'android-v*'
+      - 'ios-v*'
 
 jobs:
   patch-android:
