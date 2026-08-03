@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:isolate';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -490,95 +491,101 @@ class BackendApiService {
     return {'title': 'Music Video', 'streams': []};
   }
 
-  /// Client-side direct stream fallback using youtube_explode_dart
+  /// Client-side direct stream fallback using youtube_explode_dart (Zero-Lag Isolate)
   static Future<Map<String, dynamic>> _directYoutubeExplodeStreamFallback(String videoId, {String? query}) async {
     debugPrint('[BackendApiService] _directYoutubeExplodeStreamFallback called with videoId=$videoId, query=$query');
-    try {
-      String cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
-      
-      // We still keep this fallback just in case the initial resolution failed
-      if (cleanId.isEmpty || videoId.startsWith('search:') || cleanId.length != 11) {
-        final searchQuery = query ?? videoId.replaceFirst('search:', '');
-        final searchResults = await _yt.search.search(searchQuery);
-        if (searchResults.isNotEmpty) {
-          cleanId = searchResults.first.id.value;
-        } else {
-          return {'title': 'Music Video', 'streams': []};
-        }
-      }
-      
-      // Extract streams natively using TV/VR clients to bypass signature throttling
-      final manifest = await _yt.videos.streamsClient.getManifest(
-        cleanId,
-        ytClients: [
-          YoutubeApiClient.androidVr,
-          YoutubeApiClient.ios,
-        ],
-      );
-      final videoTitle = (await _yt.videos.get(cleanId)).title;
-
-      final List<Map<String, dynamic>> streams = [];
-      
-      // Get all available video-only streams (from 144p up to 4K/8K)
-      if (manifest.videoOnly.isNotEmpty) {
-        final uniqueQualities = <String>{};
-        final sortedStreams = manifest.videoOnly.sortByVideoQuality();
+    
+    // Offload heavy XML/JSON parsing to a background CPU core (Isolate)
+    // This prevents the main Flutter UI thread from dropping frames ("hiccup")
+    return await Isolate.run(() async {
+      final yt = YoutubeExplode();
+      try {
+        String cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
         
-        for (final stream in sortedStreams) {
-          final quality = stream.videoQuality.name.replaceAll(RegExp(r'[^0-9p]'), ''); // Extract just '1080p', etc.
-          final cleanQuality = quality.isNotEmpty ? quality : stream.videoQuality.name;
-          
-          if (!uniqueQualities.contains(cleanQuality)) {
-            uniqueQualities.add(cleanQuality);
-            streams.add({
-              'quality': cleanQuality,
-              'url': stream.url.toString(),
-              'mimeType': stream.container.name,
-              'videoOnly': true,
-            });
+        if (cleanId.isEmpty || videoId.startsWith('search:') || cleanId.length != 11) {
+          final searchQuery = query ?? videoId.replaceFirst('search:', '');
+          final searchResults = await yt.search.search(searchQuery);
+          if (searchResults.isNotEmpty) {
+            cleanId = searchResults.first.id.value;
+          } else {
+            return {'title': 'Music Video', 'streams': []};
           }
         }
-      }
+        
+        // Extract streams natively using TV/VR clients to bypass signature throttling
+        final manifest = await yt.videos.streamsClient.getManifest(
+          cleanId,
+          ytClients: [
+            YoutubeApiClient.androidVr,
+            YoutubeApiClient.ios,
+          ],
+        );
+        final videoTitle = (await yt.videos.get(cleanId)).title;
 
-      // Fallback: adaptive HLS manifest
-      if (manifest.hls.isNotEmpty) {
-        final highestHls = manifest.hls.withHighestBitrate();
-        streams.add({
-          'quality': 'HLS Adaptive',
-          'url': highestHls.url.toString(),
-          'mimeType': 'application/x-mpegURL',
-          'videoOnly': false,
-        });
-      }
-      
-      // Guaranteed 360p fallback (Muxed)
-      if (manifest.muxed.isNotEmpty) {
-        final fallback360p = manifest.muxed.withHighestBitrate();
-        streams.add({
-          'quality': '360p (Muxed Fallback)',
-          'url': fallback360p.url.toString(),
-          'mimeType': fallback360p.container.name,
-          'videoOnly': false,
-        });
-      }
+        final List<Map<String, dynamic>> streams = [];
+        
+        // Get all available video-only streams (from 144p up to 4K/8K)
+        if (manifest.videoOnly.isNotEmpty) {
+          final uniqueQualities = <String>{};
+          final sortedStreams = manifest.videoOnly.sortByVideoQuality();
+          
+          for (final stream in sortedStreams) {
+            final quality = stream.videoQuality.name.replaceAll(RegExp(r'[^0-9p]'), ''); // Extract just '1080p', etc.
+            final cleanQuality = quality.isNotEmpty ? quality : stream.videoQuality.name;
+            
+            if (!uniqueQualities.contains(cleanQuality)) {
+              uniqueQualities.add(cleanQuality);
+              streams.add({
+                'quality': cleanQuality,
+                'url': stream.url.toString(),
+                'mimeType': stream.container.name,
+                'videoOnly': true,
+              });
+            }
+          }
+        }
 
-      String audioUrl = '';
-      if (manifest.audioOnly.isNotEmpty) {
-        audioUrl = manifest.audioOnly.withHighestBitrate().url.toString();
-      }
+        // Fallback: adaptive HLS manifest
+        if (manifest.hls.isNotEmpty) {
+          final highestHls = manifest.hls.withHighestBitrate();
+          streams.add({
+            'quality': 'HLS Adaptive',
+            'url': highestHls.url.toString(),
+            'mimeType': 'application/x-mpegURL',
+            'videoOnly': false,
+          });
+        }
+        
+        // Guaranteed 360p fallback (Muxed)
+        if (manifest.muxed.isNotEmpty) {
+          final fallback360p = manifest.muxed.withHighestBitrate();
+          streams.add({
+            'quality': '360p (Muxed Fallback)',
+            'url': fallback360p.url.toString(),
+            'mimeType': fallback360p.container.name,
+            'videoOnly': false,
+          });
+        }
 
-      if (streams.isNotEmpty) {
-        debugPrint('[BackendApiService] Successfully extracted streams via native YoutubeExplode fallback!');
-        return {
-          'title': videoTitle,
-          'streams': streams,
-          'audioUrl': audioUrl,
-        };
+        String audioUrl = '';
+        if (manifest.audioOnly.isNotEmpty) {
+          audioUrl = manifest.audioOnly.withHighestBitrate().url.toString();
+        }
+
+        if (streams.isNotEmpty) {
+          return {
+            'title': videoTitle,
+            'streams': streams,
+            'audioUrl': audioUrl,
+          };
+        }
+      } catch (e) {
+        // Return empty on failure
+      } finally {
+        yt.close();
       }
-    } catch (e) {
-      debugPrint('[BackendApiService] _directYoutubeExplodeStreamFallback error: $e');
-    }
-    return {'title': 'Music Video', 'streams': []};
+      return {'title': 'Music Video', 'streams': []};
+    });
   }
 
   /// Search Videos for Dedicated Video Tab
