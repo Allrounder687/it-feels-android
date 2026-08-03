@@ -125,8 +125,8 @@ class VideoMiniplayer extends ConsumerWidget {
                           return IconButton(
                             icon: Icon(
                               value.isPlaying
-                                  ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded,
+                                  ? Icons.pause
+                                  : Icons.play_arrow,
                               color:
                                   Theme.of(context).iconTheme.color,
                               size: 22,
