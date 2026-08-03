@@ -74,4 +74,4 @@ jobs:
       - name: Publish Shorebird Patch (iOS)
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird patch ios || echo "iOS patch skipped (baseline might not exist yet)"
+        run: shorebird patch ios
