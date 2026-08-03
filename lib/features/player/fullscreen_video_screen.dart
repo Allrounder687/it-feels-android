@@ -160,10 +160,12 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                 // Video Player Container
                 Center(
                   child: isInitialized
-                    ? Video(
-                        controller: ctrl,
-                        controls: NoVideoControls, // We use custom controls below
-                        fill: Colors.black,
+                    ? ExcludeSemantics(
+                        child: Video(
+                          controller: ctrl,
+                          controls: NoVideoControls, // We use custom controls below
+                          fill: Colors.black,
+                        ),
                       )
                     : videoProvider.isLoading
                       ? Column(
