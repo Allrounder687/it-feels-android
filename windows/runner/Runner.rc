@@ -84,18 +84,24 @@ VS_VERSION_INFO VERSIONINFO
  FILEOS VOS__WINDOWS32
  FILETYPE VFT_APP
  FILESUBTYPE 0x0L
+#ifdef _DEBUG
+#define APP_TITLE "IT-Feels Music (Debug)"
+#else
+#define APP_TITLE "IT-Feels Music"
+#endif
+
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.pixelplayer.saavn" "\0"
-            VALUE "FileDescription", "IT-Feels Music" "\0"
+            VALUE "FileDescription", APP_TITLE "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "IT-Feels Music" "\0"
+            VALUE "InternalName", APP_TITLE "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.pixelplayer.saavn. All rights reserved." "\0"
             VALUE "OriginalFilename", "IT-Feels Music.exe" "\0"
-            VALUE "ProductName", "IT-Feels Music" "\0"
+            VALUE "ProductName", APP_TITLE "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
