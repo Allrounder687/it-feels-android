@@ -206,6 +206,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     final topInset = MediaQuery.of(context).viewPadding.top;
 
     Widget playerArea = Stack(
+      children: [
                   // Ambient Glow (Theater Mode) for TV / Desktop Screens
                   if (!videoProvider.isLoading && videoProvider.videoController != null && isWide)
                     Positioned.fill(
@@ -543,21 +544,36 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     return FocusableActionDetector(
       autofocus: true,
       shortcuts: {
-        LogicalKeySet(LogicalKeyboardKey.space): const Intent(ActivateAction.key),
-        LogicalKeySet(LogicalKeyboardKey.arrowLeft): const Intent(DirectionalFocusIntent.left),
-        LogicalKeySet(LogicalKeyboardKey.arrowRight): const Intent(DirectionalFocusIntent.right),
-        LogicalKeySet(LogicalKeyboardKey.keyF): const Intent(ScrollIntent.direction(AxisDirection.up)), // Hack intent map for F
+        LogicalKeySet(LogicalKeyboardKey.space): const ActivateIntent(),
+        LogicalKeySet(LogicalKeyboardKey.arrowLeft): const DirectionalFocusIntent(TraversalDirection.left),
+        LogicalKeySet(LogicalKeyboardKey.arrowRight): const DirectionalFocusIntent(TraversalDirection.right),
+        LogicalKeySet(LogicalKeyboardKey.keyF): const ScrollIntent(direction: AxisDirection.up), // Hack intent map for F
       },
       actions: {
-        Intent: CallbackAction<Intent>(
+        ActivateIntent: CallbackAction<ActivateIntent>(
           onInvoke: (intent) {
-            if (intent is Intent && intent == const Intent(ActivateAction.key)) {
-              videoProvider.isPlaying ? ref.read(videoPlayerProvider.notifier).pause() : ref.read(videoPlayerProvider.notifier).play();
-            } else if (intent is Intent && intent == const Intent(DirectionalFocusIntent.left)) {
+            final isPlaying = videoProvider.player?.state.playing ?? false;
+            isPlaying ? videoProvider.player?.pause() : videoProvider.player?.play();
+            _startHideTimer();
+            setState(() => _showControls = true);
+            return null;
+          },
+        ),
+        DirectionalFocusIntent: CallbackAction<DirectionalFocusIntent>(
+          onInvoke: (intent) {
+            if (intent.direction == TraversalDirection.left) {
               ref.read(videoPlayerProvider.notifier).seek(const Duration(seconds: -10));
-            } else if (intent is Intent && intent == const Intent(DirectionalFocusIntent.right)) {
+            } else if (intent.direction == TraversalDirection.right) {
               ref.read(videoPlayerProvider.notifier).seek(const Duration(seconds: 10));
-            } else if (intent is Intent && intent == const Intent(ScrollIntent.direction(AxisDirection.up))) {
+            }
+            _startHideTimer();
+            setState(() => _showControls = true);
+            return null;
+          },
+        ),
+        ScrollIntent: CallbackAction<ScrollIntent>(
+          onInvoke: (intent) {
+            if (intent.direction == AxisDirection.up) {
               _toggleFullscreen();
             }
             _startHideTimer();
