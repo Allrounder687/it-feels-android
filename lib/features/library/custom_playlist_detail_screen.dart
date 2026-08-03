@@ -37,28 +37,6 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
 
         return Scaffold(
           backgroundColor: context.themeBackgroundColor,
-          bottomNavigationBar: MiniPlayer(
-            onTap: () {
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) => const NowPlayingScreen(),
-                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                    return SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 1),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOutCubic,
-                      )),
-                      child: child,
-                    );
-                  },
-                ),
-              );
-            },
-          ),
           body: SafeArea(
             top: false,
             child: CustomScrollView(

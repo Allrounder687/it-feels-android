@@ -32,6 +32,7 @@ class Song {
   // Behavioral & Engagement Data
   int playCount;
   int skipCount;
+  int? playbackPositionMs; // To track exact playback timestamp
   DateTime? lastPlayedAt;
   DateTime addedAt;
   bool isFavorite;
@@ -63,6 +64,7 @@ class Song {
     this.isExplicit = false,
     this.playCount = 0,
     this.skipCount = 0,
+    this.playbackPositionMs,
     this.lastPlayedAt,
     required this.addedAt,
     this.isFavorite = false,
@@ -152,6 +154,8 @@ class Song {
     String? localFilePath,
     OfflineStatus? offlineStatus,
     int? playCount,
+    int? skipCount,
+    int? playbackPositionMs,
     bool? isFavorite,
     DateTime? lastPlayedAt,
   }) {
@@ -172,7 +176,8 @@ class Song {
       language: language,
       isExplicit: isExplicit,
       playCount: playCount ?? this.playCount,
-      skipCount: skipCount,
+      skipCount: skipCount ?? this.skipCount,
+      playbackPositionMs: playbackPositionMs ?? this.playbackPositionMs,
       lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
       addedAt: addedAt,
       isFavorite: isFavorite ?? this.isFavorite,
@@ -200,6 +205,7 @@ class Song {
       'isExplicit': isExplicit,
       'playCount': playCount,
       'skipCount': skipCount,
+      'playbackPositionMs': playbackPositionMs,
       'lastPlayedAt': lastPlayedAt?.toIso8601String(),
       'addedAt': addedAt.toIso8601String(),
       'isFavorite': isFavorite,

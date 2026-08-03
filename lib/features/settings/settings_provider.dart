@@ -18,6 +18,7 @@ class SettingsState {
   final bool enableMusicVideos;
   final bool useVideoAudioSource;
   final bool isDataSaverEnabled;
+  final bool enableHardwareDecoding;
 
   const SettingsState({
     this.wifiQuality = '320 kbps (Very High)',
@@ -33,6 +34,7 @@ class SettingsState {
     this.enableMusicVideos = false,
     this.useVideoAudioSource = false,
     this.isDataSaverEnabled = false,
+    this.enableHardwareDecoding = true,
   });
 
   SettingsState copyWith({
@@ -49,6 +51,7 @@ class SettingsState {
     bool? enableMusicVideos,
     bool? useVideoAudioSource,
     bool? isDataSaverEnabled,
+    bool? enableHardwareDecoding,
   }) {
     return SettingsState(
       wifiQuality: wifiQuality ?? this.wifiQuality,
@@ -64,6 +67,7 @@ class SettingsState {
       enableMusicVideos: enableMusicVideos ?? this.enableMusicVideos,
       useVideoAudioSource: useVideoAudioSource ?? this.useVideoAudioSource,
       isDataSaverEnabled: isDataSaverEnabled ?? this.isDataSaverEnabled,
+      enableHardwareDecoding: enableHardwareDecoding ?? this.enableHardwareDecoding,
     );
   }
 }
@@ -98,12 +102,18 @@ class SettingsNotifier extends Notifier<SettingsState> {
       enableMusicVideos: settings['enableMusicVideos'] == true,
       useVideoAudioSource: settings['useVideoAudioSource'] == true,
       isDataSaverEnabled: settings['isDataSaverEnabled'] == true,
+      enableHardwareDecoding: settings['enableHardwareDecoding'] ?? true, // Default to true
       defaultCategory: defaultCat,
     );
   }
 
   void setWifiQuality(String quality) {
     state = state.copyWith(wifiQuality: quality);
+    _save();
+  }
+
+  void setEnableHardwareDecoding(bool enable) {
+    state = state.copyWith(enableHardwareDecoding: enable);
     _save();
   }
 

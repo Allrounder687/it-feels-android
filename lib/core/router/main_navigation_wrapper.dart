@@ -28,6 +28,7 @@ import 'package:it_feels_music/features/library/download_provider.dart';
 import 'package:it_feels_music/features/social/unread_count_provider.dart';
 import 'package:it_feels_music/services/config_service.dart';
 import 'package:it_feels_music/features/admin/force_update_screen.dart';
+import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
 
 class MainNavigationWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -238,10 +239,38 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
     final settingsProv = ref.watch(settingsProvider);
     final enableVideos = settingsProv.enableMusicVideos;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) async {
+        if (didPop) return;
+
+        // If the shell can pop (there is a nested route), let GoRouter handle it
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+          return;
+        }
+
+        // TV / 10-foot UI Back Button Discipline
+        // Try to move focus up/left towards navigation
+        final isWide = MediaQuery.of(context).size.width > 600;
+        final moved = FocusScope.of(context).focusInDirection(isWide ? TraversalDirection.left : TraversalDirection.up);
+        
+        if (!moved) {
+          if (widget.navigationShell.currentIndex != 0) {
+            // Return to Home tab if not already there
+            widget.navigationShell.goBranch(0, initialLocation: true);
+          } else {
+            // At root of Home tab and top of focus, allow exit
+            SystemNavigator.pop();
+          }
+        }
+      },
+      child: Scaffold(
       backgroundColor: context.themeBackgroundColor,
-      body: Column(
-        children: [
+      body: FocusTraversalGroup(
+        policy: OrderedTraversalPolicy(),
+        child: Column(
+          children: [
           // Removed CustomTitleBar to use native Windows title bar
           Expanded(
             child: LayoutBuilder(
@@ -418,16 +447,16 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
         },
       ),
     ),
-   ],
+    ],
+  ),
+  ),
   ),
 );
   }
-
   Widget _buildNavItem(int index, IconData icon, String label, {bool isVertical = false, bool hideLabel = false, bool hasUpdate = false}) {
     final isSelected = widget.navigationShell.currentIndex == index;
     return Consumer(builder: (context, ref, child) {
-        final content = GestureDetector(
-          behavior: HitTestBehavior.opaque,
+        final content = TVFocusableCard(
           onTap: () {
             widget.navigationShell.goBranch(
               index,

@@ -13,15 +13,17 @@ class RoomService {
     databaseURL: Firebase.app().options.databaseURL,
   );
   
-  // Create a new Listen Together Room
-  Future<String> createRoom(String hostId, Song currentSong, Duration position, bool isPlaying, {bool isPublic = false}) async {
+  // Create a new Listen Together Room (Audio)
+  Future<String> createRoom(String hostId, Song currentSong, Duration position, bool isPlaying, {bool isPublic = false, bool allowGuestControl = false}) async {
     final roomId = _generateRoomCode();
     final roomRef = _rtdb.ref('rooms/$roomId');
     await roomRef.keepSynced(true);
     
     await roomRef.set({
+      'type': 'audio',
       'hostId': hostId,
       'isPublic': isPublic,
+      'allowGuestControl': allowGuestControl,
       'songId': currentSong.id,
       'saavnId': currentSong.saavnId,
       'title': currentSong.title,
@@ -41,6 +43,7 @@ class RoomService {
   Future<void> updateRoomState(String roomId, Song currentSong, Duration position, bool isPlaying) async {
     final roomRef = _rtdb.ref('rooms/$roomId');
     await roomRef.update({
+      'type': 'audio',
       'songId': currentSong.id,
       'saavnId': currentSong.saavnId,
       'title': currentSong.title,
@@ -51,6 +54,53 @@ class RoomService {
       'timestamp': ServerValue.timestamp,
     }).timeout(const Duration(seconds: 10));
   }
+
+  // Create a new Listen Together Room (Video)
+  Future<String> createVideoRoom(String hostId, Map<String, dynamic> videoDetails, Duration position, bool isPlaying, {bool isPublic = false, bool allowGuestControl = false}) async {
+    final roomId = _generateRoomCode();
+    final roomRef = _rtdb.ref('rooms/$roomId');
+    await roomRef.keepSynced(true);
+    
+    await roomRef.set({
+      'type': 'video',
+      'hostId': hostId,
+      'isPublic': isPublic,
+      'allowGuestControl': allowGuestControl,
+      'videoId': videoDetails['id'] ?? '',
+      'title': videoDetails['title'] ?? 'Unknown Video',
+      'uploader': videoDetails['uploader'] ?? 'YouTube',
+      'thumbnail': videoDetails['thumbnail'] ?? '',
+      'positionMs': position.inMilliseconds,
+      'isPlaying': isPlaying,
+      'timestamp': ServerValue.timestamp,
+    }).timeout(const Duration(seconds: 10));
+    
+    roomRef.onDisconnect().remove();
+    return roomId;
+  }
+
+  // Update room state for video (called by host or allowed guest)
+  Future<void> updateVideoRoomState(String roomId, Map<String, dynamic> videoDetails, Duration position, bool isPlaying) async {
+    final roomRef = _rtdb.ref('rooms/$roomId');
+    await roomRef.update({
+      'type': 'video',
+      'videoId': videoDetails['id'] ?? '',
+      'title': videoDetails['title'] ?? 'Unknown Video',
+      'uploader': videoDetails['uploader'] ?? 'YouTube',
+      'thumbnail': videoDetails['thumbnail'] ?? '',
+      'positionMs': position.inMilliseconds,
+      'isPlaying': isPlaying,
+      'timestamp': ServerValue.timestamp,
+    }).timeout(const Duration(seconds: 10));
+  }
+
+  // Toggle guest control
+  Future<void> setGuestControl(String roomId, bool allow) async {
+    await _rtdb.ref('rooms/$roomId').update({
+      'allowGuestControl': allow,
+    });
+  }
+
 
   // Listen to room state (called by guests)
   Stream<DatabaseEvent> listenToRoom(String roomId) {

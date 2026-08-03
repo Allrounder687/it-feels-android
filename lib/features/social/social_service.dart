@@ -204,6 +204,39 @@ class SocialService {
     }
   }
 
+  // Send a video to a friend's inbox
+  Future<void> sendVideo(String friendUid, Map<String, dynamic> videoDetails) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    
+    try {
+      final myDoc = await _firestore.collection('users').doc(user.uid).get();
+      final myName = myDoc.data()?['name'] ?? 'A friend';
+
+      final docRef = _firestore.collection('users').doc(friendUid).collection('inbox').doc();
+      await docRef.set({
+        'senderId': user.uid,
+        'senderName': myName,
+        'type': 'video',
+        'payload': videoDetails,
+        'timestamp': FieldValue.serverTimestamp(),
+        'reactions': {},
+        'isRead': false,
+      });
+
+      // Notify the friend
+      final notifService = locator<NotificationService>();
+      await notifService.notifyFriendsOfRoom(
+        [friendUid], 
+        myName, 
+        'inbox_${docRef.id}' 
+      );
+    } catch (e) {
+      debugPrint("Error sending video: $e");
+    }
+  }
+
+
   // Send a room invite to a friend's inbox
   Future<void> sendRoomInvite(String friendUid, String roomId, String hostName) async {
     final user = _auth.currentUser;
@@ -346,7 +379,7 @@ class SocialService {
         'song_title': song.title,
         'artist': song.artist,
         'timestamp': ServerValue.timestamp,
-        'room_id': ?roomId,
+        if (roomId != null) 'room_id': roomId,
       });
       presenceRef.onDisconnect().remove();
     } else {

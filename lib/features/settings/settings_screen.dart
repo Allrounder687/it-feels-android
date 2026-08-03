@@ -402,6 +402,31 @@ class SettingsScreen extends ConsumerWidget {
                   ref.read(settingsProvider.notifier).setEnableMusicVideos(val);
                 },
               ),
+              
+              SwitchListTile.adaptive(
+                value: settings.enableHardwareDecoding,
+                activeTrackColor: context.themeAccentColor,
+                title: Text(
+                  "Hardware Decoding (GPU)",
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: context.themeTextColor,
+                  ),
+                ),
+                subtitle: Text(
+                  settings.enableHardwareDecoding
+                      ? "Active: Smooth playback & lower battery usage"
+                      : "Inactive: Software decoding fallback (fix for some cheap TV boxes)",
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: context.themeMutedTextColor,
+                  ),
+                ),
+                onChanged: (val) {
+                  ref.read(settingsProvider.notifier).setEnableHardwareDecoding(val);
+                },
+              ),
 
               Theme(
                 data: Theme.of(context).copyWith(dividerColor: Colors.transparent),

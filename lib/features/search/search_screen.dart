@@ -462,55 +462,33 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  ...videos.map((vid) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 6),
-                                        child: Material(
-                                          color: context.themeCardColor.withValues(alpha: 0.5),
-                                          borderRadius: BorderRadius.circular(16),
-                                          child: ListTile(
-                                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                            leading: ClipRRect(
-                                              borderRadius: BorderRadius.circular(8),
-                                              child: SizedBox(
-                                                width: 80,
-                                                height: 45,
-                                                child: CustomImageWidget(
-                                                  imageUrl: vid['thumbnail'] ?? '',
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                            ),
-                                            title: Text(
-                                              vid['title'] ?? 'Unknown',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.inter(
-                                                color: context.themeTextColor,
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            subtitle: Text(
-                                              vid['uploader'] ?? 'YouTube',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.inter(
-                                                color: context.themeMutedTextColor,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            trailing: const Icon(Icons.play_circle_fill_rounded, color: Colors.red),
-                                            onTap: () {
-                                              ref.read(videoPlayerProvider.notifier).playVideo(
-                                                    vid['id'] ?? '',
-                                                    vid['title'] ?? 'Unknown Video',
-                                                    vid['uploader'] ?? 'YouTube',
-                                                  );
-                                              context.push('/video_player');
-                                            },
+                                  LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      if (constraints.maxWidth > 600) {
+                                        return GridView.builder(
+                                          shrinkWrap: true,
+                                          physics: const NeverScrollableScrollPhysics(),
+                                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                                            maxCrossAxisExtent: 320,
+                                            childAspectRatio: 1.15,
+                                            crossAxisSpacing: 16,
+                                            mainAxisSpacing: 16,
                                           ),
-                                        ),
-                                      )),
+                                          itemCount: videos.length,
+                                          itemBuilder: (context, index) {
+                                            return _buildVideoGridCard(context, videos[index]);
+                                          },
+                                        );
+                                      } else {
+                                        return Column(
+                                          children: videos.map((vid) => Padding(
+                                            padding: const EdgeInsets.only(bottom: 6),
+                                            child: _buildVideoListTile(context, vid),
+                                          )).toList(),
+                                        );
+                                      }
+                                    },
+                                  ),
                                   const SizedBox(height: 16),
                                 ],
 
@@ -876,6 +854,121 @@ SliverToBoxAdapter(child: SizedBox(height: 168 + MediaQuery.of(context).viewPadd
                   child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
                 ),
               ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  Widget _buildVideoListTile(BuildContext context, Map<String, dynamic> vid) {
+    return Material(
+      color: context.themeCardColor.withValues(alpha: 0.5),
+      borderRadius: BorderRadius.circular(16),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: 80,
+            height: 45,
+            child: CustomImageWidget(
+              imageUrl: vid['thumbnail'] ?? '',
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        title: Text(
+          vid['title'] ?? 'Unknown',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.inter(
+            color: context.themeTextColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: Text(
+          vid['uploader'] ?? 'YouTube',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.inter(
+            color: context.themeMutedTextColor,
+            fontSize: 12,
+          ),
+        ),
+        trailing: const Icon(Icons.play_circle_fill_rounded, color: Colors.red),
+        onTap: () {
+          ref.read(videoPlayerProvider.notifier).playVideo(
+                vid['id'] ?? '',
+                vid['title'] ?? 'Unknown Video',
+                vid['uploader'] ?? 'YouTube',
+              );
+          context.push('/video_player');
+        },
+      ),
+    );
+  }
+
+  Widget _buildVideoGridCard(BuildContext context, Map<String, dynamic> vid) {
+    return GestureDetector(
+      onTap: () {
+        ref.read(videoPlayerProvider.notifier).playVideo(
+              vid['id'] ?? '',
+              vid['title'] ?? 'Unknown Video',
+              vid['uploader'] ?? 'YouTube',
+            );
+        context.push('/video_player');
+      },
+      child: Material(
+        color: context.themeCardColor.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.hardEdge,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: CustomImageWidget(
+                imageUrl: vid['thumbnail'] ?? '',
+                fit: BoxFit.cover,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    vid['title'] ?? 'Unknown',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: context.themeTextColor,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.person, size: 14, color: context.themeMutedTextColor),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          vid['uploader'] ?? 'YouTube',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.inter(
+                            color: context.themeMutedTextColor,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.play_circle_fill_rounded, color: Colors.red, size: 20),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),

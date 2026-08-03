@@ -6,6 +6,7 @@ import 'package:it_feels_music/core/utils/error_reporter.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
+import 'package:it_feels_music/services/database_service.dart';
 
 @immutable
 class HomeState {
@@ -33,6 +34,7 @@ class HomeState {
   final bool isLoadingCharts;
   final String selectedCategory;
   final bool isLoading;
+  final List<Song> continueWatching;
 
   const HomeState({
     this.trendingSongs = const [],
@@ -59,6 +61,7 @@ class HomeState {
     this.isLoadingCharts = false,
     this.selectedCategory = 'For You',
     this.isLoading = true,
+    this.continueWatching = const [],
   });
 
   List<Song> get currentCategorySongs {
@@ -113,6 +116,7 @@ class HomeState {
     bool? isLoadingCharts,
     String? selectedCategory,
     bool? isLoading,
+    List<Song>? continueWatching,
   }) {
     return HomeState(
       trendingSongs: trendingSongs ?? this.trendingSongs,
@@ -139,6 +143,7 @@ class HomeState {
       isLoadingCharts: isLoadingCharts ?? this.isLoadingCharts,
       selectedCategory: selectedCategory ?? this.selectedCategory,
       isLoading: isLoading ?? this.isLoading,
+      continueWatching: continueWatching ?? this.continueWatching,
     );
   }
 }
@@ -365,7 +370,7 @@ class HomeNotifier extends Notifier<HomeState> {
       }
       
       final seen = <String>{};
-      var finalMoods = moodList.where((p) => seen.add(p.id)).toList();
+      var finalMoods = moodList.where((p) => p.coverArt.isNotEmpty && seen.add(p.id)).toList();
       if (finalMoods.isEmpty) {
         finalMoods = state.topPlaylists.where((p) => p.type == 'playlist').take(5).toList();
       }
@@ -426,6 +431,7 @@ class HomeNotifier extends Notifier<HomeState> {
       trendingSongs: trending,
       topPlaylists: rawPlaylists,
       topAlbums: rawPlaylists.where((p) => p.type == 'album').toList(),
+      continueWatching: await DatabaseService.getContinueWatching(),
       isLoading: false,
     );
 

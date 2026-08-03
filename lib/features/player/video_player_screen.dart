@@ -89,6 +89,11 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     
     if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
       await windowManager.ensureInitialized();
+      if (_isFullscreen) {
+        await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+      } else {
+        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+      }
       await windowManager.setFullScreen(_isFullscreen);
     } else {
       if (_isFullscreen) {
@@ -306,13 +311,30 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                       itemBuilder: (context) {
                                         // Display all native resolutions formatted clearly
                                         return videoProvider.streams.map((s) {
-                                          final q = s['quality'] as String? ?? '';
+                                          var q = s['quality'] as String? ?? '';
+                                          if (q.toLowerCase() == 'high') q = '1080p';
+                                          if (q.toLowerCase() == 'medium') q = '720p';
+                                          if (q.toLowerCase() == 'low') q = '360p';
                                           final RegExp regExp = RegExp(r'\d+');
                                           final match = regExp.firstMatch(q);
                                           final label = match != null ? '${match.group(0)}p' : q;
                                           return PopupMenuItem<String>(
                                             value: q,
                                             child: Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                                          );
+                                        }).toList();
+                                      },
+                                    ),
+                                    // Speed Selector
+                                    PopupMenuButton<double>(
+                                      icon: const Icon(Icons.speed, color: Colors.white, size: 28),
+                                      initialValue: videoProvider.playbackSpeed,
+                                      onSelected: (speed) => ref.read(videoPlayerProvider.notifier).setPlaybackSpeed(speed),
+                                      itemBuilder: (context) {
+                                        return [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0].map((s) {
+                                          return PopupMenuItem<double>(
+                                            value: s,
+                                            child: Text('${s}x', style: TextStyle(fontWeight: s == videoProvider.playbackSpeed ? FontWeight.bold : FontWeight.w500, fontSize: 14)),
                                           );
                                         }).toList();
                                       },

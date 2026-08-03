@@ -16,6 +16,7 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/custom_playlist.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:it_feels_music/features/auth/auth_bottom_sheet.dart';
+import 'package:go_router/go_router.dart';
 
 final friendDetailsProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, uid) async {
   final socialService = locator<SocialService>();
@@ -321,6 +322,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                 final isPlaylist = msgType == 'playlist';
                 final isRoomInvite = msgType == 'room_invite';
                 final isReaction = msgType == 'reaction';
+                final isVideo = msgType == 'video';
 
                 Song? song;
                 CustomPlaylist? playlist;
@@ -395,7 +397,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                             width: 56, height: 56, color: Colors.pinkAccent.withValues(alpha: 0.2),
                                             child: Center(child: Text(payload['emoji'] ?? '❤️', style: const TextStyle(fontSize: 28))),
                                           )
-                                        : CustomImageWidget(imageUrl: song?.coverArt ?? '', width: 56, height: 56),
+                                        : isVideo
+                                            ? CustomImageWidget(imageUrl: payload['thumbnail'] ?? '', width: 100, height: 56, fit: BoxFit.cover)
+                                            : CustomImageWidget(imageUrl: song?.coverArt ?? '', width: 56, height: 56),
                           ),
                           title: Text(
                             isPlaylist
@@ -404,7 +408,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                     ? "Listen Together Room 🎧"
                                     : isReaction
                                         ? "$senderName reacted ${payload['emoji'] ?? ''}"
-                                        : (song?.title ?? 'Music Track'),
+                                        : isVideo
+                                            ? (payload['title'] ?? 'YouTube Video')
+                                            : (song?.title ?? 'Music Track'),
                             style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor),
                           ),
                           subtitle: Text(
@@ -414,7 +420,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                     ? "Invited by $senderName"
                                     : isReaction
                                         ? "on ${payload['targetTitle'] ?? 'Track'}"
-                                        : "Sent by $senderName",
+                                        : isVideo
+                                            ? "Video from $senderName"
+                                            : "Sent by $senderName",
                             style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                           ),
                           trailing: isPlaylist 
@@ -445,15 +453,50 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                   )
                                 : isReaction
                                     ? const SizedBox.shrink()
-                                    : IconButton(
-                                        icon: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 42),
-                                        onPressed: () {
-                                          _socialService.markAsRead(docId);
-                                          if (song != null) {
-                                            ref.read(audioPlayerProvider.notifier).playSong(song);
-                                          }
-                                        },
-                                      ),
+                                    : isVideo
+                                        ? Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.group_add_rounded, color: Colors.amber),
+                                                tooltip: "Watch Together",
+                                                onPressed: () async {
+                                                  _socialService.markAsRead(docId);
+                                                  final roomId = await locator<RoomService>().createVideoRoom(
+                                                    myUid, 
+                                                    payload, 
+                                                    Duration.zero, 
+                                                    true,
+                                                    allowGuestControl: true 
+                                                  );
+                                                  ref.read(videoPlayerProvider.notifier).startVideoRoom(roomId, payload, isHost: true);
+                                                  // Don't push to full screen, stay in miniplayer as requested by user
+                                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Video Room created! ID: $roomId")));
+                                                },
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.play_circle_fill_rounded, color: Colors.red, size: 42),
+                                                onPressed: () {
+                                                  _socialService.markAsRead(docId);
+                                                  ref.read(videoPlayerProvider.notifier).playVideo(
+                                                    payload['id'] ?? '',
+                                                    payload['title'] ?? 'Unknown',
+                                                    payload['uploader'] ?? 'YouTube',
+                                                  );
+                                                  context.push('/video_player');
+                                                },
+                                              ),
+                                            ],
+                                          )
+                                        : IconButton(
+                                            icon: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 42),
+                                            onPressed: () {
+                                              _socialService.markAsRead(docId);
+                                              if (song != null) {
+                                                ref.read(audioPlayerProvider.notifier).playSong(song);
+                                              }
+                                            },
+                                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

@@ -2,6 +2,9 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Hero Tag Collision & UI Architecture (v3.5.19+53 Hotfix):** Removed nested `MiniPlayer` widgets from library screens (`ArtistDetailScreen`, `PlaylistDetailScreen`, etc.). Relying entirely on the global `MainNavigationWrapper` prevents dangerous `Hero` tag duplication crashes (`cover_saavn...`) from destroying the page route stack.
+- **Audio Caching File Lock (errno 32) Fix (v3.5.19+53 Hotfix):** Swapped `LockCachingAudioSource` for `AudioSource.uri` for ephemeral YouTube/Piped streams to bypass writing temporary files to disk. Combined with `stop()` flush calls, this entirely mitigates Windows file locking stutter/crashing during concurrent AV pipeline switching.
+- **Windows Exclusive Fullscreen (v3.5.19+53 Hotfix):** Implemented dynamic `TitleBarStyle.hidden` hooks in `video_player_screen.dart` that explicitly signal the Windows Desktop Window Manager to strip the non-client title bar during video fullscreen mode.
 - **Video Player PiP & Trending Fixes (v3.5.16 Hotfix):**
   - **Video PiP:** Re-implemented `VideoMiniplayer` via `miniplayer` package, injected at the global `MainNavigationWrapper` level to enable picture-in-picture persistence across the entire app stack.
   - **Audio/Video Concurrency:** Rewrote provider playback logic (`audioPlayerProvider` & `videoPlayerProvider`) to mutually lock out and close competing media streams, resolving dual playback bugs.
