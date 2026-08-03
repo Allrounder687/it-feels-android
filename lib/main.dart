@@ -114,11 +114,6 @@ Future<void> main() async {
     ],
   );
 
-  runApp(UncontrolledProviderScope(
-    container: appProviderContainer,
-    child: const PixelPlayerSaavnApp(),
-  ));
-
   if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
     await windowManager.ensureInitialized();
     WindowOptions windowOptions = const WindowOptions(
@@ -134,6 +129,11 @@ Future<void> main() async {
       await windowManager.focus();
     });
   }
+
+  runApp(UncontrolledProviderScope(
+    container: appProviderContainer,
+    child: const PixelPlayerSaavnApp(),
+  ));
 }
 
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
