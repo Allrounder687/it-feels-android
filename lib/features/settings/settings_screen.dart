@@ -63,7 +63,7 @@ class SettingsScreen extends ConsumerWidget {
                         padding: const EdgeInsets.all(16.0),
                         child: Row(
                           children: [
-                            Icon(Icons.restart_alt_rounded, color: context.themeAccentColor, size: 28),
+                            Icon(Icons.info_outline_rounded, color: context.themeAccentColor, size: 28),
                             const SizedBox(width: 16),
                             Expanded(
                               child: Column(
