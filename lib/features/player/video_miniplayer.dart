@@ -15,13 +15,20 @@ class VideoMiniplayer extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWideScreen = screenWidth >= 600;
+    final isExtraWide = screenWidth >= 1200;
+    
+    final double width = isExtraWide ? 426 : (isWideScreen ? 320 : 176);
+    final double height = isExtraWide ? 240 : (isWideScreen ? 180 : 99);
+
     return GestureDetector(
       onTap: () {
         context.push('/video_player');
       },
       child: Container(
-        width: 176, // 16:9 ratio
-        height: 99,
+        width: width,
+        height: height,
         decoration: BoxDecoration(
           color: Colors.black,
           borderRadius: BorderRadius.circular(12),

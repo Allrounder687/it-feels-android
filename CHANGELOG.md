@@ -1,3 +1,7 @@
+## v3.5.18+52
+- **Audio Notification Controls Fix**: Fixed an issue where the background `audio_service` media controls would not display or synchronize properly in Android/iOS notification panels. The playback state now explicitly broadcasts upon `playingStream` emission instead of just `playbackEventStream`.
+- **Responsive Video PiP**: Significantly increased the size of the Picture-in-Picture (PiP) video miniplayer for wider screens (320x180 for tablets, 426x240 for large desktop displays) to prevent the thumbnail from looking too small on high-resolution monitors.
+
 ## v3.5.17+51
 - **Windows Platform Bug Fixes**: Fixed `MissingPluginException` for `firebase_messaging` and `receive_sharing_intent` by adding correct `defaultTargetPlatform` guards to prevent execution on unsupported platforms like Windows.
 - **Piped Proxy API Resilience**: Updated backend Piped instances to reflect active 2026 servers (`api.piped.private.coffee`), improving Piped proxy failover reliability.
