@@ -1079,6 +1079,19 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             ),
                             onPressed: () => ref.read(audioPlayerProvider.notifier).toggleShuffle(),
                           ),
+                          PopupMenuButton<double>(
+                            icon: Icon(Icons.speed_rounded, color: context.themeMutedTextColor, size: 24),
+                            initialValue: playerProvider.playbackSpeed,
+                            onSelected: (speed) => ref.read(audioPlayerProvider.notifier).setPlaybackSpeed(speed),
+                            itemBuilder: (context) {
+                              return [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0].map((s) {
+                                return PopupMenuItem<double>(
+                                  value: s,
+                                  child: Text('${s}x', style: TextStyle(fontWeight: s == playerProvider.playbackSpeed ? FontWeight.bold : FontWeight.w500, fontSize: 14)),
+                                );
+                              }).toList();
+                            },
+                          ),
                           BouncyIconButton(
                             child: Icon(Icons.queue_music_rounded, color: context.themeMutedTextColor, size: 24),
                             onPressed: () {

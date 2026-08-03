@@ -77,10 +77,8 @@ class _SeeAllSongsScreenState extends ConsumerState<SeeAllSongsScreen> {
         ],
       ),
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Column(
-              children: [
             // Search Input inside See All screen
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -201,35 +199,6 @@ class _SeeAllSongsScreenState extends ConsumerState<SeeAllSongsScreen> {
                         );
                       },
                     ),
-            ),
-          ],
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: MiniPlayer(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) => const NowPlayingScreen(),
-                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                        return SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 1),
-                            end: Offset.zero,
-                          ).animate(CurvedAnimation(
-                            parent: animation,
-                            curve: Curves.easeOutCubic,
-                          )),
-                          child: child,
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
             ),
           ],
         ),

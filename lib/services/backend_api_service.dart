@@ -25,8 +25,8 @@ class BackendApiService {
     if (!useProxyBackend) return [];
     try {
       final uri = Uri.parse('$baseUrl/api/v1/recommendations').replace(queryParameters: {
-        'songId': ?songId,
-        'artist': ?artist,
+        if (songId != null) 'songId': songId,
+        if (artist != null) 'artist': artist,
       });
 
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
@@ -215,7 +215,7 @@ class BackendApiService {
       final uri = Uri.parse('$baseUrl/api/v1/lyrics').replace(queryParameters: {
         'track': track,
         'artist': artist,
-        'album': ?album,
+        if (album != null) 'album': album,
         if (duration != null && duration > 0) 'duration': duration.toString(),
       });
 
@@ -370,12 +370,8 @@ class BackendApiService {
     
     tryComplete(_fetchFromPipedApi(actualVideoId).then((res) {
       if (res.isNotEmpty && res['streams'] != null && (res['streams'] as List).isNotEmpty) {
-        final filteredStreams = (res['streams'] as List).where((s) => !(s['videoOnly'] == true)).toList();
-        if (filteredStreams.isNotEmpty) {
-          res['streams'] = filteredStreams;
-          debugPrint('[BackendApiService] Race won by: Piped API Proxy');
-          return res;
-        }
+        debugPrint('[BackendApiService] Race won by: Piped API Proxy');
+        return res;
       }
       throw Exception('Piped empty');
     }));
@@ -420,10 +416,17 @@ class BackendApiService {
 
           final Map<String, Map<String, dynamic>> uniqueQualities = {};
           for (var stream in videoStreams) {
-            final qualityLabel = stream['quality']?.toString() ?? (stream['height'] != null ? '${stream['height']}p' : null);
+            var qualityLabel = stream['quality']?.toString() ?? (stream['height'] != null ? '${stream['height']}p' : null);
             final url = stream['url']?.toString();
             if (qualityLabel != null && url != null) {
-              final formattedQuality = qualityLabel.contains('p') ? qualityLabel : '${qualityLabel}p';
+              if (qualityLabel.toLowerCase() == 'high') qualityLabel = '1080p';
+              if (qualityLabel.toLowerCase() == 'medium') qualityLabel = '720p';
+              if (qualityLabel.toLowerCase() == 'low') qualityLabel = '360p';
+              
+              final RegExp regExp = RegExp(r'\d+');
+              final match = regExp.firstMatch(qualityLabel);
+              final formattedQuality = match != null ? '${match.group(0)}p' : (qualityLabel.contains('p') ? qualityLabel : '${qualityLabel}p');
+              
               if (!uniqueQualities.containsKey(formattedQuality)) {
                 uniqueQualities[formattedQuality] = {
                   'quality': formattedQuality,
@@ -516,15 +519,25 @@ class BackendApiService {
 
       final List<Map<String, dynamic>> streams = [];
       
-      // Get highest-res video-only stream (up to 4K/8K)
+      // Get all available video-only streams (from 144p up to 4K/8K)
       if (manifest.videoOnly.isNotEmpty) {
-        final highestVideo = manifest.videoOnly.withHighestBitrate();
-        streams.add({
-          'quality': highestVideo.videoQuality.name,
-          'url': highestVideo.url.toString(),
-          'mimeType': highestVideo.container.name,
-          'videoOnly': true,
-        });
+        final uniqueQualities = <String>{};
+        final sortedStreams = manifest.videoOnly.sortByVideoQuality();
+        
+        for (final stream in sortedStreams) {
+          final quality = stream.videoQuality.name.replaceAll(RegExp(r'[^0-9p]'), ''); // Extract just '1080p', etc.
+          final cleanQuality = quality.isNotEmpty ? quality : stream.videoQuality.name;
+          
+          if (!uniqueQualities.contains(cleanQuality)) {
+            uniqueQualities.add(cleanQuality);
+            streams.add({
+              'quality': cleanQuality,
+              'url': stream.url.toString(),
+              'mimeType': stream.container.name,
+              'videoOnly': true,
+            });
+          }
+        }
       }
 
       // Fallback: adaptive HLS manifest

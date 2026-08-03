@@ -47,9 +47,11 @@ class VideoMiniplayer extends ConsumerWidget {
             children: [
               // Video Player
               IgnorePointer(
-                child: Video(
-                  controller: videoProvider.videoController!,
-                  controls: NoVideoControls,
+                child: ExcludeSemantics(
+                  child: Video(
+                    controller: videoProvider.videoController!,
+                    controls: NoVideoControls,
+                  ),
                 ),
               ),
               // Gradient for visibility of icons

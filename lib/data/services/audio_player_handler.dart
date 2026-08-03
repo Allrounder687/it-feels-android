@@ -111,11 +111,13 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         final path = streamUrl.startsWith('file://') ? streamUrl.replaceFirst('file://', '') : streamUrl;
         await _player.setAudioSource(
           AudioSource.file(path, tag: item),
-          initialPosition: Duration.zero,
+          initialPosition: song.playbackPositionMs != null && song.playbackPositionMs! > 0 
+              ? Duration(milliseconds: song.playbackPositionMs!) 
+              : Duration.zero,
         );
       } else {
         await _player.setAudioSource(
-          LockCachingAudioSource(
+          AudioSource.uri(
             Uri.parse(streamUrl),
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -123,7 +125,9 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
             },
             tag: item,
           ),
-          initialPosition: Duration.zero,
+          initialPosition: song.playbackPositionMs != null && song.playbackPositionMs! > 0 
+              ? Duration(milliseconds: song.playbackPositionMs!) 
+              : Duration.zero,
         );
       }
       await _player.play();

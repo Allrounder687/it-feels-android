@@ -15,6 +15,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/audio_player_handler.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
+import 'package:it_feels_music/services/database_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
@@ -890,6 +891,26 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       await audioHandler.pause();
     }
     locator<SocialService>().updatePresence(state.currentSong, false, roomId: state.currentRoomId);
+    _saveCurrentPosition();
+  }
+
+  Future<void> stop() async {
+    if (locator<it_feels_music_cast_service.CastService>().isConnected) {
+      await locator<it_feels_music_cast_service.CastService>().pause();
+    } else {
+      await audioHandler.stop();
+    }
+    locator<SocialService>().updatePresence(state.currentSong, false, roomId: state.currentRoomId);
+    _saveCurrentPosition();
+  }
+
+  Future<void> _saveCurrentPosition() async {
+    final song = state.currentSong;
+    if (song != null) {
+      final pos = audioHandler.player.position;
+      song.playbackPositionMs = pos.inMilliseconds;
+      await locator<DatabaseService>().saveSong(song);
+    }
   }
 
   Future<void> togglePlayPause() async {
@@ -908,6 +929,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         await audioHandler.pause();
       }
       locator<SocialService>().updatePresence(state.currentSong, false, roomId: state.currentRoomId);
+      _saveCurrentPosition();
     } else {
       if (locator<it_feels_music_cast_service.CastService>().isConnected) {
         await locator<it_feels_music_cast_service.CastService>().play();
@@ -1083,7 +1105,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Future<String?> startBroadcasting(String uid) async {
     if (state.currentSong == null) return null;
     final isPremium = ref.read(subscriptionProvider).isPremium;
-    final roomId = await _roomService.createRoom(uid, state.currentSong!, state.position, state.isPlaying, isPublic: isPremium);
+    final roomId = await _roomService.createRoom(uid, state.currentSong!, state.position, state.isPlaying, isPublic: isPremium, allowGuestControl: true);
     state = state.copyWith(currentRoomId: roomId, isHost: true);
     locator<SocialService>().updatePresence(state.currentSong, state.isPlaying, roomId: roomId);
     
