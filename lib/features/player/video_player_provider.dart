@@ -282,11 +282,26 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     
     final settings = ref.read(settingsProvider);
     
-    final player = Player(configuration: const PlayerConfiguration(pitch: false, vo: 'gpu', bufferSize: 64 * 1024 * 1024));
+    final player = Player(
+      configuration: const PlayerConfiguration(
+        pitch: false, 
+        vo: 'gpu', 
+        bufferSize: 32 * 1024 * 1024, // 32MB optimizes instant start over deep caching
+      )
+    );
     final controller = VideoController(player);
     
     try {
-      await player.open(Media(streamUrl), play: false);
+      // Pass instant-start demuxer flags to libmpv via Media extras
+      final media = Media(
+        streamUrl,
+        extras: {
+          'demuxer-max-bytes': '32000000',
+          'cache-pause': 'no',
+        },
+      );
+      
+      await player.open(media, play: false);
       
       // If it's a separated video-only stream, we need to attach the audio stream
       if (selectedStream['videoOnly'] == true && state.audioUrl.isNotEmpty) {
