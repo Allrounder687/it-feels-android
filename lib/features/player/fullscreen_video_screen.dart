@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
-import 'package:video_player/video_player.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
@@ -147,7 +147,7 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
         final videoProvider = ref.watch(videoPlayerProvider);
         final settingsProviderLocal = ref.watch(settingsProvider);
         final ctrl = videoProvider.videoController;
-        final isInitialized = ctrl != null && ctrl.value.isInitialized;
+        final isInitialized = ctrl != null;
 
         return Scaffold(
           backgroundColor: Colors.black,
@@ -160,9 +160,10 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                 // Video Player Container
                 Center(
                   child: isInitialized
-                    ? AspectRatio(
-                        aspectRatio: ctrl.value.aspectRatio,
-                        child: VideoPlayer(ctrl),
+                    ? Video(
+                        controller: ctrl,
+                        controls: NoVideoControls, // We use custom controls below
+                        fill: Colors.black,
                       )
                     : videoProvider.isLoading
                       ? Column(
@@ -296,9 +297,10 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                   child: const Icon(Icons.replay_10_rounded, color: Colors.white, size: 40),
                                   onPressed: () {
                                     _startHideControlsTimer();
-                                    if (ctrl != null) {
-                                      final newPos = ctrl.value.position - const Duration(seconds: 10);
-                                      ctrl.seekTo(newPos);
+                                    final player = videoProvider.player;
+                                    if (player != null) {
+                                      final newPos = player.state.position - const Duration(seconds: 10);
+                                      player.seek(newPos);
                                       if (!settingsProviderLocal.useVideoAudioSource) {
                                         ref.read(audioPlayerProvider.notifier).seek(newPos);
                                       }
@@ -314,28 +316,35 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                     color: context.themeAccentColor,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: AnimatedPlayPauseButton(
-                                    isPlaying: ctrl?.value.isPlaying ?? false,
-                                    color: Colors.black,
-                                    size: 44,
-                                    onPressed: () {
-                                      _startHideControlsTimer();
-                                      if (ctrl != null) {
-                                        if (ctrl.value.isPlaying) {
-                                          ctrl.pause();
-                                          if (!settingsProviderLocal.useVideoAudioSource) {
-                                            ref.read(audioPlayerProvider.notifier).pause();
+                                  child: StreamBuilder<bool>(
+                                    stream: videoProvider.player?.stream.playing,
+                                    builder: (context, snapshot) {
+                                      final isPlaying = snapshot.data ?? videoProvider.player?.state.playing ?? false;
+                                      return AnimatedPlayPauseButton(
+                                        isPlaying: isPlaying,
+                                        color: Colors.black,
+                                        size: 44,
+                                        onPressed: () {
+                                          _startHideControlsTimer();
+                                          final player = videoProvider.player;
+                                          if (player != null) {
+                                            if (isPlaying) {
+                                              player.pause();
+                                              if (!settingsProviderLocal.useVideoAudioSource) {
+                                                ref.read(audioPlayerProvider.notifier).pause();
+                                              }
+                                            } else {
+                                              player.play();
+                                              if (!settingsProviderLocal.useVideoAudioSource) {
+                                                ref.read(audioPlayerProvider.notifier).seek(player.state.position);
+                                                ref.read(audioPlayerProvider.notifier).play();
+                                              }
+                                            }
+                                            setState(() {});
                                           }
-                                        } else {
-                                          ctrl.play();
-                                          if (!settingsProviderLocal.useVideoAudioSource) {
-                                            ref.read(audioPlayerProvider.notifier).seek(ctrl.value.position);
-                                            ref.read(audioPlayerProvider.notifier).play();
-                                          }
-                                        }
-                                        setState(() {});
-                                      }
-                                    },
+                                        },
+                                      );
+                                    }
                                   ),
                                 ),
                                 const SizedBox(width: 36),
@@ -343,9 +352,10 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                   child: const Icon(Icons.forward_10_rounded, color: Colors.white, size: 40),
                                   onPressed: () {
                                     _startHideControlsTimer();
-                                    if (ctrl != null) {
-                                      final newPos = ctrl.value.position + const Duration(seconds: 10);
-                                      ctrl.seekTo(newPos);
+                                    final player = videoProvider.player;
+                                    if (player != null) {
+                                      final newPos = player.state.position + const Duration(seconds: 10);
+                                      player.seek(newPos);
                                       if (!settingsProviderLocal.useVideoAudioSource) {
                                         ref.read(audioPlayerProvider.notifier).seek(newPos);
                                       }
@@ -358,18 +368,20 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                             // Bottom Seek Bar
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                              child: isInitialized
-                                ? ValueListenableBuilder<VideoPlayerValue>(
-                                    valueListenable: ctrl,
-                                    builder: (context, value, child) {
+                              child: videoProvider.player != null
+                                ? StreamBuilder<Duration>(
+                                    stream: videoProvider.player!.stream.position,
+                                    builder: (context, snapshot) {
+                                      final position = snapshot.data ?? videoProvider.player!.state.position;
+                                      final duration = videoProvider.player!.state.duration;
                                       return WavySeekBar(
-                                        position: value.position,
-                                        duration: value.duration,
+                                        position: position,
+                                        duration: duration,
                                         activeColor: context.themeAccentColor,
                                         inactiveColor: Colors.white24,
                                         onSeek: (newPos) {
                                           _startHideControlsTimer();
-                                          ctrl.seekTo(newPos);
+                                          videoProvider.player!.seek(newPos);
                                           if (!settingsProviderLocal.useVideoAudioSource) {
                                             ref.read(audioPlayerProvider.notifier).seek(newPos);
                                           }

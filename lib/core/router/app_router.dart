@@ -8,6 +8,7 @@ import 'package:it_feels_music/features/search/search_screen.dart';
 import 'package:it_feels_music/features/library/library_screen.dart';
 import 'package:it_feels_music/features/player/video_tab_screen.dart';
 import 'package:it_feels_music/features/player/now_playing_screen.dart';
+import 'package:it_feels_music/features/player/video_player_screen.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/features/social/social_screen.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
@@ -107,6 +108,27 @@ final GoRouter appRouter = GoRouter(
       pageBuilder: (context, state) {
         return CustomTransitionPage(
           child: const NowPlayingScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 1),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              )),
+              child: child,
+            );
+          },
+        );
+      },
+    ),
+    GoRoute(
+      path: '/video_player',
+      parentNavigatorKey: rootNavigatorKey,
+      pageBuilder: (context, state) {
+        return CustomTransitionPage(
+          child: const VideoPlayerScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
               position: Tween<Offset>(

@@ -1,12 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
-import 'package:video_player/video_player.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
-final canvasControllerProvider = StateNotifierProvider<CanvasControllerNotifier, VideoPlayerController?>((ref) {
+final canvasControllerProvider = StateNotifierProvider<CanvasControllerNotifier, VideoController?>((ref) {
   final notifier = CanvasControllerNotifier(ref);
   ref.listen<Song?>(audioPlayerProvider.select((state) => state.currentSong), (prev, next) {
     if (next != null && prev?.id != next.id) {
@@ -16,7 +17,7 @@ final canvasControllerProvider = StateNotifierProvider<CanvasControllerNotifier,
   return notifier;
 });
 
-class CanvasControllerNotifier extends StateNotifier<VideoPlayerController?> {
+class CanvasControllerNotifier extends StateNotifier<VideoController?> {
   final Ref ref;
   
   CanvasControllerNotifier(this.ref) : super(null);
@@ -24,7 +25,8 @@ class CanvasControllerNotifier extends StateNotifier<VideoPlayerController?> {
   Future<void> loadCanvasForSong(Song song) async {
     // Clear old
     if (state != null) {
-      await state?.dispose();
+      await state?.player.pause();
+      await state?.player.dispose();
       state = null;
     }
     
@@ -40,19 +42,18 @@ class CanvasControllerNotifier extends StateNotifier<VideoPlayerController?> {
       await Future.delayed(const Duration(milliseconds: 400));
       if (!mounted) return;
 
-      final controller = VideoPlayerController.networkUrl(
-        Uri.parse(streamUrl),
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-      );
-      await controller.initialize();
-      await controller.setVolume(0.0);
-      await controller.setLooping(true);
-      await controller.play();
+      final player = Player();
+      final controller = VideoController(player);
+      
+      await player.open(Media(streamUrl), play: false);
+      await player.setVolume(0.0);
+      await player.setPlaylistMode(PlaylistMode.loop);
+      await player.play();
       
       if (mounted) {
         state = controller;
       } else {
-        controller.dispose();
+        await player.dispose();
       }
     } catch (e) {
       // Failed to load canvas silently
@@ -61,7 +62,7 @@ class CanvasControllerNotifier extends StateNotifier<VideoPlayerController?> {
 
   @override
   void dispose() {
-    state?.dispose();
+    state?.player.dispose();
     super.dispose();
   }
 }

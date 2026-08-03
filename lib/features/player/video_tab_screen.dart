@@ -6,7 +6,7 @@ import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/player/video_miniplayer.dart';
-import 'package:miniplayer/miniplayer.dart';
+import 'package:go_router/go_router.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -303,7 +303,7 @@ class _VideoTabScreenState extends ConsumerState<VideoTabScreen> {
               borderRadius: BorderRadius.circular(20),
               onTap: () {
                 ref.read(videoPlayerProvider.notifier).playVideo(videoId, title, uploader);
-                ref.read(videoMiniplayerControllerProvider).animateToHeight(state: PanelState.MAX);
+                context.push('/video_player');
               },
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -497,7 +497,7 @@ class _VideoTabScreenState extends ConsumerState<VideoTabScreen> {
                         uploader,
                         localPath: localPath,
                       );
-                  ref.read(videoMiniplayerControllerProvider).animateToHeight(state: PanelState.MAX);
+                  context.push('/video_player');
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Video file not found. It may have been deleted.')),

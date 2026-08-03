@@ -9,7 +9,7 @@ import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/player/video_miniplayer.dart';
-import 'package:miniplayer/miniplayer.dart';
+import 'package:go_router/go_router.dart';
 import 'package:it_feels_music/features/player/video_player_screen.dart';
 import 'package:it_feels_music/features/search/search_provider.dart';
 import 'package:it_feels_music/features/library/artist_detail_screen.dart';
@@ -61,8 +61,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         final searchProviderObj = ref.watch(searchProvider);
         final hiddenProviderObj = ref.watch(hiddenSongsProvider);
         final settingsProviderObj = ref.watch(settingsProvider);
-        final enableVideos = settingsProviderObj.enableMusicVideos;
-        final categories = ["ALL", "SONGS", "ARTISTS", "ALBUMS", "PLAYLISTS", if (enableVideos) "VIDEOS"];
+        final categories = ["ALL", "SONGS", "ARTISTS", "ALBUMS", "PLAYLISTS", "VIDEOS"];
 
         final songs = searchProviderObj.songs.where((s) => !hiddenProviderObj.isHidden(s.id)).toList();
         final albums = searchProviderObj.albums;
@@ -75,7 +74,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             albums.isEmpty &&
             playlists.isEmpty &&
             searchProviderObj.artists.isEmpty &&
-            (enableVideos ? videos.isEmpty : true);
+            videos.isEmpty;
 
         return Scaffold(
           backgroundColor: context.themeBackgroundColor,
@@ -453,7 +452,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                 ],
 
                                 // Videos Section
-                                if ((_selectedCategoryIndex == 0 || _selectedCategoryIndex == 5) && enableVideos && videos.isNotEmpty) ...[
+                                if ((_selectedCategoryIndex == 0 || _selectedCategoryIndex == 5) && videos.isNotEmpty) ...[
                                   Text(
                                     "Videos",
                                     style: GoogleFonts.outfit(
@@ -507,7 +506,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                                     vid['title'] ?? 'Unknown Video',
                                                     vid['uploader'] ?? 'YouTube',
                                                   );
-                                              ref.read(videoMiniplayerControllerProvider).animateToHeight(state: PanelState.MAX);
+                                              context.push('/video_player');
                                             },
                                           ),
                                         ),
@@ -721,8 +720,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 220,
               childAspectRatio: 1.6,
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,

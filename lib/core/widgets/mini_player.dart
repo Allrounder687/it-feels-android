@@ -194,14 +194,15 @@ class MiniPlayer extends ConsumerWidget {
                       ),
                     ),
                   ),
-                    ),
-                  ),
-                );
-                return kDebugMode ? child : BackdropFilter(filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), child: child);
-              },
+                ],
+              ),
             ),
-          ),
-        );
-    );
+          );
+          return kDebugMode ? child : BackdropFilter(filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), child: child);
+        },
+      ),
+    ),
+  );
+});
   }
 }

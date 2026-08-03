@@ -46,22 +46,24 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     
-    // Listen to media sharing incoming links while app is in memory
-    _intentSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((value) {
-      if (value.isNotEmpty) {
-        _handleSharedText(value.first.path);
-      }
-    }, onError: (err) {
-      debugPrint("Intent error: $err");
-    });
+    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+      // Listen to media sharing incoming links while app is in memory
+      _intentSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((value) {
+        if (value.isNotEmpty) {
+          _handleSharedText(value.first.path);
+        }
+      }, onError: (err) {
+        debugPrint("Intent error: $err");
+      });
 
-    // Check for sharing intent when app is opened from closed state
-    ReceiveSharingIntent.instance.getInitialMedia().then((value) {
-      if (value.isNotEmpty) {
-        _handleSharedText(value.first.path);
-      }
-      ReceiveSharingIntent.instance.reset();
-    });
+      // Check for sharing intent when app is opened from closed state
+      ReceiveSharingIntent.instance.getInitialMedia().then((value) {
+        if (value.isNotEmpty) {
+          _handleSharedText(value.first.path);
+        }
+        ReceiveSharingIntent.instance.reset();
+      });
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final player = ref.read(audioPlayerProvider);
@@ -79,17 +81,19 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
 
   Future<void> _checkUpdateStatus() async {
     // 1. Silent Background Shorebird Patch Check
-    try {
-      final shorebird = ShorebirdUpdater();
-      final status = await shorebird.checkForUpdate();
-      if (status == UpdateStatus.outdated) {
-        await shorebird.update();
-        if (mounted) {
-          ref.read(shorebirdUpdatePendingProvider.notifier).state = true;
+    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+      try {
+        final shorebird = ShorebirdUpdater();
+        final status = await shorebird.checkForUpdate();
+        if (status == UpdateStatus.outdated) {
+          await shorebird.update();
+          if (mounted) {
+            ref.read(shorebirdUpdatePendingProvider.notifier).state = true;
+          }
         }
+      } catch (e) {
+        debugPrint("Silent Shorebird check failed: $e");
       }
-    } catch (e) {
-      debugPrint("Silent Shorebird check failed: $e");
     }
 
     // 2. Full Version Config Check
@@ -296,8 +300,12 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                       // Active Shell Route
                       widget.navigationShell,
                       
-                      // Video Miniplayer Overlay
-                      const VideoMiniplayer(),
+                      // Video Miniplayer Overlay (PiP)
+                      Positioned(
+                        bottom: 90, // Above the audio MiniPlayer
+                        right: 16,
+                        child: const VideoMiniplayer(),
+                      ),
 
                       // Floating MiniPlayer Overlay
                       Positioned(
@@ -333,8 +341,6 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
               // Active Shell Route
               widget.navigationShell,
               
-              // Video Miniplayer Overlay
-              const VideoMiniplayer(),
 
               // Floating MiniPlayer + Bottom Navigation Bar Overlay
               if (MediaQuery.of(context).orientation == Orientation.portrait)
@@ -395,6 +401,13 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                     ),
                   ),
                 ),
+              
+              // Video Miniplayer PiP Overlay (On top of everything)
+              Positioned(
+                bottom: MediaQuery.of(context).orientation == Orientation.portrait ? ref.watch(bottomUiProvider) + 16 : 16,
+                right: 16,
+                child: const VideoMiniplayer(),
+              ),
             ],
           );
         },

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
-import 'package:video_player/video_player.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:it_feels_music/core/theme/app_colors.dart';
@@ -13,7 +13,7 @@ import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/player/video_miniplayer.dart';
 import 'package:it_feels_music/services/storage_service.dart';
-import 'package:miniplayer/miniplayer.dart';
+import 'package:go_router/go_router.dart';
 
 class VideoPlayerScreen extends ConsumerStatefulWidget {
   const VideoPlayerScreen({super.key});
@@ -52,11 +52,6 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
       SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
-    
-    // Defer the provider read to avoid modifying providers during the widget tree teardown
-    Future.microtask(() {
-      ref.read(videoPlayerProvider.notifier).closeVideo();
-    });
     
     super.dispose();
   }
@@ -219,8 +214,11 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                       child: Center(
                         child: videoProvider.isLoading
                             ? const CircularProgressIndicator(color: AppColors.midnightAccent)
-                            : (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
-                                ? VideoPlayer(videoProvider.videoController!)
+                            : (videoProvider.videoController != null)
+                                ? Video(
+                                    controller: videoProvider.videoController!,
+                                    controls: NoVideoControls, // custom controls above
+                                  )
                                 : Text(
                                     "Video unavailable",
                                     style: GoogleFonts.inter(color: Colors.white70),
@@ -245,8 +243,8 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                   IconButton(
                                     icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 32),
                                     onPressed: () {
-                                      // Collapse video PiP instead of popping the route
-                                      ref.read(videoMiniplayerControllerProvider).animateToHeight(state: PanelState.MIN);
+                                      // Collapse video PiP instead of popping the route? Now we pop the route.
+                                      context.pop();
                                     },
                                   ),
                                   const Expanded(child: SizedBox()),
@@ -256,10 +254,40 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                     PopupMenuButton<String>(
                                       icon: const Icon(Icons.settings, color: Colors.white, size: 28),
                                       onSelected: (q) => ref.read(videoPlayerProvider.notifier).changeQuality(q),
-                                      itemBuilder: (context) => videoProvider.streams.map((s) => PopupMenuItem<String>(
-                                        value: s['quality'],
-                                        child: Text("${s['quality']} (MP4)"),
-                                      )).toList(),
+                                      itemBuilder: (context) {
+                                        // Filter to unique quality groups (High, Med, Low)
+                                        final Map<String, String> distinctQualities = {};
+                                        for (var s in videoProvider.streams) {
+                                          final q = s['quality'] as String? ?? '';
+                                          final lower = q.toLowerCase();
+                                          if (lower.contains('1080') || lower.contains('720') || lower.contains('hd') || lower.contains('high')) {
+                                            if (!distinctQualities.containsKey('High')) distinctQualities['High'] = q;
+                                          } else if (lower.contains('480') || lower.contains('360') || lower.contains('medium')) {
+                                            if (!distinctQualities.containsKey('Medium')) distinctQualities['Medium'] = q;
+                                          } else if (lower.contains('240') || lower.contains('144') || lower.contains('low') || lower.contains('small')) {
+                                            if (!distinctQualities.containsKey('Low')) distinctQualities['Low'] = q;
+                                          }
+                                        }
+                                        
+                                        // If none matched, fallback to raw list nicely formatted
+                                        if (distinctQualities.isEmpty) {
+                                          return videoProvider.streams.map((s) {
+                                            final q = s['quality'] as String? ?? '';
+                                            final RegExp regExp = RegExp(r'\d+');
+                                            final match = regExp.firstMatch(q);
+                                            final label = match != null ? '${match.group(0)}p' : q;
+                                            return PopupMenuItem<String>(
+                                              value: q,
+                                              child: Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                                            );
+                                          }).toList();
+                                        }
+
+                                        return distinctQualities.entries.map((entry) => PopupMenuItem<String>(
+                                          value: entry.value,
+                                          child: Text(entry.key, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+                                        )).toList();
+                                      },
                                     ),
                                 ],
                               ),
@@ -281,10 +309,10 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                 GestureDetector(
                                   onTap: () {
                                     _startHideTimer();
-                                    if (videoProvider.videoController != null) {
-                                      videoProvider.videoController!.value.isPlaying
-                                          ? videoProvider.videoController!.pause()
-                                          : videoProvider.videoController!.play();
+                                    if (videoProvider.player != null) {
+                                      videoProvider.player!.state.playing
+                                          ? videoProvider.player!.pause()
+                                          : videoProvider.player!.play();
                                       setState(() {}); // Trigger icon update
                                     }
                                   },
@@ -296,7 +324,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                       shape: BoxShape.circle,
                                     ),
                                     child: Icon(
-                                      (videoProvider.videoController?.value.isPlaying ?? false) ? Icons.pause : Icons.play_arrow,
+                                      (videoProvider.player?.state.playing ?? false) ? Icons.pause : Icons.play_arrow,
                                       color: Colors.black,
                                       size: 36,
                                     ),
@@ -320,14 +348,16 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  if (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
-                                    ValueListenableBuilder(
-                                      valueListenable: videoProvider.videoController!,
-                                      builder: (context, VideoPlayerValue value, child) {
+                                  if (videoProvider.player != null)
+                                    StreamBuilder<Duration>(
+                                      stream: videoProvider.player!.stream.position,
+                                      builder: (context, snapshot) {
+                                        final position = snapshot.data ?? videoProvider.player!.state.position;
+                                        final duration = videoProvider.player!.state.duration;
                                         return Row(
                                           children: [
                                             Text(
-                                              _formatDuration(value.position),
+                                              _formatDuration(position),
                                               style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
                                             ),
                                             Expanded(
@@ -340,16 +370,16 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                                   thumbColor: AppColors.midnightAccent,
                                                 ),
                                                 child: Slider(
-                                                  value: value.position.inMilliseconds.toDouble(),
-                                                  max: value.duration.inMilliseconds.toDouble(),
+                                                  value: position.inMilliseconds.toDouble(),
+                                                  max: duration.inMilliseconds.toDouble(),
                                                   onChanged: (val) {
-                                                    videoProvider.videoController!.seekTo(Duration(milliseconds: val.toInt()));
+                                                    videoProvider.player!.seek(Duration(milliseconds: val.toInt()));
                                                   },
                                                 ),
                                               ),
                                             ),
                                             Text(
-                                              _formatDuration(value.duration),
+                                              _formatDuration(duration),
                                               style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
                                             ),
                                             IconButton(
@@ -384,137 +414,174 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
           child: playerArea,
         ),
       );
-    } else {
-      playerArea = Expanded(child: playerArea);
     }
+    // We removed the Expanded(child: playerArea) for fullscreen because it's no longer inside a Column.
 
-    return Material(
-      color: _isFullscreen ? Colors.black : context.themeBackgroundColor,
+    final isWide = MediaQuery.of(context).size.width > 800;
+
+    final metadataWidget = Padding(
+      padding: const EdgeInsets.all(16.0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          playerArea,
-          if (!_isFullscreen)
-            Expanded(
-              child: CustomScrollView(
-                slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          videoProvider.currentTitle,
-                          style: GoogleFonts.outfit(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: context.themeTextColor,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 16,
-                              backgroundColor: context.themeCardColor,
-                              child: const Icon(Icons.person, size: 20), // Can replace with actual avatar URL if fetched
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              videoProvider.currentUploader,
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: context.themeMutedTextColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const Spacer(),
-                            // Download Button
-                            IconButton(
-                              icon: _isDownloading
-                                  ? SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        value: _downloadProgress > 0 ? _downloadProgress : null,
-                                        strokeWidth: 2.5,
-                                        color: AppColors.midnightAccent,
-                                      ),
-                                    )
-                                  : Icon(Icons.download_rounded, color: context.themeTextColor),
-                              onPressed: () => _downloadVideo(videoProvider),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        Text(
-                          "Up Next",
-                          style: GoogleFonts.outfit(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: context.themeTextColor,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // Related Videos List
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final video = videoProvider.relatedVideos[index];
-                      return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: Image.network(
-                              video['thumbnail'],
-                              fit: BoxFit.cover,
-                              errorBuilder: (c, e, s) => Container(color: Colors.grey.withValues(alpha: 0.2)),
-                            ),
-                          ),
-                        ),
-                        title: Text(
-                          video['title'],
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: context.themeTextColor,
-                          ),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4.0),
-                          child: Text(
-                            "${video['uploader']} • ${video['views']}",
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: context.themeMutedTextColor,
-                            ),
-                          ),
-                        ),
-                        onTap: () {
-                          // Play related video
-                          ref.read(videoPlayerProvider.notifier).playVideo(video['id'], video['title'], video['uploader']);
-                        },
-                      );
-                    },
-                    childCount: videoProvider.relatedVideos.length,
-                  ),
-                ),
-              ],
+          Text(
+            videoProvider.currentTitle,
+            style: GoogleFonts.outfit(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: context.themeTextColor,
             ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: context.themeCardColor,
+                child: const Icon(Icons.person, size: 20),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                videoProvider.currentUploader,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: context.themeMutedTextColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                icon: _isDownloading
+                    ? SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          value: _downloadProgress > 0 ? _downloadProgress : null,
+                          strokeWidth: 2.5,
+                          color: AppColors.midnightAccent,
+                        ),
+                      )
+                    : Icon(Icons.download_rounded, color: context.themeTextColor),
+                onPressed: () => _downloadVideo(videoProvider),
+              ),
+            ],
           ),
         ],
       ),
+    );
+
+    final relatedVideosSliverList = SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final video = videoProvider.relatedVideos[index];
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Image.network(
+                  video['thumbnail'],
+                  fit: BoxFit.cover,
+                  errorBuilder: (c, e, s) => Container(color: Colors.grey.withValues(alpha: 0.2)),
+                ),
+              ),
+            ),
+            title: Text(
+              video['title'],
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: context.themeTextColor,
+              ),
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Text(
+                "${video['uploader']} • ${video['views']}",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: context.themeMutedTextColor,
+                ),
+              ),
+            ),
+            onTap: () {
+              ref.read(videoPlayerProvider.notifier).playVideo(video['id'], video['title'], video['uploader']);
+            },
+          );
+        },
+        childCount: videoProvider.relatedVideos.length,
+      ),
+    );
+
+    final upNextHeader = Padding(
+      padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 24.0, bottom: 12.0),
+      child: Text(
+        "Up Next",
+        style: GoogleFonts.outfit(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: context.themeTextColor,
+        ),
+      ),
+    );
+
+    return Material(
+      color: _isFullscreen ? Colors.black : context.themeBackgroundColor,
+      child: _isFullscreen
+          ? playerArea
+          : isWide
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 6,
+                      child: CustomScrollView(
+                        slivers: [
+                          SliverToBoxAdapter(child: playerArea),
+                          SliverToBoxAdapter(child: metadataWidget),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      flex: 4,
+                      child: Container(
+                        color: context.themeCardColor.withValues(alpha: 0.3),
+                        child: CustomScrollView(
+                          slivers: [
+                            SliverToBoxAdapter(child: upNextHeader),
+                            relatedVideosSliverList,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  children: [
+                    playerArea,
+                    Expanded(
+                      child: CustomScrollView(
+                        slivers: [
+                          SliverToBoxAdapter(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                metadataWidget,
+                                upNextHeader,
+                              ],
+                            ),
+                          ),
+                          relatedVideosSliverList,
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
     );
   }
 

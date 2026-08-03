@@ -1,3 +1,9 @@
+## v3.5.17+51
+- **Windows Platform Bug Fixes**: Fixed `MissingPluginException` for `firebase_messaging` and `receive_sharing_intent` by adding correct `defaultTargetPlatform` guards to prevent execution on unsupported platforms like Windows.
+- **Piped Proxy API Resilience**: Updated backend Piped instances to reflect active 2026 servers (`api.piped.private.coffee`), improving Piped proxy failover reliability.
+- **YouTube Extracting Fallback**: Added a guaranteed 360p (Muxed) fallback stream in `_directYoutubeExplodeStreamFallback` to prevent loading failures when the highest resolution video streams fail to parse.
+- **Code Health**: Resolved 200+ warnings and static analyzer issues by dropping unused imports, migrating from `dart:io` Platform calls to `defaultTargetPlatform`, and removing unnecessary async calls.
+
 ## v3.5.16+50
 - **Video Player PiP Fixes**: Fixed video miniplayer layout issues in light mode. The PiP now uses theme-aware colors for divider/text/icons, video thumbnail uses AspectRatio(16:9) to prevent stretching, and properly shows play/pause + duration controls. The minHeight now accounts for audio miniplayer + nav bar height to prevent overlap.
 - **Search Screen Light Mode Theme**: Fixed category filter chips on the Search screen to use Theme.of(context).colorScheme instead of hardcoded dark colors. Selected/unselected pills now adapt correctly to light and dark themes.
