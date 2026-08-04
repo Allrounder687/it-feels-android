@@ -184,6 +184,21 @@ class SettingsScreen extends ConsumerWidget {
                 onSelected: (val) => ref.read(settingsProvider.notifier).setDownloadQuality(val),
               ),
 
+              _buildSelectableTile(
+                context: context,
+                title: "Default Video Quality",
+                subtitle: "Select preferred video playback resolution",
+                icon: Icons.video_settings_rounded,
+                options: const [
+                  "1080p",
+                  "720p",
+                  "480p",
+                  "360p",
+                ],
+                currentValue: settings.defaultVideoQuality,
+                onSelected: (val) => ref.read(settingsProvider.notifier).setDefaultVideoQuality(val),
+              ),
+
               _buildActionTile(
                 context: context,
                 title: "Pro Audio Settings",

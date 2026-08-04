@@ -64,6 +64,23 @@ class SubscriptionService {
       if (prefs.getBool('isPremiumFamily_$uid') == true || prefs.getBool('isPremium_$uid') == true) {
         return true;
       }
+      
+      // Fallback: Migrate legacy global premium cache to account-bound cache
+      if (prefs.getBool('isPremiumDevice') == true) {
+        await prefs.setBool('isPremium_$uid', true);
+        await prefs.remove('isPremiumDevice'); // Clean up old cache
+        
+        // Also save this legacy migration to Firestore to persist it across devices if possible
+        try {
+          await _firestore.collection('users').doc(uid).collection('entitlements').doc('premium').set({
+            'isActive': true,
+            'expiresAt': null, // Legacy coupons were usually lifetime
+            'grantedBy': 'legacy_migration',
+          }, SetOptions(merge: true));
+        } catch (_) {}
+        
+        return true;
+      }
     } catch (_) {}
 
     // 1. Check RevenueCat Status (if keys configured)

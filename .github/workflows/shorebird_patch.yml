@@ -6,9 +6,6 @@ on:
       - 'patch-*'
     tags:
       - 'patch-v*'
-      - 'v*'
-      - 'android-v*'
-      - 'ios-v*'
 
 jobs:
   patch-android:

@@ -19,6 +19,7 @@ class SettingsState {
   final bool useVideoAudioSource;
   final bool isDataSaverEnabled;
   final bool enableHardwareDecoding;
+  final String defaultVideoQuality;
 
   const SettingsState({
     this.wifiQuality = '320 kbps (Very High)',
@@ -35,6 +36,7 @@ class SettingsState {
     this.useVideoAudioSource = false,
     this.isDataSaverEnabled = false,
     this.enableHardwareDecoding = true,
+    this.defaultVideoQuality = '720p',
   });
 
   SettingsState copyWith({
@@ -52,6 +54,7 @@ class SettingsState {
     bool? useVideoAudioSource,
     bool? isDataSaverEnabled,
     bool? enableHardwareDecoding,
+    String? defaultVideoQuality,
   }) {
     return SettingsState(
       wifiQuality: wifiQuality ?? this.wifiQuality,
@@ -68,6 +71,7 @@ class SettingsState {
       useVideoAudioSource: useVideoAudioSource ?? this.useVideoAudioSource,
       isDataSaverEnabled: isDataSaverEnabled ?? this.isDataSaverEnabled,
       enableHardwareDecoding: enableHardwareDecoding ?? this.enableHardwareDecoding,
+      defaultVideoQuality: defaultVideoQuality ?? this.defaultVideoQuality,
     );
   }
 }
@@ -103,12 +107,18 @@ class SettingsNotifier extends Notifier<SettingsState> {
       useVideoAudioSource: settings['useVideoAudioSource'] == true,
       isDataSaverEnabled: settings['isDataSaverEnabled'] == true,
       enableHardwareDecoding: settings['enableHardwareDecoding'] ?? true, // Default to true
+      defaultVideoQuality: settings['defaultVideoQuality'] as String? ?? '720p',
       defaultCategory: defaultCat,
     );
   }
 
   void setWifiQuality(String quality) {
     state = state.copyWith(wifiQuality: quality);
+    _save();
+  }
+
+  void setDefaultVideoQuality(String quality) {
+    state = state.copyWith(defaultVideoQuality: quality);
     _save();
   }
 
@@ -201,6 +211,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
       enableMusicVideos: state.enableMusicVideos,
       useVideoAudioSource: state.useVideoAudioSource,
       isDataSaverEnabled: state.isDataSaverEnabled,
+      enableHardwareDecoding: state.enableHardwareDecoding,
+      defaultVideoQuality: state.defaultVideoQuality,
     );
   }
 }

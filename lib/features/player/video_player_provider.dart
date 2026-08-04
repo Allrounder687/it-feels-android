@@ -11,6 +11,7 @@ import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
 
 @immutable
 class VideoPlayerState {
@@ -124,7 +125,8 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       _positionSubscription?.cancel();
       state.player?.dispose();
     });
-    return const VideoPlayerState();
+    final defaultQuality = ref.read(settingsProvider).defaultVideoQuality;
+    return VideoPlayerState(selectedQuality: defaultQuality);
   }
 
   Future<void> _initSystemControls() async {
@@ -228,21 +230,28 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       return;
     }
 
-    final results = await Future.wait([
-      BackendApiService.getVideoStreams(videoId, query: query),
-      BackendApiService.getRelatedVideos(videoId, query: query),
-    ]);
+    // Fetch Stream first for instant playback
+    final streamData = await BackendApiService.getVideoStreams(videoId, query: query);
+    
+    // ABORT if the user changed songs while we were fetching the streams!
+    if (state.currentVideoId != videoId) return;
 
-    final streamData = results[0] as Map<String, dynamic>;
-    final relVideos = List<Map<String, dynamic>>.from((results[1] as Iterable?) ?? []);
     final streamList = List<Map<String, dynamic>>.from(streamData['streams'] ?? []);
     final audioUrl = streamData['audioUrl'] as String? ?? '';
 
     state = state.copyWith(
-      relatedVideos: relVideos,
       streams: streamList,
       audioUrl: audioUrl,
     );
+    
+    // Fire off related videos asynchronously so it doesn't block playback
+    BackendApiService.getRelatedVideos(videoId, query: query).then((relVideos) {
+      if (state.currentVideoId == videoId) {
+        state = state.copyWith(
+          relatedVideos: List<Map<String, dynamic>>.from(relVideos ?? []),
+        );
+      }
+    });
     
     if (streamList.isNotEmpty) {
       _initializeStreamForQuality(state.selectedQuality, startPosition: startPosition);

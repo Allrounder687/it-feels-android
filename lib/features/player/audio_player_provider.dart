@@ -881,17 +881,13 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> play() async {
-    // GRACEFULLY MANAGE VIDEO PLAYER
-    final videoProv = ref.read(videoPlayerProvider.notifier);
-    final videoState = ref.read(videoPlayerProvider);
-    final targetVideoId = state.currentSong != null 
-        ? (state.currentSong!.id.contains(':') ? state.currentSong!.id : 'search:${state.currentSong!.id}') 
-        : null;
-
-    if (videoState.currentVideoId != targetVideoId) {
-      videoProv.closeVideo();
+    final videoProv = ref.read(videoPlayerProvider);
+    if (videoProv.isVideoActive) {
+      ref.read(videoPlayerProvider.notifier).pauseVideo();
     }
-
+    
+    state = state.copyWith(isPlaying: true); // Optimistic UI
+    
     if (locator<it_feels_music_cast_service.CastService>().isConnected) {
       await locator<it_feels_music_cast_service.CastService>().play();
     } else {
@@ -901,6 +897,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> pause() async {
+    state = state.copyWith(isPlaying: false); // Optimistic UI
     if (locator<it_feels_music_cast_service.CastService>().isConnected) {
       await locator<it_feels_music_cast_service.CastService>().pause();
     } else {
@@ -938,7 +935,11 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       return;
     }
 
-    if (state.isPlaying) {
+    final wasPlaying = state.isPlaying;
+    // Optimistic UI Update for instant feedback
+    state = state.copyWith(isPlaying: !wasPlaying);
+
+    if (wasPlaying) {
       if (locator<it_feels_music_cast_service.CastService>().isConnected) {
         await locator<it_feels_music_cast_service.CastService>().pause();
       } else {
