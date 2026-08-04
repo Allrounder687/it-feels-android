@@ -8,6 +8,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:it_feels_music/features/social/social_screen.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
+import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
@@ -23,6 +24,7 @@ class MockDocumentSnapshot extends Mock implements DocumentSnapshot {}
 class MockQuerySnapshot extends Mock implements QuerySnapshot {}
 class MockQueryDocumentSnapshot extends Mock implements QueryDocumentSnapshot {}
 class MockDatabaseEvent extends Mock implements DatabaseEvent {}
+class MockLyricsService extends Mock implements LyricsService {}
 
 class MockAudioPlayerNotifier extends AudioPlayerNotifier {
   @override
@@ -54,6 +56,7 @@ void main() {
     mockFirebaseAuth = MockFirebaseAuth();
     fakeFirestore = FakeFirebaseFirestore();
     mockUser = MockUser();
+    final mockLyricsService = MockLyricsService();
 
     when(() => mockFirebaseAuth.currentUser).thenReturn(mockUser);
     when(() => mockFirebaseAuth.authStateChanges()).thenAnswer((_) => Stream.value(mockUser));
@@ -73,6 +76,7 @@ void main() {
     locator.registerSingleton<RoomService>(mockRoomService);
     locator.registerSingleton<FirebaseAuth>(mockFirebaseAuth);
     locator.registerSingleton<FirebaseFirestore>(fakeFirestore);
+    locator.registerSingleton<LyricsService>(mockLyricsService);
   });
 
   testWidgets('SocialScreen gracefully handles corrupted friends list data', (tester) async {
