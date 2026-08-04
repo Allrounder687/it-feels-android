@@ -33,7 +33,11 @@ class VideoMiniplayer extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () {
-        context.push('/now_playing');
+        if (isSameSong) {
+          context.push('/now_playing');
+        } else {
+          context.push('/video_player');
+        }
       },
       child: Container(
         width: width,
