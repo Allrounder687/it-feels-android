@@ -15,9 +15,16 @@ import 'services/notification_service.dart';
 import 'package:it_feels_music/core/router/app_router.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/auth/banned_screen.dart';
+import 'package:it_feels_music/core/providers/fullscreen_provider.dart';
 import 'package:it_feels_music/features/admin/in_app_broadcast_listener.dart';
+import 'package:it_feels_music/services/local_proxy_server.dart';
+import 'package:it_feels_music/features/home/custom_title_bar.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'dart:ui';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -33,6 +40,12 @@ Future<void> main() async {
   } catch (_) {}
   
   await setupServiceLocator();
+  
+  try {
+    MediaKit.ensureInitialized();
+  } catch (e) {
+    debugPrint('Failed to initialize media_kit: $e');
+  }
 
   try {
     if (Firebase.apps.isEmpty) {
@@ -45,13 +58,24 @@ Future<void> main() async {
     } catch (_) {}
     
     // Pass all uncaught "fatal" errors from the framework to Crashlytics
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-    
-    // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
-    PlatformDispatcher.instance.onError = (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-      return true;
-    };
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)) {
+      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      
+      // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+    } else {
+      // Fallback for Windows/Linux/Web where Crashlytics isn't fully supported
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+      };
+      PlatformDispatcher.instance.onError = (error, stack) {
+        debugPrint('Async Error: $error\n$stack');
+        return true;
+      };
+    }
 
     await Permission.notification.request();
 
@@ -89,6 +113,21 @@ Future<void> main() async {
       )),
     ],
   );
+
+  if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
+    await windowManager.ensureInitialized();
+    const windowOptions = WindowOptions(
+      size: Size(1280, 720),
+      minimumSize: Size(800, 600),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+    );
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 
   runApp(UncontrolledProviderScope(
     container: appProviderContainer,
@@ -132,7 +171,19 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                 builder: (context, child) {
                   final isBanned = ref.watch(banProvider).isBanned;
                   if (isBanned) return const BannedScreen();
-                  return InAppBroadcastListener(child: child ?? const SizedBox());
+                  return Consumer(
+                    builder: (context, ref, childWidget) {
+                      final isFullscreen = ref.watch(fullscreenProvider);
+                      return Column(
+                        children: [
+                          Expanded(
+                            child: childWidget!,
+                          ),
+                        ],
+                      );
+                    },
+                    child: InAppBroadcastListener(child: child ?? const SizedBox()),
+                  );
                 },
               );
             },

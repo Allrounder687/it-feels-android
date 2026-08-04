@@ -15,7 +15,7 @@ extension GetSongCollection on Isar {
 
 const SongSchema = CollectionSchema(
   name: r'Song',
-  id: -5548886644249537536,
+  id: -5548886644249537934,
   properties: {
     r'addedAt': PropertySchema(
       id: 0,
@@ -98,33 +98,38 @@ const SongSchema = CollectionSchema(
       name: r'playCount',
       type: IsarType.long,
     ),
-    r'saavnId': PropertySchema(
+    r'playbackPositionMs': PropertySchema(
       id: 16,
+      name: r'playbackPositionMs',
+      type: IsarType.long,
+    ),
+    r'saavnId': PropertySchema(
+      id: 17,
       name: r'saavnId',
       type: IsarType.string,
     ),
     r'searchVector': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'searchVector',
       type: IsarType.stringList,
     ),
     r'skipCount': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'skipCount',
       type: IsarType.long,
     ),
     r'streamUrl': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'streamUrl',
       type: IsarType.string,
     ),
     r'title': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'title',
       type: IsarType.string,
     ),
     r'year': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'year',
       type: IsarType.long,
     )
@@ -136,7 +141,7 @@ const SongSchema = CollectionSchema(
   idName: r'isarId',
   indexes: {
     r'id': IndexSchema(
-      id: -3268401673993471488,
+      id: -3268401673993471357,
       name: r'id',
       unique: true,
       replace: true,
@@ -149,7 +154,7 @@ const SongSchema = CollectionSchema(
       ],
     ),
     r'searchVector': IndexSchema(
-      id: -5936365576876897280,
+      id: -5936365576876897214,
       name: r'searchVector',
       unique: false,
       replace: false,
@@ -234,12 +239,13 @@ void _songSerialize(
   writer.writeString(offsets[13], object.localFilePath);
   writer.writeByte(offsets[14], object.offlineStatus.index);
   writer.writeLong(offsets[15], object.playCount);
-  writer.writeString(offsets[16], object.saavnId);
-  writer.writeStringList(offsets[17], object.searchVector);
-  writer.writeLong(offsets[18], object.skipCount);
-  writer.writeString(offsets[19], object.streamUrl);
-  writer.writeString(offsets[20], object.title);
-  writer.writeLong(offsets[21], object.year);
+  writer.writeLong(offsets[16], object.playbackPositionMs);
+  writer.writeString(offsets[17], object.saavnId);
+  writer.writeStringList(offsets[18], object.searchVector);
+  writer.writeLong(offsets[19], object.skipCount);
+  writer.writeString(offsets[20], object.streamUrl);
+  writer.writeString(offsets[21], object.title);
+  writer.writeLong(offsets[22], object.year);
 }
 
 Song _songDeserialize(
@@ -268,12 +274,13 @@ Song _songDeserialize(
         _SongofflineStatusValueEnumMap[reader.readByteOrNull(offsets[14])] ??
             OfflineStatus.none,
     playCount: reader.readLongOrNull(offsets[15]) ?? 0,
-    saavnId: reader.readString(offsets[16]),
-    searchVector: reader.readStringList(offsets[17]) ?? const [],
-    skipCount: reader.readLongOrNull(offsets[18]) ?? 0,
-    streamUrl: reader.readStringOrNull(offsets[19]),
-    title: reader.readString(offsets[20]),
-    year: reader.readLongOrNull(offsets[21]) ?? 2024,
+    playbackPositionMs: reader.readLongOrNull(offsets[16]),
+    saavnId: reader.readString(offsets[17]),
+    searchVector: reader.readStringList(offsets[18]) ?? const [],
+    skipCount: reader.readLongOrNull(offsets[19]) ?? 0,
+    streamUrl: reader.readStringOrNull(offsets[20]),
+    title: reader.readString(offsets[21]),
+    year: reader.readLongOrNull(offsets[22]) ?? 2024,
   );
   return object;
 }
@@ -319,16 +326,18 @@ P _songDeserializeProp<P>(
     case 15:
       return (reader.readLongOrNull(offset) ?? 0) as P;
     case 16:
-      return (reader.readString(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 17:
-      return (reader.readStringList(offset) ?? const []) as P;
-    case 18:
-      return (reader.readLongOrNull(offset) ?? 0) as P;
-    case 19:
-      return (reader.readStringOrNull(offset)) as P;
-    case 20:
       return (reader.readString(offset)) as P;
+    case 18:
+      return (reader.readStringList(offset) ?? const []) as P;
+    case 19:
+      return (reader.readLongOrNull(offset) ?? 0) as P;
+    case 20:
+      return (reader.readStringOrNull(offset)) as P;
     case 21:
+      return (reader.readString(offset)) as P;
+    case 22:
       return (reader.readLongOrNull(offset) ?? 2024) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2098,6 +2107,76 @@ extension SongQueryFilter on QueryBuilder<Song, Song, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Song, Song, QAfterFilterCondition> playbackPositionMsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'playbackPositionMs',
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition>
+      playbackPositionMsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'playbackPositionMs',
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> playbackPositionMsEqualTo(
+      int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'playbackPositionMs',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> playbackPositionMsGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'playbackPositionMs',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> playbackPositionMsLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'playbackPositionMs',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> playbackPositionMsBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'playbackPositionMs',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<Song, Song, QAfterFilterCondition> saavnIdEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -3018,6 +3097,18 @@ extension SongQuerySortBy on QueryBuilder<Song, Song, QSortBy> {
     });
   }
 
+  QueryBuilder<Song, Song, QAfterSortBy> sortByPlaybackPositionMs() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'playbackPositionMs', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> sortByPlaybackPositionMsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'playbackPositionMs', Sort.desc);
+    });
+  }
+
   QueryBuilder<Song, Song, QAfterSortBy> sortBySaavnId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'saavnId', Sort.asc);
@@ -3284,6 +3375,18 @@ extension SongQuerySortThenBy on QueryBuilder<Song, Song, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Song, Song, QAfterSortBy> thenByPlaybackPositionMs() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'playbackPositionMs', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> thenByPlaybackPositionMsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'playbackPositionMs', Sort.desc);
+    });
+  }
+
   QueryBuilder<Song, Song, QAfterSortBy> thenBySaavnId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'saavnId', Sort.asc);
@@ -3452,6 +3555,12 @@ extension SongQueryWhereDistinct on QueryBuilder<Song, Song, QDistinct> {
     });
   }
 
+  QueryBuilder<Song, Song, QDistinct> distinctByPlaybackPositionMs() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'playbackPositionMs');
+    });
+  }
+
   QueryBuilder<Song, Song, QDistinct> distinctBySaavnId(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3592,6 +3701,12 @@ extension SongQueryProperty on QueryBuilder<Song, Song, QQueryProperty> {
   QueryBuilder<Song, int, QQueryOperations> playCountProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'playCount');
+    });
+  }
+
+  QueryBuilder<Song, int?, QQueryOperations> playbackPositionMsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'playbackPositionMs');
     });
   }
 

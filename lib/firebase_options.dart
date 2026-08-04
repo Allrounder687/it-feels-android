@@ -84,7 +84,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyBuzNmgNgtMgE7SGZn86jjpTx8ja0Y5la0',
-    appId: '1:871513419979:web:b6243f7278442970dcab4e',
+    appId: '1:871513419979:web:537df62b89b620e3dcab4e', // Synced with Web App ID
     messagingSenderId: '871513419979',
     projectId: 'it-feels',
     authDomain: 'it-feels.firebaseapp.com',

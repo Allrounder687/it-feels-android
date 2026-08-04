@@ -4,12 +4,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
+import 'package:it_feels_music/core/utils/image_utils.dart';
 
 class CustomImageWidget extends ConsumerWidget {
   final String imageUrl;
   final BoxFit fit;
   final double? width;
   final double? height;
+  final int size;
   final Widget Function(BuildContext, String, dynamic)? errorWidget;
 
   const CustomImageWidget({
@@ -18,6 +20,7 @@ class CustomImageWidget extends ConsumerWidget {
     this.fit = BoxFit.cover,
     this.width,
     this.height,
+    this.size = 500, // Default to standard 500px resolution
     this.errorWidget,
   });
 
@@ -28,9 +31,11 @@ class CustomImageWidget extends ConsumerWidget {
     String finalUrl = imageUrl;
     try {
       final settings = ref.read(settingsProvider);
+      int targetSize = size;
       if (settings.isDataSaverEnabled) {
-        finalUrl = finalUrl.replaceAll('500x500', '150x150');
+        targetSize = 150;
       }
+      finalUrl = ImageUtils.getSizedCoverArt(finalUrl, size: targetSize);
     } catch (_) {}
 
     if (finalUrl.startsWith('http')) {

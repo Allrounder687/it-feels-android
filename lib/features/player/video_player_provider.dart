@@ -1,14 +1,22 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:video_player/video_player.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
 
 @immutable
 class VideoPlayerState {
-  final VideoPlayerController? videoController;
+  final Player? player;
+  final VideoController? videoController;
   final bool isVideoActive;
   final bool isLoading;
   final bool isMuted;
@@ -16,13 +24,19 @@ class VideoPlayerState {
   final String currentTitle;
   final String currentUploader;
   final List<Map<String, dynamic>> streams;
+  final String audioUrl;
   final String selectedQuality;
   final List<Map<String, dynamic>> relatedVideos;
   final VoidCallback? onVideoStarted;
   final double volume;
   final double brightness;
+  final double playbackSpeed;
+  final String? currentRoomId;
+  final bool isHost;
+  final bool allowGuestControl;
 
   const VideoPlayerState({
+    this.player,
     this.videoController,
     this.isVideoActive = false,
     this.isLoading = false,
@@ -31,15 +45,21 @@ class VideoPlayerState {
     this.currentTitle = '',
     this.currentUploader = '',
     this.streams = const [],
+    this.audioUrl = '',
     this.selectedQuality = '720p',
     this.relatedVideos = const [],
     this.onVideoStarted,
     this.volume = 0.5,
     this.brightness = 0.5,
+    this.playbackSpeed = 1.0,
+    this.currentRoomId,
+    this.isHost = false,
+    this.allowGuestControl = false,
   });
 
   VideoPlayerState copyWith({
-    VideoPlayerController? videoController,
+    Player? player,
+    VideoController? videoController,
     bool clearVideoController = false,
     bool? isVideoActive,
     bool? isLoading,
@@ -48,13 +68,20 @@ class VideoPlayerState {
     String? currentTitle,
     String? currentUploader,
     List<Map<String, dynamic>>? streams,
+    String? audioUrl,
     String? selectedQuality,
     List<Map<String, dynamic>>? relatedVideos,
     VoidCallback? onVideoStarted,
     double? volume,
     double? brightness,
+    double? playbackSpeed,
+    String? currentRoomId,
+    bool? isHost,
+    bool? allowGuestControl,
+    bool clearRoom = false,
   }) {
     return VideoPlayerState(
+      player: clearVideoController ? null : (player ?? this.player),
       videoController: clearVideoController ? null : (videoController ?? this.videoController),
       isVideoActive: isVideoActive ?? this.isVideoActive,
       isLoading: isLoading ?? this.isLoading,
@@ -63,11 +90,16 @@ class VideoPlayerState {
       currentTitle: currentTitle ?? this.currentTitle,
       currentUploader: currentUploader ?? this.currentUploader,
       streams: streams ?? this.streams,
+      audioUrl: audioUrl ?? this.audioUrl,
       selectedQuality: selectedQuality ?? this.selectedQuality,
       relatedVideos: relatedVideos ?? this.relatedVideos,
       onVideoStarted: onVideoStarted ?? this.onVideoStarted,
       volume: volume ?? this.volume,
       brightness: brightness ?? this.brightness,
+      playbackSpeed: playbackSpeed ?? this.playbackSpeed,
+      currentRoomId: clearRoom ? null : (currentRoomId ?? this.currentRoomId),
+      isHost: clearRoom ? false : (isHost ?? this.isHost),
+      allowGuestControl: clearRoom ? false : (allowGuestControl ?? this.allowGuestControl),
     );
   }
 }
@@ -79,14 +111,22 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
 
   bool _isRecovering = false;
   int _recoveryAttempts = 0;
+  
+  Timer? _hostSyncTimer;
+  StreamSubscription<DatabaseEvent>? _roomSubscription;
+  StreamSubscription<Duration>? _positionSubscription;
 
   @override
   VideoPlayerState build() {
     _initSystemControls();
     ref.onDispose(() {
-      state.videoController?.dispose();
+      _hostSyncTimer?.cancel();
+      _roomSubscription?.cancel();
+      _positionSubscription?.cancel();
+      state.player?.dispose();
     });
-    return const VideoPlayerState();
+    final defaultQuality = ref.read(settingsProvider).defaultVideoQuality;
+    return VideoPlayerState(selectedQuality: defaultQuality);
   }
 
   Future<void> _initSystemControls() async {
@@ -101,21 +141,70 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     state = state.copyWith(volume: vol, brightness: bright);
   }
 
-  Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition}) async {
-    if (state.currentVideoId == videoId && state.videoController != null && state.videoController!.value.isInitialized) {
+  Future<void> setPlaybackSpeed(double speed) async {
+    try {
+      await state.player?.setRate(speed);
+      state = state.copyWith(playbackSpeed: speed);
+    } catch (e) {
+      debugPrint('[VideoPlayerNotifier] Error setting playback speed: $e');
+    }
+  }
+
+  void startVideoRoom(String roomId, Map<String, dynamic> videoDetails, {bool isHost = true}) {
+    state = state.copyWith(
+      currentRoomId: roomId,
+      isHost: isHost,
+      allowGuestControl: true, // We start with this on by default based on UI flow
+    );
+    playVideo(
+      videoDetails['id'] ?? '',
+      videoDetails['title'] ?? 'Unknown',
+      videoDetails['uploader'] ?? 'YouTube',
+    );
+  }
+
+  void joinVideoRoom(String roomId) {
+    state = state.copyWith(
+      currentRoomId: roomId,
+      isHost: false,
+      allowGuestControl: true,
+    );
+    _initGuestRoomSync(roomId);
+  }
+
+  Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition, bool isBackgroundHandoff = false}) async {
+    if (state.currentVideoId == videoId && state.player != null) {
       state = state.copyWith(isVideoActive: true);
       if (startPosition != null) {
-        await state.videoController!.seekTo(startPosition);
+        await state.player!.seek(startPosition);
       }
-      await state.videoController!.play();
+      await state.player!.play();
+      
+      if (isBackgroundHandoff) {
+        ref.read(audioPlayerProvider.notifier).pause();
+      } else {
+        ref.read(audioPlayerProvider.notifier).stop();
+      }
       return;
     }
 
     _recoveryAttempts = 0;
-    
+
+    // RESET mute state so videos played from the Video section or Search
+    // always start with audio enabled, regardless of NowPlayingScreen's
+    // previous toggle state.
+    state = state.copyWith(isMuted: false);
+
     // EXPLICITLY KILL OLD VIDEO TO PREVENT GLITCH
-    state.videoController?.pause();
-    state.videoController?.dispose();
+    await state.player?.pause();
+    await state.player?.dispose();
+
+    // FORCE PAUSE OR STOP AUDIO PLAYER WHEN STARTING A VIDEO
+    if (isBackgroundHandoff) {
+      ref.read(audioPlayerProvider.notifier).pause();
+    } else {
+      ref.read(audioPlayerProvider.notifier).stop();
+    }
 
     state = state.copyWith(
       isLoading: true,
@@ -124,6 +213,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       currentTitle: title,
       currentUploader: uploader,
       streams: const [],
+      audioUrl: '',
       relatedVideos: const [],
       clearVideoController: true, // Wipe the old controller safely
     );
@@ -140,19 +230,28 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       return;
     }
 
-    final results = await Future.wait([
-      BackendApiService.getVideoStreams(videoId, query: query),
-      BackendApiService.getRelatedVideos(videoId, query: query),
-    ]);
+    // Fetch Stream first for instant playback
+    final streamData = await BackendApiService.getVideoStreams(videoId, query: query);
+    
+    // ABORT if the user changed songs while we were fetching the streams!
+    if (state.currentVideoId != videoId) return;
 
-    final streamData = results[0] as Map<String, dynamic>;
-    final relVideos = List<Map<String, dynamic>>.from((results[1] as Iterable?) ?? []);
     final streamList = List<Map<String, dynamic>>.from(streamData['streams'] ?? []);
+    final audioUrl = streamData['audioUrl'] as String? ?? '';
 
     state = state.copyWith(
-      relatedVideos: relVideos,
       streams: streamList,
+      audioUrl: audioUrl,
     );
+    
+    // Fire off related videos asynchronously so it doesn't block playback
+    BackendApiService.getRelatedVideos(videoId, query: query).then((relVideos) {
+      if (state.currentVideoId == videoId) {
+        state = state.copyWith(
+          relatedVideos: List<Map<String, dynamic>>.from(relVideos ?? []),
+        );
+      }
+    });
     
     if (streamList.isNotEmpty) {
       _initializeStreamForQuality(state.selectedQuality, startPosition: startPosition);
@@ -163,17 +262,28 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
 
   Future<void> _initPlayerWithFile(String localPath, {Duration? startPosition}) async {
     try {
-      await state.videoController?.dispose();
-      final controller = VideoPlayerController.file(
-        File(localPath),
-        videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+      await state.player?.dispose();
+      
+      final settings = ref.read(settingsProvider);
+      
+      final player = Player(configuration: const PlayerConfiguration(pitch: false, vo: 'gpu', bufferSize: 64 * 1024 * 1024));
+      final controller = VideoController(player);
+      
+      final media = Media(
+        localPath,
+        extras: {
+          'vd-lavc-threads': Platform.numberOfProcessors.toString(),
+          'hwdec': Platform.isWindows ? 'auto-copy' : 'auto',
+        },
       );
-      await controller.initialize();
+      
+      await player.open(media, play: true);
+      await player.setRate(state.playbackSpeed);
+      
       if (startPosition != null) {
-        await controller.seekTo(startPosition);
+        await player.seek(startPosition);
       }
-      await controller.play();
-      state = state.copyWith(videoController: controller);
+      state = state.copyWith(player: player, videoController: controller);
     } catch (e) {
       debugPrint('[VideoPlayerNotifier] Error playing offline file: $e');
     }
@@ -184,10 +294,10 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
 
     state = state.copyWith(isLoading: true);
 
-    final previousPosition = startPosition ?? state.videoController?.value.position ?? Duration.zero;
-    final wasPlaying = state.videoController?.value.isPlaying ?? true;
+    final previousPosition = startPosition ?? state.player?.state.position ?? Duration.zero;
+    final wasPlaying = state.player?.state.playing ?? true;
 
-    await state.videoController?.dispose();
+    await state.player?.dispose();
 
     var selectedStream = state.streams.firstWhere(
       (s) => s['quality'] == targetQuality,
@@ -196,20 +306,37 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     
     final quality = selectedStream['quality'];
     final streamUrl = selectedStream['url'] as String;
-    final formatHint = streamUrl.contains('.m3u8') ? VideoFormat.hls : VideoFormat.other;
     
-    final controller = VideoPlayerController.networkUrl(
-      Uri.parse(streamUrl),
-      formatHint: formatHint,
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-      httpHeaders: {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
-        'Referer': 'https://www.youtube.com/',
-      },
+    final settings = ref.read(settingsProvider);
+    
+    final player = Player(
+      configuration: const PlayerConfiguration(
+        pitch: false, 
+        vo: 'gpu', 
+        bufferSize: 128 * 1024 * 1024, // 128MB for 4K/8K safety
+      )
     );
+    final controller = VideoController(player);
     
     try {
-      await controller.initialize();
+      final media = Media(
+        streamUrl,
+        extras: {
+          'start': (previousPosition.inMilliseconds / 1000).toString(),
+          'demuxer-max-bytes': '128000000',
+          'cache-pause': 'no',
+          'hwdec': Platform.isWindows ? 'auto-copy' : 'auto', // Force Hardware Decoding via GPU
+          'vd-lavc-threads': Platform.numberOfProcessors.toString(), // Utilize all available CPU cores
+        },
+      );
+      
+      await player.open(media, play: false);
+      
+      // If it's a separated video-only stream, we need to attach the audio stream
+      if (selectedStream['videoOnly'] == true && state.audioUrl.isNotEmpty) {
+        await player.setAudioTrack(AudioTrack.uri(state.audioUrl, title: 'Original', language: 'en'));
+      }
+      
     } catch (e) {
       debugPrint('[VideoPlayerNotifier] Error initializing video stream: $e');
       if (e.toString().contains('403') || e.toString().contains('Response code: 403')) {
@@ -218,31 +345,110 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       }
     }
 
-    controller.addListener(() {
-      if (controller.value.hasError) {
-        final err = controller.value.errorDescription;
-        if (err != null && (err.contains('403') || err.contains('Response code: 403'))) {
-          _handleVideoPlaybackError(controller.value.position, controller.value.isPlaying);
-        }
+    player.stream.error.listen((event) {
+      final err = event.toString();
+      if (err.contains('403') || err.contains('Response code: 403')) {
+        _handleVideoPlaybackError(player.state.position, player.state.playing);
       }
     });
 
-    await controller.setVolume(state.isMuted ? 0.0 : 1.0);
+    await player.setVolume(state.isMuted ? 0.0 : 100.0);
+    await player.setRate(state.playbackSpeed);
     
     if (previousPosition != Duration.zero) {
-      await controller.seekTo(previousPosition);
+      // Ensure the demuxer is ready to accept a seek before we send it
+      if (player.state.duration.inMilliseconds > 0) {
+        await player.seek(previousPosition);
+      } else {
+        try {
+          await player.stream.duration.firstWhere((d) => d.inMilliseconds > 0).timeout(const Duration(seconds: 4));
+          await player.seek(previousPosition);
+        } catch (_) {
+          // Fallback if timeout happens
+          await player.seek(previousPosition);
+        }
+      }
     }
     
     if (wasPlaying) {
-      await controller.play();
+      await player.play();
     }
 
     state = state.copyWith(
+      player: player,
       videoController: controller,
       selectedQuality: quality,
       isLoading: false,
     );
     state.onVideoStarted?.call();
+    
+    // Initialize room sync if we are in a room
+    if (state.currentRoomId != null) {
+      _initRoomSync();
+    }
+  }
+
+  void _initRoomSync() {
+    _hostSyncTimer?.cancel();
+    _positionSubscription?.cancel();
+    
+    if (state.isHost) {
+      _hostSyncTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+        if (state.player == null) return;
+        locator<RoomService>().updateVideoRoomState(
+          state.currentRoomId!,
+          {
+            'id': state.currentVideoId,
+            'title': state.currentTitle,
+            'uploader': state.currentUploader,
+            'thumbnail': '',
+          },
+          state.player!.state.position,
+          state.player!.state.playing,
+        );
+      });
+    } else {
+      // If we are a guest but have control, we can also sync up
+      _positionSubscription = state.player?.stream.position.listen((pos) {
+        // Debounce or send only when user explicitly seeks/pauses? 
+        // For audio rooms, guests just listen. Here the user wants "ability to give control to others".
+        // Let's implement full control later, for now we will just let guests listen.
+      });
+    }
+  }
+
+  void _initGuestRoomSync(String roomId) {
+    _roomSubscription?.cancel();
+    _roomSubscription = locator<RoomService>().listenToRoom(roomId).listen((event) {
+      if (event.snapshot.value == null) {
+        closeVideo(); // Room ended
+        return;
+      }
+      try {
+        final data = Map<String, dynamic>.from(event.snapshot.value as Map);
+        if (data['type'] == 'video') {
+          final isPlaying = data['isPlaying'] ?? false;
+          final positionMs = data['positionMs'] ?? 0;
+          final videoId = data['videoId'];
+          
+          if (videoId != null && videoId != state.currentVideoId) {
+            playVideo(videoId, data['title'] ?? 'Video', data['uploader'] ?? 'YouTube');
+          } else if (state.player != null) {
+            final currentPos = state.player!.state.position.inMilliseconds;
+            if ((currentPos - positionMs).abs() > 3000) {
+              state.player!.seek(Duration(milliseconds: positionMs));
+            }
+            if (isPlaying && !state.player!.state.playing) {
+              state.player!.play();
+            } else if (!isPlaying && state.player!.state.playing) {
+              state.player!.pause();
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint("Error syncing video room: $e");
+      }
+    });
   }
 
   Future<void> _handleVideoPlaybackError(Duration position, bool wasPlaying) async {
@@ -271,7 +477,12 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
 
   Future<void> changeQuality(String quality) async {
     if (quality == state.selectedQuality) return;
-    await _initializeStreamForQuality(quality);
+    
+    // SYNCHRONOUSLY lock state so UI updates immediately (Fixes 2-attempts bug)
+    final currentPos = state.player?.state.position ?? Duration.zero;
+    state = state.copyWith(selectedQuality: quality, isLoading: true);
+    
+    await _initializeStreamForQuality(quality, startPosition: currentPos);
   }
 
   void adjustBrightness(double delta) {
@@ -289,26 +500,37 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
   }
 
   void seek(Duration duration) {
-    if (state.videoController == null) return;
-    final currentPos = state.videoController!.value.position;
+    if (state.player == null) return;
+    final currentPos = state.player!.state.position;
     var targetPos = currentPos + duration;
-    var maxDur = state.videoController!.value.duration;
+    var maxDur = state.player!.state.duration;
     if (targetPos < Duration.zero) targetPos = Duration.zero;
     if (targetPos > maxDur) targetPos = maxDur;
-    state.videoController!.seekTo(targetPos);
+    state.player!.seek(targetPos);
+  }
+
+  void pauseVideo() {
+    state.player?.pause();
   }
 
   void closeVideo() {
-    state.videoController?.pause();
-    state.videoController?.dispose();
+    _hostSyncTimer?.cancel();
+    _roomSubscription?.cancel();
+    _positionSubscription?.cancel();
+    if (state.isHost && state.currentRoomId != null) {
+      locator<RoomService>().endRoom(state.currentRoomId!);
+    }
+    state.player?.pause();
+    state.player?.dispose();
     state = state.copyWith(
       isVideoActive: false,
-      videoController: null,
+      clearVideoController: true,
+      clearRoom: true,
     );
   }
 
   void setMuted(bool mute) {
-    state.videoController?.setVolume(mute ? 0.0 : 1.0);
+    state.player?.setVolume(mute ? 0.0 : 100.0);
     state = state.copyWith(isMuted: mute);
   }
 }

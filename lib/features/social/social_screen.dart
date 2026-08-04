@@ -16,6 +16,13 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/custom_playlist.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:it_feels_music/features/auth/auth_bottom_sheet.dart';
+import 'package:go_router/go_router.dart';
+
+final friendDetailsProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, uid) async {
+  final socialService = locator<SocialService>();
+  return socialService.getFriendDetails(uid);
+});
+
 class SocialScreen extends ConsumerStatefulWidget {
   const SocialScreen({super.key});
 
@@ -26,7 +33,11 @@ class SocialScreen extends ConsumerStatefulWidget {
 class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final SocialService _socialService = locator<SocialService>();
-  String get myUid => FirebaseAuth.instance.currentUser?.uid ?? '';
+  
+  FirebaseAuth get auth => locator.isRegistered<FirebaseAuth>() ? locator<FirebaseAuth>() : FirebaseAuth.instance;
+  FirebaseFirestore get firestore => locator.isRegistered<FirebaseFirestore>() ? locator<FirebaseFirestore>() : FirebaseFirestore.instance;
+
+  String get myUid => auth.currentUser?.uid ?? '';
   
   Stream<QuerySnapshot>? _inboxStream;
   Stream<DocumentSnapshot>? _friendsStream;
@@ -34,7 +45,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
   String? _cachedUid;
 
   void _ensureStreams() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = auth.currentUser?.uid;
     if (_cachedUid != uid || _inboxStream == null) {
       _cachedUid = uid;
       _inboxStream = _socialService.getInboxStream();
@@ -56,7 +67,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
   }
 
   void _showAddFriendDialog() {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = auth.currentUser;
     if (user == null || user.isAnonymous) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please log in to an account to add friends.")),
@@ -205,9 +216,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
             ),
             Expanded(
               child: StreamBuilder<User?>(
-                stream: FirebaseAuth.instance.authStateChanges(),
-                builder: (context, snapshot) {
-                  final user = snapshot.data;
+                stream: auth.authStateChanges(),
+                builder: (context, authSnapshot) {
+                  final user = authSnapshot.data;
                   if (user == null || user.isAnonymous) {
                     return Center(
                       child: Padding(
@@ -298,7 +309,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
 
         final items = snapshot.data!.docs;
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
           itemCount: items.length,
           itemBuilder: (context, index) {
             try {
@@ -311,6 +322,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                 final isPlaylist = msgType == 'playlist';
                 final isRoomInvite = msgType == 'room_invite';
                 final isReaction = msgType == 'reaction';
+                final isVideo = msgType == 'video';
 
                 Song? song;
                 CustomPlaylist? playlist;
@@ -385,7 +397,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                             width: 56, height: 56, color: Colors.pinkAccent.withValues(alpha: 0.2),
                                             child: Center(child: Text(payload['emoji'] ?? '❤️', style: const TextStyle(fontSize: 28))),
                                           )
-                                        : CustomImageWidget(imageUrl: song?.coverArt ?? '', width: 56, height: 56),
+                                        : isVideo
+                                            ? CustomImageWidget(imageUrl: payload['thumbnail'] ?? '', width: 100, height: 56, fit: BoxFit.cover)
+                                            : CustomImageWidget(imageUrl: song?.coverArt ?? '', width: 56, height: 56),
                           ),
                           title: Text(
                             isPlaylist
@@ -394,7 +408,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                     ? "Listen Together Room 🎧"
                                     : isReaction
                                         ? "$senderName reacted ${payload['emoji'] ?? ''}"
-                                        : (song?.title ?? 'Music Track'),
+                                        : isVideo
+                                            ? (payload['title'] ?? 'YouTube Video')
+                                            : (song?.title ?? 'Music Track'),
                             style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor),
                           ),
                           subtitle: Text(
@@ -404,7 +420,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                     ? "Invited by $senderName"
                                     : isReaction
                                         ? "on ${payload['targetTitle'] ?? 'Track'}"
-                                        : "Sent by $senderName",
+                                        : isVideo
+                                            ? "Video from $senderName"
+                                            : "Sent by $senderName",
                             style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                           ),
                           trailing: isPlaylist 
@@ -435,15 +453,50 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                   )
                                 : isReaction
                                     ? const SizedBox.shrink()
-                                    : IconButton(
-                                        icon: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 42),
-                                        onPressed: () {
-                                          _socialService.markAsRead(docId);
-                                          if (song != null) {
-                                            ref.read(audioPlayerProvider.notifier).playSong(song);
-                                          }
-                                        },
-                                      ),
+                                    : isVideo
+                                        ? Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.group_add_rounded, color: Colors.amber),
+                                                tooltip: "Watch Together",
+                                                onPressed: () async {
+                                                  _socialService.markAsRead(docId);
+                                                  final roomId = await locator<RoomService>().createVideoRoom(
+                                                    myUid, 
+                                                    payload, 
+                                                    Duration.zero, 
+                                                    true,
+                                                    allowGuestControl: true 
+                                                  );
+                                                  ref.read(videoPlayerProvider.notifier).startVideoRoom(roomId, payload, isHost: true);
+                                                  // Don't push to full screen, stay in miniplayer as requested by user
+                                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Video Room created! ID: $roomId")));
+                                                },
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.play_circle_fill_rounded, color: Colors.red, size: 42),
+                                                onPressed: () {
+                                                  _socialService.markAsRead(docId);
+                                                  ref.read(videoPlayerProvider.notifier).playVideo(
+                                                    payload['id'] ?? '',
+                                                    payload['title'] ?? 'Unknown',
+                                                    payload['uploader'] ?? 'YouTube',
+                                                  );
+                                                  context.push('/video_player');
+                                                },
+                                              ),
+                                            ],
+                                          )
+                                        : IconButton(
+                                            icon: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 42),
+                                            onPressed: () {
+                                              _socialService.markAsRead(docId);
+                                              if (song != null) {
+                                                ref.read(audioPlayerProvider.notifier).playSong(song);
+                                              }
+                                            },
+                                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -587,7 +640,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
     return Column(
       children: [
         StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance.collection('client_config').doc('social').snapshots(),
+          stream: firestore.collection('client_config').doc('social').snapshots(),
           builder: (context, snapshot) {
             if (snapshot.hasData && snapshot.data!.exists) {
               final data = snapshot.data!.data() as Map<String, dynamic>?;
@@ -624,7 +677,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
         Padding(
           padding: const EdgeInsets.all(16),
           child: StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('users').doc(myUid).snapshots(),
+            stream: firestore.collection('users').doc(myUid).snapshots(),
             builder: (context, snapshot) {
               String myUsername = "Loading...";
               if (snapshot.hasData && snapshot.data!.exists) {
@@ -679,8 +732,19 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                   ? snapshot.data!.data() as Map<String, dynamic>? 
                   : null;
                   
-              final List<dynamic> rawFriends = docData?['friends'] as List? ?? [];
-              final friends = rawFriends.map((e) => Map<String, dynamic>.from(e)).toList();
+              List<String> friends = [];
+              try {
+                if (docData != null && docData['friends'] is List) {
+                  final rawFriends = docData['friends'] as List;
+                  for (var e in rawFriends) {
+                    if (e is String) {
+                      friends.add(e);
+                    }
+                  }
+                }
+              } catch (e) {
+                debugPrint('Error parsing friends: $e');
+              }
 
               if (friends.isEmpty) {
                 return Center(
@@ -692,104 +756,121 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
                 itemCount: friends.length,
                 itemBuilder: (context, index) {
                   try {
-                    final friend = friends[index];
-                    final friendUid = friend['uid'] as String;
-                    final displayName = friend['displayName'] as String? ?? 'Friend';
-                    final username = friend['username'] as String? ?? '';
+                    final friendUid = friends[index];
                     
-                    return ListTile(
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => FriendProfileScreen(friendUid: friendUid, friendName: displayName)));
-                      },
-                      leading: CircleAvatar(
-                        backgroundColor: AppColors.midnightAccent,
-                        child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                      ),
-                      title: Text(displayName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
-                      subtitle: StreamBuilder<DatabaseEvent>(
-                        stream: _socialService.getPresenceStream(friendUid),
-                        builder: (context, presenceSnap) {
-                          if (presenceSnap.hasData && presenceSnap.data!.snapshot.value != null) {
-                            try {
-                              final presenceData = Map<String, dynamic>.from(presenceSnap.data!.snapshot.value as Map);
-                              
-                              if (presenceData['is_playing'] == true) {
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
-                                        const SizedBox(width: 4),
-                                        Flexible(
-                                          child: Text(
-                                            "Listening to ${presenceData['song_title']}",
-                                            style: GoogleFonts.inter(color: Colors.greenAccent, fontSize: 12),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                    return Consumer(
+                      builder: (context, ref, child) {
+                        final friendSnap = ref.watch(friendDetailsProvider(friendUid));
+                        
+                        return friendSnap.when(
+                          loading: () => ListTile(
+                            leading: CircleAvatar(backgroundColor: context.themeAccentColor.withValues(alpha: 0.3)),
+                            title: Container(height: 12, width: 100, color: context.themeAccentColor.withValues(alpha: 0.1)),
+                          ),
+                          error: (e, st) => const SizedBox.shrink(),
+                          data: (friend) {
+                            if (friend == null) return const SizedBox.shrink();
+
+                            final displayName = friend['displayName'] as String? ?? 'Friend';
+                            final username = friend['username'] as String? ?? '';
+                    
+                            return ListTile(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => FriendProfileScreen(friendUid: friendUid, friendName: displayName)));
+                              },
+                              leading: CircleAvatar(
+                                backgroundColor: AppColors.midnightAccent,
+                                child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                              ),
+                              title: Text(displayName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
+                              subtitle: StreamBuilder<DatabaseEvent>(
+                                stream: _socialService.getPresenceStream(friendUid),
+                                builder: (context, presenceSnap) {
+                                  if (presenceSnap.hasData && presenceSnap.data!.snapshot.value != null) {
+                                    try {
+                                      final presenceData = Map<String, dynamic>.from(presenceSnap.data!.snapshot.value as Map);
+                                      
+                                      if (presenceData['is_playing'] == true) {
+                                        return Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
+                                                const SizedBox(width: 4),
+                                                Flexible(
+                                                  child: Text(
+                                                    "Listening to ${presenceData['song_title']}",
+                                                    style: GoogleFonts.inter(color: Colors.greenAccent, fontSize: 12),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            if (presenceData['room_id'] != null) ...[
+                                              const SizedBox(height: 4),
+                                              ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: AppColors.midnightPrimary,
+                                                  foregroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                                  minimumSize: const Size(80, 28),
+                                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                ),
+                                                onPressed: () {
+                                                  _handleJoinRoom(presenceData['room_id'], displayName);
+                                                },
+                                                child: const Text("Join Room", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                              ),
+                                            ],
+                                          ],
+                                        );
+                                      }
+                                    } catch (_) {}
+                                  }
+                                  return Text(username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12));
+                                },
+                              ),
+                              trailing: PopupMenuButton<String>(
+                                icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
+                                onSelected: (val) {
+                                  if (val == 'remove') {
+                                    showDialog(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        backgroundColor: context.themeSurfaceColor,
+                                        title: Text("Remove Friend", style: TextStyle(color: context.themeTextColor)),
+                                        content: Text("Are you sure you want to remove $displayName?", style: TextStyle(color: context.themeMutedTextColor)),
+                                        actions: [
+                                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                            onPressed: () {
+                                              _socialService.removeFriend(friendUid);
+                                              Navigator.pop(ctx);
+                                            },
+                                            child: const Text("Remove", style: TextStyle(color: Colors.white)),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (presenceData['room_id'] != null) ...[
-                                      const SizedBox(height: 4),
-                                      ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.midnightPrimary,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                                          minimumSize: const Size(80, 28),
-                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        onPressed: () {
-                                          _handleJoinRoom(presenceData['room_id'], displayName);
-                                        },
-                                        child: const Text("Join Room", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                        ],
                                       ),
-                                    ],
-                                  ],
-                                );
-                              }
-                            } catch (_) {}
-                          }
-                          return Text(username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12));
-                        },
-                      ),
-                      trailing: PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
-                        onSelected: (val) {
-                          if (val == 'remove') {
-                            showDialog(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                backgroundColor: context.themeSurfaceColor,
-                                title: Text("Remove Friend", style: TextStyle(color: context.themeTextColor)),
-                                content: Text("Are you sure you want to remove $displayName?", style: TextStyle(color: context.themeMutedTextColor)),
-                                actions: [
-                                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                                    onPressed: () {
-                                      _socialService.removeFriend(friendUid);
-                                      Navigator.pop(ctx);
-                                    },
-                                    child: const Text("Remove", style: TextStyle(color: Colors.white)),
-                                  ),
+                                    );
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(value: 'remove', child: Text("Remove Friend", style: TextStyle(color: Colors.redAccent))),
                                 ],
                               ),
                             );
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(value: 'remove', child: Text("Remove Friend", style: TextStyle(color: Colors.redAccent))),
-                        ],
-                      ),
+                          },
+                        );
+                      },
                     );
                   } catch (e) {
                     return const SizedBox.shrink();

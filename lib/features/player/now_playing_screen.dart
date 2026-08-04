@@ -19,7 +19,7 @@ import 'package:it_feels_music/features/player/sleep_timer_sheet.dart';
 import 'package:it_feels_music/core/widgets/animated_play_pause_button.dart';
 import 'package:it_feels_music/features/player/fullscreen_video_screen.dart';
 import 'package:it_feels_music/features/home/driving_mode_screen.dart';
-import 'package:video_player/video_player.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
 import 'package:it_feels_music/features/cast/cast_bottom_sheet.dart';
@@ -81,17 +81,18 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         currentSong.artist,
         query: BackendApiService.cleanSearchQuery(currentSong.title, currentSong.artist),
         startPosition: position,
+        isBackgroundHandoff: true,
       );
     } else {
       // Switching to audio
       final useVideoAudio = settingsProv.useVideoAudioSource;
       if (useVideoAudio) {
-        final position = videoProvider.videoController?.value.position;
+        final position = videoProvider.player?.state.position;
         if (position != null && position > Duration.zero) {
           ref.read(audioPlayerProvider.notifier).seek(position);
         }
       }
-      videoProvider.videoController?.pause();
+      videoProvider.player?.pause();
       if (!audioProvider.isPlaying) {
         ref.read(audioPlayerProvider.notifier).play();
       }
@@ -433,14 +434,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                       decoration: BoxDecoration(
                                         color: _isVideoMode ? accentColor : Colors.transparent,
                                         borderRadius: BorderRadius.circular(20),
-                                        boxShadow: (!_isVideoMode && !_hasViewedVideoForCurrentSong && videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
+                                        boxShadow: (!_isVideoMode && !_hasViewedVideoForCurrentSong && videoProvider.videoController != null)
                                             ? [BoxShadow(color: accentColor.withValues(alpha: 0.8), blurRadius: 10, spreadRadius: 2)]
                                             : null,
                                       ),
                                       child: Text(
                                         'Video',
                                         style: GoogleFonts.inter(
-                                          color: _isVideoMode || (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized) 
+                                          color: _isVideoMode || (videoProvider.videoController != null) 
                                               ? context.themeInvertedTextColor : context.themeMutedTextColor,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 13,
@@ -471,9 +472,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                       },
                       child: _isVideoMode 
                         ? AspectRatio(
-                            aspectRatio: (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
-                                ? videoProvider.videoController!.value.aspectRatio
-                                : 16 / 9,
+                            aspectRatio: 16 / 9,
                             child: Container(
                               key: const ValueKey('video_player'),
                               decoration: BoxDecoration(
@@ -487,11 +486,17 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                     Positioned.fill(
                                       child: videoProvider.isLoading 
                                         ? Center(child: CircularProgressIndicator(color: accentColor))
-                                        : videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized
-                                          ? VideoPlayer(videoProvider.videoController!)
+                                        : videoProvider.videoController != null
+                                          ? ExcludeSemantics(
+                                              child: Video(
+                                                controller: videoProvider.videoController!,
+                                                controls: NoVideoControls,
+                                                fill: Colors.black,
+                                              ),
+                                            )
                                           : Center(child: Text('Video unavailable', style: GoogleFonts.inter(color: Colors.white))),
                                     ),
-                                    if (videoProvider.videoController != null && videoProvider.videoController!.value.isInitialized)
+                                    if (videoProvider.videoController != null)
                                       Positioned(
                                         right: 8,
                                         bottom: 8,
@@ -825,18 +830,20 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
                     Widget buildProgress() {
                       if (_isVideoMode && videoProvider.videoController != null) {
-                        return ValueListenableBuilder<VideoPlayerValue>(
-                          valueListenable: videoProvider.videoController!,
-                          builder: (context, value, child) {
+                        return StreamBuilder<Duration>(
+                          stream: videoProvider.player!.stream.position,
+                          builder: (context, snapshot) {
+                            final position = snapshot.data ?? videoProvider.player!.state.position;
+                            final duration = videoProvider.player!.state.duration;
                             return Column(
                               children: [
                                 WavySeekBar(
-                                  position: value.position,
-                                  duration: value.duration,
+                                  position: position,
+                                  duration: duration,
                                   activeColor: accentColor,
                                   inactiveColor: context.themeTextColor24,
                                   onSeek: (newPos) {
-                                    videoProvider.videoController?.seekTo(newPos);
+                                    videoProvider.player?.seek(newPos);
                                     final settingsProv = ref.read(settingsProvider);
                                     if (!settingsProv.useVideoAudioSource) {
                                       ref.read(audioPlayerProvider.notifier).seek(newPos);
@@ -849,11 +856,11 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        _formatDuration(value.position),
+                                        _formatDuration(position),
                                         style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                                       ),
                                       Text(
-                                        _formatDuration(value.duration),
+                                        _formatDuration(duration),
                                         style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
                                       ),
                                     ],
@@ -861,7 +868,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                 ),
                               ],
                             );
-                          },
+                          }
                         );
                       }
 
@@ -925,9 +932,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             onPressed: () {
                               final settingsProv = ref.read(settingsProvider);
                               if (_isVideoMode) {
-                                final pos = videoProvider.videoController?.value.position ?? Duration.zero;
+                                final pos = videoProvider.player?.state.position ?? Duration.zero;
                                 final newPos = pos - const Duration(seconds: 10);
-                                videoProvider.videoController?.seekTo(newPos);
+                                videoProvider.player?.seek(newPos);
                                 if (!settingsProv.useVideoAudioSource) {
                                   ref.read(audioPlayerProvider.notifier).seek(newPos);
                                 }
@@ -947,17 +954,17 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             onPressed: () {
                               final settingsProv = ref.read(settingsProvider);
                               if (_isVideoMode) {
-                                final ctrl = videoProvider.videoController;
-                                if (ctrl != null) {
-                                  if (ctrl.value.isPlaying) {
-                                    ctrl.pause();
+                                final player = videoProvider.player;
+                                if (player != null) {
+                                  if (player.state.playing) {
+                                    player.pause();
                                     if (!settingsProv.useVideoAudioSource) {
                                       ref.read(audioPlayerProvider.notifier).pause();
                                     }
                                   } else {
-                                    ctrl.play();
+                                    player.play();
                                     if (!settingsProv.useVideoAudioSource) {
-                                      ref.read(audioPlayerProvider.notifier).seek(ctrl.value.position);
+                                      ref.read(audioPlayerProvider.notifier).seek(player.state.position);
                                       ref.read(audioPlayerProvider.notifier).play();
                                     }
                                   }
@@ -983,23 +990,24 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   ),
                                 ],
                               ),
-                              child: _isVideoMode && videoProvider.videoController != null
-                                ? ValueListenableBuilder<VideoPlayerValue>(
-                                    valueListenable: videoProvider.videoController!,
-                                    builder: (context, value, child) {
+                              child: _isVideoMode && videoProvider.player != null
+                                ? StreamBuilder<bool>(
+                                    stream: videoProvider.player!.stream.playing,
+                                    builder: (context, snapshot) {
+                                      final isPlaying = snapshot.data ?? videoProvider.player!.state.playing;
                                       final settingsProv = ref.read(settingsProvider);
                                       return AnimatedPlayPauseButton(
-                                        isPlaying: value.isPlaying,
+                                        isPlaying: isPlaying,
                                         onPressed: () {
-                                          if (value.isPlaying) {
-                                            videoProvider.videoController!.pause();
+                                          if (isPlaying) {
+                                            videoProvider.player!.pause();
                                             if (!settingsProv.useVideoAudioSource) {
                                               ref.read(audioPlayerProvider.notifier).pause();
                                             }
                                           } else {
-                                            videoProvider.videoController!.play();
+                                            videoProvider.player!.play();
                                             if (!settingsProv.useVideoAudioSource) {
-                                              ref.read(audioPlayerProvider.notifier).seek(value.position);
+                                              ref.read(audioPlayerProvider.notifier).seek(videoProvider.player!.state.position);
                                               ref.read(audioPlayerProvider.notifier).play();
                                             }
                                           }
@@ -1028,9 +1036,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                             onPressed: () {
                               final settingsProv = ref.read(settingsProvider);
                               if (_isVideoMode) {
-                                final pos = videoProvider.videoController?.value.position ?? Duration.zero;
+                                final pos = videoProvider.player?.state.position ?? Duration.zero;
                                 final newPos = pos + const Duration(seconds: 10);
-                                videoProvider.videoController?.seekTo(newPos);
+                                videoProvider.player?.seek(newPos);
                                 if (!settingsProv.useVideoAudioSource) {
                                   ref.read(audioPlayerProvider.notifier).seek(newPos);
                                 }
@@ -1073,6 +1081,19 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                               size: 24,
                             ),
                             onPressed: () => ref.read(audioPlayerProvider.notifier).toggleShuffle(),
+                          ),
+                          PopupMenuButton<double>(
+                            icon: Icon(Icons.speed_rounded, color: context.themeMutedTextColor, size: 24),
+                            initialValue: playerProvider.playbackSpeed,
+                            onSelected: (speed) => ref.read(audioPlayerProvider.notifier).setPlaybackSpeed(speed),
+                            itemBuilder: (context) {
+                              return [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0].map((s) {
+                                return PopupMenuItem<double>(
+                                  value: s,
+                                  child: Text('${s}x', style: TextStyle(fontWeight: s == playerProvider.playbackSpeed ? FontWeight.bold : FontWeight.w500, fontSize: 14)),
+                                );
+                              }).toList();
+                            },
                           ),
                           BouncyIconButton(
                             child: Icon(Icons.queue_music_rounded, color: context.themeMutedTextColor, size: 24),
@@ -1274,26 +1295,25 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
     final isLoading = lyricsState.isLoading;
     final isNotFound = lyricsState.lyricsNotFound;
 
+    String prevLine = "";
     String currentLine = "";
     String nextLine = "";
-    String thirdLine = "";
 
     if (lyricsResult != null && lyricsResult.hasSynced) {
       final activeIdx = lyricsState.getActiveLineIndex(position);
       if (activeIdx >= 0 && activeIdx < lyricsResult.syncedLyrics.length) {
+        if (activeIdx > 0) {
+          prevLine = lyricsResult.syncedLyrics[activeIdx - 1].text;
+        }
         currentLine = lyricsResult.syncedLyrics[activeIdx].text;
         if (activeIdx + 1 < lyricsResult.syncedLyrics.length) {
           nextLine = lyricsResult.syncedLyrics[activeIdx + 1].text;
-        }
-        if (activeIdx + 2 < lyricsResult.syncedLyrics.length) {
-          thirdLine = lyricsResult.syncedLyrics[activeIdx + 2].text;
         }
       }
     } else if (lyricsResult != null && lyricsResult.hasStatic && lyricsResult.staticLyrics != null) {
       final lines = lyricsResult.staticLyrics!.split('\n').where((l) => l.trim().isNotEmpty).toList();
       if (lines.isNotEmpty) currentLine = lines.first;
       if (lines.length > 1) nextLine = lines[1];
-      if (lines.length > 2) thirdLine = lines[2];
     }
 
     return GestureDetector(
@@ -1380,52 +1400,74 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
                   fontStyle: FontStyle.italic,
                 ),
               )
-            else
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: Text(
-                      currentLine,
+              else
+                SizedBox(
+                  height: 70, // Fixed height to prevent jumping
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 350),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) {
+                      // Determines slide direction based on key entering/exiting
+                      final slideIn = Tween<Offset>(begin: const Offset(0.0, 0.3), end: Offset.zero).animate(animation);
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: slideIn,
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Column(
                       key: ValueKey(currentLine),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.outfit(
-                        color: context.themeTextColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (prevLine.isNotEmpty)
+                          Text(
+                            prevLine,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: context.themeMutedTextColor.withValues(alpha: 0.35),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        if (prevLine.isNotEmpty) const SizedBox(height: 3),
+                        Text(
+                          currentLine,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.outfit(
+                            color: context.themeTextColor,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            shadows: [
+                              BoxShadow(
+                                color: accentColor.withValues(alpha: 0.4),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              )
+                            ],
+                          ),
+                        ),
+                        if (nextLine.isNotEmpty) const SizedBox(height: 3),
+                        if (nextLine.isNotEmpty)
+                          Text(
+                            nextLine,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: context.themeMutedTextColor.withValues(alpha: 0.6),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                  if (nextLine.isNotEmpty) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      nextLine,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        color: context.themeMutedTextColor.withValues(alpha: 0.6),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                  if (thirdLine.isNotEmpty) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      thirdLine,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        color: context.themeMutedTextColor.withValues(alpha: 0.35),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+                ),
           ],
         ),
       ),

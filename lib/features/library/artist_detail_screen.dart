@@ -79,28 +79,6 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
 
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
-      bottomNavigationBar: MiniPlayer(
-        onTap: () {
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) => const NowPlayingScreen(),
-              transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 1),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: animation,
-                    curve: Curves.easeOutCubic,
-                  )),
-                  child: child,
-                );
-              },
-            ),
-          );
-        },
-      ),
       body: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent))
@@ -148,15 +126,15 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                             children: [
                               // Blurred Artist Image Background
                               if (widget.artistImage?.isNotEmpty == true)
-                                CustomImageWidget(
-                                  imageUrl: widget.artistImage!,
-                                  fit: BoxFit.cover,
+                                ImageFiltered(
+                                  imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                                  child: CustomImageWidget(
+                                    imageUrl: widget.artistImage!,
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               Positioned.fill(
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                                  child: Container(color: context.themeBackgroundColor.withValues(alpha: 0.7)),
-                                ),
+                                child: Container(color: context.themeBackgroundColor.withValues(alpha: 0.7)),
                               ),
                               // Foreground Avatar and Text
                               Opacity(

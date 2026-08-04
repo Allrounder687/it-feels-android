@@ -15,6 +15,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/audio_player_handler.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
+import 'package:it_feels_music/services/database_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
@@ -329,7 +330,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   late AudioPlayerHandler audioHandler;
   late MusicApiService apiService;
   final LyricsService _lyricsService = LyricsService();
-  final RoomService _roomService = RoomService();
+  final RoomService _roomService = locator<RoomService>();
 
   Timer? _sleepTimer;
   Timer? _audioSyncHapticTimer;
@@ -766,6 +767,17 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> playSong(Song song, {List<Song>? queue, int index = 0, BuildContext? context}) async {
+    // GRACEFULLY CLOSE OR PAUSE COMPETING VIDEO PLAYER
+    final videoProv = ref.read(videoPlayerProvider.notifier);
+    final videoState = ref.read(videoPlayerProvider);
+    final targetVideoId = song.id.contains(':') ? song.id : 'search:${song.id}';
+    
+    if (videoState.currentVideoId == targetVideoId) {
+      videoProv.pauseVideo();
+    } else {
+      videoProv.closeVideo();
+    }
+
     state = state.copyWith(
       currentSong: song,
       hasSentTelemetryForCurrentSong: false,
@@ -869,6 +881,13 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> play() async {
+    final videoProv = ref.read(videoPlayerProvider);
+    if (videoProv.isVideoActive) {
+      ref.read(videoPlayerProvider.notifier).pauseVideo();
+    }
+    
+    state = state.copyWith(isPlaying: true); // Optimistic UI
+    
     if (locator<it_feels_music_cast_service.CastService>().isConnected) {
       await locator<it_feels_music_cast_service.CastService>().play();
     } else {
@@ -878,12 +897,33 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> pause() async {
+    state = state.copyWith(isPlaying: false); // Optimistic UI
     if (locator<it_feels_music_cast_service.CastService>().isConnected) {
       await locator<it_feels_music_cast_service.CastService>().pause();
     } else {
       await audioHandler.pause();
     }
     locator<SocialService>().updatePresence(state.currentSong, false, roomId: state.currentRoomId);
+    _saveCurrentPosition();
+  }
+
+  Future<void> stop() async {
+    if (locator<it_feels_music_cast_service.CastService>().isConnected) {
+      await locator<it_feels_music_cast_service.CastService>().pause();
+    } else {
+      await audioHandler.stop();
+    }
+    locator<SocialService>().updatePresence(state.currentSong, false, roomId: state.currentRoomId);
+    _saveCurrentPosition();
+  }
+
+  Future<void> _saveCurrentPosition() async {
+    final song = state.currentSong;
+    if (song != null) {
+      final pos = audioHandler.player.position;
+      song.playbackPositionMs = pos.inMilliseconds;
+      await DatabaseService().saveSong(song);
+    }
   }
 
   Future<void> togglePlayPause() async {
@@ -895,13 +935,18 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       return;
     }
 
-    if (state.isPlaying) {
+    final wasPlaying = state.isPlaying;
+    // Optimistic UI Update for instant feedback
+    state = state.copyWith(isPlaying: !wasPlaying);
+
+    if (wasPlaying) {
       if (locator<it_feels_music_cast_service.CastService>().isConnected) {
         await locator<it_feels_music_cast_service.CastService>().pause();
       } else {
         await audioHandler.pause();
       }
       locator<SocialService>().updatePresence(state.currentSong, false, roomId: state.currentRoomId);
+      _saveCurrentPosition();
     } else {
       if (locator<it_feels_music_cast_service.CastService>().isConnected) {
         await locator<it_feels_music_cast_service.CastService>().play();
@@ -1044,6 +1089,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     try {
       final PaletteGenerator palette = await PaletteGenerator.fromImageProvider(
         NetworkImage(imageUrl),
+        size: const Size(100, 100),
       );
       
       final dominant = palette.dominantColor?.color ?? AppColors.burgundyBackground;
@@ -1077,7 +1123,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Future<String?> startBroadcasting(String uid) async {
     if (state.currentSong == null) return null;
     final isPremium = ref.read(subscriptionProvider).isPremium;
-    final roomId = await _roomService.createRoom(uid, state.currentSong!, state.position, state.isPlaying, isPublic: isPremium);
+    final roomId = await _roomService.createRoom(uid, state.currentSong!, state.position, state.isPlaying, isPublic: isPremium, allowGuestControl: true);
     state = state.copyWith(currentRoomId: roomId, isHost: true);
     locator<SocialService>().updatePresence(state.currentSong, state.isPlaying, roomId: roomId);
     

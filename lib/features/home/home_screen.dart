@@ -22,6 +22,7 @@ import 'package:it_feels_music/features/settings/profile_provider.dart';
 import 'package:it_feels_music/features/home/smart_recommendations_row.dart';
 import 'package:it_feels_music/features/social/room_bottom_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final VoidCallback openFullPlayer;
@@ -82,8 +83,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHeroBanner(BuildContext context, Song heroSong, AudioPlayerState player) {
-    return Container(
-      height: 280,
+    return TVFocusableCard(
+      onTap: () => ref.read(audioPlayerProvider.notifier).playSong(heroSong, queue: [heroSong], index: 0),
+      focusedScale: 1.02,
+      child: Container(
+        height: 280,
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
@@ -101,15 +105,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Positioned.fill(
               child: heroSong.coverArt.isNotEmpty
-                  ? CustomImageWidget(imageUrl: heroSong.coverArt, fit: BoxFit.cover)
+                  ? ImageFiltered(
+                      imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: CustomImageWidget(imageUrl: heroSong.coverArt, fit: BoxFit.cover),
+                    )
                   : Container(color: context.themeSurfaceColor),
             ),
             Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.4),
-                ),
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.4),
               ),
             ),
             Padding(
@@ -164,23 +168,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: () => ref.read(audioPlayerProvider.notifier).playSong(heroSong, queue: [heroSong], index: 0),
-                          icon: const Icon(Icons.play_arrow_rounded, color: Colors.black),
-                          label: Text(
-                            "Play Now",
-                            style: GoogleFonts.inter(
-                              color: Colors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(30),
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.play_arrow_rounded, color: Colors.black),
+                              const SizedBox(width: 8),
+                              Text(
+                                "Play Now",
+                                style: GoogleFonts.inter(
+                                  color: Colors.black,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -190,8 +197,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ],
-        ),
-      ),
+        ), // Stack
+      ), // ClipRRect
+      ), // Container
     );
   }
 
@@ -219,6 +227,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             height: carouselHeight,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               itemCount: playlists.length,
               itemBuilder: (context, index) {
@@ -230,20 +239,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   displayTitle = "${displayTitle.replaceFirst("Daily Mix: ", "")} Mix";
                 }
 
-                return GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PlaylistDetailScreen(playlist: pl))),
-                  child: Container(
-                    width: cardWidth,
-                    margin: const EdgeInsets.only(right: 14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                return Padding(
+                  padding: const EdgeInsets.only(right: 14),
+                  child: TVFocusableCard(
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PlaylistDetailScreen(playlist: pl))),
+                    child: SizedBox(
+                      width: cardWidth,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child: AspectRatio(
                             aspectRatio: 1.0,
                             child: pl.coverArt.isNotEmpty
-                                ? CustomImageWidget(imageUrl: pl.coverArt, fit: BoxFit.cover)
+                                ? CustomImageWidget(imageUrl: pl.coverArt, fit: BoxFit.cover, size: 150)
                                 : Container(color: context.themeCardColor),
                           ),
                         ),
@@ -258,15 +268,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               fontSize: isWide ? 13 : 12, 
                               fontWeight: FontWeight.w600,
                             ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                );
+                            ),
+                          ], // closes if statement
+                        ], // closes children
+                      ), // closes Column
+                    ), // closes SizedBox
+                  ), // closes TVFocusableCard
+                ); // closes return Padding
               },
-            ),
-          ),
+            ), // ListView
+          ), // SizedBox
           const SizedBox(height: 16),
         ],
       ),
@@ -301,8 +312,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               
               // In a horizontal GridView:
               // crossAxis is vertical (height), mainAxis is horizontal (width).
-              // We want each item to be wide enough to take up most of the screen, so titles aren't truncated.
-              final itemWidth = screenWidth * (isWide ? 0.40 : 0.85);
+              // We want each item to be wide enough to take up most of the screen on mobile, 
+              // but constrained to a reasonable max width on tablets so they don't stretch into strips.
+              final itemWidth = isWide ? 260.0 : (screenWidth * 0.85);
               
               // Calculate effective row height
               // crossAxisSpacing is the vertical spacing between rows (12.0)
@@ -313,6 +325,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 height: carouselHeight,
                 child: GridView.builder(
                   scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
@@ -323,7 +336,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               itemCount: songs.length > 15 ? 15 : songs.length,
               itemBuilder: (context, index) {
                 final song = songs[index];
-                return GestureDetector(
+                return TVFocusableCard(
                   onTap: () => ref.read(audioPlayerProvider.notifier).playSong(song, queue: songs, index: index),
                   onLongPress: () => SongOptionsSheet.show(context, song, playlistContext: songs),
                   child: Row(
@@ -333,7 +346,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: SizedBox(
                           width: 56, height: 56,
                           child: song.coverArt.isNotEmpty
-                              ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover)
+                              ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover, size: 150)
                               : Container(color: AppColors.midnightPill),
                         ),
                       ),
@@ -397,17 +410,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 left: -50,
                 right: -50,
                 height: 400,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: topGradientColor,
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: topGradientColor,
+                    ),
                   ),
-                ),
-              ),
-              Positioned.fill(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                  child: const SizedBox(),
                 ),
               ),
               SafeArea(
@@ -482,30 +492,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     height: 40,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
+                      clipBehavior: Clip.none,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       itemCount: _filters.length,
                       itemBuilder: (context, index) {
                         final isSelected = index == _selectedFilterIndex;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() => _selectedFilterIndex = index);
-                            ref.read(homeProvider.notifier).selectCategory(_filters[index]);
-                            if (_filters[index] == "For You" && homeProv.currentCategoryPlaylists.isEmpty) {
-                              ref.read(homeProvider.notifier).fetchYouSongs(historyProvider.getTopArtists());
-                              if (homeProv.moodPlaylists.isEmpty) ref.read(homeProvider.notifier).fetchMoods();
-                            }
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 10),
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: TVFocusableCard(
+                            autofocus: index == 0,
+                            focusedScale: 1.1,
+                            onTap: () {
+                              setState(() => _selectedFilterIndex = index);
+                              ref.read(homeProvider.notifier).selectCategory(_filters[index]);
+                              if (_filters[index] == "For You" && homeProv.currentCategoryPlaylists.isEmpty) {
+                                ref.read(homeProvider.notifier).fetchYouSongs(historyProvider.getTopArtists());
+                                if (homeProv.moodPlaylists.isEmpty) ref.read(homeProvider.notifier).fetchMoods();
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                             decoration: BoxDecoration(
-                              color: isSelected ? context.themeTextColor : context.themeUnselectedPillColor,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: isSelected ? Colors.transparent : context.themeTextColor10, width: 0.5),
-                            ),
-                            child: Text(
-                              _filters[index],
-                              style: GoogleFonts.inter(color: isSelected ? context.themeBackgroundColor : context.themeUnselectedPillTextColor, fontSize: 13, fontWeight: FontWeight.w700),
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? Colors.transparent
+                        : Theme.of(context)
+                            .dividerColor
+                            .withValues(alpha: 0.5),
+                    width: 0.5,
+                  ),
+                ),
+                child: Text(
+                  _filters[index],
+                  style: GoogleFonts.inter(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                             ),
                           ),
                         );
@@ -544,6 +574,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     )
                   else ...[
+                    if (homeProv.continueWatching.isNotEmpty)
+                      _buildSongCarousel(context, "Continue Watching", homeProv.continueWatching, playerProvider),
                     const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.only(bottom: 24), child: SmartRecommendationsRow())),
                     _buildPlaylistCarousel(context, "Curated Moods", homeProv.moodPlaylists),
                     _buildPlaylistCarousel(context, "Daily Mixes", homeProv.youPlaylists),

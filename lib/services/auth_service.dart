@@ -14,7 +14,7 @@ class AuthService {
   // Get current user
   User? get currentUser => _auth.currentUser;
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  late final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // Sign In Anonymously
   Future<UserCredential?> signInAnonymously() async {

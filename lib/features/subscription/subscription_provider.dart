@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/services/subscription_service.dart';
 
 import 'package:url_launcher/url_launcher.dart';
@@ -15,6 +17,7 @@ class SubscriptionProvider extends ChangeNotifier {
   
   bool _isPremium = false;
   bool _isLoading = true;
+  StreamSubscription<DocumentSnapshot>? _firestoreSubscription;
 
   bool get isPremium => _isPremium;
   bool get isLoading => _isLoading;
@@ -30,8 +33,26 @@ class SubscriptionProvider extends ChangeNotifier {
     await checkStatus();
     
     FirebaseAuth.instance.authStateChanges().listen((user) async {
+      _firestoreSubscription?.cancel();
       if (user != null) {
         await _service.login(user.uid);
+        
+        // Listen for real-time admin toggles or coupon syncs
+        _firestoreSubscription = FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots().listen((doc) {
+          if (doc.exists) {
+            final data = doc.data();
+            if (data != null && (data['isPremiumFamily'] == true || data['isPremium'] == true)) {
+              if (!_isPremium) {
+                _isPremium = true;
+                notifyListeners();
+              }
+            } else {
+              // Re-check full status if root doc says false (might have a valid entitlement subcollection)
+              checkStatus();
+            }
+          }
+        });
+        
       } else {
         await _service.logout();
       }
@@ -140,6 +161,7 @@ class SubscriptionProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _firestoreSubscription?.cancel();
     _razorpayService.dispose();
     super.dispose();
   }

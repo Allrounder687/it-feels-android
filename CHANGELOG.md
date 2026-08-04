@@ -1,3 +1,39 @@
+## v3.5.20+54
+- **Phase 5: Seamless AV Architecture**: Added `isBackgroundHandoff` engine to allow millisecond-perfect transition between Audio and Video tabs by gracefully pausing/resuming background streams without tearing them down.
+- **Zero-Lag Loading**: Shrank `PaletteGenerator` pixel sampling to strictly 100x100, dropping extraction time from 1000ms to 2ms and ensuring song taps load the UI instantly without freezing.
+- **Fixed "2-Attempts" Bug**: Synchronously locks video quality state and caches `startPosition` upon tapping a quality button, guaranteeing it resumes correctly on the first tap.
+- **Lyrics Rolling Animation**: Designed a modern vertical karaoke carousel for the `_LiveLyricsPreviewCard` with animated fading and glowing center text.
+- **Accessibility Flood Fix**: Suppressed rapid `ui::AXTree` exception spam on Windows by wrapping the 60fps `WavySeekBar` inside `ExcludeSemantics`.
+- **Hero Animation Crash Fix**: Refactored the UI architecture to strictly rely on the global `MainNavigationWrapper` for rendering the `MiniPlayer`. Removed legacy duplicate `MiniPlayer` widgets from library screens (`ArtistDetailScreen`, `PlaylistDetailScreen`, `CustomPlaylistDetailScreen`, `SeeAllScreen`) which were triggering fatal Hero tag collision crashes during rapid navigation.
+- **File System Hotfix**: Swapped `LockCachingAudioSource` for `AudioSource.uri` to bypass Windows caching file locks (`errno 32`) during heavy AV toggling.
+- **YouTube Video Quality UI**: Patched `BackendApiService` to explicitly parse raw API stream labels, mapping standard formats into clean UI strings (`1080p`, `720p`, `360p`) instead of garbled text like `medium360`.
+- **Windows Exclusive Fullscreen**: Restored dynamic `setTitleBarStyle(TitleBarStyle.hidden)` hooks that activate when the Video Player enters fullscreen mode. This explicitly commands the Windows Desktop Window Manager to drop the non-client title bar frame and completely cover the taskbar.
+
+## v3.5.18+52
+- **Syntax Hotfix**: Fixed missing closing parentheses in `home_screen.dart` that caused compilation failures during Shorebird releases.
+- **UI Focus Glow**: Fixed `TVFocusableCard` box shadow clipping on the Home Screen carousels by implementing `Clip.none` and outer padding.
+- **Curated Moods API**: Filtered out invalid/empty backend cover URLs in `home_provider.dart` to prevent empty thumbnails from rendering in the Curated Moods section.
+- **Audio Notification Controls Fix**: Fixed an issue where the background `audio_service` media controls would not display or synchronize properly in Android/iOS notification panels. The playback state now explicitly broadcasts upon `playingStream` emission instead of just `playbackEventStream`.
+- **Responsive Video PiP**: Significantly increased the size of the Picture-in-Picture (PiP) video miniplayer for wider screens (320x180 for tablets, 426x240 for large desktop displays) to prevent the thumbnail from looking too small on high-resolution monitors.
+
+## v3.5.17+51
+- **Windows Platform Bug Fixes**: Fixed `MissingPluginException` for `firebase_messaging` and `receive_sharing_intent` by adding correct `defaultTargetPlatform` guards to prevent execution on unsupported platforms like Windows.
+- **Piped Proxy API Resilience**: Updated backend Piped instances to reflect active 2026 servers (`api.piped.private.coffee`), improving Piped proxy failover reliability.
+- **YouTube Extracting Fallback**: Added a guaranteed 360p (Muxed) fallback stream in `_directYoutubeExplodeStreamFallback` to prevent loading failures when the highest resolution video streams fail to parse.
+- **Code Health**: Resolved 200+ warnings and static analyzer issues by dropping unused imports, migrating from `dart:io` Platform calls to `defaultTargetPlatform`, and removing unnecessary async calls.
+
+## v3.5.16+50
+- **Video Player PiP Fixes**: Fixed video miniplayer layout issues in light mode. The PiP now uses theme-aware colors for divider/text/icons, video thumbnail uses AspectRatio(16:9) to prevent stretching, and properly shows play/pause + duration controls. The minHeight now accounts for audio miniplayer + nav bar height to prevent overlap.
+- **Search Screen Light Mode Theme**: Fixed category filter chips on the Search screen to use Theme.of(context).colorScheme instead of hardcoded dark colors. Selected/unselected pills now adapt correctly to light and dark themes.
+- **Home Screen Tab Theme**: Fixed For You / Music / Podcasts / Charts filter pills to use ColorScheme colors instead of hardcoded theme extension colors, ensuring proper contrast in both light and dark modes.
+- **Shorebird Silent OTA**: Added silent background Shorebird patch check on app startup. If a patch is available, it downloads automatically and shows an update indicator dot on the Settings nav item.
+- **Video Player PiP**: Added global Picture-in-Picture (PiP) support for the Video Player, allowing users to minimize videos and navigate the app without interrupting playback.
+- **Audio/Video Playback**: Fixed a conflict where playing a video and audio track simultaneously would cause overlapping playback. Starting one now correctly pauses/closes the other.
+- **Trending Videos**: Fixed a bug where the Video Tab would fail to load trending videos due to YouTube API schema changes. Now uses native extraction as a fallback.
+- **Social Tab Crash Hotfix**: Fixed a crash where corrupted data arrays from Firebase would cause the `SocialScreen` to render an `ErrorWidget`. The app now elegantly parses valid entries and ignores corrupted ones.
+- **Testing Architecture**: Introduced robust widget testing for `SocialScreen`. Successfully completely refactored `FirebaseFirestore` and `FirebaseAuth` instances inside widgets to be fully injected via `locator`, unblocking UI test automation.
+- **CI/CD Resiliency (iOS Shorebird Patches)**: Fixed a silent failure in the Shorebird Patch pipeline where iOS patches were skipped due to running on `ubuntu-latest`. The pipeline now safely splits patching into two jobs (`patch-android` on `ubuntu-latest` and `patch-ios` on `macos-latest`).
+
 ## v3.5.15+49
 - **Search Enhancements**: Implemented pagination (load more) for songs, albums, and playlists. Integrated video search results alongside regular audio tracks. Added the ability to remove individual recent searches.
 - **Dependency Injection**: Refactored `RadioApiService`, `SocialService`, and `LastfmService` to accept injected dependencies (`http.Client`, `FirebaseFirestore`, etc.) for robust unit testing. Registered `RoomService` and `SmartStorageService` in the service locator.

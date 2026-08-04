@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -76,7 +77,15 @@ class _InAppBroadcastListenerState extends State<InAppBroadcastListener> {
             label: 'UPDATE',
             textColor: Colors.white,
             onPressed: () async {
-              final url = Uri.parse(config.updateUrl);
+              String targetUrl = config.updateUrl;
+              if (Platform.isIOS) {
+                if (config.iosUpdateUrl != null && config.iosUpdateUrl!.isNotEmpty) {
+                  targetUrl = config.iosUpdateUrl!;
+                } else if (config.updateUrl.endsWith('.apk')) {
+                  targetUrl = config.updateUrl.replaceAll('.apk', '.ipa');
+                }
+              }
+              final url = Uri.parse(targetUrl);
               if (await canLaunchUrl(url)) {
                 await launchUrl(url, mode: LaunchMode.externalApplication);
               }

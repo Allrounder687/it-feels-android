@@ -37,28 +37,6 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
 
         return Scaffold(
           backgroundColor: context.themeBackgroundColor,
-          bottomNavigationBar: MiniPlayer(
-            onTap: () {
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) => const NowPlayingScreen(),
-                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                    return SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 1),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: animation,
-                        curve: Curves.easeOutCubic,
-                      )),
-                      child: child,
-                    );
-                  },
-                ),
-              );
-            },
-          ),
           body: SafeArea(
             top: false,
             child: CustomScrollView(
@@ -198,15 +176,15 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                           children: [
                             // Blurred Artwork Background
                             if (coverArtUrl.isNotEmpty)
-                              CustomImageWidget(
-                                imageUrl: coverArtUrl,
-                                fit: BoxFit.cover,
+                              ImageFiltered(
+                                imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
+                                child: CustomImageWidget(
+                                  imageUrl: coverArtUrl,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             Positioned.fill(
-                              child: BackdropFilter(
-                                filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                                child: Container(color: context.themeBackgroundColor.withValues(alpha: 0.6)),
-                              ),
+                              child: Container(color: context.themeBackgroundColor.withValues(alpha: 0.6)),
                             ),
                             // Foreground Artwork and Text (Fades out when scrolling up)
                             Opacity(

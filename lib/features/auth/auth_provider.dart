@@ -118,7 +118,7 @@ class AuthNotifier extends Notifier<AuthState> {
           errorMessage: 'Email is already registered. Please log in.',
           viewState: AuthViewState.login,
         );
-      } else if (e.code == 'user-not-found' || e.code == 'invalid-credential' || e.code == 'wrong-password') {
+      } else if (e.code == 'user-not-found' || e.code == 'invalid-credential' || e.code == 'wrong-password' || e.code == 'internal-error') {
         state = state.copyWith(
           errorMessage: 'Invalid email or password.',
           viewState: previousState,

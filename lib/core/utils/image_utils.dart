@@ -5,6 +5,20 @@ class ImageUtils {
   static String getSizedCoverArt(String url, {int size = 500}) {
     if (url.isEmpty) return '';
 
+    // Handle YouTube Thumbnails (i.ytimg.com)
+    if (url.contains('i.ytimg.com')) {
+      if (size <= 200) {
+        // Return 320x180 for grids/lists
+        return url.replaceAll('maxresdefault.jpg', 'mqdefault.jpg').replaceAll('hqdefault.jpg', 'mqdefault.jpg');
+      } else if (size <= 500) {
+        // Return 480x360
+        return url.replaceAll('maxresdefault.jpg', 'hqdefault.jpg').replaceAll('mqdefault.jpg', 'hqdefault.jpg');
+      } else {
+        // Return max resolution
+        return url;
+      }
+    }
+
     // Default Music API URLs often have resolution patterns like '150x150' or '50x50'.
     // We attempt to replace these with the requested size.
     String transformedUrl = url.replaceAll(RegExp(r'\d+x\d+'), '${size}x$size');

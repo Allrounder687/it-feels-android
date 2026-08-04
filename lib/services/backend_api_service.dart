@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:isolate';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/utils/des_decryptor.dart';
+import 'package:it_feels_music/services/local_proxy_server.dart';
 
 class BackendApiService {
   // Configurable proxy base URL (defaults to user's live Cloudflare Worker URL)
@@ -23,8 +26,8 @@ class BackendApiService {
     if (!useProxyBackend) return [];
     try {
       final uri = Uri.parse('$baseUrl/api/v1/recommendations').replace(queryParameters: {
-        'songId': ?songId,
-        'artist': ?artist,
+        if (songId != null) 'songId': songId,
+        if (artist != null) 'artist': artist,
       });
 
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
@@ -213,7 +216,7 @@ class BackendApiService {
       final uri = Uri.parse('$baseUrl/api/v1/lyrics').replace(queryParameters: {
         'track': track,
         'artist': artist,
-        'album': ?album,
+        if (album != null) 'album': album,
         if (duration != null && duration > 0) 'duration': duration.toString(),
       });
 
@@ -368,12 +371,8 @@ class BackendApiService {
     
     tryComplete(_fetchFromPipedApi(actualVideoId).then((res) {
       if (res.isNotEmpty && res['streams'] != null && (res['streams'] as List).isNotEmpty) {
-        final filteredStreams = (res['streams'] as List).where((s) => !(s['videoOnly'] == true)).toList();
-        if (filteredStreams.isNotEmpty) {
-          res['streams'] = filteredStreams;
-          debugPrint('[BackendApiService] Race won by: Piped API Proxy');
-          return res;
-        }
+        debugPrint('[BackendApiService] Race won by: Piped API Proxy');
+        return res;
       }
       throw Exception('Piped empty');
     }));
@@ -395,11 +394,8 @@ class BackendApiService {
   static set ytDlpBackendUrl(String val) => _testYtDlpUrl = val;
 
   static final List<String> _pipedInstances = [
-    'https://pipedapi.kavin.rocks',
-    'https://pipedapi.reallyaweso.me',
-    'https://pipedapi.projectsegfau.lt',
-    'https://pipedapi.in.projectsegfau.lt',
-    'https://piped-api.garudalinux.org',
+    'https://api.piped.private.coffee', // Currently active in 2026
+    'https://pipedapi.kavin.rocks', // Official fallback
   ];
 
   /// Piped API Multi-Instance Failover Engine
@@ -421,10 +417,17 @@ class BackendApiService {
 
           final Map<String, Map<String, dynamic>> uniqueQualities = {};
           for (var stream in videoStreams) {
-            final qualityLabel = stream['quality']?.toString() ?? (stream['height'] != null ? '${stream['height']}p' : null);
+            var qualityLabel = stream['quality']?.toString() ?? (stream['height'] != null ? '${stream['height']}p' : null);
             final url = stream['url']?.toString();
             if (qualityLabel != null && url != null) {
-              final formattedQuality = qualityLabel.contains('p') ? qualityLabel : '${qualityLabel}p';
+              if (qualityLabel.toLowerCase() == 'high') qualityLabel = '1080p';
+              if (qualityLabel.toLowerCase() == 'medium') qualityLabel = '720p';
+              if (qualityLabel.toLowerCase() == 'low') qualityLabel = '360p';
+              
+              final RegExp regExp = RegExp(r'\d+');
+              final match = regExp.firstMatch(qualityLabel);
+              final formattedQuality = match != null ? '${match.group(0)}p' : (qualityLabel.contains('p') ? qualityLabel : '${qualityLabel}p');
+              
               if (!uniqueQualities.containsKey(formattedQuality)) {
                 uniqueQualities[formattedQuality] = {
                   'quality': formattedQuality,
@@ -488,61 +491,101 @@ class BackendApiService {
     return {'title': 'Music Video', 'streams': []};
   }
 
-  /// Client-side direct stream fallback using youtube_explode_dart
+  /// Client-side direct stream fallback using youtube_explode_dart (Zero-Lag Isolate)
   static Future<Map<String, dynamic>> _directYoutubeExplodeStreamFallback(String videoId, {String? query}) async {
     debugPrint('[BackendApiService] _directYoutubeExplodeStreamFallback called with videoId=$videoId, query=$query');
-    try {
-      String cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
-      
-      // We still keep this fallback just in case the initial resolution failed
-      if (cleanId.isEmpty || videoId.startsWith('search:') || cleanId.length != 11) {
-        final searchQuery = query ?? videoId.replaceFirst('search:', '');
-        final searchResults = await _yt.search.search(searchQuery);
-        if (searchResults.isNotEmpty) {
-          cleanId = searchResults.first.id.value;
-        } else {
-          return {'title': 'Music Video', 'streams': []};
+    
+    // Offload heavy XML/JSON parsing to a background CPU core (Isolate)
+    // This prevents the main Flutter UI thread from dropping frames ("hiccup")
+    return await Isolate.run(() async {
+      final yt = YoutubeExplode();
+      try {
+        String cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
+        
+        if (cleanId.isEmpty || videoId.startsWith('search:') || cleanId.length != 11) {
+          final searchQuery = query ?? videoId.replaceFirst('search:', '');
+          final searchResults = await yt.search.search(searchQuery);
+          if (searchResults.isNotEmpty) {
+            cleanId = searchResults.first.id.value;
+          } else {
+            return {'title': 'Music Video', 'streams': []};
+          }
         }
-      }
-      
-      // Extract streams natively on the device using youtube_explode_dart
-      final manifest = await _yt.videos.streamsClient.getManifest(cleanId);
-      final videoTitle = (await _yt.videos.get(cleanId)).title;
+        
+        // Extract streams natively using TV/VR clients to bypass signature throttling
+        final manifest = await yt.videos.streamsClient.getManifest(
+          cleanId,
+          ytClients: [
+            YoutubeApiClient.androidVr,
+            YoutubeApiClient.ios,
+          ],
+        );
+        final videoTitle = (await yt.videos.get(cleanId)).title;
 
-      final List<Map<String, dynamic>> streams = [];
-      
-      // Get Muxed (Video + Audio) streams
-      for (final streamInfo in manifest.muxed) {
-        final qualityLabel = streamInfo.videoQuality.name;
-        streams.add({
-          'quality': qualityLabel,
-          'url': streamInfo.url.toString(),
-          'mimeType': 'video/mp4',
-          'videoOnly': false,
-        });
-      }
-      
-      // Exclude video-only streams because standard VideoPlayer cannot multiplex them 
-      // with audio natively without a custom HLS pipeline. Muxed streams (up to 720p) 
-      // guarantee perfect audio/video sync instantly.
+        final List<Map<String, dynamic>> streams = [];
+        
+        // Get all available video-only streams (from 144p up to 4K/8K)
+        if (manifest.videoOnly.isNotEmpty) {
+          final uniqueQualities = <String>{};
+          final sortedStreams = manifest.videoOnly.sortByVideoQuality();
+          
+          for (final stream in sortedStreams) {
+            final quality = stream.videoQuality.name.replaceAll(RegExp(r'[^0-9p]'), ''); // Extract just '1080p', etc.
+            final cleanQuality = quality.isNotEmpty ? quality : stream.videoQuality.name;
+            
+            if (!uniqueQualities.contains(cleanQuality)) {
+              uniqueQualities.add(cleanQuality);
+              streams.add({
+                'quality': cleanQuality,
+                'url': stream.url.toString(),
+                'mimeType': stream.container.name,
+                'videoOnly': true,
+              });
+            }
+          }
+        }
 
-      String audioUrl = '';
-      if (manifest.audioOnly.isNotEmpty) {
-        audioUrl = manifest.audioOnly.withHighestBitrate().url.toString();
-      }
+        // Fallback: adaptive HLS manifest
+        if (manifest.hls.isNotEmpty) {
+          final highestHls = manifest.hls.withHighestBitrate();
+          streams.add({
+            'quality': 'HLS Adaptive',
+            'url': highestHls.url.toString(),
+            'mimeType': 'application/x-mpegURL',
+            'videoOnly': false,
+          });
+        }
+        
+        // Guaranteed 360p fallback (Muxed)
+        if (manifest.muxed.isNotEmpty) {
+          final fallback360p = manifest.muxed.withHighestBitrate();
+          streams.add({
+            'quality': '360p (Muxed Fallback)',
+            'url': fallback360p.url.toString(),
+            'mimeType': fallback360p.container.name,
+            'videoOnly': false,
+          });
+        }
 
-      if (streams.isNotEmpty) {
-        debugPrint('[BackendApiService] Successfully extracted streams via native YoutubeExplode fallback!');
-        return {
-          'title': videoTitle,
-          'streams': streams,
-          'audioUrl': audioUrl,
-        };
+        String audioUrl = '';
+        if (manifest.audioOnly.isNotEmpty) {
+          audioUrl = manifest.audioOnly.withHighestBitrate().url.toString();
+        }
+
+        if (streams.isNotEmpty) {
+          return {
+            'title': videoTitle,
+            'streams': streams,
+            'audioUrl': audioUrl,
+          };
+        }
+      } catch (e) {
+        // Return empty on failure
+      } finally {
+        yt.close();
       }
-    } catch (e) {
-      debugPrint('[BackendApiService] _directYoutubeExplodeStreamFallback error: $e');
-    }
-    return {'title': 'Music Video', 'streams': []};
+      return {'title': 'Music Video', 'streams': []};
+    });
   }
 
   /// Search Videos for Dedicated Video Tab
@@ -648,59 +691,25 @@ class BackendApiService {
   /// Direct InnerTube Trending Videos
   static Future<List<Map<String, dynamic>>> _directInnerTubeTrendingVideos({int limit = 20}) async {
     try {
-      final uri = Uri.parse('https://www.youtube.com/youtubei/v1/browse');
-      final response = await httpClient.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'context': {
-            'client': {
-              'clientName': 'WEB',
-              'clientVersion': '2.20240101.00.00',
-              'hl': 'en',
-              'gl': 'US',
-            },
-          },
-          'browseId': 'FEtrending',
-        }),
-      );
+      final yt = YoutubeExplode();
+      final results = await yt.search.search('trending music videos');
+      yt.close();
 
-      if (response.statusCode == 200) {
-        final data = await compute<String, dynamic>(jsonDecode, response.body);
-        final tabs = data['contents']?['twoColumnBrowseResultsRenderer']?['tabs'] ?? [];
-        final firstTab = tabs[0]?['tabRenderer']?['content']?['sectionListRenderer']?['contents'] ?? [];
-
-        final List<Map<String, dynamic>> videos = [];
-        for (final section in firstTab) {
-          final items = section['itemSectionRenderer']?['contents'] ?? section['shelfRenderer']?['content']?['expandedShelfContentsRenderer']?['items'] ?? [];
-          for (final item in items) {
-            final renderer = item['videoRenderer'];
-            if (renderer == null || renderer['videoId'] == null) continue;
-
-            final videoId = renderer['videoId'];
-            final title = renderer['title']?['runs']?[0]?['text'] ?? 'Trending Video';
-            final uploader = renderer['ownerText']?['runs']?[0]?['text'] ?? 'YouTube Creator';
-            final thumbnail = renderer['thumbnail']?['thumbnails']?.last?['url'] ?? 'https://i.ytimg.com/vi/$videoId/hqdefault.jpg';
-            final views = renderer['viewCountText']?['simpleText'] ?? renderer['shortViewCountText']?['simpleText'] ?? 'Trending';
-            final uploadedAt = renderer['publishedTimeText']?['simpleText'] ?? 'Today';
-
-            videos.add({
-              'id': 'youtube:$videoId',
-              'title': title,
-              'uploader': uploader,
-              'duration': 0,
-              'thumbnail': thumbnail,
-              'views': views,
-              'uploadedAt': uploadedAt,
-            });
-
-            if (videos.length >= limit) break;
-          }
-        }
-        return videos;
+      final List<Map<String, dynamic>> videos = [];
+      for (final video in results.take(limit)) {
+        videos.add({
+          'id': video.id.value,
+          'title': video.title,
+          'uploader': video.author,
+          'duration': video.duration?.inSeconds ?? 0,
+          'thumbnail': video.thumbnails.highResUrl,
+          'views': '${(video.engagement.viewCount / 1000).toStringAsFixed(1)}K views',
+          'uploadedAt': 'Trending',
+        });
       }
+      return videos;
     } catch (e) {
-      debugPrint('[BackendApiService] Direct InnerTube trending videos error: $e');
+      debugPrint('[BackendApiService] direct InnerTube trending error: $e');
     }
     return [];
   }

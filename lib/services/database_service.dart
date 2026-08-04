@@ -280,4 +280,22 @@ class DatabaseService {
       debugPrint('[DatabaseService] toggleFavorite error: $e');
     }
   }
+
+  static Future<List<Song>> getContinueWatching({int limit = 10}) async {
+    try {
+      await ensureInitialized();
+      if (!isInitialized) return [];
+      
+      // Get songs that have a playback position set, ordered by lastPlayedAt descending
+      return await _isar!.songs
+          .filter()
+          .playbackPositionMsGreaterThan(10000) // Must have played at least 10 seconds
+          .sortByLastPlayedAtDesc()
+          .limit(limit)
+          .findAll();
+    } catch (e) {
+      debugPrint('[DatabaseService] getContinueWatching error: $e');
+      return [];
+    }
+  }
 }
