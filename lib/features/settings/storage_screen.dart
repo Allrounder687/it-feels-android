@@ -6,7 +6,7 @@ import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/services/smart_storage_service.dart';
 
 class StorageScreen extends ConsumerStatefulWidget {
-  const StorageScreen({Key? key}) : super(key: key);
+  const StorageScreen({super.key});
 
   @override
   ConsumerState<StorageScreen> createState() => _StorageScreenState();
@@ -44,10 +44,6 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
         _isLoading = false;
       });
     }
-  }
-
-  String _formatBytes(int bytes) {
-    return _formatBytesSimple(bytes);
   }
 
   String _formatBytesSimple(int bytes) {
@@ -95,7 +91,7 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
                       style: TextStyle(color: context.themeTextColor, fontWeight: FontWeight.w500)),
                   subtitle: Text("Silently download liked songs in the background.",
                       style: TextStyle(color: context.themeMutedTextColor, fontSize: 13)),
-                  activeColor: context.themeAccentColor,
+                  activeTrackColor: context.themeAccentColor,
                   value: _autoDownload,
                   onChanged: (val) async {
                     setState(() => _autoDownload = val);

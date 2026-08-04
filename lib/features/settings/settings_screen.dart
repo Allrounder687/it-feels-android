@@ -476,7 +476,7 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                       trailing: Switch.adaptive(
                         value: settings.useProxyBackend,
-                        activeColor: context.themeAccentColor,
+                        activeTrackColor: context.themeAccentColor,
                         onChanged: (val) async {
                           final confirm = await showDialog<bool>(
                             context: context,
@@ -535,6 +535,7 @@ class SettingsScreen extends ConsumerWidget {
                         );
 
                         if (confirm != true) return;
+                        if (!context.mounted) return;
 
                         final textController = TextEditingController(text: settings.proxyUrl);
                         final newUrl = await showDialog<String>(

@@ -168,10 +168,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
           ],
         );
       },
-    ).then((_) {
-      // Ensure subscription is cancelled if dialog is dismissed
-      // The listen is already cancelled in the onPressed, but we should make sure
-    });
+    ).ignore();
   }
 
   @override
@@ -541,100 +538,6 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
     );
   }
 
-  Widget _buildActiveRoomsCarousel() {
-    return StreamBuilder<DatabaseEvent>(
-      stream: locator<RoomService>().getPublicRooms(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
-          return const SizedBox.shrink();
-        }
-        
-        try {
-          final value = snapshot.data!.snapshot.value;
-          Map<String, dynamic> roomsMap = {};
-          if (value is Map) {
-            roomsMap = Map<String, dynamic>.from(value);
-          } else if (value is List) {
-            for (int i = 0; i < value.length; i++) {
-              if (value[i] != null) {
-                roomsMap[i.toString()] = value[i];
-              }
-            }
-          }
-          
-          if (roomsMap.isEmpty) return const SizedBox.shrink();
-
-          final rooms = roomsMap.entries.map((e) => {'id': e.key, ...Map<String, dynamic>.from(e.value as Map)}).toList();
-          
-          return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text("Active Listening Rooms", style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor, fontSize: 16)),
-            ),
-            SizedBox(
-              height: 140,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: rooms.length,
-                itemBuilder: (context, index) {
-                  final room = rooms[index];
-                  final hostName = 'Host'; 
-                  final coverArt = room['coverArt'] ?? '';
-                  final title = room['title'] ?? 'Music';
-                  final roomId = room['id'] as String;
-                  
-                  return GestureDetector(
-                    onTap: () => _handleJoinRoom(roomId, hostName),
-                    child: Container(
-                      width: 120,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: context.themeSurfaceColor,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: context.themeAccentColor.withValues(alpha: 0.5), width: 1.5),
-                        boxShadow: [
-                          BoxShadow(color: context.themeAccentColor.withValues(alpha: 0.2), blurRadius: 8, spreadRadius: 1),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: CustomImageWidget(imageUrl: coverArt, width: 60, height: 60),
-                          ),
-                          const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: context.themeTextColor)),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: context.themeAccentColor,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text("Join", style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
-                          )
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        );
-        } catch (e) {
-          return const SizedBox.shrink();
-        }
-      },
-    );
-  }
 
   Widget _buildFriendsTab() {
     return Column(

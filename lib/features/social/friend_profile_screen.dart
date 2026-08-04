@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
-import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:it_feels_music/data/models/custom_playlist.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
@@ -27,7 +24,7 @@ class FriendProfileScreen extends ConsumerStatefulWidget {
 class _FriendProfileScreenState extends ConsumerState<FriendProfileScreen> {
   final SocialService _socialService = locator<SocialService>();
   bool _isLoading = true;
-  List<CustomPlaylist> _publicPlaylists = [];
+  final List<CustomPlaylist> _publicPlaylists = [];
   Map<String, dynamic>? _friendData;
 
   @override
