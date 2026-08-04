@@ -1,4 +1,5 @@
 ## v3.5.20+54
+- **Video PiP Routing Bug**: Fixed a bug where tapping the Video PiP mini-player while playing a pure video from search incorrectly routed back to `NowPlayingScreen` (resulting in a "No song selected" error) instead of the dedicated `VideoPlayerScreen`.
 - **Phase 6: Audio Architecture Refactor**: Eradicated the massive `AudioPlayerNotifier` God Object.
   - **Decoupled Engine**: Wrapped `media_kit` and `just_audio` pipelines into a strictly isolated `AudioEngineService` that exclusively handles DSP Equalizer, Loudness Enhancers, UI Haptics, and Sleep Timers.
   - **Social Sync Splitting**: Moved all Firebase Realtime Database and Firestore listener networks into `ListenTogetherService` to permanently sever database syncing operations from UI frame rendering.
