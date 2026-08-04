@@ -44,7 +44,7 @@ jobs:
       - name: Publish Shorebird Patch (Android)
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird patch android
+        run: shorebird patch android --force
 
   patch-ios:
     name: Build and Release Patch (iOS)
@@ -71,4 +71,4 @@ jobs:
       - name: Publish Shorebird Patch (iOS)
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird patch ios
+        run: shorebird patch ios --force
