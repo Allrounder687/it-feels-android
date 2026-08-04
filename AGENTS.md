@@ -2,12 +2,20 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Audio Architecture Teardown (Phase 6 - v3.5.20+54):** Eradicated the massive `AudioPlayerNotifier` God Object.
+  - **Decoupled Engine:** Wrapped `media_kit` and `just_audio` pipelines into a strictly isolated `AudioEngineService` that exclusively handles DSP Equalizer, Loudness Enhancers, UI Haptics, and Sleep Timers.
+  - **Social Sync Splitting:** Moved all Firebase Realtime Database and Firestore listener networks into `ListenTogetherService` to permanently sever database syncing operations from UI frame rendering.
+  - **Passive Riverpod State:** Gutted `AudioPlayerNotifier`, transforming it into a strict, lightweight state bridge that passively subscribes to `AudioEngineService` event streams.
+  - **0ms Main-Thread UI Blocking:** Isolated PaletteExtraction into its own service class (`PaletteExtractorService`).
 - **AV Handoff & Optimistic UI Architecture (Phase 5 - v3.5.19+53 Hotfix 2):**
   - **Instant Optimistic UI:** Shrank `PaletteGenerator` pixel sampling constraints to exactly 100x100 within `audio_player_provider.dart`. This dropped synchronous main thread blocking from ~1000ms down to ~2ms, ensuring route transitions are perfectly instant.
   - **Seamless AV Sync:** Introduced an `isBackgroundHandoff` engine to mutually `pause()` streaming buffers between Audio and Video tabs, rather than aggressively `closeVideo()`-ing them. This enabled millisecond-perfect cross-fading without re-fetching network URLs.
   - **Video Quality Lock:** Fixed the '2-attempts' bug by explicitly locking the new `selectedQuality` state *synchronously* during the bottom sheet interaction, and securely capturing the active buffer `startPosition` to resume the new quality without starting from 0:00.
   - **Lyrics Rolling Animation:** Rebuilt `_LiveLyricsPreviewCard` with an `AnimatedSwitcher` paired to a custom `SlideTransition` mapping, providing a 2026-era karaoke aesthetic featuring fading history and active highlighting.
   - **Accessibility Flood Fix:** Wrapped `WavySeekBar` inside `ExcludeSemantics` in `wavy_seek_bar.dart` to mitigate the `Failed to update ui::AXTree` exception spam on Windows triggered by 60fps slider redraws.
+  - **AV Canvas Synchronization:** Hard-synced the background video engine to scrub to the exact millisecond (`seek()`) of the audio engine upon resuming playback, completely eliminating drifting. Forced `media_kit` volume to natively initialize at `0.0` when used as a background canvas to prevent dual-audio echoing.
+  - **MiniPlayer State Machine:** Repaired a dual-vanishing bug where both the Video PiP and Audio MiniPlayer would hide themselves on the home screen when a visual canvas was active.
+  - **Dynamic Home Hero Layout:** Stripped hardcoded height constraints from the `home_screen.dart` featured banner, allowing the `RenderFlex` to dynamically expand for ultra-long music video titles without throwing overflow exceptions.
 - **Hero Tag Collision & UI Architecture (v3.5.19+53 Hotfix):** Removed nested `MiniPlayer` widgets from library screens (`ArtistDetailScreen`, `PlaylistDetailScreen`, etc.). Relying entirely on the global `MainNavigationWrapper` prevents dangerous `Hero` tag duplication crashes (`cover_saavn...`) from destroying the page route stack.
 - **Audio Caching File Lock (errno 32) Fix (v3.5.19+53 Hotfix):** Swapped `LockCachingAudioSource` for `AudioSource.uri` for ephemeral YouTube/Piped streams to bypass writing temporary files to disk. Combined with `stop()` flush calls, this entirely mitigates Windows file locking stutter/crashing during concurrent AV pipeline switching.
 - **Windows Exclusive Fullscreen (v3.5.19+53 Hotfix):** Implemented dynamic `TitleBarStyle.hidden` hooks in `video_player_screen.dart` that explicitly signal the Windows Desktop Window Manager to strip the non-client title bar during video fullscreen mode.

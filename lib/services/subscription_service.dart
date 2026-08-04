@@ -192,7 +192,6 @@ class SubscriptionService {
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isPremiumFamily_$uid', true);
-        await prefs.setBool('isPremiumDevice', true);
 
         await _firestore.collection('users').doc(uid).set({
           'isPremiumFamily': true,

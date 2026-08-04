@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
@@ -38,6 +39,23 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
   String? _lastPlayedSongId;
   bool _hasViewedVideoForCurrentSong = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Initialize into video mode if the miniplayer was tapped while a video was active!
+    final videoProvider = ref.read(videoPlayerProvider);
+    final audioProvider = ref.read(audioPlayerProvider);
+    if (videoProvider.isVideoActive && videoProvider.currentVideoId != null && audioProvider.currentSong != null) {
+      final vId = videoProvider.currentVideoId!;
+      final sId = audioProvider.currentSong!.id;
+      if (vId == sId || vId == 'search:$sId') {
+        _isVideoMode = true;
+        _hasViewedVideoForCurrentSong = true;
+        _lastPlayedSongId = sId; // Prevent build() from resetting to false!
+      }
+    }
+  }
+
   Future<void> _toggleMode(bool toVideo, AudioPlayerState audioProvider, VideoPlayerState videoProvider, SettingsState settingsProv) async {
     if (_isVideoMode == toVideo) return;
     final currentSong = audioProvider.currentSong;
@@ -56,22 +74,19 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
       final useVideoAudio = settingsProv.useVideoAudioSource;
       
       if (useVideoAudio) {
-        ref.read(audioPlayerProvider.notifier).pause();
         ref.read(videoPlayerProvider.notifier).setMuted(false);
       } else {
         // Keep high quality audio playing from music player!
         ref.read(videoPlayerProvider.notifier).setMuted(true);
-        ref.read(audioPlayerProvider.notifier).seek(position);
-        if (!audioProvider.isPlaying) {
-          ref.read(audioPlayerProvider.notifier).play();
-        }
       }
       
       ref.read(videoPlayerProvider.notifier).setOnVideoStarted(() {
-        if (_isVideoMode && !settingsProv.useVideoAudioSource) {
-          if (!audioProvider.isPlaying) {
-            ref.read(audioPlayerProvider.notifier).play();
+        if (_isVideoMode) {
+          if (settingsProv.useVideoAudioSource) {
+            // Video is ready, now we can pause the audio to handoff!
+            ref.read(audioPlayerProvider.notifier).pause();
           }
+          // If NOT using video audio, audio is already playing uninterrupted, do nothing!
         }
       });
 
@@ -995,33 +1010,23 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                     stream: videoProvider.player!.stream.playing,
                                     builder: (context, snapshot) {
                                       final isPlaying = snapshot.data ?? videoProvider.player!.state.playing;
-                                      final settingsProv = ref.read(settingsProvider);
-                                      return AnimatedPlayPauseButton(
-                                        isPlaying: isPlaying,
-                                        onPressed: () {
-                                          if (isPlaying) {
-                                            videoProvider.player!.pause();
-                                            if (!settingsProv.useVideoAudioSource) {
-                                              ref.read(audioPlayerProvider.notifier).pause();
-                                            }
-                                          } else {
-                                            videoProvider.player!.play();
-                                            if (!settingsProv.useVideoAudioSource) {
-                                              ref.read(audioPlayerProvider.notifier).seek(videoProvider.player!.state.position);
-                                              ref.read(audioPlayerProvider.notifier).play();
-                                            }
-                                          }
-                                        },
-                                        color: context.themeInvertedTextColor,
-                                        size: isWide ? 40 : 32,
+                                      return IgnorePointer(
+                                        child: AnimatedPlayPauseButton(
+                                          isPlaying: isPlaying,
+                                          onPressed: () {},
+                                          color: context.themeInvertedTextColor,
+                                          size: isWide ? 40 : 32,
+                                        ),
                                       );
                                     }
                                   )
-                                : AnimatedPlayPauseButton(
-                                    isPlaying: playerProvider.isPlaying,
-                                    onPressed: () => ref.read(audioPlayerProvider.notifier).togglePlayPause(),
-                                    color: context.themeInvertedTextColor,
-                                    size: isWide ? 40 : 32,
+                                : IgnorePointer(
+                                    child: AnimatedPlayPauseButton(
+                                      isPlaying: playerProvider.isPlaying,
+                                      onPressed: () {},
+                                      color: context.themeInvertedTextColor,
+                                      size: isWide ? 40 : 32,
+                                    ),
                                   ),
                             ),
                           ),
@@ -1402,7 +1407,7 @@ class _LiveLyricsPreviewCard extends ConsumerWidget {
               )
               else
                 SizedBox(
-                  height: 70, // Fixed height to prevent jumping
+                  height: 85, // Fixed height to prevent jumping
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 350),
                     switchInCurve: Curves.easeOutCubic,

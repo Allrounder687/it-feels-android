@@ -11,6 +11,7 @@ import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart';
 import 'package:it_feels_music/features/cast/cast_bottom_sheet.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
 
 class MiniPlayer extends ConsumerWidget {
   final VoidCallback onTap;
@@ -22,8 +23,13 @@ class MiniPlayer extends ConsumerWidget {
     return Consumer(builder: (context, ref, child) { 
         final playerProvider = ref.watch(audioPlayerProvider); 
         final videoProvider = ref.watch(videoPlayerProvider);
-        
-        if (videoProvider.isVideoActive) return const SizedBox.shrink();
+        final settings = ref.watch(settingsProvider);
+        final isSameSong = playerProvider.currentSong != null && 
+                           (videoProvider.currentVideoId == playerProvider.currentSong!.id || 
+                            videoProvider.currentVideoId == 'search:${playerProvider.currentSong!.id}');
+        final isMutedCanvas = !settings.useVideoAudioSource && isSameSong;
+
+        if (videoProvider.isVideoActive && !isMutedCanvas) return const SizedBox.shrink();
 
         final currentSong = playerProvider.currentSong;
         if (currentSong == null) return const SizedBox.shrink();

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
+import 'package:media_kit_video/media_kit_video.dart' hide Video;
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
