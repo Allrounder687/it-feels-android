@@ -83,6 +83,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHeroBanner(BuildContext context, Song heroSong, AudioPlayerState player) {
+    final isWide = MediaQuery.of(context).size.width >= 600;
     return TVFocusableCard(
       onTap: () => ref.read(audioPlayerProvider.notifier).playSong(heroSong, queue: [heroSong], index: 0),
       focusedScale: 1.02,
@@ -116,21 +117,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Row(
+              padding: EdgeInsets.all(isWide ? 32.0 : 24.0),
+              child: Flex(
+                direction: isWide ? Axis.horizontal : Axis.vertical,
+                crossAxisAlignment: isWide ? CrossAxisAlignment.center : CrossAxisAlignment.start,
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: SizedBox(
-                      width: 216,
-                      height: 216,
+                      width: isWide ? 216 : double.infinity,
+                      height: isWide ? 216 : 216,
                       child: heroSong.coverArt.isNotEmpty
                           ? CustomImageWidget(imageUrl: heroSong.coverArt, fit: BoxFit.cover)
                           : Container(color: context.themeSurfaceColor),
                     ),
                   ),
-                  const SizedBox(width: 32),
+                  SizedBox(width: isWide ? 32 : 0, height: isWide ? 0 : 24),
                   Expanded(
+                    flex: isWide ? 1 : 0,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -141,7 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             color: Colors.white70,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.5,
-                            fontSize: 14,
+                            fontSize: 12,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -149,7 +153,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           heroSong.title,
                           style: GoogleFonts.outfit(
                             color: Colors.white,
-                            fontSize: 42,
+                            fontSize: isWide ? 42 : 32,
                             fontWeight: FontWeight.w800,
                           ),
                           maxLines: 2,
@@ -160,7 +164,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           heroSong.artist,
                           style: GoogleFonts.inter(
                             color: Colors.white70,
-                            fontSize: 22,
+                            fontSize: isWide ? 22 : 18,
                             fontWeight: FontWeight.w500,
                           ),
                           maxLines: 1,
@@ -199,6 +203,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ), // Stack
       ), // ClipRRect
       ), // Container
+    );
+  }
+
+  Widget _buildSpotifyRecentGrid(BuildContext context, List<Song> songs, AudioPlayerState playerProvider) {
+    if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    
+    final recentSongs = songs.take(6).toList();
+    
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 2.8,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final song = recentSongs[index];
+            return TVFocusableCard(
+              onTap: () => ref.read(audioPlayerProvider.notifier).playSong(song, queue: recentSongs, index: index),
+              onLongPress: () => SongOptionsSheet.show(context, song, playlistContext: recentSongs),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 56,
+                      height: 56,
+                      child: song.coverArt.isNotEmpty
+                          ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover, size: 100)
+                          : Container(color: AppColors.midnightPill),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        song.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          color: context.themeTextColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ),
+              ),
+            );
+          },
+          childCount: recentSongs.length,
+        ),
+      ),
     );
   }
 
@@ -548,8 +612,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-                // Tablet Hero Banner
-                if (MediaQuery.of(context).size.width >= 700 && activeSongs.isNotEmpty && selectedCat == "For You")
+                // Mobile/Tablet Hero Banner (Apple Music style)
+                if (activeSongs.isNotEmpty && selectedCat == "For You" && !homeProv.isLoading)
                   SliverToBoxAdapter(
                     child: _buildHeroBanner(context, activeSongs.first, playerProvider),
                   ),
@@ -577,12 +641,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     )
                   else ...[
+                    // Spotify style 2x3 recent grid
+                    if (activeSongs.isNotEmpty)
+                      _buildSpotifyRecentGrid(context, activeSongs, playerProvider),
+                      
                     if (homeProv.continueWatching.isNotEmpty)
                       _buildSongCarousel(context, "Continue Watching", homeProv.continueWatching, playerProvider),
                     const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.only(bottom: 24), child: SmartRecommendationsRow())),
                     _buildPlaylistCarousel(context, "Curated Moods", homeProv.moodPlaylists),
                     _buildPlaylistCarousel(context, "Daily Mixes", homeProv.youPlaylists),
-                    _buildSongCarousel(context, "Recently Played", activeSongs, playerProvider),
                   ]
                 ] 
                 else if (selectedCat == "Music") ...[

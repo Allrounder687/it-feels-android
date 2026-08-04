@@ -96,6 +96,17 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<SubscriptionProvider>(subscriptionProvider, (previous, next) {
+      if (previous?.isPremium != true && next.isPremium) {
+        if (context.mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Premium status verified!')),
+          );
+        }
+      }
+    });
+
     final subProvider = ref.watch(subscriptionProvider);
     final bottomUiHeight = ref.watch(bottomUiProvider);
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom + bottomUiHeight + 16.0;
