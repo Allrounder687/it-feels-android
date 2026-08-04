@@ -210,15 +210,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildSpotifyRecentGrid(BuildContext context, List<Song> songs, AudioPlayerState playerProvider) {
     if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
     
-    final recentSongs = songs.take(6).toList();
+    // Skip the first song if it's already shown in the hero banner
+    final recentSongs = songs.skip(1).take(6).toList();
+    if (recentSongs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
     
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
           childAspectRatio: 2.8,
         ),
         delegate: SliverChildBuilderDelegate(
@@ -229,8 +231,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               onLongPress: () => SongOptionsSheet.show(context, song, playlistContext: recentSongs),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(6),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Row(
@@ -240,9 +250,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       height: 56,
                       child: song.coverArt.isNotEmpty
                           ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover, size: 100)
-                          : Container(color: AppColors.midnightPill),
+                          : Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [AppColors.midnightAccent, AppColors.midnightPill],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              child: const Icon(Icons.music_note, color: Colors.white54, size: 24),
+                            ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         song.title,
@@ -250,8 +269,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.inter(
                           color: context.themeTextColor,
-                          fontSize: 12,
+                          fontSize: 12.5,
                           fontWeight: FontWeight.w700,
+                          height: 1.2,
                         ),
                       ),
                     ),
@@ -263,6 +283,85 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
           childCount: recentSongs.length,
         ),
+      ),
+    );
+  }
+
+  Widget _buildTopArtistsCarousel(BuildContext context, List<String> artists) {
+    if (artists.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Text("Your Top Artists", style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: context.themeTextColor, letterSpacing: -0.5)),
+          ),
+          SizedBox(
+            height: 120,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              itemCount: artists.length,
+              itemBuilder: (context, index) {
+                final artist = artists[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: TVFocusableCard(
+                    onTap: () {
+                      // We can implement Search filter for Artist here in future
+                    },
+                    child: SizedBox(
+                      width: 90,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.primaries[artist.hashCode % Colors.primaries.length].withValues(alpha: 0.8),
+                                  Colors.primaries[(artist.hashCode + 1) % Colors.primaries.length].withValues(alpha: 0.8)
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                )
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                artist.substring(0, 1).toUpperCase(),
+                                style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            artist,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: context.themeTextColor),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -318,7 +417,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             aspectRatio: 1.0,
                             child: pl.coverArt.isNotEmpty
                                 ? CustomImageWidget(imageUrl: pl.coverArt, fit: BoxFit.cover, size: 150)
-                                : Container(color: context.themeCardColor),
+                                : Container(
+                                    decoration: const BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [AppColors.midnightAccent, AppColors.midnightPill],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                    ),
+                                    child: const Icon(Icons.music_note, color: Colors.white54, size: 40),
+                                  ),
                           ),
                         ),
                         if (title != "Curated Moods") ...[
@@ -414,7 +522,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           width: 56, height: 56,
                           child: song.coverArt.isNotEmpty
                               ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover, size: 150)
-                              : Container(color: AppColors.midnightPill),
+                              : Container(
+                                  decoration: const BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [AppColors.midnightAccent, AppColors.midnightPill],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                  ),
+                                  child: const Icon(Icons.music_note, color: Colors.white54, size: 24),
+                                ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -614,7 +731,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
                 // Mobile/Tablet Hero Banner (Apple Music style)
-                if (activeSongs.isNotEmpty && selectedCat == "For You" && !homeProv.isLoading)
+                if (activeSongs.isNotEmpty && selectedCat != "Charts" && !homeProv.isLoading)
                   SliverToBoxAdapter(
                     child: _buildHeroBanner(context, activeSongs.first, playerProvider),
                   ),
@@ -642,27 +759,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     )
                   else ...[
-                    // Spotify style 2x3 recent grid
-                    if (activeSongs.isNotEmpty)
-                      _buildSpotifyRecentGrid(context, activeSongs, playerProvider),
+                    // Top Artists Section (Derived from history)
+                    if (historyProvider.getTopArtists(limit: 8).isNotEmpty)
+                      _buildTopArtistsCarousel(context, historyProvider.getTopArtists(limit: 8)),
                       
-                    if (homeProv.continueWatching.isNotEmpty)
-                      _buildSongCarousel(context, "Continue Watching", homeProv.continueWatching, playerProvider),
-                    const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.only(bottom: 24), child: SmartRecommendationsRow())),
-                    _buildPlaylistCarousel(context, "Curated Moods", homeProv.moodPlaylists),
+                    // Spotify style 2x3 recent grid (Jump Back In)
+                    if (activeSongs.length > 1) ...[
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                          child: Text("Jump Back In", style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: context.themeTextColor, letterSpacing: -0.5)),
+                        ),
+                      ),
+                      _buildSpotifyRecentGrid(context, activeSongs, playerProvider),
+                    ],
+                    
+                    const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.only(bottom: 16, top: 16), child: SmartRecommendationsRow())),
                     _buildPlaylistCarousel(context, "Daily Mixes", homeProv.youPlaylists),
+                    _buildPlaylistCarousel(context, "Curated Moods", homeProv.moodPlaylists),
+                    
+                    // Moved Continue Watching to bottom and renamed logic
+                    if (homeProv.continueWatching.isNotEmpty)
+                      _buildSongCarousel(context, "Video History", homeProv.continueWatching, playerProvider),
                   ]
                 ] 
                 else if (selectedCat == "Music") ...[
-                  // Render Horizontal Swipeable Song Grid Carousels for Genres
-                  _buildSongCarousel(context, "Trending Now", homeProv.trendingSongs, playerProvider),
-                  _buildSongCarousel(context, "Bollywood Hits", homeProv.bollywoodSongs, playerProvider),
-                  _buildSongCarousel(context, "Punjabi Hits", homeProv.punjabiSongs, playerProvider),
-                  _buildSongCarousel(context, "Telugu Hits", homeProv.teluguSongs, playerProvider),
-                  _buildSongCarousel(context, "Tamil Hits", homeProv.tamilSongs, playerProvider),
-                  _buildSongCarousel(context, "Hollywood Pop", homeProv.hollywoodSongs, playerProvider),
-                  _buildPlaylistCarousel(context, "Top Albums", homeProv.topAlbums),
-                ]
+                    if (activeSongs.length > 1) ...[
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                          child: Text("Quick Picks", style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: context.themeTextColor, letterSpacing: -0.5)),
+                        ),
+                      ),
+                      _buildSpotifyRecentGrid(context, activeSongs, playerProvider),
+                    ],
+                    // Render Horizontal Swipeable Song Grid Carousels for Genres
+                    _buildSongCarousel(context, "Trending Now", homeProv.trendingSongs, playerProvider),
+                    _buildPlaylistCarousel(context, "Top Albums", homeProv.topAlbums),
+                    _buildSongCarousel(context, "Bollywood Hits", homeProv.bollywoodSongs, playerProvider),
+                    _buildSongCarousel(context, "Punjabi Hits", homeProv.punjabiSongs, playerProvider),
+                    _buildSongCarousel(context, "Telugu Hits", homeProv.teluguSongs, playerProvider),
+                    _buildSongCarousel(context, "Tamil Hits", homeProv.tamilSongs, playerProvider),
+                    _buildSongCarousel(context, "Hollywood Pop", homeProv.hollywoodSongs, playerProvider),
+                  ]
                 else if (selectedCat == "Podcasts") ...[
                   _buildPlaylistCarousel(context, "Top Podcasts", homeProv.podcastPlaylists),
                   _buildSongCarousel(context, "Latest Episodes", activeSongs, playerProvider),
