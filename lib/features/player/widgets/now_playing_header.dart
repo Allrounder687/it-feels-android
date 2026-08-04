@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 class NowPlayingHeader extends ConsumerWidget {
   final bool isVideoMode;
