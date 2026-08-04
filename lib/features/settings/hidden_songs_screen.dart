@@ -36,7 +36,7 @@ class HiddenSongsScreen extends ConsumerWidget {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 168 + MediaQuery.of(context).viewPadding.bottom),
             itemCount: hiddenSongs.length,
             itemBuilder: (context, index) {
               final song = hiddenSongs[index];

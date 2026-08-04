@@ -80,7 +80,7 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
       body: _isLoading
           ? Center(child: CircularProgressIndicator(color: context.themeAccentColor))
           : ListView(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 168 + MediaQuery.of(context).viewPadding.bottom),
               children: [
                 _buildStorageBar(context),
                 const SizedBox(height: 32),

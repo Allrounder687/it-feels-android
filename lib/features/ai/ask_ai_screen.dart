@@ -237,7 +237,7 @@ class _AskAIScreenState extends ConsumerState<AskAIScreen> {
           ),
         ),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -322,6 +322,7 @@ class _AskAIScreenState extends ConsumerState<AskAIScreen> {
                   style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
+            SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
           ],
         ),
       ),
