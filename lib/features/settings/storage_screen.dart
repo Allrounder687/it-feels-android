@@ -2,49 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
-import 'package:it_feels_music/core/utils/service_locator.dart';
-import 'package:it_feels_music/data/services/smart_storage_service.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
+import 'package:it_feels_music/features/settings/storage_provider.dart';
 
-class StorageScreen extends ConsumerStatefulWidget {
+class StorageScreen extends ConsumerWidget {
   const StorageScreen({super.key});
-
-  @override
-  ConsumerState<StorageScreen> createState() => _StorageScreenState();
-}
-
-class _StorageScreenState extends ConsumerState<StorageScreen> {
-  final SmartStorageService _storageService = locator<SmartStorageService>();
-  
-  bool _isLoading = true;
-  int _cacheSize = 0;
-  int _downloadSize = 0;
-  int _maxCacheSize = 0;
-  bool _autoDownload = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadStorageData();
-  }
-
-  Future<void> _loadStorageData() async {
-    setState(() => _isLoading = true);
-    
-    final cache = await _storageService.calculateCacheDirectorySize();
-    final downloads = await _storageService.calculateDownloadsDirectorySize();
-    final maxSize = await _storageService.getMaxCacheSize();
-    final autoDownload = await _storageService.getAutoDownloadFavorites();
-
-    if (mounted) {
-      setState(() {
-        _cacheSize = cache;
-        _downloadSize = downloads;
-        _maxCacheSize = maxSize;
-        _autoDownload = autoDownload;
-        _isLoading = false;
-      });
-    }
-  }
 
   String _formatBytesSimple(int bytes) {
     if (bytes >= 1073741824) {
@@ -59,7 +21,10 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(storageProvider);
+    final notifier = ref.read(storageProvider.notifier);
+
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
@@ -77,12 +42,12 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: _isLoading
+      body: state.isLoading
           ? Center(child: CircularProgressIndicator(color: context.themeAccentColor))
           : ListView(
-              padding: EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 168 + MediaQuery.of(context).viewPadding.bottom),
+              padding: EdgeInsets.only(left: 20, top: 20, right: 20, bottom: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
               children: [
-                _buildStorageBar(context),
+                _buildStorageBar(context, state),
                 const SizedBox(height: 32),
                 _buildSectionHeader(context, "⚙️ Auto-Download"),
                 SwitchListTile(
@@ -92,10 +57,9 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
                   subtitle: Text("Silently download liked songs in the background.",
                       style: TextStyle(color: context.themeMutedTextColor, fontSize: 13)),
                   activeTrackColor: context.themeAccentColor,
-                  value: _autoDownload,
-                  onChanged: (val) async {
-                    setState(() => _autoDownload = val);
-                    await _storageService.setAutoDownloadFavorites(val);
+                  value: state.autoDownload,
+                  onChanged: (val) {
+                    notifier.toggleAutoDownload(val);
                   },
                 ),
                 const SizedBox(height: 32),
@@ -104,17 +68,15 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
                   contentPadding: EdgeInsets.zero,
                   title: Text("Max Cache Size",
                       style: TextStyle(color: context.themeTextColor, fontWeight: FontWeight.w500)),
-                  subtitle: Text(_formatBytesSimple(_maxCacheSize),
+                  subtitle: Text(_formatBytesSimple(state.maxCacheSize),
                       style: TextStyle(color: context.themeMutedTextColor, fontSize: 13)),
                   trailing: Icon(Icons.arrow_forward_ios_rounded, color: context.themeMutedTextColor, size: 16),
-                  onTap: _showMaxCacheDialog,
+                  onTap: () => _showMaxCacheDialog(context, notifier),
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
-                  onPressed: () async {
-                    setState(() => _isLoading = true);
-                    await _storageService.clearAllCache();
-                    await _loadStorageData();
+                  onPressed: () {
+                    notifier.clearCache();
                   },
                   icon: const Icon(Icons.delete_outline_rounded, color: Colors.white),
                   label: const Text("Clear All Cache", style: TextStyle(color: Colors.white)),
@@ -140,7 +102,7 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
     );
   }
 
-  Widget _buildStorageBar(BuildContext context) {
+  Widget _buildStorageBar(BuildContext context, StorageState state) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -158,15 +120,15 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
             child: Row(
               children: [
                 Expanded(
-                  flex: _downloadSize > 0 ? _downloadSize : 1,
+                  flex: state.downloadSize > 0 ? state.downloadSize : 1,
                   child: Container(height: 12, color: Colors.blueAccent),
                 ),
                 Expanded(
-                  flex: _cacheSize > 0 ? _cacheSize : 1,
+                  flex: state.cacheSize > 0 ? state.cacheSize : 1,
                   child: Container(height: 12, color: Colors.amberAccent),
                 ),
                 Expanded(
-                  flex: _maxCacheSize > 0 ? _maxCacheSize : 1000,
+                  flex: state.maxCacheSize > 0 ? state.maxCacheSize : 1000,
                   child: Container(height: 12, color: context.themeCardColor),
                 ),
               ],
@@ -175,9 +137,9 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              _buildLegend(context, "Downloads", _formatBytesSimple(_downloadSize), Colors.blueAccent),
+              _buildLegend(context, "Downloads", _formatBytesSimple(state.downloadSize), Colors.blueAccent),
               const Spacer(),
-              _buildLegend(context, "Audio Cache", _formatBytesSimple(_cacheSize), Colors.amberAccent),
+              _buildLegend(context, "Audio Cache", _formatBytesSimple(state.cacheSize), Colors.amberAccent),
             ],
           ),
         ],
@@ -201,7 +163,7 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
     );
   }
 
-  void _showMaxCacheDialog() {
+  void _showMaxCacheDialog(BuildContext context, StorageNotifier notifier) {
     showDialog(
       context: context,
       builder: (ctx) {
@@ -214,25 +176,22 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
               ListTile(
                 title: Text("1 GB", style: TextStyle(color: context.themeTextColor)),
                 onTap: () {
-                  _storageService.setMaxCacheSize(1073741824);
+                  notifier.updateMaxCacheSize(1024);
                   Navigator.pop(ctx);
-                  _loadStorageData();
                 },
               ),
               ListTile(
                 title: Text("2 GB", style: TextStyle(color: context.themeTextColor)),
                 onTap: () {
-                  _storageService.setMaxCacheSize(2147483648);
+                  notifier.updateMaxCacheSize(2048);
                   Navigator.pop(ctx);
-                  _loadStorageData();
                 },
               ),
               ListTile(
                 title: Text("5 GB", style: TextStyle(color: context.themeTextColor)),
                 onTap: () {
-                  _storageService.setMaxCacheSize(5368709120);
+                  notifier.updateMaxCacheSize(5120);
                   Navigator.pop(ctx);
-                  _loadStorageData();
                 },
               ),
             ],

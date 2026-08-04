@@ -11,6 +11,7 @@ import 'package:it_feels_music/features/auth/auth_bottom_sheet.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/data/models/badge_model.dart';
 import 'package:it_feels_music/features/admin/admin_dashboard_screen.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -363,7 +364,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 );
               },
             ),
-            SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
+            SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
           ],
         ),
       ),

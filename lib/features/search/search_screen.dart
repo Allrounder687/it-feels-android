@@ -20,6 +20,7 @@ import 'package:it_feels_music/features/settings/hidden_songs_provider.dart';
 
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -498,7 +499,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     child: Center(child: CircularProgressIndicator()),
                                   ),
 
-                                SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
+                                SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
                               ],
                             ),
                     ),
@@ -775,7 +776,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     ),
   ),
 ),
-SliverToBoxAdapter(child: SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom)),
+SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom)),
       ],
     );
   }

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class HiddenSongsScreen extends ConsumerWidget {
   const HiddenSongsScreen({super.key});
@@ -36,7 +37,7 @@ class HiddenSongsScreen extends ConsumerWidget {
           }
 
           return ListView.builder(
-            padding: EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 168 + MediaQuery.of(context).viewPadding.bottom),
+            padding: EdgeInsets.only(left: 16, right: 16, top: 8, bottom: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
             itemCount: hiddenSongs.length,
             itemBuilder: (context, index) {
               final song = hiddenSongs[index];
