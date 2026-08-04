@@ -12,6 +12,9 @@ import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:it_feels_music/data/services/smart_storage_service.dart';
 import 'package:it_feels_music/services/lastfm_service.dart';
 import 'package:it_feels_music/data/services/radio_api_service.dart';
+import 'package:it_feels_music/features/player/palette_extractor_service.dart';
+import 'package:it_feels_music/data/services/audio_engine_service.dart';
+import 'package:it_feels_music/features/social/listen_together_service.dart';
 
 final GetIt locator = GetIt.instance;
 
@@ -45,4 +48,7 @@ Future<void> setupServiceLocator() async {
   locator.registerLazySingleton<SmartStorageService>(() => SmartStorageService());
   locator.registerLazySingleton<LastfmService>(() => LastfmService());
   locator.registerLazySingleton<RadioApiService>(() => RadioApiService());
+  locator.registerLazySingleton<PaletteExtractorService>(() => PaletteExtractorService());
+  locator.registerLazySingleton<AudioEngineService>(() => AudioEngineService());
+  locator.registerLazySingleton<ListenTogetherService>(() => ListenTogetherService());
 }

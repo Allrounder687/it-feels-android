@@ -1,4 +1,9 @@
 ## v3.5.20+54
+- **Phase 6: Audio Architecture Refactor**: Eradicated the massive `AudioPlayerNotifier` God Object.
+  - **Decoupled Engine**: Wrapped `media_kit` and `just_audio` pipelines into a strictly isolated `AudioEngineService` that exclusively handles DSP Equalizer, Loudness Enhancers, UI Haptics, and Sleep Timers.
+  - **Social Sync Splitting**: Moved all Firebase Realtime Database and Firestore listener networks into `ListenTogetherService` to permanently sever database syncing operations from UI frame rendering.
+  - **Passive Riverpod State**: Gutted `AudioPlayerNotifier`, transforming it into a strict, lightweight state bridge that passively subscribes to `AudioEngineService` event streams.
+  - **0ms Main-Thread UI Blocking**: Isolated PaletteExtraction into its own service class (`PaletteExtractorService`).
 - **AV Canvas Synchronization**: Hard-synced the background video engine to scrub to the exact millisecond (`seek()`) of the audio engine upon resuming playback, completely eliminating drifting. Forced `media_kit` volume to natively initialize at `0.0` when used as a background canvas to prevent dual-audio echoing.
 - **MiniPlayer State Machine**: Repaired a dual-vanishing bug where both the Video PiP and Audio MiniPlayer would hide themselves on the home screen when a visual canvas was active.
 - **Dynamic Home Hero Layout**: Stripped hardcoded height constraints from the `home_screen.dart` featured banner, allowing the `RenderFlex` to dynamically expand for ultra-long music video titles without throwing overflow exceptions.

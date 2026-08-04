@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';

@@ -107,10 +107,7 @@ Future<void> main() async {
 
   appProviderContainer = ProviderContainer(
     overrides: [
-      audioPlayerProvider.overrideWith(() => AudioPlayerNotifier(
-        _audioHandler,
-        locator<MusicApiService>(),
-      )),
+      audioPlayerProvider.overrideWith(() => AudioPlayerNotifier()),
     ],
   );
 
