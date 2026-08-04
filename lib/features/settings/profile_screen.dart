@@ -134,7 +134,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 fillColor: context.themeSurfaceColor,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(color: context.themeTextColor24, width: 1),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: context.themeTextColor24, width: 1),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -359,6 +363,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 );
               },
             ),
+            SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
           ],
         ),
       ),

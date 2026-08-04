@@ -69,15 +69,16 @@ class DownloadService {
       final fileName = '$safeId.mp4';
       final savedFilePath = '${musicDir.path}/$fileName';
 
-      // 1. Download Cover Art locally first
-      String localCover = song.coverArt;
+      // 1. Download Cover Art locally first (for external players)
+      // We no longer overwrite the song's coverArt property with this local path.
+      // We keep the HTTP URL so CachedNetworkImage can handle offline caching automatically,
+      // avoiding Android 13+ READ_MEDIA_IMAGES permission issues.
       if (song.coverArt.isNotEmpty) {
         try {
           final coverResponse = await http.get(Uri.parse(song.coverArt));
           if (coverResponse.statusCode == 200) {
             final coverFile = File('${musicDir.path}/$safeId.jpg');
             await coverFile.writeAsBytes(coverResponse.bodyBytes);
-            localCover = coverFile.path;
           }
         } catch (_) {}
       }
@@ -115,7 +116,7 @@ class DownloadService {
           artist: song.artist,
           album: song.album,
           duration: song.duration,
-          coverArt: localCover,
+          coverArt: song.coverArt, // Keep original HTTP URL for reliable offline caching
           encryptedMediaUrl: savedFilePath,
           hasLyrics: song.hasLyrics,
           addedAt: DateTime.now(),
