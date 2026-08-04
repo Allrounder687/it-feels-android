@@ -106,6 +106,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         artUri: song.coverArt.isNotEmpty ? (song.coverArt.startsWith('http') ? Uri.parse(song.coverArt) : Uri.file(song.coverArt)) : null,
       );
       mediaItem.add(item);
+      await _player.stop(); // Flush existing AV pipeline to prevent 00:00 deadlocks
 
       if (streamUrl.startsWith('/') || streamUrl.startsWith('file://')) {
         final path = streamUrl.startsWith('file://') ? streamUrl.replaceFirst('file://', '') : streamUrl;
