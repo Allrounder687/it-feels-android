@@ -1,3 +1,9 @@
+## v3.5.21+55
+- **UI Architecture Hotfix**: Fixed missing bottom padding (168 + SafeArea) across 7 secondary screens (Profile, Settings, Social, Ask Feels AI, Stats, Audio Settings, Storage) to prevent the bottom navigation bar and mini player from obscuring scrollable content on iOS and notched devices.
+- **Offline Album Art Fix (iOS/Android 13+)**: Refactored DownloadService to retain the original HTTP URL for album art instead of using absolute local file paths, fixing a bug where iOS app restarts (which scramble the sandbox UUID) resulted in broken offline cover art.
+- **AMOLED Pitch Black Theme Enhancements**: Fixed text field border visibility in Pitch Black mode for user profiles by enforcing 	hemeTextColor24 outlines.
+- **Paywall Auto-Dismiss Bug**: Fixed an issue where the PaywallBottomSheet required a second manual tap to dismiss after a premium purchase or coupon sync. Added a robust ef.listen block to automatically pop the navigator when isPremium toggles true in the background.
+
 ## v3.5.20+54
 - **Now Playing UI Modularization**: Decomposed the massive 1500-line `now_playing_screen.dart` into smaller, independent widgets (Header, Art, Controls, Actions, Lyrics) to improve readability and maintainability without altering the core logic.
 - **00:00 Audio Stuck Bug Fix (Hotfix 9)**: Resolved an issue where pressing "Next" on search results or rapidly skipping tracks caused the player to become permanently stuck at `00:00`. Added an explicit `await _player.stop()` flush prior to setting new `AudioSource` URIs in `audio_player_handler.dart` to prevent AV pipeline deadlocks during stream swapping on iOS and Windows.
@@ -411,3 +417,4 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - Improved Bottom Navigation Bar click area and icon sizes.
 - Fixed MiniPlayer visibility in custom app bar screens (Playlist, Artist, Custom Playlist details) by utilizing Scaffold's bottomNavigationBar.
 - Refactored AudioPlayerProvider as the single source of truth for app state and theming.
+
