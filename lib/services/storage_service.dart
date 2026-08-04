@@ -251,6 +251,7 @@ class StorageService {
     bool? useVideoAudioSource,
     bool? isDataSaverEnabled,
     bool? enableHardwareDecoding,
+    String? defaultVideoQuality,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_wifiQualityKey, wifiQuality);
@@ -266,6 +267,7 @@ class StorageService {
     if (useVideoAudioSource != null) await prefs.setBool('use_video_audio_source', useVideoAudioSource);
     if (isDataSaverEnabled != null) await prefs.setBool('is_data_saver_enabled', isDataSaverEnabled);
     if (enableHardwareDecoding != null) await prefs.setBool('enable_hardware_decoding', enableHardwareDecoding);
+    if (defaultVideoQuality != null) await prefs.setString('default_video_quality', defaultVideoQuality);
   }
 
   static Future<Map<String, dynamic>> loadSettings() async {
@@ -284,6 +286,7 @@ class StorageService {
       'useVideoAudioSource': prefs.getBool('use_video_audio_source') ?? false,
       'isDataSaverEnabled': prefs.getBool('is_data_saver_enabled') ?? false,
       'enableHardwareDecoding': prefs.getBool('enable_hardware_decoding') ?? true,
+      'defaultVideoQuality': prefs.getString('default_video_quality') ?? '720p',
     };
   }
 
