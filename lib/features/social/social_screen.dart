@@ -17,6 +17,7 @@ import 'package:it_feels_music/data/models/custom_playlist.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:it_feels_music/features/auth/auth_bottom_sheet.dart';
 import 'package:go_router/go_router.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 final friendDetailsProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, uid) async {
   final socialService = locator<SocialService>();
@@ -306,7 +307,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
 
         final items = snapshot.data!.docs;
         return ListView.builder(
-          padding: EdgeInsets.only(left: 16, top: 16, right: 16, bottom: 168 + MediaQuery.of(context).viewPadding.bottom),
+          padding: EdgeInsets.only(left: 16, top: 16, right: 16, bottom: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
           itemCount: items.length,
           itemBuilder: (context, index) {
             try {
@@ -659,7 +660,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
               }
 
               return ListView.builder(
-                padding: EdgeInsets.only(left: 16, top: 16, right: 16, bottom: 168 + MediaQuery.of(context).viewPadding.bottom),
+                padding: EdgeInsets.only(left: 16, top: 16, right: 16, bottom: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
                 itemCount: friends.length,
                 itemBuilder: (context, index) {
                   try {

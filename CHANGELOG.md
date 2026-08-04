@@ -1,8 +1,14 @@
+## v3.5.22+56
+- **Architecture Refactoring (Phases 1 & 2)**: Standardized UI wrappers across the app. Created \AppScaffold\ and \AppDimensions\ to consolidate padding and navigation bar clearance magic numbers (8\). Removed hardcoded numeric values from over 10 distinct UI files.
+- **State Decoupling (Phase 3)**: Decoupled raw service dependencies from the UI layer for \StorageScreen\ and \LastfmSettingsScreen\. Migrated these screens to use modern Riverpod StateNotifiers (\storageProvider\ and \lastfmProvider\), strictly isolating their business logic (cache sizing, scrobbling authentication) from the widget build methods.
+- **Bug Fixes**: Handled edge cases where unawaited futures or legacy ChangeNotifiers were causing test suites to flag warnings. Verified zero regressions across the entire test suite.
+
 ## v3.5.21+55
 - **UI Architecture Hotfix**: Fixed missing bottom padding (168 + SafeArea) across 7 secondary screens (Profile, Settings, Social, Ask Feels AI, Stats, Audio Settings, Storage) to prevent the bottom navigation bar and mini player from obscuring scrollable content on iOS and notched devices.
 - **Offline Album Art Fix (iOS/Android 13+)**: Refactored DownloadService to retain the original HTTP URL for album art instead of using absolute local file paths, fixing a bug where iOS app restarts (which scramble the sandbox UUID) resulted in broken offline cover art.
 - **AMOLED Pitch Black Theme Enhancements**: Fixed text field border visibility in Pitch Black mode for user profiles by enforcing 	hemeTextColor24 outlines.
-- **Paywall Auto-Dismiss Bug**: Fixed an issue where the PaywallBottomSheet required a second manual tap to dismiss after a premium purchase or coupon sync. Added a robust ef.listen block to automatically pop the navigator when isPremium toggles true in the background.
+- **Paywall Auto-Dismiss Bug**: Fixed an issue where the PaywallBottomSheet required a second manual tap to dismiss after a premium purchase or coupon sync. Added a robust 
+ef.listen block to automatically pop the navigator when isPremium toggles true in the background.
 
 ## v3.5.20+54
 - **Now Playing UI Modularization**: Decomposed the massive 1500-line `now_playing_screen.dart` into smaller, independent widgets (Header, Art, Controls, Actions, Lyrics) to improve readability and maintainability without altering the core logic.

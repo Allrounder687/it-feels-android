@@ -66,3 +66,8 @@ Always follow this cycle for new features and bug fixes:
 
 This `STEERING_PATH.md` will evolve with the project. Agents should re-read it periodically for updates.
 
+
+## 9. Current Active Focus (v3.5.22+)
+*   **UI Consolidation**: Use AppScaffold and AppDimensions.bottomClearance for standardizing the padding across all UI screens instead of raw padding values.
+*   **Decoupling Logic**: Keep business logic out of UI files. Use Notifier or StateNotifier for Riverpod to bridge UI and services (e.g. storageProvider, lastfmProvider). No direct locator<Service>() calls should happen in widget uild() or onPressed() methods.
+*   **Strict Test Quality**: Ensure all tests (especially lutter test) remain passing before any commit.

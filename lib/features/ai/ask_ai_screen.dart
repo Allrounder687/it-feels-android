@@ -6,6 +6,7 @@ import 'package:it_feels_music/features/ai/ai_settings_provider.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class AskAIScreen extends ConsumerStatefulWidget {
   const AskAIScreen({super.key});
@@ -322,7 +323,7 @@ class _AskAIScreenState extends ConsumerState<AskAIScreen> {
                   style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
-            SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
+            SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
           ],
         ),
       ),

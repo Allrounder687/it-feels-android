@@ -6,6 +6,7 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/features/subscription/paywall_bottom_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class AudioSettingsScreen extends ConsumerStatefulWidget {
   const AudioSettingsScreen({super.key});
@@ -40,7 +41,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
         ),
       ),
       body: ListView(
-        padding: EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 168 + MediaQuery.of(context).viewPadding.bottom),
+        padding: EdgeInsets.only(left: 20, top: 20, right: 20, bottom: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
         children: [
           // Platform Warning
           if (!isAndroid)

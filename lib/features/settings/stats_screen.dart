@@ -7,6 +7,7 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/services/database_service.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class StatsScreen extends ConsumerStatefulWidget {
   const StatsScreen({super.key});
@@ -134,7 +135,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                       },
                     ),
                   const SizedBox(height: 16),
-                  SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
+                  SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
                 ],
               ),
             ),

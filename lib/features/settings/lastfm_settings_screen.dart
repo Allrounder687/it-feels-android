@@ -1,82 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
-import 'package:it_feels_music/core/utils/service_locator.dart';
-import 'package:it_feels_music/services/lastfm_service.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
+import 'package:it_feels_music/features/settings/lastfm_provider.dart';
 
-class LastfmSettingsScreen extends StatefulWidget {
+class LastfmSettingsScreen extends ConsumerStatefulWidget {
   const LastfmSettingsScreen({super.key});
 
   @override
-  State<LastfmSettingsScreen> createState() => _LastfmSettingsScreenState();
+  ConsumerState<LastfmSettingsScreen> createState() => _LastfmSettingsScreenState();
 }
 
-class _LastfmSettingsScreenState extends State<LastfmSettingsScreen> {
-  final LastfmService _lastfmService = locator<LastfmService>();
+class _LastfmSettingsScreenState extends ConsumerState<LastfmSettingsScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  
-  bool _isLoading = true;
-  bool _isConfigured = false;
-  bool _isLoggedIn = false;
-  String? _username;
 
   @override
-  void initState() {
-    super.initState();
-    _checkStatus();
-  }
-  
-  Future<void> _checkStatus() async {
-    final loggedIn = await _lastfmService.isLoggedIn();
-    String? username;
-    if (loggedIn) {
-      username = await _lastfmService.getUsername();
-    }
-    
-    setState(() {
-      _isConfigured = _lastfmService.isConfigured;
-      _isLoggedIn = loggedIn;
-      _username = username;
-      _isLoading = false;
-    });
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
-  Future<void> _login() async {
-    final user = _usernameController.text.trim();
-    final pass = _passwordController.text.trim();
+  Future<void> _handleLogin() async {
+    final notifier = ref.read(lastfmProvider.notifier);
+    await notifier.login(_usernameController.text, _passwordController.text);
     
-    if (user.isEmpty || pass.isEmpty) return;
-    
-    setState(() => _isLoading = true);
-    
-    final success = await _lastfmService.authenticate(user, pass);
-    
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Successfully connected to Last.fm!')),
-      );
-      _passwordController.clear();
-      await _checkStatus();
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Login failed. Check your credentials and try again.'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-      setState(() => _isLoading = false);
+    // We can show snackbars by listening to state changes or just check after
+    final state = ref.read(lastfmProvider);
+    if (mounted) {
+      if (state.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(state.errorMessage!),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      } else if (state.isLoggedIn) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Successfully connected to Last.fm!')),
+        );
+        _passwordController.clear();
+      }
     }
-  }
-
-  Future<void> _logout() async {
-    setState(() => _isLoading = true);
-    await _lastfmService.logout();
-    await _checkStatus();
   }
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(lastfmProvider);
+    final notifier = ref.read(lastfmProvider.notifier);
+
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
@@ -95,9 +69,9 @@ class _LastfmSettingsScreenState extends State<LastfmSettingsScreen> {
           ),
         ),
       ),
-      body: _isLoading 
+      body: state.isLoading 
         ? const Center(child: CircularProgressIndicator())
-        : !_isConfigured 
+        : !state.isConfigured 
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -115,7 +89,7 @@ class _LastfmSettingsScreenState extends State<LastfmSettingsScreen> {
                 children: [
                   Icon(Icons.queue_music, size: 64, color: context.themeAccentColor),
                   const SizedBox(height: 24),
-                  if (_isLoggedIn) ...[
+                  if (state.isLoggedIn) ...[
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
@@ -130,7 +104,7 @@ class _LastfmSettingsScreenState extends State<LastfmSettingsScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            _username ?? 'Unknown User',
+                            state.username ?? 'Unknown User',
                             style: GoogleFonts.outfit(
                               color: context.themeTextColor,
                               fontSize: 24,
@@ -155,7 +129,7 @@ class _LastfmSettingsScreenState extends State<LastfmSettingsScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: _logout,
+                      onPressed: () => notifier.logout(),
                       child: Text(
                         "Disconnect Account",
                         style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
@@ -207,14 +181,14 @@ class _LastfmSettingsScreenState extends State<LastfmSettingsScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: _login,
+                      onPressed: _handleLogin,
                       child: Text(
                         "Connect to Last.fm",
                         style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ),
                   ],
-                  SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
+                  SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
                 ],
               ),
             ),

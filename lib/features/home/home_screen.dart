@@ -23,6 +23,7 @@ import 'package:it_feels_music/features/home/smart_recommendations_row.dart';
 import 'package:it_feels_music/features/social/room_bottom_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final VoidCallback openFullPlayer;
@@ -673,7 +674,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   _buildPlaylistCarousel(context, "Top 50", homeProv.chartPlaylists.skip(15).take(5).toList()),
                 ],
 
-                SliverToBoxAdapter(child: SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom)),
+                SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom)),
               ],
             ),
           ),
