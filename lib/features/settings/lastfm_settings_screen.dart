@@ -214,6 +214,7 @@ class _LastfmSettingsScreenState extends State<LastfmSettingsScreen> {
                       ),
                     ),
                   ],
+                  SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
                 ],
               ),
             ),

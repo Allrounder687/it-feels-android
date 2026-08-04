@@ -306,7 +306,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
 
         final items = snapshot.data!.docs;
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
+          padding: EdgeInsets.only(left: 16, top: 16, right: 16, bottom: 168 + MediaQuery.of(context).viewPadding.bottom),
           itemCount: items.length,
           itemBuilder: (context, index) {
             try {
@@ -659,7 +659,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
               }
 
               return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
+                padding: EdgeInsets.only(left: 16, top: 16, right: 16, bottom: 168 + MediaQuery.of(context).viewPadding.bottom),
                 itemCount: friends.length,
                 itemBuilder: (context, index) {
                   try {

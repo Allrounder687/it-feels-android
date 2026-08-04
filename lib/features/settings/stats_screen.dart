@@ -133,6 +133,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                         );
                       },
                     ),
+                  const SizedBox(height: 16),
+                  SizedBox(height: 168 + MediaQuery.of(context).viewPadding.bottom),
                 ],
               ),
             ),

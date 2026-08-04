@@ -40,7 +40,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 168 + MediaQuery.of(context).viewPadding.bottom),
         children: [
           // Platform Warning
           if (!isAndroid)
