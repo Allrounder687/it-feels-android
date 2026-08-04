@@ -1,4 +1,7 @@
 ## v3.5.20+54
+- **AV Canvas Synchronization**: Hard-synced the background video engine to scrub to the exact millisecond (`seek()`) of the audio engine upon resuming playback, completely eliminating drifting. Forced `media_kit` volume to natively initialize at `0.0` when used as a background canvas to prevent dual-audio echoing.
+- **MiniPlayer State Machine**: Repaired a dual-vanishing bug where both the Video PiP and Audio MiniPlayer would hide themselves on the home screen when a visual canvas was active.
+- **Dynamic Home Hero Layout**: Stripped hardcoded height constraints from the `home_screen.dart` featured banner, allowing the `RenderFlex` to dynamically expand for ultra-long music video titles without throwing overflow exceptions.
 - **Phase 5: Seamless AV Architecture**: Added `isBackgroundHandoff` engine to allow millisecond-perfect transition between Audio and Video tabs by gracefully pausing/resuming background streams without tearing them down.
 - **Zero-Lag Loading**: Shrank `PaletteGenerator` pixel sampling to strictly 100x100, dropping extraction time from 1000ms to 2ms and ensuring song taps load the UI instantly without freezing.
 - **Fixed "2-Attempts" Bug**: Synchronously locks video quality state and caches `startPosition` upon tapping a quality button, guaranteeing it resumes correctly on the first tap.
@@ -12,6 +15,7 @@
 - **Video Player Initialization Handoff**: Removed immediate `audioPlayerProvider.notifier.pause()` calls during video background handoff. Audio pausing is now explicitly deferred to the `onVideoStarted` callback, enabling true millisecond-perfect AV syncing without restarting the track or dropping audio before the video starts.
 - **Video PiP Navigation Routing**: Fixed an issue where tapping the Video Picture-in-Picture (PiP) mini-player routed to the deprecated dedicated `/video_player` screen instead of restoring the `NowPlayingScreen` in video mode.
 - **GoRouter Back Navigation Crash**: Addressed a `Bad state: No element` crash triggered by Flutter hardware back button dispatchers returning false positives for `Navigator.of(context).canPop()` when nested router stacks were empty. Replaced with GoRouter-aware `context.canPop()`.
+- **Video PiP UI Resumption Bug**: Fixed a bug where restoring the Video miniplayer correctly navigated to the `NowPlayingScreen` but inadvertently reverted the UI back to Audio mode due to a missing `_lastPlayedSongId` initialization lock.
 ## v3.5.18+52
 - **Syntax Hotfix**: Fixed missing closing parentheses in `home_screen.dart` that caused compilation failures during Shorebird releases.
 - **UI Focus Glow**: Fixed `TVFocusableCard` box shadow clipping on the Home Screen carousels by implementing `Clip.none` and outer padding.

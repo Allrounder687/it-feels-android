@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
 
 class VideoMiniplayer extends ConsumerWidget {
   const VideoMiniplayer({super.key});
@@ -10,8 +11,16 @@ class VideoMiniplayer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final videoProvider = ref.watch(videoPlayerProvider);
+    final audioProvider = ref.watch(audioPlayerProvider);
+    final settings = ref.watch(settingsProvider);
 
-    if (!videoProvider.isVideoActive || videoProvider.videoController == null) {
+    final isSameSong = audioProvider.currentSong != null && 
+                       (videoProvider.currentVideoId == audioProvider.currentSong!.id || 
+                        videoProvider.currentVideoId == 'search:${audioProvider.currentSong!.id}');
+                        
+    final isMutedCanvas = !settings.useVideoAudioSource && isSameSong;
+
+    if (!videoProvider.isVideoActive || videoProvider.videoController == null || isMutedCanvas) {
       return const SizedBox.shrink();
     }
 

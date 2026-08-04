@@ -12,6 +12,7 @@ import 'package:volume_controller/volume_controller.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
+import 'package:it_feels_music/features/player/audio_player_provider.dart';
 
 @immutable
 class VideoPlayerState {
@@ -119,6 +120,32 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
   @override
   VideoPlayerState build() {
     _initSystemControls();
+    
+    // React to external audio player state changes (like Notification/Headset controls)
+    ref.listen(audioPlayerProvider, (previous, current) {
+      final settings = ref.read(settingsProvider);
+      final isSameSong = current.currentSong != null && 
+                         (state.currentVideoId == current.currentSong!.id || 
+                          state.currentVideoId == 'search:${current.currentSong!.id}');
+      
+      final isSynced = !settings.useVideoAudioSource && isSameSong;
+      final isCompeting = settings.useVideoAudioSource || !isSameSong;
+
+      if (current.isPlaying && !(previous?.isPlaying ?? false)) {
+        if (isCompeting && state.isVideoActive && state.player != null && state.player!.state.playing) {
+          pauseVideo();
+        } else if (isSynced && state.isVideoActive && state.player != null && !state.player!.state.playing) {
+          // Force perfect sync by seeking the video to the audio's exact position before playing
+          state.player!.seek(current.position);
+          state.player!.play();
+        }
+      } else if (!current.isPlaying && (previous?.isPlaying ?? false)) {
+        if (isSynced && state.isVideoActive && state.player != null && state.player!.state.playing) {
+          pauseVideo();
+        }
+      }
+    });
+
     ref.onDispose(() {
       _hostSyncTimer?.cancel();
       _roomSubscription?.cancel();
@@ -346,7 +373,13 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       }
     });
 
-    await player.setVolume(state.isMuted ? 0.0 : 100.0);
+    final audioProvider = ref.read(audioPlayerProvider);
+    final isSameSong = audioProvider.currentSong != null && 
+                       (state.currentVideoId == audioProvider.currentSong!.id || 
+                        state.currentVideoId == 'search:${audioProvider.currentSong!.id}');
+    final isMutedCanvas = !settings.useVideoAudioSource && isSameSong;
+
+    await player.setVolume((state.isMuted || isMutedCanvas) ? 0.0 : 100.0);
     await player.setRate(state.playbackSpeed);
     
     if (previousPosition != Duration.zero) {

@@ -5,6 +5,7 @@ import 'dart:math';
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
@@ -329,8 +330,12 @@ class AudioPlayerState {
 }
 
 class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
-  late AudioPlayerHandler audioHandler;
-  late MusicApiService apiService;
+  AudioPlayerHandler? _audioHandler;
+  AudioPlayerHandler get audioHandler => _audioHandler ??= locator<AudioPlayerHandler>();
+
+  MusicApiService? _apiService;
+  MusicApiService get apiService => _apiService ??= locator<MusicApiService>();
+
   final LyricsService _lyricsService = LyricsService();
   final RoomService _roomService = locator<RoomService>();
 
@@ -340,23 +345,15 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   StreamSubscription<DatabaseEvent>? _joinRequestSubscription;
   int _lastSyncedSecond = -1;
   bool _hasShownEmailVerification = false;
+  int _playSongGenerationToken = 0;
 
   AudioPlayerNotifier([AudioPlayerHandler? handler, MusicApiService? api]) {
-    if (handler != null) audioHandler = handler;
-    if (api != null) apiService = api;
+    if (handler != null) _audioHandler = handler;
+    if (api != null) _apiService = api;
   }
 
   @override
   AudioPlayerState build() {
-    if (!tryInitServices()) {
-      // Lazy init via ServiceLocator
-      try {
-        audioHandler = locator<AudioPlayerHandler>();
-      } catch (_) {}
-      try {
-        apiService = locator<MusicApiService>();
-      } catch (_) {}
-    }
 
     _listenToEvents();
     _initMemory();
@@ -369,28 +366,6 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     });
 
     return const AudioPlayerState();
-  }
-
-  bool tryInitServices() {
-    return (tryGetHandler() && tryGetApi());
-  }
-
-  bool tryGetHandler() {
-    try {
-      audioHandler;
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  bool tryGetApi() {
-    try {
-      apiService;
-      return true;
-    } catch (_) {
-      return false;
-    }
   }
 
   Future<void> _initMemory() async {
@@ -754,11 +729,6 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         state = state.copyWith(hasSentTelemetryForCurrentSong: true);
         BackendApiService.sendTelemetryPlay(state.currentSong!);
       }
-
-      if (state.currentRoomId != null && state.isHost && state.currentSong != null && state.isPlaying && pos.inSeconds % 5 == 0 && _lastSyncedSecond != pos.inSeconds) {
-        _lastSyncedSecond = pos.inSeconds;
-        _roomService.updateRoomState(state.currentRoomId!, state.currentSong!, pos, state.isPlaying);
-      }
     });
 
     audioHandler.player.durationStream.listen((dur) {
@@ -769,16 +739,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> playSong(Song song, {List<Song>? queue, int index = 0, BuildContext? context}) async {
-    // GRACEFULLY CLOSE OR PAUSE COMPETING VIDEO PLAYER
-    final videoProv = ref.read(videoPlayerProvider.notifier);
-    final videoState = ref.read(videoPlayerProvider);
-    final targetVideoId = song.id.contains(':') ? song.id : 'search:${song.id}';
-    
-    if (videoState.currentVideoId == targetVideoId) {
-      videoProv.pauseVideo();
-    } else {
-      videoProv.closeVideo();
-    }
+    final currentToken = ++_playSongGenerationToken;
 
     state = state.copyWith(
       currentSong: song,
@@ -864,6 +825,11 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     }
     
     streamUrl ??= await apiService.getStreamUrl(song);
+
+    if (currentToken != _playSongGenerationToken) {
+      debugPrint('[AudioPlayerNotifier] Stale playSong request cancelled');
+      return;
+    }
     
     state = state.copyWith(isLoading: false);
 
@@ -883,11 +849,6 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> play() async {
-    final videoProv = ref.read(videoPlayerProvider);
-    if (videoProv.isVideoActive) {
-      ref.read(videoPlayerProvider.notifier).pauseVideo();
-    }
-    
     state = state.copyWith(isPlaying: true); // Optimistic UI
     
     if (locator<it_feels_music_cast_service.CastService>().isConnected) {
@@ -923,8 +884,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     final song = state.currentSong;
     if (song != null) {
       final pos = audioHandler.player.position;
-      song.playbackPositionMs = pos.inMilliseconds;
-      await DatabaseService().saveSong(song);
+      final updatedSong = song.copyWith(playbackPositionMs: pos.inMilliseconds);
+      state = state.copyWith(currentSong: updatedSong);
+      await DatabaseService().saveSong(updatedSong);
     }
   }
 
@@ -965,6 +927,11 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       await locator<it_feels_music_cast_service.CastService>().seek(pos);
     } else {
       await audioHandler.seek(pos);
+    }
+    
+    if (state.currentRoomId != null && state.isHost && state.currentSong != null) {
+      locator<SocialService>().updatePresence(state.currentSong, state.isPlaying, roomId: state.currentRoomId);
+      _roomService.updateRoomState(state.currentRoomId!, state.currentSong!, pos, state.isPlaying);
     }
   }
 
@@ -1086,20 +1053,44 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     state = state.copyWith(isRepeat: !state.isRepeat);
   }
 
-  Future<void> _extractPalette(String imageUrl) async {
-    if (imageUrl.isEmpty) return;
+  Future<void> _extractPalette(String? imageUrl) async {
+    if (imageUrl == null || imageUrl.isEmpty) return;
     try {
       if (await DeviceUtils.isLowRamDevice()) {
         state = state.copyWith(appThemeMode: AppThemeMode.midnight);
         return;
       }
 
-      final palette = await PaletteExtractor.extractPalette(imageUrl);
-      if (palette != null) {
+      if (imageUrl.startsWith('http')) {
+        final res = await PaletteExtractor.extractPalette(imageUrl);
+        if (res != null) {
+          state = state.copyWith(
+            themeBackgroundColor: Color(res.background),
+            themeSurfaceColor: Color(res.surface),
+            themeAccentColor: Color(res.accent),
+          );
+        }
+      } else {
+        // Fallback for local files if needed (uncommon)
+        final ImageProvider imageProvider = FileImage(File(imageUrl));
+        final palette = await PaletteGenerator.fromImageProvider(
+          imageProvider,
+          size: const Size(100, 100),
+          maximumColorCount: 10,
+        );
+        final dominantColor = palette.dominantColor?.color ?? AppColors.midnightBackground;
+        
+        int adjustBrightness(Color color, double factor) {
+          int r = (color.r * 255 * factor).clamp(0, 255).toInt();
+          int g = (color.g * 255 * factor).clamp(0, 255).toInt();
+          int b = (color.b * 255 * factor).clamp(0, 255).toInt();
+          return (0xff << 24) | (r << 16) | (g << 8) | b;
+        }
+        
         state = state.copyWith(
-          themeBackgroundColor: Color(palette.background),
-          themeSurfaceColor: Color(palette.surface),
-          themeAccentColor: Color(palette.accent),
+          themeBackgroundColor: Color(adjustBrightness(dominantColor, 0.4)),
+          themeSurfaceColor: Color(adjustBrightness(dominantColor, 0.6)),
+          themeAccentColor: Color(adjustBrightness(dominantColor, 1.5)),
         );
       }
     } catch (e) {

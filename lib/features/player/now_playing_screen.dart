@@ -50,6 +50,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
       if (vId == sId || vId == 'search:$sId') {
         _isVideoMode = true;
         _hasViewedVideoForCurrentSong = true;
+        _lastPlayedSongId = sId; // Prevent build() from resetting to false!
       }
     }
   }
@@ -1008,33 +1009,23 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                     stream: videoProvider.player!.stream.playing,
                                     builder: (context, snapshot) {
                                       final isPlaying = snapshot.data ?? videoProvider.player!.state.playing;
-                                      final settingsProv = ref.read(settingsProvider);
-                                      return AnimatedPlayPauseButton(
-                                        isPlaying: isPlaying,
-                                        onPressed: () {
-                                          if (isPlaying) {
-                                            videoProvider.player!.pause();
-                                            if (!settingsProv.useVideoAudioSource) {
-                                              ref.read(audioPlayerProvider.notifier).pause();
-                                            }
-                                          } else {
-                                            videoProvider.player!.play();
-                                            if (!settingsProv.useVideoAudioSource) {
-                                              ref.read(audioPlayerProvider.notifier).seek(videoProvider.player!.state.position);
-                                              ref.read(audioPlayerProvider.notifier).play();
-                                            }
-                                          }
-                                        },
-                                        color: context.themeInvertedTextColor,
-                                        size: isWide ? 40 : 32,
+                                      return IgnorePointer(
+                                        child: AnimatedPlayPauseButton(
+                                          isPlaying: isPlaying,
+                                          onPressed: () {},
+                                          color: context.themeInvertedTextColor,
+                                          size: isWide ? 40 : 32,
+                                        ),
                                       );
                                     }
                                   )
-                                : AnimatedPlayPauseButton(
-                                    isPlaying: playerProvider.isPlaying,
-                                    onPressed: () => ref.read(audioPlayerProvider.notifier).togglePlayPause(),
-                                    color: context.themeInvertedTextColor,
-                                    size: isWide ? 40 : 32,
+                                : IgnorePointer(
+                                    child: AnimatedPlayPauseButton(
+                                      isPlaying: playerProvider.isPlaying,
+                                      onPressed: () {},
+                                      color: context.themeInvertedTextColor,
+                                      size: isWide ? 40 : 32,
+                                    ),
                                   ),
                             ),
                           ),
