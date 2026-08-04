@@ -9,6 +9,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'data/services/audio_player_handler.dart';
 import 'data/services/music_api_service.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'core/utils/service_locator.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/notification_service.dart';
@@ -104,6 +105,7 @@ Future<void> main() async {
   );
 
   locator.registerSingleton<AudioPlayerHandler>(_audioHandler);
+  await locator<AudioEngineService>().init(_audioHandler);
 
   appProviderContainer = ProviderContainer(
     overrides: [
