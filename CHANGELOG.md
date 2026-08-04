@@ -1,4 +1,5 @@
 ## v3.5.20+54
+- **Now Playing UI Modularization**: Decomposed the massive 1500-line `now_playing_screen.dart` into smaller, independent widgets (Header, Art, Controls, Actions, Lyrics) to improve readability and maintainability without altering the core logic.
 - **00:00 Audio Stuck Bug Fix (Hotfix 9)**: Resolved an issue where pressing "Next" on search results or rapidly skipping tracks caused the player to become permanently stuck at `00:00`. Added an explicit `await _player.stop()` flush prior to setting new `AudioSource` URIs in `audio_player_handler.dart` to prevent AV pipeline deadlocks during stream swapping on iOS and Windows.
 - **Video PiP Routing Bug**: Fixed a bug where tapping the Video PiP mini-player while playing a pure video from search incorrectly routed back to `NowPlayingScreen` (resulting in a "No song selected" error) instead of the dedicated `VideoPlayerScreen`.
 - **Phase 6: Audio Architecture Refactor**: Eradicated the massive `AudioPlayerNotifier` God Object.
