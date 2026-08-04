@@ -87,7 +87,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       onTap: () => ref.read(audioPlayerProvider.notifier).playSong(heroSong, queue: [heroSong], index: 0),
       focusedScale: 1.02,
       child: Container(
-        height: 280,
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
