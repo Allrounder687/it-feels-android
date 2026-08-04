@@ -180,11 +180,9 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       }
       await state.player!.play();
       
-      if (isBackgroundHandoff) {
-        ref.read(audioPlayerProvider.notifier).pause();
-      } else {
-        ref.read(audioPlayerProvider.notifier).stop();
-      }
+      
+      // Notify UI that video is ready, allowing UI to pause audio perfectly on time
+      state.onVideoStarted?.call();
       return;
     }
 
@@ -199,12 +197,8 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     await state.player?.pause();
     await state.player?.dispose();
 
-    // FORCE PAUSE OR STOP AUDIO PLAYER WHEN STARTING A VIDEO
-    if (isBackgroundHandoff) {
-      ref.read(audioPlayerProvider.notifier).pause();
-    } else {
-      ref.read(audioPlayerProvider.notifier).stop();
-    }
+    // Handoff logic now lives in the UI (NowPlayingScreen) via onVideoStarted callback,
+    // so we do not forcefully kill audio_service here. This enables seamless cross-fades!
 
     state = state.copyWith(
       isLoading: true,

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/data/models/cache_models.dart';
 
 class DatabaseService {
   static Isar? _isar;
@@ -17,6 +18,8 @@ class DatabaseService {
         if (existing != null && existing.isOpen) {
           try {
             existing.songs; // Probe collections
+            existing.cachedStreams; 
+            existing.cachedPalettes;
             _isar = existing;
             _isInitialized = true;
             return;
@@ -31,7 +34,7 @@ class DatabaseService {
 
       final dir = await getApplicationDocumentsDirectory();
       final openedIsar = await Isar.open(
-        [SongSchema],
+        [SongSchema, CachedStreamSchema, CachedPaletteSchema],
         directory: dir.path,
         name: _dbName,
         inspector: kDebugMode,
@@ -40,6 +43,8 @@ class DatabaseService {
       // Verify that schema collections are properly bound in this isolate
       try {
         openedIsar.songs;
+        openedIsar.cachedStreams;
+        openedIsar.cachedPalettes;
         _isar = openedIsar;
         _isInitialized = true;
       } catch (e) {

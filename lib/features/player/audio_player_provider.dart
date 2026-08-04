@@ -27,6 +27,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/services/notification_service.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
+import 'package:it_feels_music/core/utils/device_utils.dart';
+import 'package:it_feels_music/core/utils/palette_extractor_isolate.dart';
 
 enum AppThemeMode {
   dynamic,
@@ -1087,24 +1089,19 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Future<void> _extractPalette(String imageUrl) async {
     if (imageUrl.isEmpty) return;
     try {
-      final PaletteGenerator palette = await PaletteGenerator.fromImageProvider(
-        NetworkImage(imageUrl),
-        size: const Size(100, 100),
-      );
-      
-      final dominant = palette.dominantColor?.color ?? AppColors.burgundyBackground;
-      final darkMuted = palette.darkMutedColor?.color ?? AppColors.burgundySurface;
-      final lightVibrant = palette.lightVibrantColor?.color ?? AppColors.burgundyAccent;
+      if (await DeviceUtils.isLowRamDevice()) {
+        state = state.copyWith(appThemeMode: AppThemeMode.midnight);
+        return;
+      }
 
-      final bg = HSLColor.fromColor(dominant).withLightness(0.12).toColor();
-      final surf = HSLColor.fromColor(darkMuted).withLightness(0.18).toColor();
-      final acc = lightVibrant;
-
-      state = state.copyWith(
-        themeBackgroundColor: bg,
-        themeSurfaceColor: surf,
-        themeAccentColor: acc,
-      );
+      final palette = await PaletteExtractor.extractPalette(imageUrl);
+      if (palette != null) {
+        state = state.copyWith(
+          themeBackgroundColor: Color(palette.background),
+          themeSurfaceColor: Color(palette.surface),
+          themeAccentColor: Color(palette.accent),
+        );
+      }
     } catch (e) {
       debugPrint('[AudioPlayerNotifier] Palette extraction error: $e');
     }

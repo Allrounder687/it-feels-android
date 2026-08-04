@@ -15,7 +15,6 @@ class BackendApiService {
   // Configurable proxy base URL (defaults to user's live Cloudflare Worker URL)
   static String baseUrl = (dotenv.isInitialized ? dotenv.env['PROXY_BASE_URL'] : null) ?? 'https://it-feels-proxy.cleverfox687.workers.dev'; 
   static bool useProxyBackend = true; // Toggle to switch between direct & proxy mode
-  static final Map<String, Map<String, dynamic>> _videoStreamCache = {};
   static final YoutubeExplode _yt = YoutubeExplode();
   @visibleForTesting
   static http.Client httpClient = http.Client();
@@ -303,32 +302,16 @@ class BackendApiService {
 
   /// Preload MP4 video stream data for a song
   static Future<void> preloadVideoStreams(Song song) async {
-    if (song.id.isEmpty) return;
-    final videoId = song.id.contains(':') ? song.id : 'search:${song.id}';
-    final query = cleanSearchQuery(song.title, song.artist);
-    final cacheKey = '$videoId|$query';
-    if (_videoStreamCache.containsKey(cacheKey)) return;
-
-    try {
-      final result = await getVideoStreams(videoId, query: query);
-      if (result.isNotEmpty && result['streams'] != null && (result['streams'] as List).isNotEmpty) {
-        _videoStreamCache[cacheKey] = result;
-      }
-    } catch (_) {}
+    // Handled by StreamResolver.preResolve now
   }
 
   /// Clear cached streams for a specific video ID
   static void clearVideoStreamCache(String videoId) {
-    _videoStreamCache.removeWhere((key, value) => key.startsWith('$videoId|'));
+    // Handled by StreamResolver.clearCache now
   }
 
-  /// Get Video Streams
+  /// Get Video Streams directly from network without caching (Caching is handled by StreamResolver)
   static Future<Map<String, dynamic>> getVideoStreams(String videoId, {String? query, bool bypassCache = false}) async {
-    final cacheKey = '$videoId|${query ?? ""}';
-    if (!bypassCache && _videoStreamCache.containsKey(cacheKey)) {
-      return _videoStreamCache[cacheKey]!;
-    }
-
     debugPrint('[BackendApiService] getVideoStreams called with videoId=$videoId, query=$query');
     String actualVideoId = videoId;
     
@@ -379,7 +362,6 @@ class BackendApiService {
 
     try {
       final winner = await completer.future;
-      _videoStreamCache[cacheKey] = winner;
       return winner;
     } catch (e) {
       debugPrint('[BackendApiService] Race failed: $e');

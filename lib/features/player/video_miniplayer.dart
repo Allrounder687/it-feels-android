@@ -24,7 +24,7 @@ class VideoMiniplayer extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () {
-        context.push('/video_player');
+        context.push('/now_playing');
       },
       child: Container(
         width: width,

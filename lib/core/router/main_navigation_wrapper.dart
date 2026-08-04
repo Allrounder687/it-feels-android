@@ -245,8 +245,8 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
         if (didPop) return;
 
         // If the shell can pop (there is a nested route), let GoRouter handle it
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
+        if (context.canPop()) {
+          context.pop();
           return;
         }
 

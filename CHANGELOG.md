@@ -8,7 +8,10 @@
 - **File System Hotfix**: Swapped `LockCachingAudioSource` for `AudioSource.uri` to bypass Windows caching file locks (`errno 32`) during heavy AV toggling.
 - **YouTube Video Quality UI**: Patched `BackendApiService` to explicitly parse raw API stream labels, mapping standard formats into clean UI strings (`1080p`, `720p`, `360p`) instead of garbled text like `medium360`.
 - **Windows Exclusive Fullscreen**: Restored dynamic `setTitleBarStyle(TitleBarStyle.hidden)` hooks that activate when the Video Player enters fullscreen mode. This explicitly commands the Windows Desktop Window Manager to drop the non-client title bar frame and completely cover the taskbar.
-
+- **ImageDecoder Performance Crash Fix**: Stripped `targetWidth`/`targetHeight` constraints from `ui.instantiateImageCodec` within `PaletteExtractorIsolate`. This prevents `unimplemented` hardware decoding crashes on Android 9/10, which previously caused the UI background to render as a pitch-black fallback color and obscure text.
+- **Video Player Initialization Handoff**: Removed immediate `audioPlayerProvider.notifier.pause()` calls during video background handoff. Audio pausing is now explicitly deferred to the `onVideoStarted` callback, enabling true millisecond-perfect AV syncing without restarting the track or dropping audio before the video starts.
+- **Video PiP Navigation Routing**: Fixed an issue where tapping the Video Picture-in-Picture (PiP) mini-player routed to the deprecated dedicated `/video_player` screen instead of restoring the `NowPlayingScreen` in video mode.
+- **GoRouter Back Navigation Crash**: Addressed a `Bad state: No element` crash triggered by Flutter hardware back button dispatchers returning false positives for `Navigator.of(context).canPop()` when nested router stacks were empty. Replaced with GoRouter-aware `context.canPop()`.
 ## v3.5.18+52
 - **Syntax Hotfix**: Fixed missing closing parentheses in `home_screen.dart` that caused compilation failures during Shorebird releases.
 - **UI Focus Glow**: Fixed `TVFocusableCard` box shadow clipping on the Home Screen carousels by implementing `Clip.none` and outer padding.
