@@ -2,6 +2,11 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Audio Architecture Teardown (Phase 6 - v3.5.20+54):** Eradicated the massive `AudioPlayerNotifier` God Object.
+  - **Decoupled Engine:** Wrapped `media_kit` and `just_audio` pipelines into a strictly isolated `AudioEngineService` that exclusively handles DSP Equalizer, Loudness Enhancers, UI Haptics, and Sleep Timers.
+  - **Social Sync Splitting:** Moved all Firebase Realtime Database and Firestore listener networks into `ListenTogetherService` to permanently sever database syncing operations from UI frame rendering.
+  - **Passive Riverpod State:** Gutted `AudioPlayerNotifier`, transforming it into a strict, lightweight state bridge that passively subscribes to `AudioEngineService` event streams.
+  - **0ms Main-Thread UI Blocking:** Isolated PaletteExtraction into its own service class (`PaletteExtractorService`).
 - **AV Handoff & Optimistic UI Architecture (Phase 5 - v3.5.19+53 Hotfix 2):**
   - **Instant Optimistic UI:** Shrank `PaletteGenerator` pixel sampling constraints to exactly 100x100 within `audio_player_provider.dart`. This dropped synchronous main thread blocking from ~1000ms down to ~2ms, ensuring route transitions are perfectly instant.
   - **Seamless AV Sync:** Introduced an `isBackgroundHandoff` engine to mutually `pause()` streaming buffers between Audio and Video tabs, rather than aggressively `closeVideo()`-ing them. This enabled millisecond-perfect cross-fading without re-fetching network URLs.
