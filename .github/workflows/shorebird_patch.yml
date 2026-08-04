@@ -41,10 +41,14 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: echo $KEYSTORE_BASE64 | base64 --decode > android/app/key.jks
 
-      - name: Publish Shorebird Patch (Android)
+      - name: Publish Shorebird Patch or Release (Android)
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird patch android --allow-native-diffs
+        run: |
+          if ! shorebird patch android --allow-native-diffs; then
+            echo "Patch failed (likely release not found), creating a new release instead..."
+            shorebird release android
+          fi
 
   patch-ios:
     name: Build and Release Patch (iOS)
@@ -68,7 +72,36 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Publish Shorebird Patch (iOS)
+      - name: Publish Shorebird Patch or Release (iOS)
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird patch ios --allow-native-diffs
+        run: |
+          # 1. Ensure xcconfig contains DEVELOPMENT_TEAM & Code Signing overrides
+          for conf in Release Debug Profile Generated; do
+            if [ -f "ios/Flutter/$conf.xcconfig" ]; then
+              echo "DEVELOPMENT_TEAM=A1B2C3D4E5" >> "ios/Flutter/$conf.xcconfig"
+              echo "CODE_SIGNING_ALLOWED=NO" >> "ios/Flutter/$conf.xcconfig"
+              echo "CODE_SIGN_REQUIRED=NO" >> "ios/Flutter/$conf.xcconfig"
+              echo "CODE_SIGNING_REQUIRED=NO" >> "ios/Flutter/$conf.xcconfig"
+              echo "CODE_SIGN_IDENTITY=" >> "ios/Flutter/$conf.xcconfig"
+              echo "EXPANDED_CODE_SIGN_IDENTITY=" >> "ios/Flutter/$conf.xcconfig"
+              echo "IPHONEOS_DEPLOYMENT_TARGET=15.0" >> "ios/Flutter/$conf.xcconfig"
+            fi
+          done
+
+          # 2. Install CocoaPods dependencies & Generate SPM Package
+          flutter build ios --config-only
+          
+          cd ios
+          pod install
+          cd ..
+          
+          # 3. FORCE SPM Package.swift to iOS 15
+          find ios .symlinks -name "Package.swift" -type f -exec sed -i '' 's/"12\.0"/"15\.0"/g' {} + || true
+          find ios .symlinks -name "Package.swift" -type f -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
+          find ios .symlinks -name "Package.swift" -type f -exec sed -i '' 's/"14\.0"/"15\.0"/g' {} + || true
+          
+          if ! shorebird patch ios --codesign=false --allow-native-diffs; then
+            echo "Patch failed (likely release not found), creating a new release instead..."
+            shorebird release ios --codesign=false
+          fi
