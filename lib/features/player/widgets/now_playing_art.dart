@@ -7,6 +7,7 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/player/fullscreen_video_screen.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/player/widgets/pulse_glow_background.dart';
 
 class NowPlayingArt extends ConsumerWidget {
