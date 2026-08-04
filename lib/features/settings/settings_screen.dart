@@ -188,7 +188,6 @@ class SettingsScreen extends ConsumerWidget {
                 context: context,
                 title: "Default Video Quality",
                 subtitle: "Select preferred video playback resolution",
-                icon: Icons.video_settings_rounded,
                 options: const [
                   "1080p",
                   "720p",
