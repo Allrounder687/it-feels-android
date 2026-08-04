@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 
@@ -37,6 +38,21 @@ class _TVFocusableCardState extends State<TVFocusableCard> {
         setState(() {
           _isFocused = hasFocus;
         });
+      },
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent) {
+          final isEnter = event.logicalKey == LogicalKeyboardKey.enter ||
+                          event.logicalKey == LogicalKeyboardKey.select ||
+                          event.logicalKey == LogicalKeyboardKey.numpadEnter ||
+                          event.logicalKey == LogicalKeyboardKey.gameButtonA ||
+                          event.logicalKey == LogicalKeyboardKey.space;
+          
+          if (isEnter) {
+            widget.onTap();
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
       },
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),

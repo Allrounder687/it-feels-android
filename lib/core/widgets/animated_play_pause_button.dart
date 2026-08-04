@@ -54,14 +54,13 @@ class _AnimatedPlayPauseButtonState extends State<AnimatedPlayPauseButton> with 
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onPressed,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedIcon(
+    return IconButton(
+      onPressed: widget.onPressed,
+      iconSize: widget.size,
+      color: widget.color ?? context.themeInvertedTextColor,
+      icon: AnimatedIcon(
         icon: AnimatedIcons.play_pause,
         progress: _controller,
-        size: widget.size,
-        color: widget.color ?? context.themeInvertedTextColor,
       ),
     );
   }
