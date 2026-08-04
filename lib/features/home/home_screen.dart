@@ -296,9 +296,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(title, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, color: context.themeTextColor)),
-                GestureDetector(
+                TVFocusableCard(
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SeeAllSongsScreen(title: title, songs: songs))),
-                  child: Text("See All", style: GoogleFonts.inter(color: AppColors.midnightAccent, fontSize: 13, fontWeight: FontWeight.w700)),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                    child: Text("See All", style: GoogleFonts.inter(color: AppColors.midnightAccent, fontSize: 13, fontWeight: FontWeight.w700)),
+                  ),
                 ),
               ],
             ),
@@ -448,7 +451,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AskAIScreen())),
                                 tooltip: 'Ask Feels',
                               ),
-                            GestureDetector(
+                            TVFocusableCard(
+                              focusedScale: 1.1,
                               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
                               child: Container(
                                 margin: const EdgeInsets.symmetric(horizontal: 4),
