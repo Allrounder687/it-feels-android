@@ -14,6 +14,7 @@ import 'package:it_feels_music/features/ai/ai_settings_provider.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/library/playlist_detail_screen.dart';
 import 'package:it_feels_music/features/library/see_all_screen.dart';
+import 'package:it_feels_music/data/models/feed_shelf.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
 import 'package:it_feels_music/features/settings/profile_screen.dart';
 import 'package:it_feels_music/features/ai/ask_ai_screen.dart';
@@ -367,6 +368,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
 
+  Widget _buildArtistGridCarousel(BuildContext context, String title, List<String> artists) {
+    if (artists.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Text(title, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: context.themeTextColor, letterSpacing: -0.5)),
+          ),
+          SizedBox(
+            height: 180,
+            child: GridView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 0.35,
+              ),
+              itemCount: artists.length,
+              itemBuilder: (context, index) {
+                final artist = artists[index];
+                return TVFocusableCard(
+                  onTap: () {},
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: context.themeCardColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.primaries[artist.hashCode % Colors.primaries.length].withValues(alpha: 0.8),
+                                Colors.primaries[(artist.hashCode + 1) % Colors.primaries.length].withValues(alpha: 0.8)
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: const Icon(Icons.person, color: Colors.white54, size: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            artist,
+                            style: GoogleFonts.inter(color: context.themeTextColor, fontSize: 14, fontWeight: FontWeight.w600),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPlaylistCarousel(BuildContext context, String title, List<Playlist> playlists) {
     if (playlists.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
     
@@ -603,10 +676,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 ),
+                ),
               ),
               SafeArea(
-                child: CustomScrollView(
-              slivers: [
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (ScrollNotification scrollInfo) {
+                    if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 500) {
+                      ref.read(homeProvider.notifier).loadMoreFeed();
+                    }
+                    return false;
+                  },
+                  child: CustomScrollView(
+                    slivers: [
 
 
                 // Top App Bar Branding
@@ -835,15 +916,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   _buildPlaylistCarousel(context, "Viral 50", homeProv.chartPlaylists.skip(10).take(5).toList()),
                   _buildPlaylistCarousel(context, "Top 50", homeProv.chartPlaylists.skip(15).take(5).toList()),
                 ],
+                
+                // Infinite Dynamic Feeds
+                if (homeProv.dynamicFeeds[selectedCat] != null) ...[
+                  for (var shelf in homeProv.dynamicFeeds[selectedCat]!)
+                    _buildDynamicShelf(context, shelf, playerProvider),
+                ],
+                
+                // Loading indicator for infinite feed
+                if (homeProv.isLoadingFeed[selectedCat] == true)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: CircularProgressIndicator(color: AppColors.midnightAccent)),
+                    ),
+                  ),
 
                 SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom)),
               ],
             ),
+                  ),
           ),
             ],
           ),
         );
       },
     );
+  }
+
+  Widget _buildDynamicShelf(BuildContext context, FeedShelf shelf, AudioPlayerNotifier playerProvider) {
+    if (shelf.type == ShelfType.artistGrid) {
+      return _buildArtistGridCarousel(context, shelf.title, shelf.items.cast<String>());
+    } else if (shelf.type == ShelfType.songCarousel) {
+      return _buildSongCarousel(context, shelf.title, shelf.items.cast<Song>(), playerProvider);
+    } else if (shelf.type == ShelfType.playlistCarousel) {
+      return _buildPlaylistCarousel(context, shelf.title, shelf.items.cast<Playlist>());
+    }
+    return const SliverToBoxAdapter(child: SizedBox.shrink());
   }
 }
