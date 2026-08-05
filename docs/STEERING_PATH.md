@@ -39,7 +39,10 @@ Always follow this cycle for new features and bug fixes:
 4.  **Verify**: Run `flutter analyze` and `flutter test`. Ensure all tests pass.
 5.  **Document**: Update `CHANGELOG.md` and any other affected documentation.
 6.  **Commit**: Create a local `git commit` with a clear message.
-7.  **Release (if applicable)**: If a major milestone, bump `pubspec.yaml` version, commit the change, and push a Git tag (e.g., `v3.3.0`) to trigger the GitHub Actions CI/CD pipeline. Do NOT use `deploy_ota.bat` directly.
+7.  **Release/Patch Management (Shorebird)**: Follow strict rules for OTA updates vs App Store binary updates based on official Shorebird patterns:
+    *   **Native code/Assets/Flutter Upgrades**: Require a full binary release. Use `shorebird release [platform]` (or bump `pubspec.yaml` version and trigger the CI release pipeline).
+    *   **Dart code only**: Can be patched OTA. Use `shorebird patch [platform]` (or trigger the CI patch pipeline on an *existing* version).
+    *   **CRITICAL PATTERN**: A `shorebird patch` MUST target an existing `shorebird release`. If you bump the app version in `pubspec.yaml`, the previous release no longer matches. You **cannot patch a new version that hasn't been released yet**. The CI pipeline uses `--no-codesign` and a fallback mechanism, but always ensure you differentiate between a Patch and a Release correctly. Do NOT use `deploy_ota.bat` directly.
 
 ## 6. Code Standards
 *   **Dart Formatting**: Adhere to `flutter format`.
