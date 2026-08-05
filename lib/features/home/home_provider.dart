@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/core/utils/error_reporter.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/data/models/feed_shelf.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/services/database_service.dart';
@@ -35,6 +36,9 @@ class HomeState {
   final String selectedCategory;
   final bool isLoading;
   final List<Song> continueWatching;
+  final Map<String, List<FeedShelf>> dynamicFeeds;
+  final Map<String, bool> isLoadingFeed;
+  final Map<String, int> feedPagesLoaded;
 
   const HomeState({
     this.trendingSongs = const [],
@@ -62,6 +66,9 @@ class HomeState {
     this.selectedCategory = 'For You',
     this.isLoading = true,
     this.continueWatching = const [],
+    this.dynamicFeeds = const {},
+    this.isLoadingFeed = const {},
+    this.feedPagesLoaded = const {},
   });
 
   List<Song> get currentCategorySongs {
@@ -144,6 +151,9 @@ class HomeState {
       selectedCategory: selectedCategory ?? this.selectedCategory,
       isLoading: isLoading ?? this.isLoading,
       continueWatching: continueWatching ?? this.continueWatching,
+      dynamicFeeds: dynamicFeeds ?? this.dynamicFeeds,
+      isLoadingFeed: isLoadingFeed ?? this.isLoadingFeed,
+      feedPagesLoaded: feedPagesLoaded ?? this.feedPagesLoaded,
     );
   }
 }
@@ -178,6 +188,96 @@ class HomeNotifier extends Notifier<HomeState> {
     } else if (category == "Music" && state.hollywoodSongs.isEmpty) {
       await fetchHollywoodSongs();
     }
+    
+    // Auto load first feed page for category if empty
+    if ((state.dynamicFeeds[category] ?? []).isEmpty) {
+      loadMoreFeed();
+    }
+  }
+
+  Future<void> loadMoreFeed() async {
+    final cat = state.selectedCategory;
+    if (state.isLoadingFeed[cat] == true) return;
+    final int currentPage = state.feedPagesLoaded[cat] ?? 0;
+    
+    // STOP POINT for infinite scroll: Max 5 dynamic paginations per tab
+    if (currentPage >= 5) return;
+    
+    state = state.copyWith(isLoadingFeed: {...state.isLoadingFeed, cat: true});
+
+    try {
+      final newShelves = await _generateShelvesForCategory(cat, currentPage);
+      final currentFeeds = state.dynamicFeeds[cat] ?? [];
+      
+      state = state.copyWith(
+        dynamicFeeds: {...state.dynamicFeeds, cat: [...currentFeeds, ...newShelves]},
+        isLoadingFeed: {...state.isLoadingFeed, cat: false},
+        feedPagesLoaded: {...state.feedPagesLoaded, cat: currentPage + 1},
+      );
+    } catch (e) {
+      debugPrint('[HomeNotifier] loadMoreFeed error: $e');
+      state = state.copyWith(isLoadingFeed: {...state.isLoadingFeed, cat: false});
+    }
+  }
+
+  Future<List<FeedShelf>> _generateShelvesForCategory(String category, int page) async {
+    final newShelves = <FeedShelf>[];
+    List<List<dynamic>> queries = [];
+    
+    if (category == 'For You') {
+      queries = [
+        ['Featured Artists', ShelfType.artistGrid],
+        ['Recommended Stations', ShelfType.playlistCarousel],
+        ['Chill Mix', ShelfType.songCarousel],
+        ['Today\'s Biggest Hits', ShelfType.songCarousel],
+        ['Artists You Might Like', ShelfType.artistGrid],
+        ['Party', ShelfType.playlistCarousel],
+      ];
+    } else if (category == 'Music') {
+      queries = [
+        ['Global Top Artists', ShelfType.artistGrid],
+        ['New Music Friday', ShelfType.playlistCarousel],
+        ['Pop Rising', ShelfType.songCarousel],
+        ['Indie Hits', ShelfType.playlistCarousel],
+        ['Rock Classics', ShelfType.songCarousel],
+        ['Rising Artists', ShelfType.artistGrid],
+      ];
+    } else if (category == 'Podcasts') {
+      queries = [
+        ['Top Creators', ShelfType.artistGrid],
+        ['True Crime', ShelfType.playlistCarousel],
+        ['Comedy Specials', ShelfType.songCarousel],
+        ['Educational', ShelfType.playlistCarousel],
+      ];
+    } else {
+      queries = [
+        ['Viral Artists', ShelfType.artistGrid],
+        ['Top 50 Global', ShelfType.songCarousel],
+      ];
+    }
+
+    final start = (page * 2) % queries.length;
+    for (var i = start; i < start + 2 && i < queries.length; i++) {
+      final query = queries[i][0] as String;
+      final type = queries[i][1] as ShelfType;
+      
+      try {
+        if (type == ShelfType.artistGrid) {
+           final songs = await apiService.searchSongs(query, count: 10);
+           final artistNames = songs.map((s) => s.artist).where((a) => a.isNotEmpty).toSet().take(6).toList();
+           if (artistNames.isNotEmpty) newShelves.add(FeedShelf(title: query, type: type, items: artistNames));
+        } else if (type == ShelfType.songCarousel) {
+           final songs = await apiService.searchSongs(query, count: 15);
+           if (songs.isNotEmpty) newShelves.add(FeedShelf(title: query, type: type, items: songs));
+        } else if (type == ShelfType.playlistCarousel) {
+           final playlists = await apiService.searchPlaylists(query, count: 10);
+           if (playlists.isNotEmpty) newShelves.add(FeedShelf(title: query, type: type, items: playlists));
+        }
+      } catch (e) {
+        debugPrint('[HomeNotifier] Error generating shelf $query: $e');
+      }
+    }
+    return newShelves;
   }
 
   List<Song> _deduplicate(List<Song> songs) {
