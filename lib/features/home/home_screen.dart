@@ -759,21 +759,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     )
                   else ...[
-                    // Top Artists Section (Derived from history)
-                    if (historyProvider.getTopArtists(limit: 8).isNotEmpty)
-                      _buildTopArtistsCarousel(context, historyProvider.getTopArtists(limit: 8)),
+                    // Top Artists Section (Derived from history, fallback to trending)
+                    Builder(
+                      builder: (context) {
+                        List<String> artists = historyProvider.getTopArtists(limit: 8);
+                        if (artists.isEmpty) {
+                          artists = homeProv.trendingSongs.map((e) => e.artist).where((a) => a.isNotEmpty).toSet().take(8).toList();
+                        }
+                        if (artists.isNotEmpty) {
+                          return _buildTopArtistsCarousel(context, artists);
+                        }
+                        return const SliverToBoxAdapter(child: SizedBox.shrink());
+                      },
+                    ),
                       
-                    // Spotify style 2x3 recent grid (Jump Back In)
-                    if (activeSongs.length > 1) ...[
-                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                          child: Text("Jump Back In", style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: context.themeTextColor, letterSpacing: -0.5)),
-                        ),
-                      ),
-                      _buildSpotifyRecentGrid(context, activeSongs, playerProvider),
-                    ],
+                    // Spotify style 2x3 grid (Jump Back In or Quick Picks)
+                    Builder(
+                      builder: (context) {
+                        final gridSongs = activeSongs.length > 1 ? activeSongs.take(6).toList() : homeProv.trendingSongs.take(6).toList();
+                        final gridTitle = activeSongs.length > 1 ? "Jump Back In" : "Trending Picks";
+                        if (gridSongs.length > 1) {
+                          return SliverMainAxisGroup(
+                            slivers: [
+                              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                                  child: Text(gridTitle, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: context.themeTextColor, letterSpacing: -0.5)),
+                                ),
+                              ),
+                              _buildSpotifyRecentGrid(context, gridSongs, playerProvider),
+                            ],
+                          );
+                        }
+                        return const SliverToBoxAdapter(child: SizedBox.shrink());
+                      },
+                    ),
                     
                     const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.only(bottom: 16, top: 16), child: SmartRecommendationsRow())),
                     _buildPlaylistCarousel(context, "Daily Mixes", homeProv.youPlaylists),
@@ -785,7 +806,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ]
                 ] 
                 else if (selectedCat == "Music") ...[
-                    if (activeSongs.length > 1) ...[
+                    if (activeSongs.length > 1 || homeProv.trendingSongs.isNotEmpty) ...[
                       const SliverToBoxAdapter(child: SizedBox(height: 16)),
                       SliverToBoxAdapter(
                         child: Padding(
@@ -793,7 +814,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: Text("Quick Picks", style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: context.themeTextColor, letterSpacing: -0.5)),
                         ),
                       ),
-                      _buildSpotifyRecentGrid(context, activeSongs, playerProvider),
+                      _buildSpotifyRecentGrid(context, activeSongs.length > 1 ? activeSongs : homeProv.trendingSongs.take(6).toList(), playerProvider),
                     ],
                     // Render Horizontal Swipeable Song Grid Carousels for Genres
                     _buildSongCarousel(context, "Trending Now", homeProv.trendingSongs, playerProvider),
