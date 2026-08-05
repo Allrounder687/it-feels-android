@@ -315,14 +315,15 @@ class BackendApiService {
     debugPrint('[BackendApiService] getVideoStreams called with videoId=$videoId, query=$query');
     String actualVideoId = videoId;
     
-    // Client-side resolution for Saavn searches
+    // Fast Client-side resolution for Saavn searches using InnerTube API
     String cleanId = actualVideoId.contains(':') ? actualVideoId.split(':').last : actualVideoId;
     if (actualVideoId.startsWith('search:') || (query != null && query.isNotEmpty && cleanId.length != 11)) {
       try {
         final searchQuery = query ?? actualVideoId.replaceFirst('search:', '');
-        final searchResults = await _yt.search.search(searchQuery);
+        final searchResults = await _directInnerTubeVideoSearch(searchQuery, limit: 1);
         if (searchResults.isNotEmpty) {
-          actualVideoId = 'youtube:${searchResults.first.id.value}';
+          actualVideoId = searchResults.first['id'] as String;
+          cleanId = actualVideoId.split(':').last;
         }
       } catch (e) {
         debugPrint('[BackendApiService] Client-side search resolution failed: $e');
@@ -376,8 +377,11 @@ class BackendApiService {
   static set ytDlpBackendUrl(String val) => _testYtDlpUrl = val;
 
   static final List<String> _pipedInstances = [
-    'https://api.piped.private.coffee', // Currently active in 2026
-    'https://pipedapi.kavin.rocks', // Official fallback
+    'https://pipedapi.moomoo.me',
+    'https://pipedapi.syncpundit.io',
+    'https://piapi.ggtyler.dev',
+    'https://api.piped.private.coffee',
+    'https://pipedapi.kavin.rocks',
   ];
 
   /// Piped API Multi-Instance Failover Engine
@@ -484,14 +488,8 @@ class BackendApiService {
       try {
         String cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
         
-        if (cleanId.isEmpty || videoId.startsWith('search:') || cleanId.length != 11) {
-          final searchQuery = query ?? videoId.replaceFirst('search:', '');
-          final searchResults = await yt.search.search(searchQuery);
-          if (searchResults.isNotEmpty) {
-            cleanId = searchResults.first.id.value;
-          } else {
-            return {'title': 'Music Video', 'streams': []};
-          }
+        if (cleanId.isEmpty || cleanId.length != 11) {
+          return {'title': 'Music Video', 'streams': []};
         }
         
         // Extract streams natively using TV/VR clients to bypass signature throttling

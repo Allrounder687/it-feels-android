@@ -250,7 +250,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       width: 56,
                       height: 56,
                       child: song.coverArt.isNotEmpty
-                          ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover, size: 100)
+                          ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover, size: 150)
                           : Container(
                               decoration: const BoxDecoration(
                                 gradient: LinearGradient(

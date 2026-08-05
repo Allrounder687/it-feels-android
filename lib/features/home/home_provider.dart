@@ -224,57 +224,65 @@ class HomeNotifier extends Notifier<HomeState> {
     final newShelves = <FeedShelf>[];
     List<List<dynamic>> queries = [];
     
+    // Dynamic extraction from current state
+    final topArtists = state.trendingSongs.map((e) => e.artist.split(',').first.trim()).where((a) => a.isNotEmpty).toSet().toList();
+    topArtists.shuffle();
+    final randArtist1 = topArtists.isNotEmpty ? topArtists[0] : 'Arijit Singh';
+    final randArtist2 = topArtists.length > 1 ? topArtists[1] : 'The Weeknd';
+    final randArtist3 = topArtists.length > 2 ? topArtists[2] : 'Shreya Ghoshal';
+    
     if (category == 'For You') {
       queries = [
-        ['Featured Artists', ShelfType.artistGrid],
-        ['Recommended Stations', ShelfType.playlistCarousel],
-        ['Chill Mix', ShelfType.songCarousel],
-        ['Today\'s Biggest Hits', ShelfType.songCarousel],
-        ['Artists You Might Like', ShelfType.artistGrid],
-        ['Party', ShelfType.playlistCarousel],
+        ['Featured Artists', ShelfType.artistGrid, randArtist1],
+        ['Recommended Stations', ShelfType.playlistCarousel, '$randArtist1 Mix'],
+        ['Chill Mix', ShelfType.songCarousel, 'Chill'],
+        ['Biggest Hits', ShelfType.songCarousel, randArtist2],
+        ['Artists You Might Like', ShelfType.artistGrid, randArtist3],
+        ['Party', ShelfType.playlistCarousel, 'Party Hits'],
       ];
     } else if (category == 'Music') {
       queries = [
-        ['Global Top Artists', ShelfType.artistGrid],
-        ['New Music Friday', ShelfType.playlistCarousel],
-        ['Pop Rising', ShelfType.songCarousel],
-        ['Indie Hits', ShelfType.playlistCarousel],
-        ['Rock Classics', ShelfType.songCarousel],
-        ['Rising Artists', ShelfType.artistGrid],
+        ['Global Top Artists', ShelfType.artistGrid, 'Global Hits'],
+        ['New Music Friday', ShelfType.playlistCarousel, 'New Releases'],
+        ['Pop Rising', ShelfType.songCarousel, 'Pop'],
+        ['Indie Hits', ShelfType.playlistCarousel, 'Indie'],
+        ['Rock Classics', ShelfType.songCarousel, 'Rock'],
+        ['Rising Artists', ShelfType.artistGrid, 'Rising Artists'],
       ];
     } else if (category == 'Podcasts') {
       queries = [
-        ['Top Creators', ShelfType.artistGrid],
-        ['True Crime', ShelfType.playlistCarousel],
-        ['Comedy Specials', ShelfType.songCarousel],
-        ['Educational', ShelfType.playlistCarousel],
+        ['Top Creators', ShelfType.artistGrid, 'Podcast Creators'],
+        ['True Crime', ShelfType.playlistCarousel, 'True Crime'],
+        ['Comedy Specials', ShelfType.songCarousel, 'Comedy Podcast'],
+        ['Educational', ShelfType.playlistCarousel, 'Educational Podcast'],
       ];
     } else {
       queries = [
-        ['Viral Artists', ShelfType.artistGrid],
-        ['Top 50 Global', ShelfType.songCarousel],
+        ['Viral Artists', ShelfType.artistGrid, 'Viral'],
+        ['Top 50 Global', ShelfType.songCarousel, 'Top 50'],
       ];
     }
 
     final start = (page * 2) % queries.length;
     for (var i = start; i < start + 2 && i < queries.length; i++) {
-      final query = queries[i][0] as String;
+      final title = queries[i][0] as String;
       final type = queries[i][1] as ShelfType;
+      final query = queries[i].length > 2 ? queries[i][2] as String : title;
       
       try {
         if (type == ShelfType.artistGrid) {
            final songs = await apiService.searchSongs(query, count: 10);
            final artistNames = songs.map((s) => s.artist).where((a) => a.isNotEmpty).toSet().take(6).toList();
-           if (artistNames.isNotEmpty) newShelves.add(FeedShelf(title: query, type: type, items: artistNames));
+           if (artistNames.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: artistNames));
         } else if (type == ShelfType.songCarousel) {
            final songs = await apiService.searchSongs(query, count: 15);
-           if (songs.isNotEmpty) newShelves.add(FeedShelf(title: query, type: type, items: songs));
+           if (songs.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: songs));
         } else if (type == ShelfType.playlistCarousel) {
            final playlists = await apiService.searchPlaylists(query, count: 10);
-           if (playlists.isNotEmpty) newShelves.add(FeedShelf(title: query, type: type, items: playlists));
+           if (playlists.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: playlists));
         }
       } catch (e) {
-        debugPrint('[HomeNotifier] Error generating shelf $query: $e');
+        debugPrint('[HomeNotifier] Error generating shelf $title: $e');
       }
     }
     return newShelves;
@@ -419,7 +427,7 @@ class HomeNotifier extends Notifier<HomeState> {
     try {
       final queryArtists = topArtists.isNotEmpty 
           ? topArtists 
-          : ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift'];
+          : (state.trendingSongs.isNotEmpty ? state.trendingSongs.map((e) => e.artist.split(',').first).where((a) => a.isNotEmpty).toSet().take(4).toList() : ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift']);
 
       final newSongs = <Song>[];
       final newPlaylists = <Playlist>[];
