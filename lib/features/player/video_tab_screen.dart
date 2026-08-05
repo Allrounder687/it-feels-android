@@ -30,9 +30,27 @@ class _VideoTabScreenState extends ConsumerState<VideoTabScreen> {
   final ScrollController _scrollController = ScrollController();
   int _selectedCategoryIndex = 0; // 0: Trending, 1: Search, 2: Downloads
 
+  final List<Map<String, String>> _allCategories = [
+    {"label": "💻 Tech", "query": "Technology reviews"},
+    {"label": "🎮 Gaming", "query": "Gaming let's play"},
+    {"label": "🎵 Music", "query": "Music videos"},
+    {"label": "🎙️ Podcasts", "query": "Podcasts"},
+    {"label": "🍿 Movies", "query": "Movie recaps"},
+    {"label": "⚽ Sports", "query": "Sports highlights"},
+    {"label": "😂 Comedy", "query": "Standup comedy"},
+    {"label": "🍳 Cooking", "query": "Cooking recipes"},
+    {"label": "✈️ Travel", "query": "Travel vlogs"},
+    {"label": "💪 Fitness", "query": "Workout routines"},
+    {"label": "📚 Education", "query": "Educational documentaries"},
+    {"label": "🚗 Cars", "query": "Car reviews"},
+  ];
+  List<Map<String, String>> _dynamicCategories = [];
+
   @override
   void initState() {
     super.initState();
+    _allCategories.shuffle();
+    _dynamicCategories = _allCategories.take(6).toList();
     _loadTrendingAndOffline();
     _scrollController.addListener(_onScroll);
   }
@@ -198,14 +216,12 @@ class _VideoTabScreenState extends ConsumerState<VideoTabScreen> {
                   _buildCategoryPill(1, "🔍 Search", query: null),
                   const SizedBox(width: 8),
                   _buildCategoryPill(2, "📥 Offline", query: null),
-                  const SizedBox(width: 8),
-                  _buildCategoryPill(3, "💻 Tech", query: "Technology reviews"),
-                  const SizedBox(width: 8),
-                  _buildCategoryPill(4, "🎮 Gaming", query: "Gaming let's play"),
-                  const SizedBox(width: 8),
-                  _buildCategoryPill(5, "🎵 Music", query: "Music videos"),
-                  const SizedBox(width: 8),
-                  _buildCategoryPill(6, "🎙️ Podcasts", query: "Podcasts"),
+                  ..._dynamicCategories.asMap().entries.map((entry) {
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: _buildCategoryPill(entry.key + 3, entry.value["label"]!, query: entry.value["query"]),
+                    );
+                  }),
                 ],
               ),
             ),
