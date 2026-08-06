@@ -218,11 +218,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: MediaQuery.of(context).size.width >= 1200 ? 4 : MediaQuery.of(context).size.width >= 800 ? 3 : 2,
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
-          childAspectRatio: 2.8,
+          mainAxisExtent: 64,
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
@@ -368,7 +368,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
 
-  Widget _buildArtistGridCarousel(BuildContext context, String title, List<String> artists) {
+  Widget _buildArtistGridCarousel(BuildContext context, String title, List<dynamic> artists) {
     if (artists.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
     
     return SliverToBoxAdapter(
@@ -393,6 +393,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               itemCount: artists.length,
               itemBuilder: (context, index) {
                 final artist = artists[index];
+                final String artistName = artist is Map ? (artist['title'] ?? '') : artist.toString();
+                final String? artistImage = artist is Map ? artist['image'] : null;
+                
                 return TVFocusableCard(
                   onTap: () {},
                   child: Container(
@@ -408,21 +411,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           height: 48,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: LinearGradient(
+                            gradient: artistImage == null || artistImage.isEmpty ? LinearGradient(
                               colors: [
-                                Colors.primaries[artist.hashCode % Colors.primaries.length].withValues(alpha: 0.8),
-                                Colors.primaries[(artist.hashCode + 1) % Colors.primaries.length].withValues(alpha: 0.8)
+                                Colors.primaries[artistName.hashCode % Colors.primaries.length].withValues(alpha: 0.8),
+                                Colors.primaries[(artistName.hashCode + 1) % Colors.primaries.length].withValues(alpha: 0.8)
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                            ),
+                            ) : null,
                           ),
-                          child: const Icon(Icons.person, color: Colors.white54, size: 24),
+                          clipBehavior: Clip.antiAlias,
+                          child: artistImage != null && artistImage.isNotEmpty
+                              ? CustomImageWidget(imageUrl: artistImage, width: 48, height: 48)
+                              : const Icon(Icons.person, color: Colors.white54, size: 24),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            artist,
+                            artistName,
                             style: GoogleFonts.inter(color: context.themeTextColor, fontSize: 14, fontWeight: FontWeight.w600),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -677,11 +683,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
                 ),
-              ),
               SafeArea(
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (ScrollNotification scrollInfo) {
-                    if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 500) {
+                    if (scrollInfo.metrics.axis == Axis.vertical && scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 500) {
                       ref.read(homeProvider.notifier).loadMoreFeed();
                     }
                     return false;
@@ -944,9 +949,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildDynamicShelf(BuildContext context, FeedShelf shelf, AudioPlayerNotifier playerProvider) {
+  Widget _buildDynamicShelf(BuildContext context, FeedShelf shelf, AudioPlayerState playerProvider) {
     if (shelf.type == ShelfType.artistGrid) {
-      return _buildArtistGridCarousel(context, shelf.title, shelf.items.cast<String>());
+      return _buildArtistGridCarousel(context, shelf.title, shelf.items);
     } else if (shelf.type == ShelfType.songCarousel) {
       return _buildSongCarousel(context, shelf.title, shelf.items.cast<Song>(), playerProvider);
     } else if (shelf.type == ShelfType.playlistCarousel) {

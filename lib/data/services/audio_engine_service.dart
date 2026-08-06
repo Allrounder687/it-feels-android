@@ -16,7 +16,7 @@ enum AudioVibe {
 }
 
 class AudioEngineService {
-  late final AudioPlayerHandler audioHandler;
+  late AudioPlayerHandler audioHandler;
   
   // Expose Streams for Notifier to bind to
   Stream<PlaybackState> get playbackStateStream => audioHandler.playbackState;
