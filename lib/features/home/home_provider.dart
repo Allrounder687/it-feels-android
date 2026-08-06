@@ -124,6 +124,9 @@ class HomeState {
     String? selectedCategory,
     bool? isLoading,
     List<Song>? continueWatching,
+    Map<String, List<FeedShelf>>? dynamicFeeds,
+    Map<String, bool>? isLoadingFeed,
+    Map<String, int>? feedPagesLoaded,
   }) {
     return HomeState(
       trendingSongs: trendingSongs ?? this.trendingSongs,
@@ -174,6 +177,9 @@ class HomeNotifier extends Notifier<HomeState> {
   Future<void> _initCategory() async {
     final cat = await StorageService.loadDefaultCategory();
     state = state.copyWith(selectedCategory: cat);
+    if ((state.dynamicFeeds[cat] ?? []).isEmpty) {
+      loadMoreFeed();
+    }
   }
 
   Future<void> selectCategory(String category) async {
@@ -235,19 +241,27 @@ class HomeNotifier extends Notifier<HomeState> {
       queries = [
         ['Featured Artists', ShelfType.artistGrid, randArtist1],
         ['Recommended Stations', ShelfType.playlistCarousel, '$randArtist1 Mix'],
-        ['Chill Mix', ShelfType.songCarousel, 'Chill'],
+        ['Chill Mix', ShelfType.songCarousel, 'playlist:Chill Mix'],
         ['Biggest Hits', ShelfType.songCarousel, randArtist2],
         ['Artists You Might Like', ShelfType.artistGrid, randArtist3],
         ['Party', ShelfType.playlistCarousel, 'Party Hits'],
+        ['Late Night Vibes', ShelfType.songCarousel, 'playlist:Late Night'],
+        ['Discover Weekly', ShelfType.playlistCarousel, 'Discover'],
+        ['Acoustic Covers', ShelfType.songCarousel, 'playlist:Acoustic Covers'],
+        ['Trending Producers', ShelfType.artistGrid, 'Producer'],
       ];
     } else if (category == 'Music') {
       queries = [
         ['Global Top Artists', ShelfType.artistGrid, 'Global Hits'],
         ['New Music Friday', ShelfType.playlistCarousel, 'New Releases'],
-        ['Pop Rising', ShelfType.songCarousel, 'Pop'],
+        ['Pop Rising', ShelfType.songCarousel, 'playlist:Pop Rising'],
         ['Indie Hits', ShelfType.playlistCarousel, 'Indie'],
-        ['Rock Classics', ShelfType.songCarousel, 'Rock'],
+        ['Rock Classics', ShelfType.songCarousel, 'playlist:Rock Classics'],
         ['Rising Artists', ShelfType.artistGrid, 'Rising Artists'],
+        ['Hip Hop Nation', ShelfType.playlistCarousel, 'Hip Hop'],
+        ['Electronic Dance', ShelfType.songCarousel, 'playlist:EDM Top'],
+        ['R&B Grooves', ShelfType.playlistCarousel, 'R&B'],
+        ['Jazz & Blues', ShelfType.artistGrid, 'Jazz'],
       ];
     } else if (category == 'Podcasts') {
       queries = [
@@ -255,11 +269,25 @@ class HomeNotifier extends Notifier<HomeState> {
         ['True Crime', ShelfType.playlistCarousel, 'True Crime'],
         ['Comedy Specials', ShelfType.songCarousel, 'Comedy Podcast'],
         ['Educational', ShelfType.playlistCarousel, 'Educational Podcast'],
+        ['Business & Tech', ShelfType.playlistCarousel, 'Business Podcast'],
+        ['Daily News', ShelfType.songCarousel, 'News Podcast'],
+        ['Health & Wellness', ShelfType.playlistCarousel, 'Health Podcast'],
+        ['Sports Talk', ShelfType.songCarousel, 'Sports Podcast'],
+        ['Pop Culture', ShelfType.playlistCarousel, 'Pop Culture Podcast'],
+        ['Motivation', ShelfType.artistGrid, 'Motivation'],
       ];
     } else {
       queries = [
+        ['Top 50 Global', ShelfType.songCarousel, 'playlist:Top 50 Global'],
         ['Viral Artists', ShelfType.artistGrid, 'Viral'],
-        ['Top 50 Global', ShelfType.songCarousel, 'Top 50'],
+        ['Global Viral 50', ShelfType.playlistCarousel, 'Viral 50'],
+        ['Billboard Hot 100', ShelfType.playlistCarousel, 'Billboard'],
+        ['Top 50 USA', ShelfType.songCarousel, 'playlist:Top 50 USA'],
+        ['UK Top 40', ShelfType.playlistCarousel, 'UK Top'],
+        ['Top 50 India', ShelfType.songCarousel, 'playlist:Top 50 India'],
+        ['Global Top Playlists', ShelfType.playlistCarousel, 'Top Playlists'],
+        ['Trending on TikTok', ShelfType.songCarousel, 'playlist:TikTok Trending'],
+        ['Chart Toppers', ShelfType.artistGrid, 'Chart Toppers'],
       ];
     }
 
@@ -271,12 +299,29 @@ class HomeNotifier extends Notifier<HomeState> {
       
       try {
         if (type == ShelfType.artistGrid) {
-           final songs = await apiService.searchSongs(query, count: 10);
-           final artistNames = songs.map((s) => s.artist).where((a) => a.isNotEmpty).toSet().take(6).toList();
-           if (artistNames.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: artistNames));
+           final searchRes = await apiService.searchAll(query);
+           final artists = (searchRes['artists'] as List).take(6).toList();
+           if (artists.isNotEmpty) {
+             newShelves.add(FeedShelf(title: title, type: type, items: artists));
+           } else {
+             // Fallback
+             final songs = await apiService.searchSongs(query, count: 10);
+             final artistNames = songs.map((s) => s.artist).where((a) => a.isNotEmpty).toSet().take(6).toList();
+             if (artistNames.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: artistNames));
+           }
         } else if (type == ShelfType.songCarousel) {
-           final songs = await apiService.searchSongs(query, count: 15);
-           if (songs.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: songs));
+           if (query.startsWith('playlist:')) {
+              final actualQuery = query.substring(9);
+              final playlists = await apiService.searchPlaylists(actualQuery, count: 5);
+              if (playlists.isNotEmpty) {
+                final details = await apiService.fetchPlaylistDetails(playlists.first.id);
+                final songs = details['songs'] as List<Song>;
+                if (songs.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: songs));
+              }
+           } else {
+              final songs = await apiService.searchSongs(query, count: 15);
+              if (songs.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: songs));
+           }
         } else if (type == ShelfType.playlistCarousel) {
            final playlists = await apiService.searchPlaylists(query, count: 10);
            if (playlists.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: playlists));
