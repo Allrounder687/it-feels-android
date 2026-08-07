@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
+import 'dart:isolate';
 import 'package:it_feels_music/data/models/cache_models.dart';
 
 class DatabaseService {
@@ -219,13 +220,17 @@ class DatabaseService {
     try {
       await ensureInitialized();
       if (!isInitialized) return [];
-      return await _isar!.songs
-          .filter()
-          .isFavoriteEqualTo(true)
-          .sortByAddedAtDesc()
-          .offset(offset)
-          .limit(limit)
-          .findAll();
+      return await Isolate.run(() {
+        final isar = Isar.getInstance('it_feels_db');
+        if (isar == null) return <Song>[];
+        return isar.songs
+            .filter()
+            .isFavoriteEqualTo(true)
+            .sortByAddedAtDesc()
+            .offset(offset)
+            .limit(limit)
+            .findAllSync();
+      });
     } catch (e) {
       debugPrint('[DatabaseService] getAllFavorites error: $e');
       return [];
@@ -236,13 +241,17 @@ class DatabaseService {
     try {
       await ensureInitialized();
       if (!isInitialized) return [];
-      return await _isar!.songs
-          .filter()
-          .offlineStatusEqualTo(OfflineStatus.downloaded)
-          .sortByAddedAtDesc()
-          .offset(offset)
-          .limit(limit)
-          .findAll();
+      return await Isolate.run(() {
+        final isar = Isar.getInstance('it_feels_db');
+        if (isar == null) return <Song>[];
+        return isar.songs
+            .filter()
+            .offlineStatusEqualTo(OfflineStatus.downloaded)
+            .sortByAddedAtDesc()
+            .offset(offset)
+            .limit(limit)
+            .findAllSync();
+      });
     } catch (e) {
       debugPrint('[DatabaseService] getDownloadedSongs error: $e');
       return [];

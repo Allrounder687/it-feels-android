@@ -15,6 +15,7 @@ import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:shimmer/shimmer.dart';
 
 class SongOptionsSheet extends ConsumerWidget {
   final Song song;
@@ -380,7 +381,18 @@ class SongOptionsSheet extends ConsumerWidget {
                   return Center(child: Text("Error loading friends.", style: GoogleFonts.inter(color: Colors.redAccent)));
                 }
                 if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: 5,
+                    itemBuilder: (context, index) => Shimmer.fromColors(
+                      baseColor: context.themeCardColor,
+                      highlightColor: context.themeCardColor.withValues(alpha: 0.5),
+                      child: ListTile(
+                        title: Container(height: 16, width: 120, color: Colors.white, margin: const EdgeInsets.only(right: 150)),
+                        subtitle: Container(height: 12, width: 80, color: Colors.white, margin: const EdgeInsets.only(right: 200, top: 4)),
+                      ),
+                    ),
+                  );
                 }
                 if (!snapshot.hasData || snapshot.data?.data() == null) {
                   return Center(child: Text("No friends added yet.", style: GoogleFonts.inter(color: context.themeMutedTextColor)));
@@ -401,7 +413,16 @@ class SongOptionsSheet extends ConsumerWidget {
                     return FutureBuilder<Map<String, dynamic>?>(
                       future: socialService.getFriendDetails(friendUid),
                       builder: (context, friendSnapshot) {
-                        if (!friendSnapshot.hasData) return const SizedBox.shrink();
+                        if (!friendSnapshot.hasData) {
+                          return Shimmer.fromColors(
+                            baseColor: context.themeCardColor,
+                            highlightColor: context.themeCardColor.withValues(alpha: 0.5),
+                            child: ListTile(
+                              title: Container(height: 16, width: 120, color: Colors.white, margin: const EdgeInsets.only(right: 150)),
+                              subtitle: Container(height: 12, width: 80, color: Colors.white, margin: const EdgeInsets.only(right: 200, top: 4)),
+                            ),
+                          );
+                        }
                         final friendData = friendSnapshot.data!;
                         return ListTile(
                           title: Text(friendData['name'] ?? 'Unknown', style: GoogleFonts.inter(color: context.themeTextColor)),

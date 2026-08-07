@@ -413,7 +413,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                                 icon: const Icon(Icons.group_add_rounded, color: Colors.amber),
                                                 tooltip: "Watch Together",
                                                 onPressed: () async {
-                                                  _socialService.markAsRead(docId);
+                                                  await _socialService.markAsRead(docId);
                                                   final roomId = await locator<RoomService>().createVideoRoom(
                                                     myUid, 
                                                     payload, 
@@ -423,6 +423,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                                                   );
                                                   ref.read(videoPlayerProvider.notifier).startVideoRoom(roomId, payload, isHost: true);
                                                   // Don't push to full screen, stay in miniplayer as requested by user
+                                                  if (!context.mounted) return;
                                                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Video Room created! ID: $roomId")));
                                                 },
                                               ),
