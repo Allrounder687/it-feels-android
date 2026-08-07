@@ -21,6 +21,8 @@ import 'package:it_feels_music/services/playlist_import_service.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/core/widgets/mini_player.dart';
 import 'package:it_feels_music/features/player/video_miniplayer.dart';
+import 'package:it_feels_music/features/player/now_playing_screen.dart';
+import 'package:it_feels_music/features/player/active_media_provider.dart';
 import 'package:it_feels_music/core/widgets/import_progress_banner.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
@@ -236,8 +238,11 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
         ref.read(listeningHistoryProvider.notifier).logSong(currentSong);
       }
     });
-    final settingsProv = ref.watch(settingsProvider);
-    final enableVideos = settingsProv.enableMusicVideos;
+    
+    final enableVideos = ref.watch(settingsProvider.select((s) => s.enableMusicVideos));
+    final currentRoute = GoRouterState.of(context).uri.toString();
+    final isNarrowScreen = MediaQuery.of(context).size.width < 360;
+    final activeMediaType = ref.watch(activeMediaProvider);
 
     return PopScope(
       canPop: false,
@@ -324,7 +329,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                               ],
                             ),
                           );
-                          return kDebugMode ? child : BackdropFilter(filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), child: child);
+                          return child;
                         },
                       ),
                     ),
@@ -337,33 +342,35 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                         widget.navigationShell,
                         
                         // Video Miniplayer Overlay (PiP)
-                        Positioned(
-                          bottom: 90, // Above the audio MiniPlayer
-                          right: 16,
-                          child: const VideoMiniplayer(),
-                        ),
+                        if (activeMediaType == ActiveMediaType.video)
+                          Positioned(
+                            bottom: 90, // Above the audio MiniPlayer
+                            right: 16,
+                            child: const VideoMiniplayer(),
+                          ),
 
                         // Floating MiniPlayer Overlay
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: MeasureSize(
-                            onChange: (size) => ref.read(bottomUiProvider.notifier).updateHeight(size.height),
-                            child: SafeArea(
-                              bottom: true,
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Import Progress Banner
-                                  const ImportProgressBanner(),
-                                  // Mini Player Pill
-                                  MiniPlayer(onTap: () => context.push('/now_playing')),
-                                ],
+                        if (activeMediaType == ActiveMediaType.audio)
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: MeasureSize(
+                              onChange: (size) => ref.read(bottomUiProvider.notifier).updateHeight(size.height),
+                              child: SafeArea(
+                                bottom: true,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Import Progress Banner
+                                    const ImportProgressBanner(),
+                                    // Mini Player Pill
+                                    MiniPlayer(onTap: () => context.push('/now_playing')),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -396,7 +403,8 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                           const ImportProgressBanner(),
                           
                           // Mini Player Pill
-                          MiniPlayer(onTap: () => context.push('/now_playing')),
+                          if (activeMediaType == ActiveMediaType.audio)
+                            MiniPlayer(onTap: () => context.push('/now_playing')),
       
                           // Floating Bottom Navigation Bar Pill Container
                           ClipRRect(
@@ -429,7 +437,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                                     ],
                                   ),
                                 );
-                                return kDebugMode ? child : BackdropFilter(filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16), child: child);
+                                return child;
                               },
                             ),
                           ),
@@ -440,11 +448,12 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                 ),
               
               // Video Miniplayer PiP Overlay (On top of everything)
-              Positioned(
-                bottom: MediaQuery.of(context).orientation == Orientation.portrait ? ref.watch(bottomUiProvider) + 16 : 16,
-                right: 16,
-                child: const VideoMiniplayer(),
-              ),
+              if (activeMediaType == ActiveMediaType.video)
+                Positioned(
+                  bottom: MediaQuery.of(context).orientation == Orientation.portrait ? ref.watch(bottomUiProvider) + 16 : 16,
+                  right: 16,
+                  child: const VideoMiniplayer(),
+                ),
             ],
           );
         },

@@ -6,6 +6,7 @@ import { YoutubeProvider } from './providers/youtube';
 import { SpotifyProvider } from './providers/spotify';
 import { LrcLibProvider } from './providers/lrclib';
 import { MusixmatchProvider } from './providers/musixmatch';
+import { LastfmProvider } from './providers/lastfm';
 
 type Bindings = {
   SEARCH_CACHE: KVNamespace;
@@ -17,6 +18,8 @@ type Bindings = {
   RESEND_API_KEY?: string;
   RAZORPAY_KEY_ID?: string;
   RAZORPAY_KEY_SECRET?: string;
+  LASTFM_API_KEY?: string;
+  LASTFM_SHARED_SECRET?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -88,6 +91,58 @@ app.get('/health', (c) => {
     ageRestrictionBypass: true,
     timestamp: new Date().toISOString(),
   });
+});
+
+// Last.fm Integration
+app.post('/api/v1/lastfm/auth', async (c) => {
+  try {
+    if (!c.env.LASTFM_API_KEY || !c.env.LASTFM_SHARED_SECRET) {
+      return c.json({ error: 'Configuration Error', message: 'Last.fm keys not configured' }, 500);
+    }
+    const body = await c.req.json();
+    const { username, password } = body;
+    if (!username || !password) return c.json({ error: 'Missing credentials' }, 400);
+
+    const provider = new LastfmProvider();
+    const res = await provider.authenticate(username, password, c.env.LASTFM_API_KEY, c.env.LASTFM_SHARED_SECRET);
+    return c.json(res);
+  } catch (error: any) {
+    return c.json({ error: 'Last.fm Auth Error', message: error.message }, 500);
+  }
+});
+
+app.post('/api/v1/lastfm/nowplaying', async (c) => {
+  try {
+    if (!c.env.LASTFM_API_KEY || !c.env.LASTFM_SHARED_SECRET) {
+      return c.json({ error: 'Configuration Error', message: 'Last.fm keys not configured' }, 500);
+    }
+    const body = await c.req.json();
+    const { sessionKey, track, artist, album } = body;
+    if (!sessionKey || !track || !artist) return c.json({ error: 'Missing parameters' }, 400);
+
+    const provider = new LastfmProvider();
+    const res = await provider.updateNowPlaying(sessionKey, track, artist, c.env.LASTFM_API_KEY, c.env.LASTFM_SHARED_SECRET, album);
+    return c.json(res);
+  } catch (error: any) {
+    return c.json({ error: 'Last.fm Error', message: error.message }, 500);
+  }
+});
+
+app.post('/api/v1/lastfm/scrobble', async (c) => {
+  try {
+    if (!c.env.LASTFM_API_KEY || !c.env.LASTFM_SHARED_SECRET) {
+      return c.json({ error: 'Configuration Error', message: 'Last.fm keys not configured' }, 500);
+    }
+    const body = await c.req.json();
+    const { sessionKey, track, artist, timestamp, album } = body;
+    if (!sessionKey || !track || !artist || !timestamp) return c.json({ error: 'Missing parameters' }, 400);
+
+    const provider = new LastfmProvider();
+    const res = await provider.scrobble(sessionKey, track, artist, timestamp, c.env.LASTFM_API_KEY, c.env.LASTFM_SHARED_SECRET, album);
+    return c.json(res);
+  } catch (error: any) {
+    return c.json({ error: 'Last.fm Error', message: error.message }, 500);
+  }
 });
 
 // Email Service (Resend)

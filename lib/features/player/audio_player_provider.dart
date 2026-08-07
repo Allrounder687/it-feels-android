@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
+import 'package:it_feels_music/features/player/active_media_provider.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:vibration/vibration.dart';
 import 'package:home_widget/home_widget.dart';
@@ -341,14 +343,35 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
   @override
   AudioPlayerState build() {
-    _listenToEvents();
-    _initMemory();
+    // Sync theme with SettingsProvider for initial state
+    final currentTheme = ref.read(settingsProvider).theme;
+    final initialState = AudioPlayerState(appThemeMode: _mapThemeString(currentTheme));
+    
+    // Defer side-effects until after build completes to prevent 'uninitialized provider' exceptions
+    Future.microtask(() {
+      _listenToEvents();
+      _initMemory();
+    });
+    
+    ref.listen(settingsProvider.select((s) => s.theme), (previous, next) {
+      setAppThemeMode(_mapThemeString(next));
+    });
 
     ref.onDispose(() {
       _audioSyncHapticTimer?.cancel();
     });
 
-    return const AudioPlayerState();
+    return initialState;
+  }
+
+  AppThemeMode _mapThemeString(String themeStr) {
+    switch (themeStr) {
+      case 'Midnight Blue': return AppThemeMode.midnight;
+      case 'Deep Burgundy': return AppThemeMode.burgundy;
+      case 'Pitch Black (AMOLED)': return AppThemeMode.amoled;
+      case 'Light Theme': return AppThemeMode.light;
+      default: return AppThemeMode.materialYou;
+    }
   }
 
   Future<void> _initMemory() async {
@@ -611,6 +634,8 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       hasSentTelemetryForCurrentSong: false,
     );
     
+    ref.read(activeMediaProvider.notifier).setActiveMedia(ActiveMediaType.audio);
+    
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && user.email != null && !user.emailVerified && !_hasShownEmailVerification) {
       _hasShownEmailVerification = true;
@@ -727,6 +752,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
   Future<void> play() async {
     state = state.copyWith(isPlaying: true); // Optimistic UI
+    ref.read(activeMediaProvider.notifier).setActiveMedia(ActiveMediaType.audio);
     
     if (locator<it_feels_music_cast_service.CastService>().isConnected) {
       await locator<it_feels_music_cast_service.CastService>().play();

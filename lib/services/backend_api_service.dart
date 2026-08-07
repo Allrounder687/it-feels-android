@@ -610,88 +610,92 @@ class BackendApiService {
 
   /// Direct InnerTube Video Search
   static Future<List<Map<String, dynamic>>> _directInnerTubeVideoSearch(String query, {int limit = 20}) async {
-    try {
-      final uri = Uri.parse('https://www.youtube.com/youtubei/v1/search');
-      final response = await httpClient.post(
-        uri,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'context': {
-            'client': {
-              'clientName': 'WEB',
-              'clientVersion': '2.20240101.00.00',
-              'hl': 'en',
-              'gl': 'US',
+    return await Isolate.run(() async {
+      try {
+        final uri = Uri.parse('https://www.youtube.com/youtubei/v1/search');
+        final response = await http.post(
+          uri,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'context': {
+              'client': {
+                'clientName': 'WEB',
+                'clientVersion': '2.20240101.00.00',
+                'hl': 'en',
+                'gl': 'US',
+              },
             },
-          },
-          'query': query,
-          'params': 'EgIQAQ%3D%3D',
-        }),
-      );
+            'query': query,
+            'params': 'EgIQAQ%3D%3D',
+          }),
+        );
 
-      if (response.statusCode == 200) {
-        final data = await compute<String, dynamic>(jsonDecode, response.body);
-        final contents = data['contents']?['twoColumnSearchResultsRenderer']?['primaryContents']?['sectionListRenderer']?['contents'] ?? [];
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final contents = data['contents']?['twoColumnSearchResultsRenderer']?['primaryContents']?['sectionListRenderer']?['contents'] ?? [];
 
-        final List<Map<String, dynamic>> videos = [];
-        for (final section in contents) {
-          final items = section['itemSectionRenderer']?['contents'] ?? [];
-          for (final item in items) {
-            final renderer = item['videoRenderer'];
-            if (renderer == null || renderer['videoId'] == null) continue;
+          final List<Map<String, dynamic>> videos = [];
+          for (final section in contents) {
+            final items = section['itemSectionRenderer']?['contents'] ?? [];
+            for (final item in items) {
+              final renderer = item['videoRenderer'];
+              if (renderer == null || renderer['videoId'] == null) continue;
 
-            final videoId = renderer['videoId'];
-            final title = renderer['title']?['runs']?[0]?['text'] ?? 'YouTube Video';
-            final uploader = renderer['ownerText']?['runs']?[0]?['text'] ?? renderer['shortBylineText']?['runs']?[0]?['text'] ?? 'YouTube Creator';
-            final thumbnail = renderer['thumbnail']?['thumbnails']?.last?['url'] ?? 'https://i.ytimg.com/vi/$videoId/hqdefault.jpg';
-            final views = renderer['viewCountText']?['simpleText'] ?? renderer['shortViewCountText']?['simpleText'] ?? 'Popular';
-            final uploadedAt = renderer['publishedTimeText']?['simpleText'] ?? 'Recently';
+              final videoId = renderer['videoId'];
+              final title = renderer['title']?['runs']?[0]?['text'] ?? 'YouTube Video';
+              final uploader = renderer['ownerText']?['runs']?[0]?['text'] ?? renderer['shortBylineText']?['runs']?[0]?['text'] ?? 'YouTube Creator';
+              final thumbnail = renderer['thumbnail']?['thumbnails']?.last?['url'] ?? 'https://i.ytimg.com/vi/$videoId/hqdefault.jpg';
+              final views = renderer['viewCountText']?['simpleText'] ?? renderer['shortViewCountText']?['simpleText'] ?? 'Popular';
+              final uploadedAt = renderer['publishedTimeText']?['simpleText'] ?? 'Recently';
 
-            videos.add({
-              'id': 'youtube:$videoId',
-              'title': title,
-              'uploader': uploader,
-              'duration': 0,
-              'thumbnail': thumbnail,
-              'views': views,
-              'uploadedAt': uploadedAt,
-            });
+              videos.add({
+                'id': 'youtube:$videoId',
+                'title': title,
+                'uploader': uploader,
+                'duration': 0,
+                'thumbnail': thumbnail,
+                'views': views,
+                'uploadedAt': uploadedAt,
+              });
 
-            if (videos.length >= limit) break;
+              if (videos.length >= limit) break;
+            }
           }
+          return videos;
         }
-        return videos;
+      } catch (e) {
+        debugPrint('[BackendApiService] Direct InnerTube video search error: $e');
       }
-    } catch (e) {
-      debugPrint('[BackendApiService] Direct InnerTube video search error: $e');
-    }
-    return [];
+      return [];
+    });
   }
 
   /// Direct InnerTube Trending Videos
   static Future<List<Map<String, dynamic>>> _directInnerTubeTrendingVideos({int limit = 20}) async {
-    try {
-      final yt = YoutubeExplode();
-      final results = await yt.search.search('trending music videos');
-      yt.close();
+    return await Isolate.run(() async {
+      try {
+        final yt = YoutubeExplode();
+        final results = await yt.search.search('trending music videos');
+        yt.close();
 
-      final List<Map<String, dynamic>> videos = [];
-      for (final video in results.take(limit)) {
-        videos.add({
-          'id': video.id.value,
-          'title': video.title,
-          'uploader': video.author,
-          'duration': video.duration?.inSeconds ?? 0,
-          'thumbnail': video.thumbnails.highResUrl,
-          'views': '${(video.engagement.viewCount / 1000).toStringAsFixed(1)}K views',
-          'uploadedAt': 'Trending',
-        });
+        final List<Map<String, dynamic>> videos = [];
+        for (final video in results.take(limit)) {
+          videos.add({
+            'id': video.id.value,
+            'title': video.title,
+            'uploader': video.author,
+            'duration': video.duration?.inSeconds ?? 0,
+            'thumbnail': video.thumbnails.highResUrl,
+            'views': '${(video.engagement.viewCount / 1000).toStringAsFixed(1)}K views',
+            'uploadedAt': 'Trending',
+          });
+        }
+        return videos;
+      } catch (e) {
+        debugPrint('[BackendApiService] direct InnerTube trending error: $e');
       }
-      return videos;
-    } catch (e) {
-      debugPrint('[BackendApiService] direct InnerTube trending error: $e');
-    }
-    return [];
+      return [];
+    });
   }
 
   /// Deserializes normalized JSON from serverless proxy into Flutter Song model
@@ -737,43 +741,45 @@ class BackendApiService {
   }
   /// Fetch Related Videos for 'Up Next' Queue
   static Future<List<Map<String, dynamic>>> getRelatedVideos(String videoId, {String? query}) async {
-    debugPrint('[BackendApiService] getRelatedVideos called with videoId=$videoId, query=$query');
-    String cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
-    final yt = YoutubeExplode();
-    final List<Map<String, dynamic>> videos = [];
-    
-    try {
-      if (videoId.startsWith('search:') || cleanId.isEmpty || cleanId.length != 11) {
-        final searchQuery = query ?? videoId.replaceFirst('search:', '');
-        final searchResults = await yt.search.search(searchQuery);
-        if (searchResults.isNotEmpty) {
-          cleanId = searchResults.first.id.value;
-        } else {
-          return [];
+    return await Isolate.run(() async {
+      debugPrint('[BackendApiService] getRelatedVideos called with videoId=$videoId, query=$query');
+      String cleanId = videoId.contains(':') ? videoId.split(':')[1] : videoId;
+      final yt = YoutubeExplode();
+      final List<Map<String, dynamic>> videos = [];
+      
+      try {
+        if (videoId.startsWith('search:') || cleanId.isEmpty || cleanId.length != 11) {
+          final searchQuery = query ?? videoId.replaceFirst('search:', '');
+          final searchResults = await yt.search.search(searchQuery);
+          if (searchResults.isNotEmpty) {
+            cleanId = searchResults.first.id.value;
+          } else {
+            return [];
+          }
         }
-      }
 
-      final targetVideo = await yt.videos.get(VideoId(cleanId));
-      final related = await yt.videos.getRelatedVideos(targetVideo);
-      if (related != null) {
-        for (final video in related) {
-          videos.add({
-            'id': 'youtube:${video.id.value}',
-            'title': video.title,
-            'uploader': video.author,
-            'duration': video.duration?.inSeconds ?? 0,
-            'thumbnail': video.thumbnails.highResUrl,
-            'views': '${_formatViews(video.engagement.viewCount)} views',
-            'uploadedAt': '', // Not always provided by related API
-          });
+        final targetVideo = await yt.videos.get(VideoId(cleanId));
+        final related = await yt.videos.getRelatedVideos(targetVideo);
+        if (related != null) {
+          for (final video in related) {
+            videos.add({
+              'id': 'youtube:${video.id.value}',
+              'title': video.title,
+              'uploader': video.author,
+              'duration': video.duration?.inSeconds ?? 0,
+              'thumbnail': video.thumbnails.highResUrl,
+              'views': '${_formatViews(video.engagement.viewCount)} views',
+              'uploadedAt': '', // Not always provided by related API
+            });
+          }
         }
+      } catch (e) {
+        debugPrint('[BackendApiService] getRelatedVideos error: $e');
+      } finally {
+        yt.close();
       }
-    } catch (e) {
-      debugPrint('[BackendApiService] getRelatedVideos error: $e');
-    } finally {
-      yt.close();
-    }
-    return videos;
+      return videos;
+    });
   }
 
   /// Helper to format view counts

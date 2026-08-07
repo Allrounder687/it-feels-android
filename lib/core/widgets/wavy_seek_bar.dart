@@ -173,7 +173,7 @@ class _WavySeekBarPainter extends CustomPainter {
 
       wavePath.moveTo(0, midY); // Start drawing from the left center
       // Generate points for the sine wave up to the active width
-      for (double x = 0; x <= activeWidth; x += 1.0) {
+      for (double x = 0; x <= activeWidth; x += 4.0) {
         // Calculate y-coordinate using a sine function, offset by wavePhase for animation
         final y = midY + amplitude * math.sin((x / wavelength) * 2 * math.pi - wavePhase);
         wavePath.lineTo(x, y);

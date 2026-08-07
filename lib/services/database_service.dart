@@ -215,7 +215,7 @@ class DatabaseService {
     }
   }
 
-  Future<List<Song>> getAllFavorites() async {
+  Future<List<Song>> getAllFavorites({int offset = 0, int limit = 50}) async {
     try {
       await ensureInitialized();
       if (!isInitialized) return [];
@@ -223,6 +223,8 @@ class DatabaseService {
           .filter()
           .isFavoriteEqualTo(true)
           .sortByAddedAtDesc()
+          .offset(offset)
+          .limit(limit)
           .findAll();
     } catch (e) {
       debugPrint('[DatabaseService] getAllFavorites error: $e');
@@ -230,7 +232,7 @@ class DatabaseService {
     }
   }
 
-  Future<List<Song>> getDownloadedSongs() async {
+  Future<List<Song>> getDownloadedSongs({int offset = 0, int limit = 50}) async {
     try {
       await ensureInitialized();
       if (!isInitialized) return [];
@@ -238,6 +240,8 @@ class DatabaseService {
           .filter()
           .offlineStatusEqualTo(OfflineStatus.downloaded)
           .sortByAddedAtDesc()
+          .offset(offset)
+          .limit(limit)
           .findAll();
     } catch (e) {
       debugPrint('[DatabaseService] getDownloadedSongs error: $e');

@@ -7,6 +7,7 @@ import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:it_feels_music/features/player/active_media_provider.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
@@ -226,6 +227,8 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
 
     // Handoff logic now lives in the UI (NowPlayingScreen) via onVideoStarted callback,
     // so we do not forcefully kill audio_service here. This enables seamless cross-fades!
+    
+    ref.read(activeMediaProvider.notifier).setActiveMedia(ActiveMediaType.video);
 
     state = state.copyWith(
       isLoading: true,
@@ -275,6 +278,9 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     });
     
     if (streamList.isNotEmpty) {
+      if (isBackgroundHandoff) {
+        state = state.copyWith(selectedQuality: '360p');
+      }
       _initializeStreamForQuality(state.selectedQuality, startPosition: startPosition);
     } else {
       state = state.copyWith(isLoading: false);
@@ -322,7 +328,20 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
 
     var selectedStream = state.streams.firstWhere(
       (s) => s['quality'] == targetQuality,
-      orElse: () => state.streams.first,
+      orElse: () {
+        int parseQ(String q) => int.tryParse(q.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+        final target = parseQ(targetQuality);
+        var best = state.streams.first;
+        var minDiff = 999999;
+        for (var stream in state.streams) {
+          final diff = (parseQ(stream['quality'] as String? ?? '') - target).abs();
+          if (diff < minDiff) {
+            minDiff = diff;
+            best = stream;
+          }
+        }
+        return best;
+      },
     );
     
     final quality = selectedStream['quality'];
