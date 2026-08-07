@@ -119,58 +119,13 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
     );
   }
 
-  void _handleJoinRoom(String roomId, String hostName) async {
-    try {
-      await locator<RoomService>().requestJoinRoom(roomId);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Failed to request join room: $e")));
-      }
-      return;
+  void _handleJoinRoom(String roomId, String hostName) {
+    ref.read(audioPlayerProvider.notifier).joinSession(roomId);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Instantly synced with $hostName!")));
     }
-    if (!mounted) return;
-    
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        final sub = locator<RoomService>().listenToAllowedStatus(roomId, myUid).listen((event) {
-          if (event.snapshot.value == true) {
-            if (ctx.mounted) {
-              Navigator.pop(ctx);
-              ref.read(audioPlayerProvider.notifier).joinSession(roomId);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Joined $hostName's room!")));
-              }
-            }
-          }
-        });
-
-        return AlertDialog(
-          backgroundColor: context.themeSurfaceColor,
-          title: Text("Connecting...", style: TextStyle(color: context.themeTextColor)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(color: AppColors.midnightAccent),
-              const SizedBox(height: 16),
-              Text("Waiting for $hostName to accept your request.", style: TextStyle(color: context.themeMutedTextColor), textAlign: TextAlign.center),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                sub.cancel();
-                locator<RoomService>().declineJoinRequest(roomId, myUid);
-                Navigator.pop(ctx);
-              },
-              child: const Text("Cancel"),
-            ),
-          ],
-        );
-      },
-    ).ignore();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -682,66 +637,52 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                             final displayName = friend['displayName'] as String? ?? 'Friend';
                             final username = friend['username'] as String? ?? '';
                     
-                            return ListTile(
-                              onTap: () {
-                                Navigator.push(context, MaterialPageRoute(builder: (_) => FriendProfileScreen(friendUid: friendUid, friendName: displayName)));
-                              },
-                              leading: CircleAvatar(
-                                backgroundColor: AppColors.midnightAccent,
-                                child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                              ),
-                              title: Text(displayName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
-                              subtitle: StreamBuilder<DatabaseEvent>(
-                                stream: _socialService.getPresenceStream(friendUid),
-                                builder: (context, presenceSnap) {
-                                  if (presenceSnap.hasData && presenceSnap.data!.snapshot.value != null) {
-                                    try {
-                                      final presenceData = Map<String, dynamic>.from(presenceSnap.data!.snapshot.value as Map);
-                                      
-                                      if (presenceData['is_playing'] == true) {
-                                        return Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
-                                                const SizedBox(width: 4),
-                                                Flexible(
-                                                  child: Text(
-                                                    "Listening to ${presenceData['song_title']}",
-                                                    style: GoogleFonts.inter(color: Colors.greenAccent, fontSize: 12),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                  ),
-                                                ),
-                                              ],
+                            return StreamBuilder<DatabaseEvent>(
+                              stream: _socialService.getPresenceStream(friendUid),
+                              builder: (context, presenceSnap) {
+                                Map<String, dynamic>? presenceData;
+                                if (presenceSnap.hasData && presenceSnap.data!.snapshot.value != null) {
+                                  try {
+                                    presenceData = Map<String, dynamic>.from(presenceSnap.data!.snapshot.value as Map);
+                                  } catch (_) {}
+                                }
+                                
+                                final isPlaying = presenceData?['is_playing'] == true;
+                                final roomId = presenceData?['room_id'];
+
+                                return ListTile(
+                                  onTap: () {
+                                    if (isPlaying && roomId != null) {
+                                      _handleJoinRoom(roomId, displayName);
+                                    } else {
+                                      Navigator.push(context, MaterialPageRoute(builder: (_) => FriendProfileScreen(friendUid: friendUid, friendName: displayName)));
+                                    }
+                                  },
+                                  leading: CircleAvatar(
+                                    backgroundColor: AppColors.midnightAccent,
+                                    child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                                  ),
+                                  title: Text(displayName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
+                                  subtitle: isPlaying ? Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              "Listening to ${presenceData!['song_title']}",
+                                              style: GoogleFonts.inter(color: Colors.greenAccent, fontSize: 12),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                            if (presenceData['room_id'] != null) ...[
-                                              const SizedBox(height: 4),
-                                              ElevatedButton(
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: AppColors.midnightPrimary,
-                                                  foregroundColor: Colors.white,
-                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-                                                  minimumSize: const Size(80, 28),
-                                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                                ),
-                                                onPressed: () {
-                                                  _handleJoinRoom(presenceData['room_id'], displayName);
-                                                },
-                                                child: const Text("Join Room", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                                              ),
-                                            ],
-                                          ],
-                                        );
-                                      }
-                                    } catch (_) {}
-                                  }
-                                  return Text(username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12));
-                                },
-                              ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ) : Text(username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
                               trailing: PopupMenuButton<String>(
                                 icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
                                 onSelected: (val) {

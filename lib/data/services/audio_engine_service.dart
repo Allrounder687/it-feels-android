@@ -106,11 +106,26 @@ class AudioEngineService {
         await eq.setEnabled(true);
         final params = await eq.parameters;
         if (params.bands.length >= 5) {
-          await params.bands[0].setGain(params.maxDecibels * 0.5);
-          await params.bands[1].setGain(params.maxDecibels * 0.2);
-          await params.bands[2].setGain(0);
-          await params.bands[3].setGain(params.maxDecibels * 0.3);
-          await params.bands[4].setGain(params.maxDecibels * 0.6);
+          final hour = DateTime.now().hour;
+          final isLateNight = hour >= 23 || hour <= 5;
+          
+          if (isLateNight) {
+            // Sleepy EQ: Cut bass and highs to reduce ear fatigue
+            await le.setTargetGain(0.1); // Lower loudness
+            await params.bands[0].setGain(params.minDecibels * 0.3); // Cut sub-bass
+            await params.bands[1].setGain(0);
+            await params.bands[2].setGain(params.maxDecibels * 0.2); // Slight mid boost for vocals
+            await params.bands[3].setGain(0);
+            await params.bands[4].setGain(params.minDecibels * 0.4); // Cut harsh highs
+            debugPrint('[AudioEngineService] Applied Late-Night Sleepy DSP profile');
+          } else {
+            // Normal Punchy EQ
+            await params.bands[0].setGain(params.maxDecibels * 0.5);
+            await params.bands[1].setGain(params.maxDecibels * 0.2);
+            await params.bands[2].setGain(0);
+            await params.bands[3].setGain(params.maxDecibels * 0.3);
+            await params.bands[4].setGain(params.maxDecibels * 0.6);
+          }
         }
       }
     } catch (e) {

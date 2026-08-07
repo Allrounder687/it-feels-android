@@ -24,6 +24,9 @@ import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:isar/isar.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:it_feels_music/core/utils/des_decryptor.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/services/notification_service.dart';
@@ -58,6 +61,7 @@ class AudioPlayerState {
   final bool hasSentTelemetryForCurrentSong;
   final Duration position;
   final Duration duration;
+  final String? currentStreamUrl;
   final Color extractedBackgroundColor;
   final Color extractedSurfaceColor;
   final Color extractedAccentColor;
@@ -269,6 +273,7 @@ class AudioPlayerState {
     bool? hasSentTelemetryForCurrentSong,
     Duration? position,
     Duration? duration,
+    String? currentStreamUrl,
     Color? themeBackgroundColor,
     Color? themeSurfaceColor,
     Color? themeAccentColor,
@@ -304,6 +309,7 @@ class AudioPlayerState {
       hasSentTelemetryForCurrentSong: hasSentTelemetryForCurrentSong ?? this.hasSentTelemetryForCurrentSong,
       position: position ?? this.position,
       duration: duration ?? this.duration,
+      currentStreamUrl: currentStreamUrl ?? this.currentStreamUrl,
       extractedBackgroundColor: themeBackgroundColor ?? this.extractedBackgroundColor,
       extractedSurfaceColor: themeSurfaceColor ?? this.extractedSurfaceColor,
       extractedAccentColor: themeAccentColor ?? this.extractedAccentColor,
@@ -340,6 +346,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Timer? _audioSyncHapticTimer;
   bool _hasShownEmailVerification = false;
   int _playSongGenerationToken = 0;
+  Timer? _bufferingTimer;
 
   @override
   AudioPlayerState build() {
@@ -425,6 +432,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         }
       }
     }
+    
+    // Trigger smart auto-cache for top played songs
+    locator<SmartCacheService>().syncTopSongs();
   }
 
   void _saveMemory() {
@@ -446,6 +456,29 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         _startAudioSyncHaptics();
       } else {
         _stopAudioSyncHaptics();
+      }
+
+      if (pState.processingState == ProcessingState.buffering) {
+        if (_bufferingTimer == null || !_bufferingTimer!.isActive) {
+          _bufferingTimer = Timer(const Duration(milliseconds: 1500), () async {
+            if (state.currentSong != null) {
+              final originalUrl = await apiService.getStreamUrl(state.currentSong!);
+              if (originalUrl != null && !originalUrl.contains('_96.mp4')) {
+                debugPrint('[AdaptiveNetwork] Excessive buffering detected. Downgrading to 96kbps...');
+                final downgradedUrl = DesDecryptor.get96kbpsUrl(originalUrl);
+                if (downgradedUrl != null) {
+                  final pos = engine.position;
+                  await engine.playSong(state.currentSong!, downgradedUrl);
+                  await engine.seek(pos);
+                  await engine.play();
+                }
+              }
+            }
+          });
+        }
+      } else {
+        _bufferingTimer?.cancel();
+        _bufferingTimer = null;
       }
 
       if (pState.processingState == ProcessingState.completed) {
@@ -630,7 +663,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
 
-  Future<void> playSong(Song song, {List<Song>? queue, int index = 0, BuildContext? context}) async {
+  Future<void> playSong(Song song, {List<Song>? queue, int index = 0, BuildContext? context, String? predefinedStreamUrl}) async {
     final currentToken = ++_playSongGenerationToken;
 
     state = state.copyWith(
@@ -730,16 +763,15 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       }
     }
     
-    streamUrl ??= await apiService.getStreamUrl(song);
+    streamUrl ??= predefinedStreamUrl ?? await apiService.getStreamUrl(song);
 
     if (currentToken != _playSongGenerationToken) {
       debugPrint('[AudioPlayerNotifier] Stale playSong request cancelled');
       return;
     }
     
-    state = state.copyWith(isLoading: false);
-
     if (streamUrl != null) {
+      state = state.copyWith(isLoading: false, currentStreamUrl: streamUrl);
       if (locator<it_feels_music_cast_service.CastService>().isConnected) {
         await engine.pause(); // Ensure local is paused
         await locator<it_feels_music_cast_service.CastService>().loadMedia(song, streamUrl, Duration.zero, true);
