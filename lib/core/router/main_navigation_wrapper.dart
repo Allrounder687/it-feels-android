@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/library/listening_history_provider.dart';
 import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/features/home/custom_title_bar.dart';
@@ -244,6 +245,16 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
     final isNarrowScreen = MediaQuery.of(context).size.width < 360;
     final activeMediaType = ref.watch(activeMediaProvider);
 
+    final videoProvider = ref.watch(videoPlayerProvider);
+    final audioProvider = ref.watch(audioPlayerProvider);
+    final isSameSong = audioProvider.currentSong != null && 
+                       (videoProvider.currentVideoId == audioProvider.currentSong!.id || 
+                        videoProvider.currentVideoId == 'search:${audioProvider.currentSong!.id}');
+    final isMutedCanvas = !ref.watch(settingsProvider.select((s) => s.useVideoAudioSource)) && isSameSong;
+    
+    final bool showAudioMiniPlayer = activeMediaType == ActiveMediaType.audio || (activeMediaType == ActiveMediaType.video && isMutedCanvas);
+    final bool showVideoPiP = activeMediaType == ActiveMediaType.video && !isMutedCanvas;
+
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) async {
@@ -342,7 +353,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                         widget.navigationShell,
                         
                         // Video Miniplayer Overlay (PiP)
-                        if (activeMediaType == ActiveMediaType.video)
+                        if (showVideoPiP)
                           Positioned(
                             bottom: 90, // Above the audio MiniPlayer
                             right: 16,
@@ -350,7 +361,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                           ),
 
                         // Floating MiniPlayer Overlay
-                        if (activeMediaType == ActiveMediaType.audio)
+                        if (showAudioMiniPlayer)
                           Positioned(
                             left: 0,
                             right: 0,
@@ -403,7 +414,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                           const ImportProgressBanner(),
                           
                           // Mini Player Pill
-                          if (activeMediaType == ActiveMediaType.audio)
+                          if (showAudioMiniPlayer)
                             MiniPlayer(onTap: () => context.push('/now_playing')),
       
                           // Floating Bottom Navigation Bar Pill Container
@@ -448,7 +459,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                 ),
               
               // Video Miniplayer PiP Overlay (On top of everything)
-              if (activeMediaType == ActiveMediaType.video)
+              if (showVideoPiP)
                 Positioned(
                   bottom: MediaQuery.of(context).orientation == Orientation.portrait ? ref.watch(bottomUiProvider) + 16 : 16,
                   right: 16,

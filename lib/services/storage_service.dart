@@ -280,7 +280,7 @@ class StorageService {
       'customDownloadPath': prefs.getString(_downloadPathKey) ?? '',
       'enableAndroidAuto': prefs.getBool('enable_android_auto') ?? false,
       'hapticsMode': prefs.getString('haptics_mode') ?? 'Off',
-      'useProxyBackend': prefs.getBool('use_proxy_backend') ?? false,
+      'useProxyBackend': prefs.getBool('use_proxy_backend') ?? true,
       'proxyUrl': prefs.getString('proxy_url') ?? 'https://it-feels-proxy.cleverfox687.workers.dev',
       'enableMusicVideos': prefs.getBool('enable_music_videos') ?? false,
       'useVideoAudioSource': prefs.getBool('use_video_audio_source') ?? false,

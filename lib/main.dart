@@ -2,6 +2,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:it_feels_music/core/theme/app_typography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -154,10 +155,13 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
           return Builder(
             builder: (context) {
-              final appThemeMode = ref.watch(audioPlayerProvider).appThemeMode;
+              final appThemeMode = ref.watch(audioPlayerProvider.select((p) => p.appThemeMode));
+              final seedColor = ref.watch(audioPlayerProvider.select((p) => p.themeAccentColor));
+              final bgColor = ref.watch(audioPlayerProvider.select((p) => p.themeBackgroundColor));
+              
               final isLight = appThemeMode == AppThemeMode.light;
               final brightness = isLight ? Brightness.light : Brightness.dark;
-              final colorScheme = (isLight ? lightDynamic : darkDynamic) ?? ColorScheme.fromSeed(seedColor: context.themeAccentColor, brightness: brightness);
+              final colorScheme = (isLight ? lightDynamic : darkDynamic) ?? ColorScheme.fromSeed(seedColor: seedColor, brightness: brightness);
               
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 ref.read(audioPlayerProvider.notifier).setMaterialYouColors(colorScheme.surface, colorScheme.surfaceContainer, colorScheme.primary);
@@ -170,9 +174,10 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                   useMaterial3: true,
                   brightness: brightness,
                   colorScheme: colorScheme,
-                  scaffoldBackgroundColor: context.themeBackgroundColor,
-                  textTheme: GoogleFonts.interTextTheme(isLight ? ThemeData.light().textTheme : ThemeData.dark().textTheme),
+                  scaffoldBackgroundColor: bgColor,
+                  textTheme: isLight ? AppTypography.lightTextTheme : AppTypography.darkTextTheme,
                 ),
+                themeAnimationDuration: Duration.zero,
                 routerConfig: appRouter,
                 builder: (context, child) {
                   final isBanned = ref.watch(banProvider).isBanned;

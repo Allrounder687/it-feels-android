@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:it_feels_music/core/theme/app_typography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
@@ -23,6 +24,10 @@ import 'package:it_feels_music/features/settings/profile_provider.dart';
 import 'package:it_feels_music/features/home/smart_recommendations_row.dart';
 import 'package:it_feels_music/features/social/room_bottom_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
+import 'package:it_feels_music/features/radio/radio_screen.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
 import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
@@ -107,15 +112,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Positioned.fill(
               child: heroSong.coverArt.isNotEmpty
-                  ? ImageFiltered(
-                      imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                      child: CustomImageWidget(imageUrl: heroSong.coverArt, fit: BoxFit.cover),
+                  ? Container(
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: NetworkImage(heroSong.coverArt),
+                          fit: BoxFit.cover,
+                          colorFilter: ColorFilter.mode(Colors.black.withValues(alpha: 0.85), BlendMode.darken),
+                        ),
+                      ),
                     )
                   : Container(color: context.themeSurfaceColor),
             ),
             Positioned.fill(
               child: Container(
-                color: Colors.black.withValues(alpha: 0.4),
+                color: Colors.black.withValues(alpha: 0.2), // Light overlay on top of darkened background
               ),
             ),
             Padding(
@@ -130,7 +140,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       width: isWide ? 216 : double.infinity,
                       height: isWide ? 216 : 216,
                       child: heroSong.coverArt.isNotEmpty
-                          ? CustomImageWidget(imageUrl: heroSong.coverArt, fit: BoxFit.cover)
+                          ? CustomImageWidget(imageUrl: heroSong.coverArt, fit: BoxFit.contain)
                           : Container(color: context.themeSurfaceColor),
                     ),
                   ),
@@ -288,8 +298,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildTopArtistsCarousel(BuildContext context, List<String> artists) {
+  Widget _buildTopArtistsCarousel(BuildContext context, List<String> artists, ListeningHistoryState history, List<Song> fallbackSongs) {
     if (artists.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    
+    final Set<String> usedImages = {};
     
     return SliverToBoxAdapter(
       child: Column(
@@ -307,6 +319,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               itemCount: artists.length,
               itemBuilder: (context, index) {
                 final artist = artists[index];
+                
+                String artistImage = '';
+                
+                // 1. Try to find a song where they are the PRIMARY artist
+                for (var s in [...history.recentlyPlayed, ...fallbackSongs]) {
+                  if (s.artist.split(',').first.trim() == artist && s.coverArt.isNotEmpty) {
+                    if (!usedImages.contains(s.coverArt)) {
+                      artistImage = s.coverArt;
+                      usedImages.add(s.coverArt);
+                      break;
+                    }
+                  }
+                }
+                
+                // 2. If not found, try to find ANY song they are in, but ensure it's a unique image
+                if (artistImage.isEmpty) {
+                  for (var s in [...history.recentlyPlayed, ...fallbackSongs]) {
+                    if (s.artist.contains(artist) && s.coverArt.isNotEmpty) {
+                      if (!usedImages.contains(s.coverArt)) {
+                        artistImage = s.coverArt;
+                        usedImages.add(s.coverArt);
+                        break;
+                      }
+                    }
+                  }
+                }
+                
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: TVFocusableCard(
@@ -323,13 +362,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             height: 80,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.primaries[artist.hashCode % Colors.primaries.length].withValues(alpha: 0.8),
-                                  Colors.primaries[(artist.hashCode + 1) % Colors.primaries.length].withValues(alpha: 0.8)
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                              image: artistImage.isNotEmpty ? DecorationImage(
+                                image: NetworkImage(artistImage),
+                                fit: BoxFit.cover,
+                              ) : const DecorationImage(
+                                image: AssetImage('assets/images/placeholder.jpg'),
+                                fit: BoxFit.cover,
                               ),
                               boxShadow: [
                                 BoxShadow(
@@ -338,12 +376,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   offset: const Offset(0, 5),
                                 )
                               ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                artist.substring(0, 1).toUpperCase(),
-                                style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w900, color: Colors.white),
-                              ),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -411,19 +443,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           height: 48,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            gradient: artistImage == null || artistImage.isEmpty ? LinearGradient(
-                              colors: [
-                                Colors.primaries[artistName.hashCode % Colors.primaries.length].withValues(alpha: 0.8),
-                                Colors.primaries[(artistName.hashCode + 1) % Colors.primaries.length].withValues(alpha: 0.8)
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ) : null,
+                            image: artistImage != null && artistImage.isNotEmpty ? DecorationImage(
+                              image: NetworkImage(artistImage),
+                              fit: BoxFit.cover,
+                            ) : const DecorationImage(
+                              image: AssetImage('assets/images/placeholder.jpg'),
+                              fit: BoxFit.cover,
+                            ),
                           ),
-                          clipBehavior: Clip.antiAlias,
-                          child: artistImage != null && artistImage.isNotEmpty
-                              ? CustomImageWidget(imageUrl: artistImage, width: 48, height: 48)
-                              : const Icon(Icons.person, color: Colors.white54, size: 24),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -462,7 +489,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Text(
               title,
-              style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w800, color: context.themeTextColor),
+              style: AppTypography.outfitExtraBold.copyWith(fontSize: 22, color: context.themeTextColor),
             ),
           ),
           SizedBox(
@@ -514,10 +541,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             displayTitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
+                            style: AppTypography.interSemiBold.copyWith(
                               color: context.themeTextColor, 
                               fontSize: isWide ? 13 : 12, 
-                              fontWeight: FontWeight.w600,
                             ),
                             ),
                           ], // closes if statement
@@ -747,6 +773,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               tooltip: 'Listen Together',
                             ),
                             IconButton(
+                              icon: Icon(Icons.radio, color: context.themeTextColor, size: 22),
+                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RadioScreen())),
+                              tooltip: 'Radio Stations',
+                            ),
+                            IconButton(
                               icon: Icon(Icons.settings_outlined, color: context.themeTextColor, size: 22),
                               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
                             ),
@@ -822,9 +853,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: _buildHeroBanner(context, activeSongs.first, playerProvider),
                   ),
 
-                if (homeProv.isLoading && activeSongs.isEmpty && selectedCat != "For You")
-                  const SliverToBoxAdapter(
-                    child: Padding(padding: EdgeInsets.all(40), child: Center(child: CircularProgressIndicator(color: AppColors.midnightAccent))),
+                if (homeProv.isLoading)
+                  SliverToBoxAdapter(
+                    child: Shimmer.fromColors(
+                      baseColor: context.themeCardColor,
+                      highlightColor: context.themeSurfaceColor,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 16),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            child: Container(width: 150, height: 28, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                          ),
+                          SizedBox(
+                            height: 220,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              itemCount: 4,
+                              itemBuilder: (_, __) => Padding(
+                                padding: const EdgeInsets.only(right: 14),
+                                child: Container(width: 160, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16))),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            child: Container(width: 200, height: 28, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                          ),
+                          SizedBox(
+                            height: 220,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              itemCount: 4,
+                              itemBuilder: (_, __) => Padding(
+                                padding: const EdgeInsets.only(right: 14),
+                                child: Container(width: 160, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16))),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
 
                 if (selectedCat == "For You") ...[
@@ -853,7 +926,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           artists = homeProv.trendingSongs.map((e) => e.artist).where((a) => a.isNotEmpty).toSet().take(8).toList();
                         }
                         if (artists.isNotEmpty) {
-                          return _buildTopArtistsCarousel(context, artists);
+                          return _buildTopArtistsCarousel(context, artists, historyProvider, homeProv.trendingSongs);
                         }
                         return const SliverToBoxAdapter(child: SizedBox.shrink());
                       },
@@ -930,10 +1003,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 
                 // Loading indicator for infinite feed
                 if (homeProv.isLoadingFeed[selectedCat] == true)
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(child: CircularProgressIndicator(color: AppColors.midnightAccent)),
+                  SliverToBoxAdapter(
+                    child: Shimmer.fromColors(
+                      baseColor: context.themeCardColor,
+                      highlightColor: context.themeSurfaceColor,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(width: 150, height: 24, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              height: 180,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: 4,
+                                itemBuilder: (_, __) => Padding(
+                                  padding: const EdgeInsets.only(right: 14),
+                                  child: Container(width: 140, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16))),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
 

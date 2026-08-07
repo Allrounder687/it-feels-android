@@ -1,4 +1,10 @@
-## v3.5.22+56
+## v3.5.24+58
+- **UI & Aesthetics**: Replaced basic linear gradients with a stunning AI-generated abstract "It Feels" placeholder image for missing artist avatars globally. 
+- **Cover Art Deduplication**: Rewrote the fallback algorithm for the Home Screen Top Artists carousel and Daily Mix engine. Identical movie posters from collaborative tracks are no longer duplicated across multiple artists; each artist now guarantees a unique visual identity drawn from both history and global trending lists.
+- **Radio Feature Surface**: Promoted the global Radio Station feature directly to the Home Screen top app bar for immediate access, replacing the buried Last.fm settings shortcut.
+- **Serverless Proxy Warnings**: Fully integrated dynamic warning states across the UI when users manually disable Cloudflare Worker proxy operations, preventing confusion when advanced features gracefully degrade.
+
+## v3.5.23+57
 - **Architecture Refactoring (Phases 1 & 2)**: Standardized UI wrappers across the app. Created \AppScaffold\ and \AppDimensions\ to consolidate padding and navigation bar clearance magic numbers (8\). Removed hardcoded numeric values from over 10 distinct UI files.
 - **State Decoupling (Phase 3)**: Decoupled raw service dependencies from the UI layer for \StorageScreen\ and \LastfmSettingsScreen\. Migrated these screens to use modern Riverpod StateNotifiers (\storageProvider\ and \lastfmProvider\), strictly isolating their business logic (cache sizing, scrobbling authentication) from the widget build methods.
 - **Bug Fixes**: Handled edge cases where unawaited futures or legacy ChangeNotifiers were causing test suites to flag warnings. Verified zero regressions across the entire test suite.

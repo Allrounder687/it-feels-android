@@ -9,6 +9,7 @@ import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/player/lyrics_provider.dart';
 import 'package:it_feels_music/core/widgets/wavy_seek_bar.dart';
 import 'package:it_feels_music/features/player/lyrics_share_dialog.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class LyricsScreen extends ConsumerStatefulWidget {
@@ -38,6 +39,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
       builder: (context, ref, child) {
         final lyricsProvLocal = ref.watch(lyricsProvider);
         final playerProvLocal = ref.watch(audioPlayerProvider);
+        final settings = ref.watch(settingsProvider);
         final currentSong = playerProvLocal.currentSong;
         final position = playerProvLocal.position;
 
@@ -244,7 +246,9 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                           : SingleChildScrollView(
                               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 36),
                               child: Text(
-                                lyricsProvLocal.result.staticLyrics ?? "Oopsies! 🙈 The lyrics for this track are playing hide and seek.",
+                                !settings.useProxyBackend 
+                                    ? "⚠️ Please turn on the 'Use Serverless Proxy Backend' option in Advanced Server Settings for better lyrics extraction.\n\n${lyricsProvLocal.result.staticLyrics ?? "Oopsies! 🙈 The lyrics for this track are playing hide and seek."}"
+                                    : (lyricsProvLocal.result.staticLyrics ?? "Oopsies! 🙈 The lyrics for this track are playing hide and seek."),
                                 style: _getLyricsTextStyle(
                                   lyricsProvLocal.fontFamily,
                                   fontSize: 22,

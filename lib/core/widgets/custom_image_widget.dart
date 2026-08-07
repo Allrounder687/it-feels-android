@@ -28,10 +28,10 @@ class CustomImageWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (imageUrl.isEmpty) return const SizedBox();
     
+    int targetSize = size;
     String finalUrl = imageUrl;
     try {
       final settings = ref.read(settingsProvider);
-      int targetSize = size;
       if (settings.isDataSaverEnabled) {
         targetSize = 150;
       }
@@ -44,6 +44,7 @@ class CustomImageWidget extends ConsumerWidget {
         fit: fit,
         width: width,
         height: height,
+        memCacheWidth: targetSize,
         errorWidget: errorWidget ?? (context, url, error) => const Icon(Icons.music_note, color: Colors.grey),
       );
     } else {
@@ -52,6 +53,7 @@ class CustomImageWidget extends ConsumerWidget {
         fit: fit,
         width: width,
         height: height,
+        cacheWidth: targetSize,
         errorBuilder: (context, error, stackTrace) => errorWidget != null ? errorWidget!(context, imageUrl, error) : const Icon(Icons.music_note, color: Colors.grey),
       );
     }

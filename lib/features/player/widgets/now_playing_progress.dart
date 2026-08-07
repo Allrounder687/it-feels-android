@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:it_feels_music/core/theme/app_typography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -29,7 +29,6 @@ class NowPlayingProgress extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final videoProvider = ref.watch(videoPlayerProvider);
-    final playerProvider = ref.watch(audioPlayerProvider);
 
     if (isVideoMode && videoProvider.videoController != null) {
       return StreamBuilder<Duration>(
@@ -59,11 +58,11 @@ class NowPlayingProgress extends ConsumerWidget {
                   children: [
                     Text(
                       _formatDuration(position),
-                      style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                      style: AppTypography.interNormal.copyWith(color: context.themeMutedTextColor, fontSize: 12),
                     ),
                     Text(
                       _formatDuration(duration),
-                      style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                      style: AppTypography.interNormal.copyWith(color: context.themeMutedTextColor, fontSize: 12),
                     ),
                   ],
                 ),
@@ -74,16 +73,19 @@ class NowPlayingProgress extends ConsumerWidget {
       );
     }
 
+    final duration = ref.watch(audioPlayerProvider.select((p) => p.duration));
+    final initialPos = ref.read(audioPlayerProvider).position;
+
     return StreamBuilder<Duration>(
       stream: ref.read(audioPlayerProvider.notifier).audioHandler.player.positionStream,
-      initialData: playerProvider.position,
+      initialData: initialPos,
       builder: (context, snapshot) {
-        final currentPos = snapshot.data ?? playerProvider.position;
+        final currentPos = snapshot.data ?? initialPos;
         return Column(
           children: [
             WavySeekBar(
               position: currentPos,
-              duration: playerProvider.duration,
+              duration: duration,
               activeColor: accentColor,
               inactiveColor: context.themeTextColor24,
               onSeek: (newPos) => ref.read(audioPlayerProvider.notifier).seek(newPos),
@@ -95,11 +97,11 @@ class NowPlayingProgress extends ConsumerWidget {
                 children: [
                   Text(
                     _formatDuration(currentPos),
-                    style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                    style: AppTypography.interNormal.copyWith(color: context.themeMutedTextColor, fontSize: 12),
                   ),
                   Text(
-                    _formatDuration(playerProvider.duration),
-                    style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                    _formatDuration(duration),
+                    style: AppTypography.interNormal.copyWith(color: context.themeMutedTextColor, fontSize: 12),
                   ),
                 ],
               ),
@@ -163,10 +165,9 @@ class QueueDragHandle extends StatelessWidget {
                         : "YOUR QUEUE",
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: AppTypography.interBold.copyWith(
                       color: context.themeTextColor,
                       fontSize: 12,
-                      fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,
                     ),
                   ),
