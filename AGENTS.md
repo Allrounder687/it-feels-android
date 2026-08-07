@@ -2,6 +2,9 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **CI/CD Resiliency & Lock Screen Fix (v3.5.25+59):**
+  - **Environment Build Crash (Exit Code 70):** Injected `touch .env` into all GitHub Actions pipelines (`ota_release`, `shorebird_patch`, `ios-unsigned-build`) to satisfy `flutter_dotenv` bundling requirements that were failing because `.env` is omitted from Git.
+  - **Lock Screen/Control Center Audio Fix:** Wired up missing `audioHandler.onSkipNext` and `onSkipPrevious` hooks inside `AudioPlayerNotifier._initMemory()` to correctly delegate native OS media intents down to the newly decoupled `AudioEngineService`, fixing the 00:00 stall bug during background track switching.
 - **Aesthetic UI & Caching Engine (v3.5.24+58):**
   - **Dynamic Fallbacks:** Designed and generated a sleek 'It Feels' premium placeholder asset (`assets/images/placeholder.jpg`) injected as a standard fallback for missing artist avatars.
   - **Cover Art Deduplication:** Fixed identical collaborative artwork spam by storing an explicit `Set<String> usedImages` tracker. Now cross-references history and trending feeds to guarantee unique artist and Daily Mix representations.

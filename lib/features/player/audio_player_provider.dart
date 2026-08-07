@@ -378,6 +378,10 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     // Let the engine initialize its hardware DSP & speed settings
     await engine.init(locator<AudioPlayerHandler>());
     
+    // Wire up Lock Screen & Control Center skip buttons
+    audioHandler.onSkipNext = () => skipToNext();
+    audioHandler.onSkipPrevious = () => skipToPrevious();
+    
     // Sync the Notifier's state with the Engine's initial state
     state = state.copyWith(
       isDspEngineEnabled: engine.isDspEngineEnabled,
