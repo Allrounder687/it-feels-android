@@ -47,9 +47,9 @@ class MusicApiService {
       final url = Uri.parse(
           '$_baseUrl?__call=autocomplete.get&_format=json&_marker=0&api_version=4&ctx=web6dot0&query=${Uri.encodeComponent(query)}');
 
-      final response = await http.get(url, headers: _headers);
+      final response = await http.get(url, headers: _headers).timeout(const Duration(seconds: 5));
       if (response.statusCode != 200) {
-        return {'songs': <Song>[], 'albums': <Playlist>[], 'playlists': <Playlist>[]};
+        throw Exception('Direct Saavn request failed');
       }
 
       final data = await compute(jsonDecode, response.body);
@@ -110,8 +110,19 @@ class MusicApiService {
         'artists': artists,
       };
     } catch (e) {
-      debugPrint('[MusicApiService] Search error: $e');
-      return {'songs': <Song>[], 'albums': <Playlist>[], 'playlists': <Playlist>[], 'artists': <Map<String, dynamic>>[]};
+      debugPrint('[MusicApiService] Direct search error: $e. Falling back to Proxy.');
+      try {
+        final proxySongs = await BackendApiService.search(query);
+        return {
+          'songs': proxySongs,
+          'albums': <Playlist>[],
+          'playlists': <Playlist>[],
+          'artists': <Map<String, dynamic>>[]
+        };
+      } catch (proxyError) {
+        debugPrint('[MusicApiService] Proxy search error: $proxyError');
+        return {'songs': <Song>[], 'albums': <Playlist>[], 'playlists': <Playlist>[], 'artists': <Map<String, dynamic>>[]};
+      }
     }
   }
 
@@ -123,11 +134,14 @@ class MusicApiService {
       final url = Uri.parse(
           '$_baseUrl?__call=search.getResults&_format=json&p=$page&n=$count&api_version=4&ctx=web6dot0&q=${Uri.encodeComponent(query)}');
 
-      final response = await http.get(url, headers: _headers);
-      if (response.statusCode == 200) {
-        final data = await compute(jsonDecode, response.body);
-        final rawSongs = data['results'] ?? data['songs'] ?? [];
-        final List<Song> songs = [];
+      final response = await http.get(url, headers: _headers).timeout(const Duration(seconds: 5));
+      if (response.statusCode != 200) {
+        throw Exception('Direct Saavn request failed');
+      }
+      
+      final data = await compute(jsonDecode, response.body);
+      final rawSongs = data['results'] ?? data['songs'] ?? [];
+      final List<Song> songs = [];
         if (rawSongs is List) {
           for (var item in rawSongs) {
             songs.add(Song.fromJson(item));
@@ -434,7 +448,7 @@ class MusicApiService {
       if (encUrl == null || encUrl.isEmpty) {
         final url = Uri.parse(
             '$_baseUrl?__call=song.getDetails&_format=json&cc=in&_marker=0&pids=${song.saavnId}');
-        final response = await http.get(url, headers: _headers);
+        final response = await http.get(url, headers: _headers).timeout(const Duration(seconds: 4));
 
         if (response.statusCode == 200) {
           final data = await compute(jsonDecode, response.body);

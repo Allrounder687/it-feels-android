@@ -28,14 +28,15 @@ class ListenTogetherService {
     _joinRequestSubscription?.cancel();
   }
 
-  Future<String?> startBroadcasting(String uid, Song currentSong, Duration position, bool isPlaying, bool isPremium) async {
+  Future<String?> startBroadcasting(String uid, Song currentSong, Duration position, bool isPlaying, bool isPremium, {String? streamUrl}) async {
     final roomId = await _roomService.createRoom(
       uid, 
       currentSong, 
       position, 
       isPlaying, 
       isPublic: isPremium, 
-      allowGuestControl: true
+      allowGuestControl: true,
+      streamUrl: streamUrl
     );
     
     currentRoomId = roomId;
@@ -124,7 +125,7 @@ class ListenTogetherService {
           duration: 0, 
           addedAt: DateTime.now()
         );
-        appProviderContainer.read(audioPlayerProvider.notifier).playSong(dummy); 
+        appProviderContainer.read(audioPlayerProvider.notifier).playSong(dummy, predefinedStreamUrl: data['streamUrl']); 
       }
       
       final diff = (engine.position.inMilliseconds - positionMs).abs();
@@ -156,9 +157,9 @@ class ListenTogetherService {
     _socialService.updatePresence(song, isPlaying, roomId: currentRoomId);
   }
   
-  void updateRoomState(Song song, Duration position, bool isPlaying) {
+  void updateRoomState(Song song, Duration position, bool isPlaying, {String? streamUrl}) {
     if (currentRoomId != null && isHost) {
-      _roomService.updateRoomState(currentRoomId!, song, position, isPlaying);
+      _roomService.updateRoomState(currentRoomId!, song, position, isPlaying, streamUrl: streamUrl);
     }
   }
 }

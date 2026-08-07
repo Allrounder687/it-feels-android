@@ -65,4 +65,18 @@ class DesDecryptor {
 
     return httpsUrl.replaceAll(RegExp(r'(_96_p|_96|_160)\.(mp3|m4a)$'), '_320.mp4');
   }
+
+  /// Downgrade high quality stream URL to 96kbps low quality MP4 CDN link for slow networks
+  static String? get96kbpsUrl(String? originalLink) {
+    if (originalLink == null || originalLink.isEmpty) return null;
+
+    String url = originalLink;
+    if (url.contains('_320.mp4')) {
+      return url.replaceAll('_320.mp4', '_96.mp4');
+    } else if (url.contains('_160.mp4')) {
+      return url.replaceAll('_160.mp4', '_96.mp4');
+    }
+    
+    return url;
+  }
 }
