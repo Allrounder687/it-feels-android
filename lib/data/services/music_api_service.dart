@@ -142,15 +142,20 @@ class MusicApiService {
       final data = await compute(jsonDecode, response.body);
       final rawSongs = data['results'] ?? data['songs'] ?? [];
       final List<Song> songs = [];
-        if (rawSongs is List) {
-          for (var item in rawSongs) {
-            songs.add(Song.fromJson(item));
-          }
+      if (rawSongs is List) {
+        for (var item in rawSongs) {
+          songs.add(Song.fromJson(item));
         }
-        if (songs.isNotEmpty) return songs;
       }
+      if (songs.isNotEmpty) return songs;
     } catch (e) {
-      debugPrint('[MusicApiService] searchSongs error: $e');
+      debugPrint('[MusicApiService] searchSongs error: $e. Falling back to proxy.');
+      try {
+        final proxySongs = await BackendApiService.search(query);
+        return proxySongs;
+      } catch (proxyError) {
+        debugPrint('[MusicApiService] Proxy searchSongs error: $proxyError');
+      }
     }
 
     final res = await searchAll(query, onError: onError);
@@ -448,7 +453,7 @@ class MusicApiService {
       if (encUrl == null || encUrl.isEmpty) {
         final url = Uri.parse(
             '$_baseUrl?__call=song.getDetails&_format=json&cc=in&_marker=0&pids=${song.saavnId}');
-        final response = await http.get(url, headers: _headers).timeout(const Duration(seconds: 4));
+        final response = await http.get(url, headers: _headers);
 
         if (response.statusCode == 200) {
           final data = await compute(jsonDecode, response.body);

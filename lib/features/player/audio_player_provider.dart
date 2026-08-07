@@ -23,6 +23,7 @@ import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
+import 'package:it_feels_music/data/services/smart_cache_service.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:isar/isar.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -103,6 +104,7 @@ class AudioPlayerState {
     this.hasSentTelemetryForCurrentSong = false,
     this.position = Duration.zero,
     this.duration = Duration.zero,
+    this.currentStreamUrl,
     this.extractedBackgroundColor = AppColors.midnightBackground,
     this.extractedSurfaceColor = AppColors.midnightSurface,
     this.extractedAccentColor = AppColors.midnightPrimary,
