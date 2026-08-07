@@ -30,6 +30,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'firebase_options.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 late AudioPlayerHandler _audioHandler;
 late final ProviderContainer appProviderContainer;
@@ -86,7 +87,13 @@ Future<void> main() async {
     debugPrint("Firebase/Notification initialization failed: $e");
   }
 
-
+  // Pre-warm the transitive SQLite image cache database in the background.
+  // This prevents the main UI isolate from locking up when rendering the first album art.
+  Future.microtask(() {
+    try {
+      CachedNetworkImageProvider('prewarm_cache_sqlite').evict();
+    } catch (_) {}
+  });
   final session = await AudioSession.instance;
   await session.configure(const AudioSessionConfiguration.music());
 

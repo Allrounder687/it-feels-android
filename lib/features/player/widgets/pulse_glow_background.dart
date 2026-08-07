@@ -39,22 +39,22 @@ class _PulseGlowBackgroundState extends ConsumerState<PulseGlowBackground> with 
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withValues(alpha: 0.15 + (_controller.value * 0.15)),
-                blurRadius: 80 + (_controller.value * 60),
-                spreadRadius: 20 + (_controller.value * 30),
-              ),
+    return ScaleTransition(
+      scale: Tween<double>(begin: 1.0, end: 1.25).animate(
+        CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              widget.color.withValues(alpha: 0.3),
+              widget.color.withValues(alpha: 0.0),
             ],
+            stops: const [0.5, 1.0],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

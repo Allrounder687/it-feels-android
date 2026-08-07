@@ -36,7 +36,7 @@ class SettingsState {
     this.useVideoAudioSource = false,
     this.isDataSaverEnabled = false,
     this.enableHardwareDecoding = true,
-    this.defaultVideoQuality = '720p',
+    this.defaultVideoQuality = '480p',
   });
 
   SettingsState copyWith({
@@ -107,7 +107,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       useVideoAudioSource: settings['useVideoAudioSource'] == true,
       isDataSaverEnabled: settings['isDataSaverEnabled'] == true,
       enableHardwareDecoding: settings['enableHardwareDecoding'] ?? true, // Default to true
-      defaultVideoQuality: settings['defaultVideoQuality'] as String? ?? '720p',
+      defaultVideoQuality: settings['defaultVideoQuality'] as String? ?? '480p',
       defaultCategory: defaultCat,
     );
   }
