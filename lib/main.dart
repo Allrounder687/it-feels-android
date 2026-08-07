@@ -50,43 +50,67 @@ Future<void> main() async {
     debugPrint('Failed to initialize media_kit: $e');
   }
 
-  try {
-    if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    }
+  final firebaseFuture = () async {
     try {
-      await FirebaseAuth.instance.setLanguageCode('en');
-    } catch (_) {}
-    
-    // Pass all uncaught "fatal" errors from the framework to Crashlytics
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)) {
-      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
+      try {
+        await FirebaseAuth.instance.setLanguageCode('en');
+      } catch (_) {}
       
-      // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
-      PlatformDispatcher.instance.onError = (error, stack) {
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-        return true;
-      };
-    } else {
-      // Fallback for Windows/Linux/Web where Crashlytics isn't fully supported
-      FlutterError.onError = (details) {
-        FlutterError.presentError(details);
-      };
-      PlatformDispatcher.instance.onError = (error, stack) {
-        debugPrint('Async Error: $error\n$stack');
-        return true;
-      };
+      // Pass all uncaught "fatal" errors from the framework to Crashlytics
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)) {
+        FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+        
+        // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
+        PlatformDispatcher.instance.onError = (error, stack) {
+          FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+          return true;
+        };
+      } else {
+        // Fallback for Windows/Linux/Web where Crashlytics isn't fully supported
+        FlutterError.onError = (details) {
+          FlutterError.presentError(details);
+        };
+        PlatformDispatcher.instance.onError = (error, stack) {
+          debugPrint('Async Error: $error\n$stack');
+          return true;
+        };
+      }
+
+      await Permission.notification.request();
+
+      final notificationService = NotificationService();
+      await notificationService.initialize();
+    } catch (e) {
+      debugPrint("Firebase/Notification initialization failed: $e");
     }
+  }();
 
-    await Permission.notification.request();
+  final audioFuture = () async {
+    final session = await AudioSession.instance;
+    await session.configure(const AudioSessionConfiguration.music());
 
-    final notificationService = NotificationService();
-    await notificationService.initialize();
-  } catch (e) {
-    debugPrint("Firebase/Notification initialization failed: $e");
-  }
+    // Initialize Android background AudioService
+    final apiService = locator<MusicApiService>();
+    _audioHandler = await AudioService.init(
+      builder: () => AudioPlayerHandler(apiService: apiService),
+      config: const AudioServiceConfig(
+        androidNotificationChannelId: 'com.itfeels.music.channel.audio',
+        androidNotificationChannelName: 'It Feels Playback',
+        androidNotificationOngoing: true,
+        androidStopForegroundOnPause: true,
+        androidNotificationIcon: 'mipmap/ic_launcher',
+        androidShowNotificationBadge: true,
+      ),
+    );
+
+    locator.registerSingleton<AudioPlayerHandler>(_audioHandler);
+    await locator<AudioEngineService>().init(_audioHandler);
+  }();
 
   // Pre-warm the transitive SQLite image cache database in the background.
   // This prevents the main UI isolate from locking up when rendering the first album art.
@@ -95,25 +119,8 @@ Future<void> main() async {
       CachedNetworkImageProvider('prewarm_cache_sqlite').evict();
     } catch (_) {}
   });
-  final session = await AudioSession.instance;
-  await session.configure(const AudioSessionConfiguration.music());
 
-  // Initialize Android background AudioService
-  final apiService = locator<MusicApiService>();
-  _audioHandler = await AudioService.init(
-    builder: () => AudioPlayerHandler(apiService: apiService),
-    config: const AudioServiceConfig(
-      androidNotificationChannelId: 'com.itfeels.music.channel.audio',
-      androidNotificationChannelName: 'It Feels Playback',
-      androidNotificationOngoing: true,
-      androidStopForegroundOnPause: true,
-      androidNotificationIcon: 'mipmap/ic_launcher',
-      androidShowNotificationBadge: true,
-    ),
-  );
-
-  locator.registerSingleton<AudioPlayerHandler>(_audioHandler);
-  await locator<AudioEngineService>().init(_audioHandler);
+  await Future.wait([firebaseFuture, audioFuture]);
 
   appProviderContainer = ProviderContainer(
     overrides: [
