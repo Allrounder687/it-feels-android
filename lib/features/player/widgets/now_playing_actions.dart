@@ -45,7 +45,9 @@ class NowPlayingActions extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
+              constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
@@ -93,7 +95,9 @@ class NowPlayingActions extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
+              constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   isDownloading
                       ? SizedBox(
@@ -139,7 +143,9 @@ class NowPlayingActions extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
+              constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.lyrics_outlined, color: context.themeMutedTextColor, size: 18),
                   const SizedBox(width: 5),
@@ -170,7 +176,9 @@ class NowPlayingActions extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
               ),
+              constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.share_outlined, color: context.themeMutedTextColor, size: 18),
                   const SizedBox(width: 5),

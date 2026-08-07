@@ -7,6 +7,8 @@ import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/library/download_provider.dart';
+import 'package:it_feels_music/core/widgets/empty_state_widget.dart';
+import 'package:go_router/go_router.dart';
 import 'package:it_feels_music/features/home/home_provider.dart';
 import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/features/library/artist_detail_screen.dart';
@@ -338,8 +340,18 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   Widget _buildSongListView(List<Song> songs, AudioPlayerState playerProvider, String emptyMessage) {
     if (songs.isEmpty) {
-      return Center(
-        child: Text(emptyMessage, style: GoogleFonts.inter(color: context.themeMutedTextColor)),
+      IconData iconData = Icons.music_note_rounded;
+      if (emptyMessage.contains("favorite")) iconData = Icons.favorite_border_rounded;
+      if (emptyMessage.contains("download")) iconData = Icons.download_done_rounded;
+      
+      return PremiumEmptyState(
+        icon: iconData,
+        title: "It's empty here",
+        message: emptyMessage,
+        ctaText: "Discover Music",
+        onCtaPressed: () {
+          context.go('/search');
+        },
       );
     }
 

@@ -741,6 +741,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
           themeBackgroundColor: res.backgroundColor,
           themeSurfaceColor: res.surfaceColor,
           themeAccentColor: res.accentColor,
+          appThemeMode: _mapThemeString(ref.read(settingsProvider).theme),
         );
       } else if (song.coverArt != null) {
         // Fallback for low-ram devices handling

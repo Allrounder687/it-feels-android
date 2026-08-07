@@ -142,12 +142,16 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
   }
 
   Future<void> _checkClipboardForPlaylist() async {
-    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-    final text = clipboardData?.text?.trim() ?? '';
-    
-    if (text.isNotEmpty && text != _lastCheckedClipboard) {
-      _lastCheckedClipboard = text;
-      _handleSharedText(text);
+    try {
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = clipboardData?.text?.trim() ?? '';
+      
+      if (text.isNotEmpty && text != _lastCheckedClipboard) {
+        _lastCheckedClipboard = text;
+        _handleSharedText(text);
+      }
+    } catch (e) {
+      // Ignore clipboard access errors (e.g. Windows locking the clipboard)
     }
   }
 

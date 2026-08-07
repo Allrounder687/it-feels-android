@@ -42,6 +42,7 @@ class NowPlayingHeader extends ConsumerWidget {
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
           ),
+          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [

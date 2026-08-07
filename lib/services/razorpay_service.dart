@@ -6,8 +6,10 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'dart:io';
+
 class RazorpayService {
-  final Razorpay _razorpay = Razorpay();
+  Razorpay? _razorpay;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
   static const String _backendUrl = 'https://it-feels-proxy.cleverfox687.workers.dev';
@@ -16,13 +18,16 @@ class RazorpayService {
   int _pendingDurationDays = 30;
 
   RazorpayService() {
-    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
-    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
-    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+    if (Platform.isAndroid || Platform.isIOS) {
+      _razorpay = Razorpay();
+      _razorpay!.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+      _razorpay!.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+      _razorpay!.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+    }
   }
 
   void dispose() {
-    _razorpay.clear();
+    _razorpay?.clear();
   }
 
   Future<bool> checkout(int amountInRupees, int durationDays) async {
@@ -52,6 +57,11 @@ class RazorpayService {
       final orderId = data['id'];
 
       // 2. Open Razorpay Checkout
+      if (_razorpay == null) {
+        debugPrint("Razorpay is not supported on this platform.");
+        return false;
+      }
+      
       var options = {
         'key': 'rzp_test_TJlcmhW8KS7SsX', // Test Key
         'amount': amountInRupees * 100,
@@ -67,7 +77,7 @@ class RazorpayService {
         }
       };
 
-      _razorpay.open(options);
+      _razorpay!.open(options);
 
       // 3. Wait for the completer
       return await _paymentCompleter!.future;

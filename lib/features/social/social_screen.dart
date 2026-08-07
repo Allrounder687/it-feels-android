@@ -11,7 +11,9 @@ import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:it_feels_music/features/social/friend_profile_screen.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:it_feels_music/core/widgets/empty_state_widget.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:it_feels_music/core/widgets/skeleton_loading_list.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/custom_playlist.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
@@ -245,17 +247,18 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
       stream: _inboxStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent));
+          return const SkeletonLoadingList();
         }
         if (snapshot.hasError) {
           return Center(child: Text("Failed to load inbox.", style: GoogleFonts.inter(color: context.themeMutedTextColor)));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Text("Your inbox is empty 📭\nTell your friends to send you music!", 
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(color: context.themeMutedTextColor),
-            ),
+          return PremiumEmptyState(
+            icon: Icons.mark_email_unread_rounded,
+            title: "Your inbox is empty",
+            message: "Tell your friends to send you music!",
+            ctaText: "Find Friends",
+            onCtaPressed: _showAddFriendDialog,
           );
         }
 
@@ -581,7 +584,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
             stream: _friendsStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return const SkeletonLoadingList();
               }
               if (snapshot.hasError) {
                 return Center(child: Text("Failed to load friends.", style: GoogleFonts.inter(color: context.themeMutedTextColor)));
@@ -606,11 +609,12 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
               }
 
               if (friends.isEmpty) {
-                return Center(
-                  child: Text("You haven't added any friends yet.\nUse the button above to add some!", 
-                    textAlign: TextAlign.center, 
-                    style: GoogleFonts.inter(color: context.themeMutedTextColor)
-                  ),
+                return PremiumEmptyState(
+                  icon: Icons.people_alt_rounded,
+                  title: "No friends yet",
+                  message: "You haven't added any friends yet.\nUse the button below to add some!",
+                  ctaText: "Add Friend",
+                  onCtaPressed: _showAddFriendDialog,
                 );
               }
 

@@ -18,6 +18,13 @@ class PaletteExtractorResult {
 }
 
 class PaletteExtractorService {
+  int _adjustBrightness(Color color, double factor) {
+    int r = (color.r * 255 * factor).clamp(0, 255).toInt();
+    int g = (color.g * 255 * factor).clamp(0, 255).toInt();
+    int b = (color.b * 255 * factor).clamp(0, 255).toInt();
+    return (0xff << 24) | (r << 16) | (g << 8) | b;
+  }
+
   Future<PaletteExtractorResult?> extract(String? imageUrl) async {
     if (imageUrl == null || imageUrl.isEmpty) return null;
     
@@ -30,9 +37,9 @@ class PaletteExtractorService {
         final res = await PaletteExtractor.extractPalette(imageUrl);
         if (res != null) {
           return PaletteExtractorResult(
-            backgroundColor: Color(res.background),
-            surfaceColor: Color(res.surface),
-            accentColor: Color(res.accent),
+            backgroundColor: Color(_adjustBrightness(Color(res.background), 0.4)),
+            surfaceColor: Color(_adjustBrightness(Color(res.surface), 0.6)),
+            accentColor: Color(_adjustBrightness(Color(res.accent), 1.5)),
           );
         }
       } else {
@@ -45,17 +52,10 @@ class PaletteExtractorService {
         );
         final dominantColor = palette.dominantColor?.color ?? AppColors.midnightBackground;
         
-        int adjustBrightness(Color color, double factor) {
-          int r = (color.r * 255 * factor).clamp(0, 255).toInt();
-          int g = (color.g * 255 * factor).clamp(0, 255).toInt();
-          int b = (color.b * 255 * factor).clamp(0, 255).toInt();
-          return (0xff << 24) | (r << 16) | (g << 8) | b;
-        }
-        
         return PaletteExtractorResult(
-          backgroundColor: Color(adjustBrightness(dominantColor, 0.4)),
-          surfaceColor: Color(adjustBrightness(dominantColor, 0.6)),
-          accentColor: Color(adjustBrightness(dominantColor, 1.5)),
+          backgroundColor: Color(_adjustBrightness(dominantColor, 0.4)),
+          surfaceColor: Color(_adjustBrightness(dominantColor, 0.6)),
+          accentColor: Color(_adjustBrightness(dominantColor, 1.5)),
         );
       }
     } catch (e) {

@@ -8,6 +8,7 @@ import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/core/widgets/skeleton_loading_list.dart';
 import 'package:it_feels_music/features/library/download_provider.dart';
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/widgets/animated_equalizer.dart';
@@ -82,7 +83,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         child: Stack(
           children: [
             _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent))
+                ? const SkeletonLoadingList()
                 : CustomScrollView(
                     slivers: [
                   // Immersive Dynamic Header

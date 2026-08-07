@@ -33,16 +33,34 @@ class SmartStorageService {
     await prefs.setBool(_kAutoDownloadKey, value);
   }
 
+  Future<Directory> _getSafeCacheDir() async {
+    final tempDir = await getTemporaryDirectory();
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      final appCacheDir = Directory('${tempDir.path}/it_feels_music_cache');
+      if (!appCacheDir.existsSync()) {
+        appCacheDir.createSync(recursive: true);
+      }
+      return appCacheDir;
+    }
+    return tempDir;
+  }
+
   Future<int> calculateCacheDirectorySize() async {
     int totalSize = 0;
     try {
-      final tempDir = await getTemporaryDirectory();
+      final tempDir = await _getSafeCacheDir();
       if (tempDir.existsSync()) {
-        tempDir.listSync(recursive: true, followLinks: false).forEach((FileSystemEntity entity) {
+        await for (var entity in tempDir.list(recursive: true, followLinks: false).handleError((e) {
+          // Ignore concurrent file deletion errors
+        })) {
           if (entity is File) {
-            totalSize += entity.lengthSync();
+            try {
+              totalSize += await entity.length();
+            } catch (e) {
+              // Ignore
+            }
           }
-        });
+        }
       }
     } catch (e) {
       debugPrint("Error calculating cache size: $e");
@@ -56,11 +74,13 @@ class SmartStorageService {
       final docsDir = await getApplicationDocumentsDirectory();
       final downloadsDir = Directory('${docsDir.path}/downloads');
       if (downloadsDir.existsSync()) {
-        downloadsDir.listSync(recursive: true, followLinks: false).forEach((FileSystemEntity entity) {
+        await for (var entity in downloadsDir.list(recursive: true, followLinks: false).handleError((e) {})) {
           if (entity is File) {
-            totalSize += entity.lengthSync();
+            try {
+              totalSize += await entity.length();
+            } catch (_) {}
           }
-        });
+        }
       }
     } catch (e) {
       debugPrint("Error calculating downloads size: $e");
@@ -75,24 +95,24 @@ class SmartStorageService {
 
       if (currentSize > maxSize) {
         debugPrint("Cache limit exceeded ($currentSize > $maxSize). Evicting old files...");
-        final tempDir = await getTemporaryDirectory();
+        final tempDir = await _getSafeCacheDir();
         
-        // Get all files in cache
         List<File> cacheFiles = [];
-        tempDir.listSync(recursive: true, followLinks: false).forEach((FileSystemEntity entity) {
+        await for (var entity in tempDir.list(recursive: true, followLinks: false).handleError((e) {})) {
           if (entity is File) {
             cacheFiles.add(entity);
           }
-        });
+        }
 
-        // Sort files by last accessed/modified time (oldest first)
         cacheFiles.sort((a, b) {
-          final aStat = a.statSync();
-          final bStat = b.statSync();
-          return aStat.modified.compareTo(bStat.modified);
+          try {
+            return a.statSync().modified.compareTo(b.statSync().modified);
+          } catch (_) {
+            return 0;
+          }
         });
 
-        int sizeToDelete = currentSize - (maxSize ~/ 2); // Target 50% of max size after cleanup
+        int sizeToDelete = currentSize - (maxSize ~/ 2); 
         int deletedSize = 0;
 
         for (var file in cacheFiles) {
@@ -102,7 +122,7 @@ class SmartStorageService {
             file.deleteSync();
             deletedSize += length;
           } catch (e) {
-            debugPrint("Failed to delete cache file: $e");
+            // Ignore
           }
         }
         debugPrint("Evicted $deletedSize bytes from cache.");
@@ -114,13 +134,15 @@ class SmartStorageService {
 
   Future<void> clearAllCache() async {
     try {
-      final tempDir = await getTemporaryDirectory();
+      final tempDir = await _getSafeCacheDir();
       if (tempDir.existsSync()) {
-        tempDir.listSync(recursive: true, followLinks: false).forEach((FileSystemEntity entity) {
+        await for (var entity in tempDir.list(recursive: true, followLinks: false).handleError((e) {})) {
           if (entity is File) {
-            entity.deleteSync();
+            try {
+              entity.deleteSync();
+            } catch (_) {}
           }
-        });
+        }
       }
     } catch (e) {
       debugPrint("Error clearing all cache: $e");

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
+import 'package:it_feels_music/core/widgets/skeleton_loading_list.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,7 +82,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
       backgroundColor: context.themeBackgroundColor,
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent))
+            ? const SkeletonLoadingList()
             : CustomScrollView(
                 slivers: [
                   // Immersive Dynamic Header

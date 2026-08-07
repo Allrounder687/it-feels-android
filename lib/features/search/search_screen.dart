@@ -8,6 +8,8 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
+import 'package:it_feels_music/features/player/widgets/wavy_seek_bar.dart';
+import 'package:it_feels_music/core/widgets/skeleton_loading_list.dart';
 import 'package:it_feels_music/features/player/video_miniplayer.dart';
 import 'package:go_router/go_router.dart';
 import 'package:it_feels_music/features/player/video_player_screen.dart';
@@ -977,64 +979,6 @@ SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + Media
           ],
         ),
       ),
-    );
-  }
-}
-
-class SkeletonLoadingList extends StatelessWidget {
-  const SkeletonLoadingList({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      itemCount: 8,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Shimmer.fromColors(
-            baseColor: context.themeCardColor.withValues(alpha: 0.5),
-            highlightColor: context.themeCardColor.withValues(alpha: 0.8),
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: 150,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }
