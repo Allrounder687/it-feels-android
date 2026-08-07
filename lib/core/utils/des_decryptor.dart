@@ -16,6 +16,12 @@ class DesDecryptor {
   /// Decrypt Music API DES-ECB encrypted_media_url
   static Future<String?> decrypt(String encryptedBase64, {Function(String message)? onError}) async {
     if (encryptedBase64.isEmpty) return null;
+    
+    // Check if it is already a decrypted URL (unencrypted stream links)
+    if (encryptedBase64.startsWith('http://') || encryptedBase64.startsWith('https://')) {
+      return encryptedBase64;
+    }
+    
     try {
       final desKey = await _getSecureKey(onError: onError);
       // 3DES with K1=K2=K3 (24-byte key) is mathematically identical to single DES

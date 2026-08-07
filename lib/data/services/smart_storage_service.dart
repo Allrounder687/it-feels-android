@@ -9,8 +9,8 @@ class SmartStorageService {
   static const String _kMaxCacheSizeKey = 'max_cache_size_bytes';
   static const String _kAutoDownloadKey = 'auto_download_favorites';
 
-  // Default max cache size: 2 GB
-  static const int defaultMaxCacheSizeBytes = 2 * 1024 * 1024 * 1024;
+  // Default max cache size: 1 GB (down from 2GB to preserve storage)
+  static const int defaultMaxCacheSizeBytes = 1 * 1024 * 1024 * 1024;
 
   Future<int> getMaxCacheSize() async {
     final prefs = await SharedPreferences.getInstance();

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
@@ -62,8 +63,14 @@ class PaletteExtractor {
       if (completerToComplete == null) return;
 
       try {
-        // Send to isolate
-        final isolateResult = await compute(_isolateEntryPoint, imageUrl);
+        // Send to isolate or run on main thread for Desktop
+        PaletteResult? isolateResult;
+        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+          isolateResult = await _isolateEntryPoint(imageUrl);
+        } else {
+          isolateResult = await compute(_isolateEntryPoint, imageUrl);
+        }
+
         if (isolateResult == null || currentToken != _generationToken) {
           _memoryCache[imageUrl] = PaletteResult(0, 0, 0, isFailed: true);
           if (!completerToComplete.isCompleted) completerToComplete.complete(null);

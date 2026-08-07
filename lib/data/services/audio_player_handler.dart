@@ -108,7 +108,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       mediaItem.add(item);
       await _player.stop(); // Flush existing AV pipeline to prevent 00:00 deadlocks
 
-      if (streamUrl.startsWith('/') || streamUrl.startsWith('file://')) {
+      if (streamUrl.startsWith('/') || streamUrl.startsWith('file://') || RegExp(r'^[a-zA-Z]:[/\\]').hasMatch(streamUrl)) {
         final path = streamUrl.startsWith('file://') ? streamUrl.replaceFirst('file://', '') : streamUrl;
         await _player.setAudioSource(
           AudioSource.file(path, tag: item),

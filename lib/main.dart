@@ -21,6 +21,7 @@ import 'package:it_feels_music/core/providers/fullscreen_provider.dart';
 import 'package:it_feels_music/features/admin/in_app_broadcast_listener.dart';
 import 'package:it_feels_music/services/local_proxy_server.dart';
 import 'package:it_feels_music/features/home/custom_title_bar.dart';
+import 'package:it_feels_music/data/services/smart_storage_service.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -38,6 +39,11 @@ late final ProviderContainer appProviderContainer;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Enforce strict global ImageCache bounds to prevent Out-Of-Memory exceptions
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // 50 MB
+  PaintingBinding.instance.imageCache.maximumSize = 100; // 100 images maximum
+
   try {
     await dotenv.load(fileName: ".env");
   } catch (_) {}
@@ -117,6 +123,9 @@ Future<void> main() async {
   Future.microtask(() {
     try {
       CachedNetworkImageProvider('prewarm_cache_sqlite').evict();
+      
+      // Automatically enforce the SmartStorageService cache limits in the background
+      locator<SmartStorageService>().enforceCacheLimit();
     } catch (_) {}
   });
 

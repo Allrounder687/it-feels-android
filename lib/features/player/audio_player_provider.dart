@@ -375,6 +375,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
   AppThemeMode _mapThemeString(String themeStr) {
     switch (themeStr) {
+      case 'Dynamic (Album Art)': return AppThemeMode.dynamic;
       case 'Midnight Blue': return AppThemeMode.midnight;
       case 'Deep Burgundy': return AppThemeMode.burgundy;
       case 'Pitch Black (AMOLED)': return AppThemeMode.amoled;
@@ -992,12 +993,14 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> _updateHomeWidget() async {
-    try {
-      await HomeWidget.saveWidgetData<String>('title', state.currentSong?.title ?? 'No Song Playing');
-      await HomeWidget.saveWidgetData<String>('artist', state.currentSong?.artist ?? 'It Feels Music');
-      await HomeWidget.updateWidget(name: 'MusicWidgetProvider');
-    } catch (e) {
-      debugPrint('Error updating home widget: $e');
+    if (Platform.isAndroid || Platform.isIOS) {
+      try {
+        await HomeWidget.saveWidgetData<String>('title', state.currentSong?.title ?? 'No Song Playing');
+        await HomeWidget.saveWidgetData<String>('artist', state.currentSong?.artist ?? 'It Feels Music');
+        await HomeWidget.updateWidget(name: 'MusicWidgetProvider');
+      } catch (e) {
+        debugPrint('Error updating home widget: $e');
+      }
     }
   }
 
