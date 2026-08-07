@@ -76,7 +76,7 @@ class _LastfmSettingsScreenState extends ConsumerState<LastfmSettingsScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Text(
-                  "Last.fm integration is not configured. Please add API keys to your .env file.",
+                  "Last.fm integration is not configured. Please turn on the 'Use Serverless Proxy Backend' option in Advanced Server Settings, or add API keys to your .env file.",
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 16),
                 ),

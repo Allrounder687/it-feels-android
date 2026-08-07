@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:it_feels_music/core/theme/app_typography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -55,10 +55,9 @@ class NowPlayingActions extends ConsumerWidget {
                   const SizedBox(width: 5),
                   Text(
                     isFav ? "Liked" : "Like",
-                    style: GoogleFonts.inter(
+                    style: AppTypography.interSemiBold.copyWith(
                       color: context.themeTextColor,
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -110,10 +109,9 @@ class NowPlayingActions extends ConsumerWidget {
                   const SizedBox(width: 5),
                   Text(
                     isDown ? "Downloaded" : "Download",
-                    style: GoogleFonts.inter(
+                    style: AppTypography.interSemiBold.copyWith(
                       color: context.themeTextColor,
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -147,10 +145,9 @@ class NowPlayingActions extends ConsumerWidget {
                   const SizedBox(width: 5),
                   Text(
                     "Lyrics",
-                    style: GoogleFonts.inter(
+                    style: AppTypography.interSemiBold.copyWith(
                       color: context.themeTextColor,
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -179,10 +176,9 @@ class NowPlayingActions extends ConsumerWidget {
                   const SizedBox(width: 5),
                   Text(
                     "Share",
-                    style: GoogleFonts.inter(
+                    style: AppTypography.interSemiBold.copyWith(
                       color: context.themeTextColor,
                       fontSize: 13,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],

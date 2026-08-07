@@ -468,7 +468,7 @@ class SettingsScreen extends ConsumerWidget {
                       subtitle: Text(
                         settings.useProxyBackend
                             ? "Active: Stream & lyrics extraction handled via Cloud Proxy"
-                            : "Inactive: Direct client scraping mode",
+                            : "Inactive: Direct mode. Features like Last.fm, Lyrics, and Recommendations will break.",
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           color: context.themeMutedTextColor,
@@ -484,7 +484,9 @@ class SettingsScreen extends ConsumerWidget {
                               backgroundColor: context.themeSurfaceColor,
                               title: Text("Advanced Setting", style: GoogleFonts.outfit(color: context.themeTextColor, fontWeight: FontWeight.bold)),
                               content: Text(
-                                "Warning: Modifying the proxy backend configuration can break streaming functionality. Only proceed if instructed by a developer.",
+                                val 
+                                  ? "Warning: Modifying the proxy backend configuration can break streaming functionality. Only proceed if instructed by a developer."
+                                  : "Warning: Disabling the proxy backend will break Last.fm Scrobbling, Lyrics Extraction, and Smart Recommendations. Are you sure?",
                                 style: GoogleFonts.inter(color: context.themeTextColor),
                               ),
                               actions: [

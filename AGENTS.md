@@ -2,6 +2,10 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Aesthetic UI & Caching Engine (v3.5.24+58):**
+  - **Dynamic Fallbacks:** Designed and generated a sleek 'It Feels' premium placeholder asset (`assets/images/placeholder.jpg`) injected as a standard fallback for missing artist avatars.
+  - **Cover Art Deduplication:** Fixed identical collaborative artwork spam by storing an explicit `Set<String> usedImages` tracker. Now cross-references history and trending feeds to guarantee unique artist and Daily Mix representations.
+  - **Radio Station Integration:** Surfaced global `RadioScreen` route dynamically on the top `HomeScreen` app bar instead of burying it inside Last.fm settings.
 - **Audio Architecture Teardown (Phase 6 - v3.5.20+54):** Eradicated the massive `AudioPlayerNotifier` God Object.
   - **Decoupled Engine:** Wrapped `media_kit` and `just_audio` pipelines into a strictly isolated `AudioEngineService` that exclusively handles DSP Equalizer, Loudness Enhancers, UI Haptics, and Sleep Timers.
   - **Social Sync Splitting:** Moved all Firebase Realtime Database and Firestore listener networks into `ListenTogetherService` to permanently sever database syncing operations from UI frame rendering.

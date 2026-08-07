@@ -50,10 +50,29 @@ class WavySeekBar extends StatefulWidget {
 class _WavySeekBarState extends State<WavySeekBar> with SingleTickerProviderStateMixin {
   /// Controller for the continuous wave animation.
   late AnimationController _waveController;
+  
+  // Reusable paint and path objects to prevent GC churn at 60fps
+  late final Paint _activePaint;
+  late final Paint _inactivePaint;
+  late final Paint _thumbPaint;
+  final Path _wavePath = Path();
+  final Path _inactivePath = Path();
 
   @override
   void initState() {
     super.initState();
+    _activePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+      
+    _inactivePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round;
+      
+    _thumbPaint = Paint()..style = PaintingStyle.fill;
+    
     _waveController = AnimationController(
       vsync: this, // Provides the ticker for the animation
       duration: const Duration(seconds: 3), // Duration of one full wave cycle
@@ -67,50 +86,48 @@ class _WavySeekBarState extends State<WavySeekBar> with SingleTickerProviderStat
   }
 
   /// Handles user interaction (tap or horizontal drag) to seek to a new position.
-  ///
-  /// - [localPosition]: The [Offset] of the touch event relative to the widget.
-  /// - [width]: The total width of the seek bar.
-  ///
-  /// Logic:
-  /// 1. Clamps the horizontal position (`dx`) within the widget's bounds.
-  /// 2. Calculates the `fraction` of the total width corresponding to the seek position.
-  /// 3. Computes the `newPos` [Duration] based on the `fraction` and total `duration`.
-  /// 4. Invokes the `onSeek` callback if provided.
   void _handleSeek(Offset localPosition, double width) {
-    // Prevent seeking if duration is zero or no onSeek callback is provided
     if (widget.duration.inMilliseconds == 0 || widget.onSeek == null) return;
-    double dx = localPosition.dx.clamp(0.0, width); // Clamp position to bounds
-    double fraction = dx / width; // Calculate the fractional position
+    double dx = localPosition.dx.clamp(0.0, width); 
+    double fraction = dx / width; 
     final newPos = Duration(milliseconds: (widget.duration.inMilliseconds * fraction).round());
     widget.onSeek!(newPos);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Ensure duration is not zero to prevent division by zero
+    // Update paint colors dynamically
+    _activePaint.color = widget.activeColor;
+    _inactivePaint.color = widget.inactiveColor;
+    _thumbPaint.color = widget.activeColor;
+
     final maxMs = math.max(1, widget.duration.inMilliseconds);
-    // Clamp current position to be within valid range [0, duration]
     final posMs = widget.position.inMilliseconds.clamp(0, maxMs);
-    final fraction = posMs / maxMs; // Calculate the played fraction
+    final fraction = posMs / maxMs; 
 
     return ExcludeSemantics(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final width = constraints.maxWidth; // Get the available width for the seek bar
+          final width = constraints.maxWidth; 
           return GestureDetector(
-            behavior: HitTestBehavior.opaque, // Ensures the entire area is tappable
+            behavior: HitTestBehavior.opaque, 
             onHorizontalDragUpdate: (details) => _handleSeek(details.localPosition, width),
             onTapDown: (details) => _handleSeek(details.localPosition, width),
             child: AnimatedBuilder(
-              animation: _waveController, // Rebuilds when _waveController updates
+              animation: _waveController, 
               builder: (context, child) {
-                return CustomPaint(
-                  size: Size(width, 36), // Fixed height for the seek bar
-                  painter: _WavySeekBarPainter(
-                    fraction: fraction, // Progress of the seek bar
-                    wavePhase: _waveController.value * 2 * math.pi, // Current phase of the wave animation
-                    activeColor: widget.activeColor,
-                    inactiveColor: widget.inactiveColor,
+                return RepaintBoundary(
+                  child: CustomPaint(
+                    size: Size(width, 36), 
+                    painter: _WavySeekBarPainter(
+                      fraction: fraction, 
+                      wavePhase: _waveController.value * 2 * math.pi, 
+                      activePaint: _activePaint,
+                      inactivePaint: _inactivePaint,
+                      thumbPaint: _thumbPaint,
+                      wavePath: _wavePath,
+                      inactivePath: _inactivePath,
+                    ),
                   ),
                 );
               },
@@ -123,84 +140,58 @@ class _WavySeekBarState extends State<WavySeekBar> with SingleTickerProviderStat
 }
 
 /// A [CustomPainter] responsible for drawing the wavy seek bar.
-/// It renders an active (played) wavy path, an inactive (unplayed) straight path,
-/// and a circular thumb indicator.
 class _WavySeekBarPainter extends CustomPainter {
-  /// The fraction of the seek bar that is active (played).
   final double fraction;
-
-  /// The current phase offset for the wave animation, driven by an [AnimationController].
   final double wavePhase;
+  
+  // Passed-in cached objects
+  final Paint activePaint;
+  final Paint inactivePaint;
+  final Paint thumbPaint;
+  final Path wavePath;
+  final Path inactivePath;
 
-  /// The color for the active part of the seek bar and the thumb.
-  final Color activeColor;
-
-  /// The color for the inactive part of the seek bar.
-  final Color inactiveColor;
-
-  /// Creates a `_WavySeekBarPainter`.
   _WavySeekBarPainter({
     required this.fraction,
     required this.wavePhase,
-    required this.activeColor,
-    required this.inactiveColor,
+    required this.activePaint,
+    required this.inactivePaint,
+    required this.thumbPaint,
+    required this.wavePath,
+    required this.inactivePath,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final midY = size.height / 2; // Vertical center of the seek bar
-    final activeWidth = size.width * fraction; // Width of the active (played) portion
-
-    // Paint for the active wavy path
-    final activePaint = Paint()
-      ..color = activeColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5 // Thickness of the line
-      ..strokeCap = StrokeCap.round; // Rounded ends for line segments
-
-    // Paint for the inactive straight path
-    final inactivePaint = Paint()
-      ..color = inactiveColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round;
+    final midY = size.height / 2; 
+    final activeWidth = size.width * fraction; 
 
     // 1. Draw Active Wavy Path
     if (activeWidth > 0) {
-      final wavePath = Path();
-      const amplitude = 3.5; // Height of the wave from the centerline
-      const wavelength = 18.0; // Horizontal length of one full wave cycle
+      wavePath.reset();
+      const amplitude = 3.5; 
+      const wavelength = 18.0; 
 
-      wavePath.moveTo(0, midY); // Start drawing from the left center
-      // Generate points for the sine wave up to the active width
+      wavePath.moveTo(0, midY); 
       for (double x = 0; x <= activeWidth; x += 4.0) {
-        // Calculate y-coordinate using a sine function, offset by wavePhase for animation
         final y = midY + amplitude * math.sin((x / wavelength) * 2 * math.pi - wavePhase);
         wavePath.lineTo(x, y);
       }
-      canvas.drawPath(wavePath, activePaint); // Draw the generated wavy path
+      canvas.drawPath(wavePath, activePaint); 
     }
 
     // 2. Draw Inactive Straight Path
     if (activeWidth < size.width) {
-      final inactivePath = Path();
-      inactivePath.moveTo(activeWidth, midY); // Start where the active path ends
-      inactivePath.lineTo(size.width, midY); // Draw a straight line to the right end
+      inactivePath.reset();
+      inactivePath.moveTo(activeWidth, midY); 
+      inactivePath.lineTo(size.width, midY); 
       canvas.drawPath(inactivePath, inactivePaint);
     }
 
     // 3. Draw Thumb Indicator
-    final thumbPaint = Paint()
-      ..color = activeColor
-      ..style = PaintingStyle.fill; // Solid circle
-
-    // Draw a circle at the end of the active path
     canvas.drawCircle(Offset(activeWidth, midY), 7.0, thumbPaint);
   }
 
   @override
-  /// Specifies that the painter should always repaint when its delegate changes.
-  /// This is necessary because the `wavePhase` changes constantly due to the animation,
-  /// and `fraction` can change with playback progress.
   bool shouldRepaint(covariant _WavySeekBarPainter oldDelegate) => true;
 }

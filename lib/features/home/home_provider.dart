@@ -477,14 +477,28 @@ class HomeNotifier extends Notifier<HomeState> {
       final newSongs = <Song>[];
       final newPlaylists = <Playlist>[];
 
+      final Set<String> usedCovers = {};
+
       for (var artist in queryArtists.take(4)) {
         final res = await apiService.searchSongs(artist, count: 20);
         if (res.isNotEmpty) {
+          String selectedCover = '';
+          for (var song in res) {
+            if (song.coverArt.isNotEmpty && !usedCovers.contains(song.coverArt)) {
+              selectedCover = song.coverArt;
+              usedCovers.add(song.coverArt);
+              break;
+            }
+          }
+          if (selectedCover.isEmpty) {
+            selectedCover = res.first.coverArt;
+          }
+
           newPlaylists.add(Playlist(
             id: 'mix_${artist.replaceAll(' ', '_')}',
             title: 'Daily Mix: $artist',
             type: 'playlist',
-            coverArt: res.first.coverArt,
+            coverArt: selectedCover,
             songCount: res.length,
             songs: res,
           ));

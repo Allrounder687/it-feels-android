@@ -401,23 +401,15 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     await player.setVolume((state.isMuted || isMutedCanvas) ? 0.0 : 100.0);
     await player.setRate(state.playbackSpeed);
     
-    if (previousPosition != Duration.zero) {
-      // Ensure the demuxer is ready to accept a seek before we send it
-      if (player.state.duration.inMilliseconds > 0) {
-        await player.seek(previousPosition);
-      } else {
-        try {
-          await player.stream.duration.firstWhere((d) => d.inMilliseconds > 0).timeout(const Duration(seconds: 4));
-          await player.seek(previousPosition);
-        } catch (_) {
-          // Fallback if timeout happens
-          await player.seek(previousPosition);
-        }
-      }
-    }
-    
     if (wasPlaying) {
       await player.play();
+    }
+    
+    if (previousPosition != Duration.zero) {
+      // Execute the seek immediately after play. Modern media_kit natively queues the seek
+      // if the demuxer isn't ready. This removes the catastrophic 4-second blocking delay 
+      // that was destroying the audio-video crossfade sync.
+      await player.seek(previousPosition);
     }
 
     state = state.copyWith(

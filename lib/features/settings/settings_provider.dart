@@ -30,7 +30,7 @@ class SettingsState {
     this.customDownloadPath = '',
     this.enableAndroidAuto = false,
     this.hapticsMode = 'Off',
-    this.useProxyBackend = false,
+    this.useProxyBackend = true,
     this.proxyUrl = 'https://it-feels-proxy.cleverfox687.workers.dev',
     this.enableMusicVideos = false,
     this.useVideoAudioSource = false,
