@@ -126,7 +126,6 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     _ensureStreams();
@@ -637,52 +636,66 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
                             final displayName = friend['displayName'] as String? ?? 'Friend';
                             final username = friend['username'] as String? ?? '';
                     
-                            return StreamBuilder<DatabaseEvent>(
-                              stream: _socialService.getPresenceStream(friendUid),
-                              builder: (context, presenceSnap) {
-                                Map<String, dynamic>? presenceData;
-                                if (presenceSnap.hasData && presenceSnap.data!.snapshot.value != null) {
-                                  try {
-                                    presenceData = Map<String, dynamic>.from(presenceSnap.data!.snapshot.value as Map);
-                                  } catch (_) {}
-                                }
-                                
-                                final isPlaying = presenceData?['is_playing'] == true;
-                                final roomId = presenceData?['room_id'];
-
-                                return ListTile(
-                                  onTap: () {
-                                    if (isPlaying && roomId != null) {
-                                      _handleJoinRoom(roomId, displayName);
-                                    } else {
-                                      Navigator.push(context, MaterialPageRoute(builder: (_) => FriendProfileScreen(friendUid: friendUid, friendName: displayName)));
-                                    }
-                                  },
-                                  leading: CircleAvatar(
-                                    backgroundColor: AppColors.midnightAccent,
-                                    child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                                  ),
-                                  title: Text(displayName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
-                                  subtitle: isPlaying ? Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
-                                          const SizedBox(width: 4),
-                                          Flexible(
-                                            child: Text(
-                                              "Listening to ${presenceData!['song_title']}",
-                                              style: GoogleFonts.inter(color: Colors.greenAccent, fontSize: 12),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
+                            return ListTile(
+                              onTap: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (_) => FriendProfileScreen(friendUid: friendUid, friendName: displayName)));
+                              },
+                              leading: CircleAvatar(
+                                backgroundColor: AppColors.midnightAccent,
+                                child: Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                              ),
+                              title: Text(displayName, style: GoogleFonts.inter(fontWeight: FontWeight.bold, color: context.themeTextColor)),
+                              subtitle: StreamBuilder<DatabaseEvent>(
+                                stream: _socialService.getPresenceStream(friendUid),
+                                builder: (context, presenceSnap) {
+                                  if (presenceSnap.hasData && presenceSnap.data!.snapshot.value != null) {
+                                    try {
+                                      final presenceData = Map<String, dynamic>.from(presenceSnap.data!.snapshot.value as Map);
+                                      
+                                      if (presenceData['is_playing'] == true) {
+                                        return Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.circle, color: Colors.greenAccent, size: 10),
+                                                const SizedBox(width: 4),
+                                                Flexible(
+                                                  child: Text(
+                                                    "Listening to ${presenceData['song_title']}",
+                                                    style: GoogleFonts.inter(color: Colors.greenAccent, fontSize: 12),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ) : Text(username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
+                                            if (presenceData['room_id'] != null) ...[
+                                              const SizedBox(height: 4),
+                                              ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: AppColors.midnightPrimary,
+                                                  foregroundColor: Colors.white,
+                                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                                                  minimumSize: const Size(80, 28),
+                                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                ),
+                                                onPressed: () {
+                                                  _handleJoinRoom(presenceData['room_id'], displayName);
+                                                },
+                                                child: const Text("Join Room", style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                              ),
+                                            ],
+                                          ],
+                                        );
+                                      }
+                                    } catch (_) {}
+                                  }
+                                  return Text(username, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12));
+                                },
+                              ),
                               trailing: PopupMenuButton<String>(
                                 icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
                                 onSelected: (val) {
