@@ -1,3 +1,7 @@
+## v3.5.25+59
+- **CI/CD Resiliency & Environment Variables**: Fixed a critical build failure (Exit Code 70) in GitHub Actions caused by missing `.env` file bundling. Added automated pipeline logic to inject a dummy `.env` placeholder, resolving compile-time errors in `flutter_dotenv` on remote CI runners.
+- **Audio Lock Screen Controls**: Fixed an issue where the player would become unresponsive on the lock screen or control center, especially when switching tracks rapidly or when background tracks completed. Wired `audioHandler.onSkipNext` and `onSkipPrevious` hooks directly to the newly isolated `AudioEngineService` in `audio_player_provider.dart` to correctly bridge native media controls to Flutter states.
+
 ## v3.5.24+58
 - **UI & Aesthetics**: Replaced basic linear gradients with a stunning AI-generated abstract "It Feels" placeholder image for missing artist avatars globally. 
 - **Cover Art Deduplication**: Rewrote the fallback algorithm for the Home Screen Top Artists carousel and Daily Mix engine. Identical movie posters from collaborative tracks are no longer duplicated across multiple artists; each artist now guarantees a unique visual identity drawn from both history and global trending lists.

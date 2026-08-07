@@ -34,6 +34,9 @@ jobs:
         with:
           cache: true
 
+      - name: Create Dummy Env File
+        run: touch .env
+
       - name: Install dependencies
         run: flutter pub get
 
