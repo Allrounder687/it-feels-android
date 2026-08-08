@@ -170,9 +170,21 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
+  windows:
+    generate: true
+    image_path: "assets/icon.png"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/icon.png"
+  web:
+    generate: true
+    image_path: "assets/icon.png"
+    background_color: "#090D16"
+    theme_color: "#090D16"
+  image_path: "assets/icon.png"
   adaptive_icon_background: "#090D16"
-  adaptive_icon_foreground: "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
+  adaptive_icon_foreground: "assets/icon.png"
 
 dependency_overrides:
   flutter_rust_bridge: 2.11.1
