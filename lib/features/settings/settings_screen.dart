@@ -276,6 +276,15 @@ class SettingsScreen extends ConsumerWidget {
                 onChanged: (val) => ref.read(settingsProvider.notifier).setEnableSmartDownloads(val),
               ),
 
+              if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
+                SwitchListTile.adaptive(
+                  value: settings.useSolidTitleBar,
+                  activeTrackColor: context.themeAccentColor,
+                  title: Text("Solid Title Bar", style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: context.themeTextColor)),
+                  subtitle: Text("Disables the translucent Mica glass effect on desktop", style: GoogleFonts.inter(fontSize: 12, color: context.themeMutedTextColor)),
+                  onChanged: (val) => ref.read(settingsProvider.notifier).toggleSolidTitleBar(val),
+                ),
+
               _buildActionTile(
                 context: context, title: "Smart Storage Manager", subtitle: "Manage offline downloads and audio cache limits", icon: Icons.storage_rounded,
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StorageScreen())),

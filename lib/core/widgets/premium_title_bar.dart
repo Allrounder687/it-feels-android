@@ -10,7 +10,12 @@ import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 
 class PremiumTitleBar extends ConsumerStatefulWidget {
   final bool isWideScreen;
-  const PremiumTitleBar({super.key, required this.isWideScreen});
+  final bool isSolid;
+  const PremiumTitleBar({
+    super.key,
+    required this.isWideScreen,
+    this.isSolid = false,
+  });
 
   @override
   ConsumerState<PremiumTitleBar> createState() => _PremiumTitleBarState();
@@ -61,14 +66,20 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
     final backgroundColor = context.themeBackgroundColor;
 
     // Simulate Mica with a vertical gradient + blur
-    final gradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        surfaceColor.withValues(alpha: _isFocused ? 0.7 : 0.4),
-        backgroundColor.withValues(alpha: _isFocused ? 0.9 : 0.6),
-      ],
-    );
+    final gradient = widget.isSolid
+        ? LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [surfaceColor, backgroundColor],
+          )
+        : LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              surfaceColor.withValues(alpha: _isFocused ? 0.3 : 0.1),
+              backgroundColor.withValues(alpha: _isFocused ? 0.4 : 0.2),
+            ],
+          );
 
     return Container(
       height: 48,
@@ -84,7 +95,10 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
       ),
       child: ClipRRect(
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          filter: ImageFilter.blur(
+            sigmaX: widget.isSolid ? 0.0 : 25.0,
+            sigmaY: widget.isSolid ? 0.0 : 25.0,
+          ),
           child: Container(
             decoration: BoxDecoration(gradient: gradient),
             child: Row(
@@ -281,21 +295,29 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Dummy Status Chip
+        // Connectivity Indicator
+        Icon(
+          Icons.wifi_rounded,
+          size: 14,
+          color: context.themeAccentColor.withValues(alpha: _isFocused ? 0.8 : 0.4),
+        ),
+        const SizedBox(width: 12),
+        // User Profile / Avatar
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          width: 24,
+          height: 24,
           decoration: BoxDecoration(
-            color: Colors.amber.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: Colors.amber.withValues(alpha: 0.2)),
-          ),
-          child: const Text(
-            "Hi-Fi",
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              color: Colors.amber,
+            shape: BoxShape.circle,
+            color: context.themeTextColor.withValues(alpha: 0.1),
+            border: Border.all(
+              color: context.themeTextColor.withValues(alpha: 0.1),
+              width: 1,
             ),
+          ),
+          child: Icon(
+            Icons.person_rounded,
+            size: 14,
+            color: context.themeTextColor.withValues(alpha: 0.6),
           ),
         ),
         const SizedBox(width: 16),
@@ -365,7 +387,7 @@ class _CaptionButtonState extends State<_CaptionButton> {
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
         child: Container(
-          width: 48,
+          width: 46,
           height: 48,
           color: _isHovered ? hoverColor : Colors.transparent,
           child: Icon(widget.icon, size: 16, color: iconColor),

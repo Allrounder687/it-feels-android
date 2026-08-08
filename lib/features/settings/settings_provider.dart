@@ -26,6 +26,7 @@ class SettingsState {
   final String defaultVideoQuality;
   final GraphicsQuality graphicsQuality;
   final bool enableSmartDownloads;
+  final bool useSolidTitleBar;
 
   const SettingsState({
     this.wifiQuality = '320 kbps (Very High)',
@@ -45,6 +46,7 @@ class SettingsState {
     this.defaultVideoQuality = '480p',
     this.graphicsQuality = GraphicsQuality.high,
     this.enableSmartDownloads = true,
+    this.useSolidTitleBar = false,
   });
 
   SettingsState copyWith({
@@ -65,6 +67,7 @@ class SettingsState {
     String? defaultVideoQuality,
     GraphicsQuality? graphicsQuality,
     bool? enableSmartDownloads,
+    bool? useSolidTitleBar,
   }) {
     return SettingsState(
       wifiQuality: wifiQuality ?? this.wifiQuality,
@@ -84,6 +87,7 @@ class SettingsState {
       defaultVideoQuality: defaultVideoQuality ?? this.defaultVideoQuality,
       graphicsQuality: graphicsQuality ?? this.graphicsQuality,
       enableSmartDownloads: enableSmartDownloads ?? this.enableSmartDownloads,
+      useSolidTitleBar: useSolidTitleBar ?? this.useSolidTitleBar,
     );
   }
 }
@@ -127,6 +131,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       defaultVideoQuality: settings['defaultVideoQuality'] as String? ?? '480p',
       graphicsQuality: loadedQuality,
       enableSmartDownloads: settings['enableSmartDownloads'] ?? true,
+      useSolidTitleBar: settings['useSolidTitleBar'] ?? false,
       defaultCategory: defaultCat,
     );
 
@@ -265,7 +270,13 @@ class SettingsNotifier extends Notifier<SettingsState> {
       defaultVideoQuality: state.defaultVideoQuality,
       graphicsQuality: state.graphicsQuality.name,
       enableSmartDownloads: state.enableSmartDownloads,
+      useSolidTitleBar: state.useSolidTitleBar,
     );
+  }
+
+  Future<void> toggleSolidTitleBar(bool value) async {
+    state = state.copyWith(useSolidTitleBar: value);
+    _save();
   }
 }
 

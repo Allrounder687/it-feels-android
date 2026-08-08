@@ -2,6 +2,10 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Windows Desktop Resiliency & Premium UI (v3.5.28):**
+  - **SMTC Double Initialization Crash:** Fixed a critical Windows background crash (`flutter_rust_bridge has not been initialized`) by safely pruning duplicate `SMTCWindows.initialize()` calls from `main.dart`, correctly restoring initialization hierarchy before `MediaKit`.
+  - **Windows Title Bar:** Resolved a layout issue causing the default OS title bar to render above the custom app title bar. Injected `TitleBarStyle.hidden` into `WindowOptions` to properly override the native OS chrome.
+  - **Premium Window Controls:** Overhauled the top drag region to accurately mirror a premium "2026-era" UI. Integrated the user avatar and Wi-Fi connectivity indicator directly into the control strip alongside minimize, maximize, and close buttons.
 - **A/V Sync, Isolate Crash & UI Polish (v3.5.27):**
   - **PaletteExtractor Isolate Crash:** Removed `compute()` isolate spawning in `palette_extractor_isolate.dart`, running color extraction synchronously on the main thread to prevent random `IllegalArgumentException` / `NullPointerException` isolate registry crashes during rapid song skipping.
   - **CustomAction Notification Crash:** Hardcoded exact resource IDs (`mipmap/ic_launcher`) in `AudioPlayerHandler`'s `MediaControl` instantiations to prevent `AudioService` from throwing `IllegalArgumentException: You must specify an icon resource id to build a CustomAction` on Android.

@@ -1,3 +1,9 @@
+## v3.5.28+62
+- **Windows Desktop Resiliency & Premium UI**:
+  - **SMTC Double Initialization Crash**: Fixed a critical Windows background crash (`flutter_rust_bridge has not been initialized`) by safely pruning duplicate `SMTCWindows.initialize()` calls from `main.dart`, correctly restoring initialization hierarchy before `MediaKit`.
+  - **Windows Title Bar**: Resolved a layout issue causing the default OS title bar to render above the custom app title bar. Injected `TitleBarStyle.hidden` into `WindowOptions` to properly override the native OS chrome.
+  - **Premium Window Controls**: Overhauled the top drag region to accurately mirror a premium "2026-era" UI. Integrated the user avatar and Wi-Fi connectivity indicator directly into the control strip alongside minimize, maximize, and close buttons.
+
 ## v3.5.27+61
 - **A/V Sync, Isolate Crash & UI Polish**:
   - **PaletteExtractor Isolate Crash**: Removed `compute()` isolate spawning in `palette_extractor_isolate.dart`, running color extraction synchronously on the main thread to prevent random `IllegalArgumentException` / `NullPointerException` isolate registry crashes during rapid song skipping.

@@ -254,6 +254,7 @@ class StorageService {
     String? defaultVideoQuality,
     String? graphicsQuality,
     bool? enableSmartDownloads,
+    bool? useSolidTitleBar,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_wifiQualityKey, wifiQuality);
@@ -272,6 +273,7 @@ class StorageService {
     if (defaultVideoQuality != null) await prefs.setString('default_video_quality', defaultVideoQuality);
     if (graphicsQuality != null) await prefs.setString('graphics_quality', graphicsQuality);
     if (enableSmartDownloads != null) await prefs.setBool('enable_smart_downloads_v1', enableSmartDownloads);
+    if (useSolidTitleBar != null) await prefs.setBool('use_solid_title_bar', useSolidTitleBar);
   }
 
   static Future<Map<String, dynamic>> loadSettings() async {
@@ -293,6 +295,7 @@ class StorageService {
       'defaultVideoQuality': prefs.getString('default_video_quality') ?? '720p',
       'graphicsQuality': prefs.getString('graphics_quality') ?? 'high',
       'enableSmartDownloads': prefs.getBool('enable_smart_downloads_v1') ?? true,
+      'useSolidTitleBar': prefs.getBool('use_solid_title_bar') ?? false,
     };
   }
 

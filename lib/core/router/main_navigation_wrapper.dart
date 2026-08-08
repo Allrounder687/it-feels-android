@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -34,10 +35,12 @@ class MainNavigationWrapper extends ConsumerStatefulWidget {
   const MainNavigationWrapper({super.key, required this.navigationShell});
 
   @override
-  ConsumerState<MainNavigationWrapper> createState() => _MainNavigationWrapperState();
+  ConsumerState<MainNavigationWrapper> createState() =>
+      _MainNavigationWrapperState();
 }
 
-class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> with WidgetsBindingObserver {
+class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
+    with WidgetsBindingObserver {
   Song? _lastLoggedSong;
   late StreamSubscription _intentSubscription;
   String _lastCheckedClipboard = '';
@@ -46,7 +49,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
 
   void _onFrameTimings(List<FrameTiming> timings) {
     if (!mounted) return;
-    
+
     final currentQuality = ref.read(settingsProvider).graphicsQuality;
     // If already at lowest quality, do nothing.
     if (currentQuality == GraphicsQuality.low) {
@@ -68,23 +71,26 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
     if (_slowFrameCount > 15) {
       _slowFrameCount = 0;
       final now = DateTime.now();
-      
+
       // Throttle the auto-detection to at most once per hour so we don't spam the user
       // if they purposefully disable it.
-      if (_lastStutterWarning == null || now.difference(_lastStutterWarning!).inHours > 1) {
+      if (_lastStutterWarning == null ||
+          now.difference(_lastStutterWarning!).inHours > 1) {
         _lastStutterWarning = now;
-        
+
         // Auto-downgrade
-        final newQuality = currentQuality == GraphicsQuality.high 
-            ? GraphicsQuality.medium 
+        final newQuality = currentQuality == GraphicsQuality.high
+            ? GraphicsQuality.medium
             : GraphicsQuality.low;
-            
+
         ref.read(settingsProvider.notifier).setGraphicsQuality(newQuality);
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Heavy stutter detected. Graphics Quality lowered to ${newQuality.name.toUpperCase()} for a smoother experience.'),
+              content: Text(
+                'Heavy stutter detected. Graphics Quality lowered to ${newQuality.name.toUpperCase()} for a smoother experience.',
+              ),
               duration: const Duration(seconds: 5),
               behavior: SnackBarBehavior.floating,
             ),
@@ -99,16 +105,23 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     SchedulerBinding.instance.addTimingsCallback(_onFrameTimings);
-    
-    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS)) {
       // Listen to media sharing incoming links while app is in memory
-      _intentSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((value) {
-        if (value.isNotEmpty) {
-          _handleSharedText(value.first.path);
-        }
-      }, onError: (err) {
-        debugPrint("Intent error: $err");
-      });
+      _intentSubscription = ReceiveSharingIntent.instance
+          .getMediaStream()
+          .listen(
+            (value) {
+              if (value.isNotEmpty) {
+                _handleSharedText(value.first.path);
+              }
+            },
+            onError: (err) {
+              debugPrint("Intent error: $err");
+            },
+          );
 
       // Check for sharing intent when app is opened from closed state
       ReceiveSharingIntent.instance.getInitialMedia().then((value) {
@@ -122,9 +135,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final player = ref.read(audioPlayerProvider);
       final history = ref.read(listeningHistoryProvider);
-      
+
       // Listening history logging is handled via ref.listen in build()
-      
+
       // Check clipboard on startup
       _checkClipboardForPlaylist();
 
@@ -135,7 +148,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
 
   Future<void> _checkUpdateStatus() async {
     // 1. Silent Background Shorebird Patch Check
-    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS)) {
       try {
         final shorebird = ShorebirdUpdater();
         final status = await shorebird.checkForUpdate();
@@ -195,7 +210,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
     try {
       final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
       final text = clipboardData?.text?.trim() ?? '';
-      
+
       if (text.isNotEmpty && text != _lastCheckedClipboard) {
         _lastCheckedClipboard = text;
         _handleSharedText(text);
@@ -225,61 +240,92 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return Consumer(builder: (context, ref, child) {
-          final bottomUiHeight = ref.watch(bottomUiProvider);
-          final bottomPadding = bottomUiHeight > 0 ? bottomUiHeight + 12.0 : 24.0;
-          return Padding(
-            padding: EdgeInsets.only(top: 24, left: 24, right: 24, bottom: bottomPadding),
-            child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.playlist_add, size: 48, color: AppColors.midnightAccent),
-              const SizedBox(height: 16),
-              Text(
-                'Import Playlist?',
-                style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold, color: context.themeTextColor),
+        return Consumer(
+          builder: (context, ref, child) {
+            final bottomUiHeight = ref.watch(bottomUiProvider);
+            final bottomPadding = bottomUiHeight > 0
+                ? bottomUiHeight + 12.0
+                : 24.0;
+            return Padding(
+              padding: EdgeInsets.only(
+                top: 24,
+                left: 24,
+                right: 24,
+                bottom: bottomPadding,
               ),
-              const SizedBox(height: 8),
-              Text(
-                'We detected a Spotify playlist link. Would you like to import it to IT-Feels?',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.inter(color: context.themeMutedTextColor),
-              ),
-              const SizedBox(height: 24),
-              Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('Cancel', style: GoogleFonts.inter(color: context.themeMutedTextColor)),
+                  const Icon(
+                    Icons.playlist_add,
+                    size: 48,
+                    color: AppColors.midnightAccent,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Import Playlist?',
+                    style: GoogleFonts.inter(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: context.themeTextColor,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.midnightAccent,
-                        foregroundColor: context.themeBackgroundColor,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        PlaylistImportService().startBackgroundImport(
-                          url, 
-                          ref.read(customPlaylistProvider), 
-                          MusicApiService()
-                        );
-                      },
-                      child: Text('Import Now', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'We detected a Spotify playlist link. Would you like to import it to IT-Feels?',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      color: context.themeMutedTextColor,
                     ),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.inter(
+                              color: context.themeMutedTextColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.midnightAccent,
+                            foregroundColor: context.themeBackgroundColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            PlaylistImportService().startBackgroundImport(
+                              url,
+                              ref.read(customPlaylistProvider),
+                              MusicApiService(),
+                            );
+                          },
+                          child: Text(
+                            'Import Now',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
+            );
+          },
         );
-        });
       },
     );
   }
@@ -293,21 +339,30 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
         ref.read(listeningHistoryProvider.notifier).logSong(currentSong);
       }
     });
-    
-    final enableVideos = ref.watch(settingsProvider.select((s) => s.enableMusicVideos));
+
+    final enableVideos = ref.watch(
+      settingsProvider.select((s) => s.enableMusicVideos),
+    );
     final currentRoute = GoRouterState.of(context).uri.toString();
     final isNarrowScreen = MediaQuery.of(context).size.width < 360;
     final activeMediaType = ref.watch(activeMediaProvider);
 
     final videoProvider = ref.watch(videoPlayerProvider);
     final audioProvider = ref.watch(audioPlayerProvider);
-    final isSameSong = audioProvider.currentSong != null && 
-                       (videoProvider.currentVideoId == audioProvider.currentSong!.id || 
-                        videoProvider.currentVideoId == 'search:${audioProvider.currentSong!.id}');
-    final isMutedCanvas = !ref.watch(settingsProvider.select((s) => s.useVideoAudioSource)) && isSameSong;
-    
-    final bool showAudioMiniPlayer = activeMediaType == ActiveMediaType.audio || (activeMediaType == ActiveMediaType.video && isMutedCanvas);
-    final bool showVideoPiP = activeMediaType == ActiveMediaType.video && !isMutedCanvas;
+    final isSameSong =
+        audioProvider.currentSong != null &&
+        (videoProvider.currentVideoId == audioProvider.currentSong!.id ||
+            videoProvider.currentVideoId ==
+                'search:${audioProvider.currentSong!.id}');
+    final isMutedCanvas =
+        !ref.watch(settingsProvider.select((s) => s.useVideoAudioSource)) &&
+        isSameSong;
+
+    final bool showAudioMiniPlayer =
+        activeMediaType == ActiveMediaType.audio ||
+        (activeMediaType == ActiveMediaType.video && isMutedCanvas);
+    final bool showVideoPiP =
+        activeMediaType == ActiveMediaType.video && !isMutedCanvas;
 
     return PopScope(
       canPop: false,
@@ -323,8 +378,10 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
         // TV / 10-foot UI Back Button Discipline
         // Try to move focus up/left towards navigation
         final isWide = MediaQuery.of(context).size.width > 600;
-        final moved = FocusScope.of(context).focusInDirection(isWide ? TraversalDirection.left : TraversalDirection.up);
-        
+        final moved = FocusScope.of(context).focusInDirection(
+          isWide ? TraversalDirection.left : TraversalDirection.up,
+        );
+
         if (!moved) {
           if (widget.navigationShell.currentIndex != 0) {
             // Return to Home tab if not already there
@@ -336,210 +393,349 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
         }
       },
       child: Scaffold(
-      backgroundColor: context.themeBackgroundColor,
-      body: FocusTraversalGroup(
-        policy: OrderedTraversalPolicy(),
-        child: Column(
-          children: [
-          // Custom 2026-tier title bar for desktop
-          PremiumTitleBar(isWideScreen: MediaQuery.of(context).size.width >= 600),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-          final isWideScreen = constraints.maxWidth >= 600;
-          final isNarrowScreen = !isWideScreen;
+        backgroundColor: context.themeBackgroundColor,
+        body: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: Consumer(
+            builder: (context, ref, _) {
+              final isSolid = ref.watch(settingsProvider).useSolidTitleBar;
+              final isDesktop =
+                  !kIsWeb &&
+                  (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+              final titleBar = isDesktop
+                  ? PremiumTitleBar(
+                      isWideScreen: MediaQuery.of(context).size.width >= 600,
+                      isSolid: isSolid,
+                    )
+                  : const SizedBox.shrink();
 
-          if (isWideScreen) {
-            return FocusTraversalGroup(
-              policy: ReadingOrderTraversalPolicy(),
-              child: Row(
-                children: [
-                  // Floating Side Navigation Pill for Wide Screens
-                  SafeArea(
-                    right: false,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(32),
-                      child: Builder(
-                        builder: (context) {
-                          final child = Container(
-                            width: 96,
-                            margin: const EdgeInsets.only(left: 12, top: 12, bottom: 12),
-                            decoration: BoxDecoration(
-                              color: kDebugMode ? context.themeSurfaceColor : context.themeSurfaceColor.withValues(alpha: 0.7),
-                              borderRadius: BorderRadius.circular(32),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: context.themeInvertedTextColor.withValues(alpha: 0.2),
-                                  blurRadius: 20,
-                                  offset: const Offset(8, 0),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: SingleChildScrollView(
-                                physics: const BouncingScrollPhysics(),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(height: 12),
-                                    _buildNavItem(0, Icons.home_rounded, "Home", isVertical: true),
-                                    const SizedBox(height: 24),
-                                    _buildNavItem(1, Icons.search_rounded, "Search", isVertical: true),
-                                    const SizedBox(height: 24),
-                                    _buildNavItem(2, Icons.library_music_rounded, "Library", isVertical: true),
-                                    const SizedBox(height: 24),
-                                    if (enableVideos) ...[
-                                      _buildNavItem(3, Icons.video_library_rounded, "Videos", isVertical: true),
-                                      const SizedBox(height: 24),
-                                    ],
-                                    _buildNavItem(4, Icons.people_rounded, "Social", isVertical: true),
-                                    const SizedBox(height: 24),
-                                    _buildNavItem(5, Icons.settings_outlined, "Settings", isVertical: true, hasUpdate: ref.watch(shorebirdUpdatePendingProvider)),
-                                    const SizedBox(height: 12),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                          return child;
-                        },
-                      ),
-                    ),
-                  ),
-                  // Main Content
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        // Active Shell Route
-                        widget.navigationShell,
-                        
-                        // Video Miniplayer Overlay (PiP)
-                        if (showVideoPiP)
-                          const Positioned(
-                            bottom: 90, // Above the audio MiniPlayer
-                            right: 16,
-                            child: VideoMiniplayer(),
-                          ),
+              final appContent = LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWideScreen = constraints.maxWidth >= 600;
+                  final isNarrowScreen = !isWideScreen;
 
-                        // Floating MiniPlayer Overlay
-                        if (showAudioMiniPlayer)
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            child: MeasureSize(
-                              onChange: (size) => ref.read(bottomUiProvider.notifier).updateHeight(size.height),
-                              child: SafeArea(
-                                bottom: true,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // Import Progress Banner
-                                    const ImportProgressBanner(),
-                                    // Mini Player Pill
-                                    MiniPlayer(onTap: () => context.push('/now_playing')),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Mobile View
-          return Stack(
-            children: [
-              // Active Shell Route
-              widget.navigationShell,
-              
-
-              // Floating MiniPlayer + Bottom Navigation Bar Overlay
-              if (MediaQuery.of(context).orientation == Orientation.portrait)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: MeasureSize(
-                    onChange: (size) => ref.read(bottomUiProvider.notifier).updateHeight(size.height),
-                    child: SafeArea(
-                      bottom: true,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
+                  if (isWideScreen) {
+                    return FocusTraversalGroup(
+                      policy: ReadingOrderTraversalPolicy(),
+                      child: Row(
                         children: [
-                          // Import Progress Banner
-                          const ImportProgressBanner(),
-                          
-                          // Mini Player Pill
-                          if (showAudioMiniPlayer)
-                            MiniPlayer(onTap: () => context.push('/now_playing')),
-      
-                          // Floating Bottom Navigation Bar Pill Container
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(32),
-                            child: Builder(
-                              builder: (context) {
-                                final child = Container(
-                                  height: isNarrowScreen ? 70 : 76,
-                                  margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
-                                  decoration: BoxDecoration(
-                                    color: kDebugMode ? context.themeSurfaceColor : context.themeSurfaceColor.withValues(alpha: 0.7),
-                                    borderRadius: BorderRadius.circular(32),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: context.themeInvertedTextColor.withValues(alpha: 0.4),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 8),
+                          // Floating Side Navigation Pill for Wide Screens
+                          SafeArea(
+                            right: false,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(32),
+                              child: Builder(
+                                builder: (context) {
+                                  final child = Container(
+                                    width: 96,
+                                    margin: const EdgeInsets.only(
+                                      left: 12,
+                                      top: 12,
+                                      bottom: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: kDebugMode
+                                          ? context.themeSurfaceColor
+                                          : context.themeSurfaceColor
+                                                .withValues(alpha: 0.7),
+                                      borderRadius: BorderRadius.circular(32),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: context.themeInvertedTextColor
+                                              .withValues(alpha: 0.2),
+                                          blurRadius: 20,
+                                          offset: const Offset(8, 0),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Center(
+                                      child: SingleChildScrollView(
+                                        physics: const BouncingScrollPhysics(),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const SizedBox(height: 12),
+                                            _buildNavItem(
+                                              0,
+                                              Icons.home_rounded,
+                                              "Home",
+                                              isVertical: true,
+                                            ),
+                                            const SizedBox(height: 24),
+                                            _buildNavItem(
+                                              1,
+                                              Icons.search_rounded,
+                                              "Search",
+                                              isVertical: true,
+                                            ),
+                                            const SizedBox(height: 24),
+                                            _buildNavItem(
+                                              2,
+                                              Icons.library_music_rounded,
+                                              "Library",
+                                              isVertical: true,
+                                            ),
+                                            const SizedBox(height: 24),
+                                            if (enableVideos) ...[
+                                              _buildNavItem(
+                                                3,
+                                                Icons.video_library_rounded,
+                                                "Videos",
+                                                isVertical: true,
+                                              ),
+                                              const SizedBox(height: 24),
+                                            ],
+                                            _buildNavItem(
+                                              4,
+                                              Icons.people_rounded,
+                                              "Social",
+                                              isVertical: true,
+                                            ),
+                                            const SizedBox(height: 24),
+                                            _buildNavItem(
+                                              5,
+                                              Icons.settings_outlined,
+                                              "Settings",
+                                              isVertical: true,
+                                              hasUpdate: ref.watch(
+                                                shorebirdUpdatePendingProvider,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 12),
+                                          ],
+                                        ),
                                       ),
-                                    ],
+                                    ),
+                                  );
+                                  return child;
+                                },
+                              ),
+                            ),
+                          ),
+                          // Main Content
+                          Expanded(
+                            child: Stack(
+                              children: [
+                                // Active Shell Route
+                                widget.navigationShell,
+
+                                // Video Miniplayer Overlay (PiP)
+                                if (showVideoPiP)
+                                  const Positioned(
+                                    bottom: 90, // Above the audio MiniPlayer
+                                    right: 16,
+                                    child: VideoMiniplayer(),
                                   ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                    children: [
-                                      _buildNavItem(0, Icons.home_rounded, "Home", hideLabel: isNarrowScreen),
-                                      _buildNavItem(1, Icons.search_rounded, "Search", hideLabel: isNarrowScreen),
-                                      _buildNavItem(2, Icons.library_music_rounded, "Library", hideLabel: isNarrowScreen),
-                                      if (enableVideos) _buildNavItem(3, Icons.video_library_rounded, "Videos", hideLabel: isNarrowScreen),
-                                      _buildNavItem(4, Icons.people_rounded, "Social", hideLabel: isNarrowScreen),
-                                      _buildNavItem(5, Icons.settings_outlined, "Settings", hideLabel: isNarrowScreen, hasUpdate: ref.watch(shorebirdUpdatePendingProvider)),
-                                    ],
+
+                                // Floating MiniPlayer Overlay
+                                if (showAudioMiniPlayer)
+                                  Positioned(
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    child: MeasureSize(
+                                      onChange: (size) => ref
+                                          .read(bottomUiProvider.notifier)
+                                          .updateHeight(size.height),
+                                      child: SafeArea(
+                                        bottom: true,
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            // Import Progress Banner
+                                            const ImportProgressBanner(),
+                                            // Mini Player Pill
+                                            MiniPlayer(
+                                              onTap: () =>
+                                                  context.push('/now_playing'),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                );
-                                return child;
-                              },
+                              ],
                             ),
                           ),
                         ],
                       ),
+                    );
+                  }
+
+                  // Mobile View
+                  return Stack(
+                    children: [
+                      // Active Shell Route
+                      widget.navigationShell,
+
+                      // Floating MiniPlayer + Bottom Navigation Bar Overlay
+                      if (MediaQuery.of(context).orientation ==
+                          Orientation.portrait)
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          child: MeasureSize(
+                            onChange: (size) => ref
+                                .read(bottomUiProvider.notifier)
+                                .updateHeight(size.height),
+                            child: SafeArea(
+                              bottom: true,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Import Progress Banner
+                                  const ImportProgressBanner(),
+
+                                  // Mini Player Pill
+                                  if (showAudioMiniPlayer)
+                                    MiniPlayer(
+                                      onTap: () => context.push('/now_playing'),
+                                    ),
+
+                                  // Floating Bottom Navigation Bar Pill Container
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(32),
+                                    child: Builder(
+                                      builder: (context) {
+                                        final child = Container(
+                                          height: isNarrowScreen ? 70 : 76,
+                                          margin: const EdgeInsets.only(
+                                            left: 12,
+                                            right: 12,
+                                            bottom: 12,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: kDebugMode
+                                                ? context.themeSurfaceColor
+                                                : context.themeSurfaceColor
+                                                      .withValues(alpha: 0.7),
+                                            borderRadius: BorderRadius.circular(
+                                              32,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: context
+                                                    .themeInvertedTextColor
+                                                    .withValues(alpha: 0.4),
+                                                blurRadius: 20,
+                                                offset: const Offset(0, 8),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceAround,
+                                            children: [
+                                              _buildNavItem(
+                                                0,
+                                                Icons.home_rounded,
+                                                "Home",
+                                                hideLabel: isNarrowScreen,
+                                              ),
+                                              _buildNavItem(
+                                                1,
+                                                Icons.search_rounded,
+                                                "Search",
+                                                hideLabel: isNarrowScreen,
+                                              ),
+                                              _buildNavItem(
+                                                2,
+                                                Icons.library_music_rounded,
+                                                "Library",
+                                                hideLabel: isNarrowScreen,
+                                              ),
+                                              if (enableVideos)
+                                                _buildNavItem(
+                                                  3,
+                                                  Icons.video_library_rounded,
+                                                  "Videos",
+                                                  hideLabel: isNarrowScreen,
+                                                ),
+                                              _buildNavItem(
+                                                4,
+                                                Icons.people_rounded,
+                                                "Social",
+                                                hideLabel: isNarrowScreen,
+                                              ),
+                                              _buildNavItem(
+                                                5,
+                                                Icons.settings_outlined,
+                                                "Settings",
+                                                hideLabel: isNarrowScreen,
+                                                hasUpdate: ref.watch(
+                                                  shorebirdUpdatePendingProvider,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        return child;
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      // Video Miniplayer PiP Overlay (On top of everything)
+                      if (showVideoPiP)
+                        Positioned(
+                          bottom:
+                              MediaQuery.of(context).orientation ==
+                                  Orientation.portrait
+                              ? ref.watch(bottomUiProvider) + 16
+                              : 16,
+                          right: 16,
+                          child: const VideoMiniplayer(),
+                        ),
+                    ],
+                  );
+                },
+              );
+
+              if (isSolid) {
+                return Column(
+                  children: [
+                    titleBar,
+                    Expanded(child: appContent),
+                  ],
+                );
+              } else {
+                return Stack(
+                  children: [
+                    MediaQuery(
+                      data: MediaQuery.of(context).copyWith(
+                        padding: EdgeInsets.only(top: isDesktop ? 48.0 : 0.0),
+                      ),
+                      child: appContent,
                     ),
-                  ),
-                ),
-              
-              // Video Miniplayer PiP Overlay (On top of everything)
-              if (showVideoPiP)
-                Positioned(
-                  bottom: MediaQuery.of(context).orientation == Orientation.portrait ? ref.watch(bottomUiProvider) + 16 : 16,
-                  right: 16,
-                  child: const VideoMiniplayer(),
-                ),
-            ],
-          );
-        },
+                    if (isDesktop)
+                      Positioned(top: 0, left: 0, right: 0, child: titleBar),
+                  ],
+                );
+              }
+            },
+          ),
+        ),
       ),
-    ),
-    ],
-  ),
-  ),
-  ),
-);
+    );
   }
-  Widget _buildNavItem(int index, IconData icon, String label, {bool isVertical = false, bool hideLabel = false, bool hasUpdate = false}) {
+
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    String label, {
+    bool isVertical = false,
+    bool hideLabel = false,
+    bool hasUpdate = false,
+  }) {
     final isSelected = widget.navigationShell.currentIndex == index;
-    return Consumer(builder: (context, ref, child) {
+    return Consumer(
+      builder: (context, ref, child) {
         final content = TVFocusableCard(
           onTap: () {
             widget.navigationShell.goBranch(
@@ -555,78 +751,114 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                 vertical: isVertical ? 16 : 14,
               ),
               decoration: BoxDecoration(
-                color: isSelected ? context.themeNavPillColor : Colors.transparent,
+                color: isSelected
+                    ? context.themeNavPillColor
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Stack(
                 children: [
                   isVertical
-                  ? Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        label == "Social"
-                            ? Consumer(
-                                builder: (context, ref, _) {
-                                  final count = ref.watch(unreadCountProvider).value ?? 0;
-                                  final iconWidget = Icon(icon, color: isSelected ? context.themeNavPillTextColor : context.themeMutedTextColor, size: 28);
-                                  if (count > 0) return Badge(label: Text(count.toString()), backgroundColor: Colors.redAccent, child: iconWidget);
-                                  return iconWidget;
-                                },
-                              )
-                            : Icon(
-                                icon,
-                                color: isSelected ? context.themeNavPillTextColor : context.themeMutedTextColor,
-                                size: 28,
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            label == "Social"
+                                ? Consumer(
+                                    builder: (context, ref, _) {
+                                      final count =
+                                          ref
+                                              .watch(unreadCountProvider)
+                                              .value ??
+                                          0;
+                                      final iconWidget = Icon(
+                                        icon,
+                                        color: isSelected
+                                            ? context.themeNavPillTextColor
+                                            : context.themeMutedTextColor,
+                                        size: 28,
+                                      );
+                                      if (count > 0)
+                                        return Badge(
+                                          label: Text(count.toString()),
+                                          backgroundColor: Colors.redAccent,
+                                          child: iconWidget,
+                                        );
+                                      return iconWidget;
+                                    },
+                                  )
+                                : Icon(
+                                    icon,
+                                    color: isSelected
+                                        ? context.themeNavPillTextColor
+                                        : context.themeMutedTextColor,
+                                    size: 28,
+                                  ),
+                            if (isSelected && !hideLabel) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.inter(
+                                  color: context.themeNavPillTextColor,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                ),
                               ),
-                        if (isSelected && !hideLabel) ...[
-                          const SizedBox(height: 6),
-                          Text(
-                            label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
-                              color: context.themeNavPillTextColor,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ],
-                    )
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        label == "Social"
-                            ? Consumer(
-                                builder: (context, ref, _) {
-                                  final count = ref.watch(unreadCountProvider).value ?? 0;
-                                  final iconWidget = Icon(icon, color: isSelected ? context.themeNavPillTextColor : context.themeMutedTextColor, size: 26);
-                                  if (count > 0) return Badge(label: Text(count.toString()), backgroundColor: Colors.redAccent, child: iconWidget);
-                                  return iconWidget;
-                                },
-                              )
-                            : Icon(
-                                icon,
-                                color: isSelected ? context.themeNavPillTextColor : context.themeMutedTextColor,
-                                size: 26,
+                            ],
+                          ],
+                        )
+                      : Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            label == "Social"
+                                ? Consumer(
+                                    builder: (context, ref, _) {
+                                      final count =
+                                          ref
+                                              .watch(unreadCountProvider)
+                                              .value ??
+                                          0;
+                                      final iconWidget = Icon(
+                                        icon,
+                                        color: isSelected
+                                            ? context.themeNavPillTextColor
+                                            : context.themeMutedTextColor,
+                                        size: 26,
+                                      );
+                                      if (count > 0)
+                                        return Badge(
+                                          label: Text(count.toString()),
+                                          backgroundColor: Colors.redAccent,
+                                          child: iconWidget,
+                                        );
+                                      return iconWidget;
+                                    },
+                                  )
+                                : Icon(
+                                    icon,
+                                    color: isSelected
+                                        ? context.themeNavPillTextColor
+                                        : context.themeMutedTextColor,
+                                    size: 26,
+                                  ),
+                            if (isSelected && !hideLabel) ...[
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
+                                    color: context.themeNavPillTextColor,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
                               ),
-                        if (isSelected && !hideLabel) ...[
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
-                                color: context.themeNavPillTextColor,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 11.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                            ],
+                          ],
+                        ),
 
                   // Update Dot Indicator
                   if (hasUpdate)
@@ -639,7 +871,10 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                         decoration: BoxDecoration(
                           color: context.themeAccentColor,
                           shape: BoxShape.circle,
-                          border: Border.all(color: context.themeBackgroundColor, width: 2),
+                          border: Border.all(
+                            color: context.themeBackgroundColor,
+                            width: 2,
+                          ),
                         ),
                       ),
                     ),

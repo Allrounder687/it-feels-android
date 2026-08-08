@@ -195,11 +195,6 @@ Future<void> main(List<String> args) async {
     );
 
     if (Platform.isWindows) {
-      try {
-        await SMTCWindows.initialize();
-      } catch (e) {
-        debugPrint("SMTC initialization error: $e");
-      }
       await WindowsSingleInstance.ensureSingleInstance(
         args,
         "it_feels_music_instance",
@@ -217,6 +212,7 @@ Future<void> main(List<String> args) async {
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.hidden,
     );
     
     windowManager.waitUntilReadyToShow(windowOptions, () async {
