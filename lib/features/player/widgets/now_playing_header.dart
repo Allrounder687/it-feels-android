@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
-import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
+import 'package:window_manager/window_manager.dart';
+import 'package:screen_retriever/screen_retriever.dart';
 
 class NowPlayingHeader extends ConsumerWidget {
   final bool isVideoMode;
@@ -35,8 +39,11 @@ class NowPlayingHeader extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
           tooltip: 'Close Player',
         ),
-        Container(
-          padding: const EdgeInsets.all(3),
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Container(
+              padding: const EdgeInsets.all(3),
           decoration: BoxDecoration(
             color: surfaceColor.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(24),
@@ -91,10 +98,45 @@ class NowPlayingHeader extends ConsumerWidget {
             ],
           ),
         ),
-        IconButton(
-          icon: Icon(Icons.more_vert_rounded, color: context.themeTextColor, size: 26),
-          onPressed: onOptionsTap,
-          tooltip: 'Options',
+          ),
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
+              IconButton(
+                icon: Icon(Icons.picture_in_picture_alt, color: context.themeTextColor, size: 24),
+                onPressed: () async {
+                  context.push('/desktop_miniplayer');
+                  await windowManager.setMinimumSize(const Size(300, 150));
+                  await windowManager.setSize(const Size(350, 200));
+                  await windowManager.setAlwaysOnTop(true);
+                  await windowManager.setResizable(true);
+                  
+                  // Use screen_retriever to respect the Windows Taskbar bounds (workArea)
+                  try {
+                    final display = await screenRetriever.getPrimaryDisplay();
+                    final visibleSize = display.visibleSize;
+                    final visiblePos = display.visiblePosition;
+                    if (visibleSize != null && visiblePos != null) {
+                      await windowManager.setPosition(
+                        Offset(visiblePos.dx + visibleSize.width - 350, visiblePos.dy + visibleSize.height - 200),
+                      );
+                    } else {
+                      await windowManager.setAlignment(Alignment.bottomRight);
+                    }
+                  } catch (_) {
+                    await windowManager.setAlignment(Alignment.bottomRight);
+                  }
+                },
+                tooltip: 'Miniplayer',
+              ),
+            IconButton(
+              icon: Icon(Icons.more_vert_rounded, color: context.themeTextColor, size: 26),
+              onPressed: onOptionsTap,
+              tooltip: 'Options',
+            ),
+          ],
         ),
       ],
     );

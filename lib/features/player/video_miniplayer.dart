@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-import 'package:it_feels_music/features/settings/settings_provider.dart';
 
 class VideoMiniplayer extends ConsumerWidget {
   const VideoMiniplayer({super.key});

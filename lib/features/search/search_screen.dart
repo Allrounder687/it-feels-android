@@ -1,31 +1,24 @@
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
-import 'package:it_feels_music/features/player/video_player_provider.dart';
-import 'package:it_feels_music/core/widgets/wavy_seek_bar.dart';
 import 'package:it_feels_music/core/widgets/skeleton_loading_list.dart';
-import 'package:it_feels_music/features/player/video_miniplayer.dart';
 import 'package:go_router/go_router.dart';
-import 'package:it_feels_music/features/player/video_player_screen.dart';
-import 'package:it_feels_music/features/search/search_provider.dart';
 import 'package:it_feels_music/features/library/artist_detail_screen.dart';
 import 'package:it_feels_music/features/library/playlist_detail_screen.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 
-import 'package:it_feels_music/features/settings/hidden_songs_provider.dart';
 
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
-  const SearchScreen({super.key});
+  final String? initialQuery;
+  const SearchScreen({super.key, this.initialQuery});
 
   @override
   ConsumerState<SearchScreen> createState() => _SearchScreenState();
@@ -41,6 +34,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    if (widget.initialQuery != null && widget.initialQuery!.isNotEmpty) {
+      _searchController.text = widget.initialQuery!;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(searchProvider.notifier).search(widget.initialQuery!);
+      });
+    }
   }
 
   void _onScroll() {
@@ -64,12 +63,13 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         final searchProviderObj = ref.watch(searchProvider);
         final hiddenProviderObj = ref.watch(hiddenSongsProvider);
         final settingsProviderObj = ref.watch(settingsProvider);
-        final categories = ["ALL", "SONGS", "ARTISTS", "ALBUMS", "PLAYLISTS", "VIDEOS"];
+        final categories = ["ALL", "SONGS", "ARTISTS", "ALBUMS", "PLAYLISTS", "VIDEOS", "PODCASTS"];
 
         final songs = searchProviderObj.songs.where((s) => !hiddenProviderObj.isHidden(s.id)).toList();
         final albums = searchProviderObj.albums;
         final playlists = searchProviderObj.playlists;
         final videos = searchProviderObj.videos;
+        final podcasts = searchProviderObj.podcasts;
 
         bool hasNoResults = _searchController.text.isNotEmpty &&
             !searchProviderObj.isSearching &&
@@ -77,7 +77,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             albums.isEmpty &&
             playlists.isEmpty &&
             searchProviderObj.artists.isEmpty &&
-            videos.isEmpty;
+            videos.isEmpty &&
+            podcasts.isEmpty;
 
         return Scaffold(
           backgroundColor: context.themeBackgroundColor,
@@ -495,6 +496,78 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                   const SizedBox(height: 16),
                                 ],
 
+                                // Podcasts Section
+                                if ((_selectedCategoryIndex == 0 || _selectedCategoryIndex == 6) && podcasts.isNotEmpty) ...[
+                                  Text(
+                                    "Podcasts",
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: context.themeTextColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ...podcasts.map((song) => Padding(
+                                        padding: const EdgeInsets.only(bottom: 6),
+                                        child: Material(
+                                          color: context.themeCardColor.withValues(alpha: 0.5),
+                                          borderRadius: BorderRadius.circular(16),
+                                          child: ListTile(
+                                            leading: ClipRRect(
+                                              borderRadius: BorderRadius.circular(12),
+                                              child: SizedBox(
+                                                width: 44,
+                                                height: 44,
+                                                child: song.coverArt.isNotEmpty
+                                                    ? CustomImageWidget(
+                                                        imageUrl: song.coverArt,
+                                                        fit: BoxFit.cover,
+                                                      )
+                                                    : Icon(Icons.music_note, color: context.themeTextColor),
+                                              ),
+                                            ),
+                                            title: Text(
+                                              song.title,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: GoogleFonts.inter(
+                                                color: context.themeTextColor,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            subtitle: Row(
+                                              children: [
+                                                _buildProviderBadge(context, song),
+                                                const SizedBox(width: 6),
+                                                Expanded(
+                                                  child: Text(
+                                                    song.artist,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: GoogleFonts.inter(
+                                                      color: context.themeMutedTextColor,
+                                                      fontSize: 12,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            trailing: IconButton(
+                                              icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
+                                              onPressed: () {
+                                                SongOptionsSheet.show(context, song, playlistContext: podcasts);
+                                              },
+                                            ),
+                                            onTap: () {
+                                              ref.read(audioPlayerProvider.notifier).playSong(song, queue: podcasts, index: podcasts.indexOf(song));
+                                            },
+                                          ),
+                                        ),
+                                      )),
+                                  const SizedBox(height: 16),
+                                ],
+
                                 if (searchProviderObj.isLoadingMore)
                                   const Padding(
                                     padding: EdgeInsets.all(20.0),
@@ -728,8 +801,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
         return GestureDetector(
           onTap: () {
-            _searchController.text = title;
-            ref.read(searchProvider.notifier).search(title);
+            // Append " Mix" to force the search API to return curated genre results
+            // rather than literal song titles (e.g. "Sleep Deeply").
+            final smartQuery = "$title Mix";
+            _searchController.text = smartQuery;
+            ref.read(searchProvider.notifier).search(smartQuery);
             // Hide keyboard if it was open
             FocusScope.of(context).unfocus();
           },

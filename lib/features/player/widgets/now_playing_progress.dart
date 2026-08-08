@@ -3,9 +3,6 @@ import 'package:it_feels_music/core/theme/app_typography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
-import 'package:it_feels_music/features/player/video_player_provider.dart';
-import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/core/widgets/wavy_seek_bar.dart';
 import 'package:it_feels_music/features/player/queue_bottom_sheet.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
@@ -31,13 +28,14 @@ class NowPlayingProgress extends ConsumerWidget {
     final videoProvider = ref.watch(videoPlayerProvider);
 
     if (isVideoMode && videoProvider.videoController != null) {
-      return StreamBuilder<Duration>(
-        stream: videoProvider.player!.stream.position,
-        builder: (context, snapshot) {
-          final position = snapshot.data ?? videoProvider.player!.state.position;
-          final duration = videoProvider.player!.state.duration;
-          return Column(
-            children: [
+      return ExcludeSemantics(
+        child: StreamBuilder<Duration>(
+          stream: videoProvider.player!.stream.position,
+          builder: (context, snapshot) {
+            final position = snapshot.data ?? videoProvider.player!.state.position;
+            final duration = videoProvider.player!.state.duration;
+            return Column(
+              children: [
               WavySeekBar(
                 position: position,
                 duration: duration,
@@ -69,46 +67,49 @@ class NowPlayingProgress extends ConsumerWidget {
               ),
             ],
           );
-        }
-      );
-    }
+        },
+      ),
+    );
+    } // Closes if (isVideoMode)
 
     final duration = ref.watch(audioPlayerProvider.select((p) => p.duration));
     final initialPos = ref.read(audioPlayerProvider).position;
 
-    return StreamBuilder<Duration>(
-      stream: ref.read(audioPlayerProvider.notifier).audioHandler.player.positionStream,
-      initialData: initialPos,
-      builder: (context, snapshot) {
-        final currentPos = snapshot.data ?? initialPos;
-        return Column(
-          children: [
-            WavySeekBar(
-              position: currentPos,
-              duration: duration,
-              activeColor: accentColor,
-              inactiveColor: context.themeTextColor24,
-              onSeek: (newPos) => ref.read(audioPlayerProvider.notifier).seek(newPos),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _formatDuration(currentPos),
-                    style: AppTypography.interNormal.copyWith(color: context.themeMutedTextColor, fontSize: 12),
-                  ),
-                  Text(
-                    _formatDuration(duration),
-                    style: AppTypography.interNormal.copyWith(color: context.themeMutedTextColor, fontSize: 12),
-                  ),
-                ],
+    return ExcludeSemantics(
+      child: StreamBuilder<Duration>(
+        stream: ref.read(audioPlayerProvider.notifier).audioHandler.player.positionStream,
+        initialData: initialPos,
+        builder: (context, snapshot) {
+          final currentPos = snapshot.data ?? initialPos;
+          return Column(
+            children: [
+              WavySeekBar(
+                position: currentPos,
+                duration: duration,
+                activeColor: accentColor,
+                inactiveColor: context.themeTextColor24,
+                onSeek: (newPos) => ref.read(audioPlayerProvider.notifier).seek(newPos),
               ),
-            ),
-          ],
-        );
-      },
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _formatDuration(currentPos),
+                      style: AppTypography.interNormal.copyWith(color: context.themeMutedTextColor, fontSize: 12),
+                    ),
+                    Text(
+                      _formatDuration(duration),
+                      style: AppTypography.interNormal.copyWith(color: context.themeMutedTextColor, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }

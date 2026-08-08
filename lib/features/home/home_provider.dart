@@ -1,5 +1,5 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/core/utils/error_reporter.dart';
@@ -8,6 +8,7 @@ import 'package:it_feels_music/data/models/feed_shelf.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/services/database_service.dart';
+import 'package:it_feels_music/data/services/youtube_podcast_provider.dart';
 
 @immutable
 class HomeState {
@@ -166,7 +167,9 @@ class HomeNotifier extends Notifier<HomeState> {
 
   @override
   HomeState build() {
-    apiService = locator.isRegistered<MusicApiService>() ? locator<MusicApiService>() : MusicApiService();
+    apiService = locator.isRegistered<MusicApiService>()
+        ? locator<MusicApiService>()
+        : MusicApiService();
     Future.microtask(() {
       _initCategory();
       loadHomepageData();
@@ -194,7 +197,7 @@ class HomeNotifier extends Notifier<HomeState> {
     } else if (category == "Music" && state.hollywoodSongs.isEmpty) {
       await fetchHollywoodSongs();
     }
-    
+
     // Auto load first feed page for category if empty
     if ((state.dynamicFeeds[category] ?? []).isEmpty) {
       loadMoreFeed();
@@ -205,42 +208,60 @@ class HomeNotifier extends Notifier<HomeState> {
     final cat = state.selectedCategory;
     if (state.isLoadingFeed[cat] == true) return;
     final int currentPage = state.feedPagesLoaded[cat] ?? 0;
-    
+
     // STOP POINT for infinite scroll: Max 5 dynamic paginations per tab
     if (currentPage >= 5) return;
-    
+
     state = state.copyWith(isLoadingFeed: {...state.isLoadingFeed, cat: true});
 
     try {
       final newShelves = await _generateShelvesForCategory(cat, currentPage);
       final currentFeeds = state.dynamicFeeds[cat] ?? [];
-      
+
       state = state.copyWith(
-        dynamicFeeds: {...state.dynamicFeeds, cat: [...currentFeeds, ...newShelves]},
+        dynamicFeeds: {
+          ...state.dynamicFeeds,
+          cat: [...currentFeeds, ...newShelves],
+        },
         isLoadingFeed: {...state.isLoadingFeed, cat: false},
         feedPagesLoaded: {...state.feedPagesLoaded, cat: currentPage + 1},
       );
     } catch (e) {
       debugPrint('[HomeNotifier] loadMoreFeed error: $e');
-      state = state.copyWith(isLoadingFeed: {...state.isLoadingFeed, cat: false});
+      state = state.copyWith(
+        isLoadingFeed: {...state.isLoadingFeed, cat: false},
+      );
     }
   }
 
-  Future<List<FeedShelf>> _generateShelvesForCategory(String category, int page) async {
+  Future<List<FeedShelf>> _generateShelvesForCategory(
+    String category,
+    int page,
+  ) async {
     final newShelves = <FeedShelf>[];
     List<List<dynamic>> queries = [];
-    
+
     // Dynamic extraction from current state
-    final topArtists = state.trendingSongs.map((e) => e.artist.split(',').first.trim()).where((a) => a.isNotEmpty).toSet().toList();
+    final topArtists = state.trendingSongs
+        .map((e) => e.artist.split(',').first.trim())
+        .where((a) => a.isNotEmpty)
+        .toSet()
+        .toList();
     topArtists.shuffle();
     final randArtist1 = topArtists.isNotEmpty ? topArtists[0] : 'Arijit Singh';
     final randArtist2 = topArtists.length > 1 ? topArtists[1] : 'The Weeknd';
-    final randArtist3 = topArtists.length > 2 ? topArtists[2] : 'Shreya Ghoshal';
-    
+    final randArtist3 = topArtists.length > 2
+        ? topArtists[2]
+        : 'Shreya Ghoshal';
+
     if (category == 'For You') {
       queries = [
         ['Featured Artists', ShelfType.artistGrid, randArtist1],
-        ['Recommended Stations', ShelfType.playlistCarousel, '$randArtist1 Mix'],
+        [
+          'Recommended Stations',
+          ShelfType.playlistCarousel,
+          '$randArtist1 Mix',
+        ],
         ['Chill Mix', ShelfType.songCarousel, 'playlist:Chill Mix'],
         ['Biggest Hits', ShelfType.songCarousel, randArtist2],
         ['Artists You Might Like', ShelfType.artistGrid, randArtist3],
@@ -265,16 +286,20 @@ class HomeNotifier extends Notifier<HomeState> {
       ];
     } else if (category == 'Podcasts') {
       queries = [
-        ['Top Creators', ShelfType.artistGrid, 'Podcast Creators'],
-        ['True Crime', ShelfType.playlistCarousel, 'True Crime'],
-        ['Comedy Specials', ShelfType.songCarousel, 'Comedy Podcast'],
+        ['Top Creators', ShelfType.artistGrid, 'Podcast channels'],
+        ['True Crime', ShelfType.playlistCarousel, 'True Crime Podcast'],
+        [
+          'Comedy Specials',
+          ShelfType.songCarousel,
+          'Comedy Podcast full episode',
+        ],
         ['Educational', ShelfType.playlistCarousel, 'Educational Podcast'],
         ['Business & Tech', ShelfType.playlistCarousel, 'Business Podcast'],
-        ['Daily News', ShelfType.songCarousel, 'News Podcast'],
+        ['Daily News', ShelfType.songCarousel, 'News Podcast full episode'],
         ['Health & Wellness', ShelfType.playlistCarousel, 'Health Podcast'],
-        ['Sports Talk', ShelfType.songCarousel, 'Sports Podcast'],
+        ['Sports Talk', ShelfType.songCarousel, 'Sports Podcast full episode'],
         ['Pop Culture', ShelfType.playlistCarousel, 'Pop Culture Podcast'],
-        ['Motivation', ShelfType.artistGrid, 'Motivation'],
+        ['Motivation', ShelfType.artistGrid, 'Motivation Podcast'],
       ];
     } else {
       queries = [
@@ -286,7 +311,11 @@ class HomeNotifier extends Notifier<HomeState> {
         ['UK Top 40', ShelfType.playlistCarousel, 'UK Top'],
         ['Top 50 India', ShelfType.songCarousel, 'playlist:Top 50 India'],
         ['Global Top Playlists', ShelfType.playlistCarousel, 'Top Playlists'],
-        ['Trending on TikTok', ShelfType.songCarousel, 'playlist:TikTok Trending'],
+        [
+          'Trending on TikTok',
+          ShelfType.songCarousel,
+          'playlist:TikTok Trending',
+        ],
         ['Chart Toppers', ShelfType.artistGrid, 'Chart Toppers'],
       ];
     }
@@ -296,35 +325,55 @@ class HomeNotifier extends Notifier<HomeState> {
       final title = queries[i][0] as String;
       final type = queries[i][1] as ShelfType;
       final query = queries[i].length > 2 ? queries[i][2] as String : title;
-      
+
       try {
         if (type == ShelfType.artistGrid) {
-           final searchRes = await apiService.searchAll(query);
-           final artists = (searchRes['artists'] as List).take(6).toList();
-           if (artists.isNotEmpty) {
-             newShelves.add(FeedShelf(title: title, type: type, items: artists));
-           } else {
-             // Fallback
-             final songs = await apiService.searchSongs(query, count: 10);
-             final artistNames = songs.map((s) => s.artist).where((a) => a.isNotEmpty).toSet().take(6).toList();
-             if (artistNames.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: artistNames));
-           }
+          final searchRes = await apiService.searchAll(query);
+          final artists = (searchRes['artists'] as List).take(6).toList();
+          if (artists.isNotEmpty) {
+            newShelves.add(FeedShelf(title: title, type: type, items: artists));
+          } else {
+            // Fallback
+            final songs = await apiService.searchSongs(query, count: 10);
+            final artistNames = songs
+                .map((s) => s.artist)
+                .where((a) => a.isNotEmpty)
+                .toSet()
+                .take(6)
+                .toList();
+            if (artistNames.isNotEmpty)
+              newShelves.add(
+                FeedShelf(title: title, type: type, items: artistNames),
+              );
+          }
         } else if (type == ShelfType.songCarousel) {
-           if (query.startsWith('playlist:')) {
-              final actualQuery = query.substring(9);
-              final playlists = await apiService.searchPlaylists(actualQuery, count: 5);
-              if (playlists.isNotEmpty) {
-                final details = await apiService.fetchPlaylistDetails(playlists.first.id);
-                final songs = details['songs'] as List<Song>;
-                if (songs.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: songs));
-              }
-           } else {
-              final songs = await apiService.searchSongs(query, count: 15);
-              if (songs.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: songs));
-           }
+          if (query.startsWith('playlist:')) {
+            final actualQuery = query.substring(9);
+            final playlists = await apiService.searchPlaylists(
+              actualQuery,
+              count: 5,
+            );
+            if (playlists.isNotEmpty) {
+              final details = await apiService.fetchPlaylistDetails(
+                playlists.first.id,
+              );
+              final songs = details['songs'] as List<Song>;
+              if (songs.isNotEmpty)
+                newShelves.add(
+                  FeedShelf(title: title, type: type, items: songs),
+                );
+            }
+          } else {
+            final songs = await apiService.searchSongs(query, count: 15);
+            if (songs.isNotEmpty)
+              newShelves.add(FeedShelf(title: title, type: type, items: songs));
+          }
         } else if (type == ShelfType.playlistCarousel) {
-           final playlists = await apiService.searchPlaylists(query, count: 10);
-           if (playlists.isNotEmpty) newShelves.add(FeedShelf(title: title, type: type, items: playlists));
+          final playlists = await apiService.searchPlaylists(query, count: 10);
+          if (playlists.isNotEmpty)
+            newShelves.add(
+              FeedShelf(title: title, type: type, items: playlists),
+            );
         }
       } catch (e) {
         debugPrint('[HomeNotifier] Error generating shelf $title: $e');
@@ -344,9 +393,17 @@ class HomeNotifier extends Notifier<HomeState> {
           .replaceAll(RegExp(r'[^a-z0-9]'), '')
           .trim();
       if (cleanTitle.isEmpty) {
-        cleanTitle = s.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '').trim();
+        cleanTitle = s.title
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^a-z0-9]'), '')
+            .trim();
       }
-      String artistClean = s.artist.split(',').first.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '').trim();
+      String artistClean = s.artist
+          .split(',')
+          .first
+          .toLowerCase()
+          .replaceAll(RegExp(r'[^a-z0-9]'), '')
+          .trim();
       String uniqueKey = '${cleanTitle}_$artistClean';
       if (uniqueKey.isNotEmpty && !unique.containsKey(uniqueKey)) {
         unique[uniqueKey] = s;
@@ -357,40 +414,96 @@ class HomeNotifier extends Notifier<HomeState> {
 
   Future<void> fetchBollywoodSongs() async {
     try {
-      final list1 = await apiService.searchSongs("Hindi Songs", count: 30);
-      final list2 = await apiService.searchSongs("Arijit Singh", count: 30);
-      final list3 = await apiService.searchSongs("Bollywood Hits", count: 30);
-      final playlists = await apiService.searchPlaylists("Bollywood Hits", count: 20);
+      final random = Random();
+      final keywords = ['Hindi Songs', 'Bollywood Hits', 'Latest Hindi'];
+      final artists = ['Arijit Singh', 'Shreya Ghoshal', 'Pritam'];
+
+      final list1 = await apiService.searchSongs(
+        keywords[random.nextInt(keywords.length)],
+        count: 30,
+      );
+      final list2 = await apiService.searchSongs(
+        artists[random.nextInt(artists.length)],
+        count: 30,
+      );
+      final list3 = await apiService.searchSongs(
+        "Hindi Romantic Hits",
+        count: 30,
+      );
+      final playlists = await apiService.searchPlaylists(
+        "Bollywood Hits",
+        count: 20,
+      );
 
       final combined = _deduplicate([...list1, ...list2, ...list3]);
       state = state.copyWith(
         bollywoodSongs: combined.isNotEmpty ? combined : state.bollywoodSongs,
-        bollywoodPlaylists: playlists.isNotEmpty ? playlists : state.bollywoodPlaylists,
+        bollywoodPlaylists: playlists.isNotEmpty
+            ? playlists
+            : state.bollywoodPlaylists,
       );
     } catch (_) {}
   }
 
   Future<void> fetchTeluguSongs() async {
     try {
-      final list1 = await apiService.searchSongs("Telugu Songs", count: 30);
-      final list2 = await apiService.searchSongs("Sid Sriram Telugu", count: 30);
-      final list3 = await apiService.searchSongs("Tollywood Hits", count: 30);
-      final playlists = await apiService.searchPlaylists("Telugu Hits", count: 20);
+      final random = Random();
+      final keywords = ['Telugu Songs', 'Tollywood Hits', 'Latest Telugu'];
+      final artists = ['Sid Sriram Telugu', 'Devi Sri Prasad', 'Thaman S'];
+
+      final list1 = await apiService.searchSongs(
+        keywords[random.nextInt(keywords.length)],
+        count: 30,
+      );
+      final list2 = await apiService.searchSongs(
+        artists[random.nextInt(artists.length)],
+        count: 30,
+      );
+      final list3 = await apiService.searchSongs(
+        "Telugu Melody Hits",
+        count: 30,
+      );
+      final playlists = await apiService.searchPlaylists(
+        "Telugu Hits",
+        count: 20,
+      );
 
       final combined = _deduplicate([...list1, ...list2, ...list3]);
       state = state.copyWith(
         teluguSongs: combined.isNotEmpty ? combined : state.teluguSongs,
-        teluguPlaylists: playlists.isNotEmpty ? playlists : state.teluguPlaylists,
+        teluguPlaylists: playlists.isNotEmpty
+            ? playlists
+            : state.teluguPlaylists,
       );
     } catch (_) {}
   }
 
   Future<void> fetchTamilSongs() async {
     try {
-      final list1 = await apiService.searchSongs("Tamil Songs", count: 30);
-      final list2 = await apiService.searchSongs("Anirudh Ravichander", count: 30);
-      final list3 = await apiService.searchSongs("Kollywood Hits", count: 30);
-      final playlists = await apiService.searchPlaylists("Tamil Hits", count: 20);
+      final random = Random();
+      final keywords = ['Tamil Songs', 'Kollywood Hits', 'Latest Tamil'];
+      final artists = [
+        'Anirudh Ravichander',
+        'A.R. Rahman Tamil',
+        'Yuvan Shankar Raja',
+      ];
+
+      final list1 = await apiService.searchSongs(
+        keywords[random.nextInt(keywords.length)],
+        count: 30,
+      );
+      final list2 = await apiService.searchSongs(
+        artists[random.nextInt(artists.length)],
+        count: 30,
+      );
+      final list3 = await apiService.searchSongs(
+        "Tamil Melody Hits",
+        count: 30,
+      );
+      final playlists = await apiService.searchPlaylists(
+        "Tamil Hits",
+        count: 20,
+      );
 
       final combined = _deduplicate([...list1, ...list2, ...list3]);
       state = state.copyWith(
@@ -402,46 +515,110 @@ class HomeNotifier extends Notifier<HomeState> {
 
   Future<void> fetchPunjabiSongs() async {
     try {
-      final list1 = await apiService.searchSongs("Punjabi Songs", count: 30);
-      final list2 = await apiService.searchSongs("Karan Aujla", count: 30);
-      final list3 = await apiService.searchSongs("Punjabi Hits", count: 30);
-      final playlists = await apiService.searchPlaylists("Punjabi Hits", count: 20);
+      final random = Random();
+      final keywords = ['Punjabi Songs', 'Punjabi Hits', 'Latest Punjabi'];
+      final artists = ['Karan Aujla', 'Diljit Dosanjh', 'AP Dhillon'];
+
+      final list1 = await apiService.searchSongs(
+        keywords[random.nextInt(keywords.length)],
+        count: 30,
+      );
+      final list2 = await apiService.searchSongs(
+        artists[random.nextInt(artists.length)],
+        count: 30,
+      );
+      final list3 = await apiService.searchSongs(
+        "Punjabi Party Hits",
+        count: 30,
+      );
+      final playlists = await apiService.searchPlaylists(
+        "Punjabi Hits",
+        count: 20,
+      );
 
       final combined = _deduplicate([...list1, ...list2, ...list3]);
       state = state.copyWith(
         punjabiSongs: combined.isNotEmpty ? combined : state.punjabiSongs,
-        punjabiPlaylists: playlists.isNotEmpty ? playlists : state.punjabiPlaylists,
+        punjabiPlaylists: playlists.isNotEmpty
+            ? playlists
+            : state.punjabiPlaylists,
       );
     } catch (_) {}
   }
 
   Future<void> fetchHollywoodSongs() async {
     try {
-      final list1 = await apiService.searchSongs("English Songs", count: 30);
-      final list2 = await apiService.searchSongs("Taylor Swift", count: 30);
-      final list3 = await apiService.searchSongs("Pop Hits", count: 30);
-      final playlists = await apiService.searchPlaylists("English Hits", count: 20);
+      final random = Random();
+      final artists = [
+        'Taylor Swift',
+        'The Weeknd',
+        'Dua Lipa',
+        'Ed Sheeran',
+        'Billie Eilish',
+        'Post Malone',
+        'Drake',
+        'Ariana Grande',
+        'Justin Bieber',
+        'Bruno Mars',
+        'Eminem',
+        'Rihanna',
+        'Coldplay',
+        'Imagine Dragons',
+        'Maroon 5',
+        'Shawn Mendes',
+      ];
+      final artist1 = artists.removeAt(random.nextInt(artists.length));
+      final artist2 = artists.removeAt(random.nextInt(artists.length));
+      final artist3 = artists.removeAt(random.nextInt(artists.length));
+
+      final list1 = await apiService.searchSongs(artist1, count: 30);
+      final list2 = await apiService.searchSongs(artist2, count: 30);
+      final list3 = await apiService.searchSongs(artist3, count: 30);
+      final playlists = await apiService.searchPlaylists(
+        "English Pop",
+        count: 20,
+      );
 
       final combined = _deduplicate([...list1, ...list2, ...list3]);
       state = state.copyWith(
         hollywoodSongs: combined.isNotEmpty ? combined : state.hollywoodSongs,
-        hollywoodPlaylists: playlists.isNotEmpty ? playlists : state.hollywoodPlaylists,
+        hollywoodPlaylists: playlists.isNotEmpty
+            ? playlists
+            : state.hollywoodPlaylists,
       );
     } catch (_) {}
   }
 
   Future<void> fetchPodcasts() async {
     try {
-      final list1 = await apiService.searchSongs("Podcast", count: 20);
-      final list2 = await apiService.searchSongs("The Ranveer Show", count: 10);
-      final list3 = await apiService.searchSongs("Jay Shetty", count: 10);
-      final playlists = await apiService.searchPlaylists("Podcast", count: 20);
+      final random = Random();
+      final keywords = [
+        'Motivation podcast',
+        'Tech podcast',
+        'True crime podcast',
+      ];
+      final creators = ['The Ranveer Show', 'Jay Shetty', 'Huberman Lab'];
 
-      final combinedSongs = _deduplicate([...list1, ...list2, ...list3]);
-      
+      final ytPodcastProvider = YouTubePodcastProvider();
+
+      final list1 = await ytPodcastProvider.searchPodcasts(
+        keywords[random.nextInt(keywords.length)],
+        count: 10,
+      );
+      final list2 = await ytPodcastProvider.searchPodcasts(
+        creators[random.nextInt(creators.length)],
+        count: 10,
+      );
+
+      // Keep searching playlists on JioSaavn as a fallback just in case users like Saavn podcasts
+      final playlists = await apiService.searchPlaylists("Podcasts", count: 20);
+
+      final combined = _deduplicate([...list1, ...list2]);
       state = state.copyWith(
-        podcastSongs: combinedSongs.isNotEmpty ? combinedSongs : state.podcastSongs,
-        podcastPlaylists: playlists.isNotEmpty ? playlists : state.podcastPlaylists,
+        podcastSongs: combined.isNotEmpty ? combined : state.podcastSongs,
+        podcastPlaylists: playlists.isNotEmpty
+            ? playlists
+            : state.podcastPlaylists,
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchPodcasts error: $e');
@@ -455,7 +632,12 @@ class HomeNotifier extends Notifier<HomeState> {
       final tamilAlbums = await apiService.searchAlbums("Tamil", count: 25);
       final punjabiAlbums = await apiService.searchAlbums("Punjabi", count: 25);
 
-      final combined = <Playlist>[...hindiAlbums, ...teluguAlbums, ...tamilAlbums, ...punjabiAlbums];
+      final combined = <Playlist>[
+        ...hindiAlbums,
+        ...teluguAlbums,
+        ...tamilAlbums,
+        ...punjabiAlbums,
+      ];
       final Map<String, Playlist> unique = {};
       for (var album in combined) {
         if (album.id.isNotEmpty) unique[album.id] = album;
@@ -470,9 +652,16 @@ class HomeNotifier extends Notifier<HomeState> {
     if (state.youSongs.isNotEmpty) return;
 
     try {
-      final queryArtists = topArtists.isNotEmpty 
-          ? topArtists 
-          : (state.trendingSongs.isNotEmpty ? state.trendingSongs.map((e) => e.artist.split(',').first).where((a) => a.isNotEmpty).toSet().take(4).toList() : ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift']);
+      final queryArtists = topArtists.isNotEmpty
+          ? topArtists
+          : (state.trendingSongs.isNotEmpty
+                ? state.trendingSongs
+                      .map((e) => e.artist.split(',').first)
+                      .where((a) => a.isNotEmpty)
+                      .toSet()
+                      .take(4)
+                      .toList()
+                : ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift']);
 
       final newSongs = <Song>[];
       final newPlaylists = <Playlist>[];
@@ -484,7 +673,8 @@ class HomeNotifier extends Notifier<HomeState> {
         if (res.isNotEmpty) {
           String selectedCover = '';
           for (var song in res) {
-            if (song.coverArt.isNotEmpty && !usedCovers.contains(song.coverArt)) {
+            if (song.coverArt.isNotEmpty &&
+                !usedCovers.contains(song.coverArt)) {
               selectedCover = song.coverArt;
               usedCovers.add(song.coverArt);
               break;
@@ -494,25 +684,27 @@ class HomeNotifier extends Notifier<HomeState> {
             selectedCover = res.first.coverArt;
           }
 
-          newPlaylists.add(Playlist(
-            id: 'mix_${artist.replaceAll(' ', '_')}',
-            title: 'Daily Mix: $artist',
-            type: 'playlist',
-            coverArt: selectedCover,
-            songCount: res.length,
-            songs: res,
-          ));
-          newSongs.addAll(res);
+          final dedupedRes = _deduplicate(res);
+          newPlaylists.add(
+            Playlist(
+              id: 'mix_${artist.replaceAll(' ', '_')}',
+              title: 'Daily Mix: $artist',
+              type: 'playlist',
+              coverArt: selectedCover,
+              songCount: dedupedRes.length,
+              songs: dedupedRes,
+            ),
+          );
+          newSongs.addAll(dedupedRes);
         }
       }
-      
-      var finalYou = newSongs.isEmpty ? state.trendingSongs.take(10).toList() : newSongs;
+
+      var finalYou = newSongs.isEmpty
+          ? state.trendingSongs.take(10).toList()
+          : newSongs;
       finalYou = _deduplicate(finalYou);
 
-      state = state.copyWith(
-        youSongs: finalYou,
-        youPlaylists: newPlaylists,
-      );
+      state = state.copyWith(youSongs: finalYou, youPlaylists: newPlaylists);
     } catch (_) {}
   }
 
@@ -528,24 +720,29 @@ class HomeNotifier extends Notifier<HomeState> {
 
     try {
       final moods = ['Chill', 'Party', 'Lofi', 'Romance', 'Workout'];
-      final futures = moods.map((mood) => apiService.searchPlaylists('${state.moodLanguage} $mood', count: 4));
+      final futures = moods.map(
+        (mood) =>
+            apiService.searchPlaylists('${state.moodLanguage} $mood', count: 4),
+      );
       final results = await Future.wait(futures);
-      
+
       final moodList = <Playlist>[];
       for (var result in results) {
         if (result.isNotEmpty) moodList.addAll(result);
       }
-      
+
       final seen = <String>{};
-      var finalMoods = moodList.where((p) => p.coverArt.isNotEmpty && seen.add(p.id)).toList();
+      var finalMoods = moodList
+          .where((p) => p.coverArt.isNotEmpty && seen.add(p.id))
+          .toList();
       if (finalMoods.isEmpty) {
-        finalMoods = state.topPlaylists.where((p) => p.type == 'playlist').take(5).toList();
+        finalMoods = state.topPlaylists
+            .where((p) => p.type == 'playlist')
+            .take(5)
+            .toList();
       }
 
-      state = state.copyWith(
-        moodPlaylists: finalMoods,
-        isLoadingMoods: false,
-      );
+      state = state.copyWith(moodPlaylists: finalMoods, isLoadingMoods: false);
     } catch (_) {
       state = state.copyWith(isLoadingMoods: false);
     }
@@ -557,18 +754,23 @@ class HomeNotifier extends Notifier<HomeState> {
 
     try {
       final queries = ['Top 50', 'Billboard', 'Viral', 'Global 100'];
-      final futures = queries.map((query) => apiService.searchPlaylists(query, count: 8));
+      final futures = queries.map(
+        (query) => apiService.searchPlaylists(query, count: 8),
+      );
       final results = await Future.wait(futures);
-      
+
       final chartList = <Playlist>[];
       for (var result in results) {
         if (result.isNotEmpty) chartList.addAll(result);
       }
-      
+
       final seen = <String>{};
       var finalCharts = chartList.where((p) => seen.add(p.id)).toList();
       if (finalCharts.isEmpty) {
-        finalCharts = state.topPlaylists.where((p) => p.type == 'playlist').take(5).toList();
+        finalCharts = state.topPlaylists
+            .where((p) => p.type == 'playlist')
+            .take(5)
+            .toList();
       }
 
       state = state.copyWith(

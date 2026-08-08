@@ -7,9 +7,6 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
-import 'package:it_feels_music/features/library/download_provider.dart';
-import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/core/widgets/animated_play_pause_button.dart';
 import 'package:it_feels_music/core/widgets/bouncy_icon_button.dart';
@@ -20,7 +17,8 @@ class FullscreenVideoScreen extends ConsumerStatefulWidget {
   const FullscreenVideoScreen({super.key, required this.song});
 
   @override
-  ConsumerState<FullscreenVideoScreen> createState() => _FullscreenVideoScreenState();
+  ConsumerState<FullscreenVideoScreen> createState() =>
+      _FullscreenVideoScreenState();
 }
 
 class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
@@ -43,9 +41,7 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
   void dispose() {
     _hideControlsTimer?.cancel();
     // Restore Portrait & System Navigation Bars
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-    ]);
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
@@ -70,9 +66,12 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
     }
   }
 
-  void _showQualityPicker(BuildContext context, VideoPlayerState videoProvider) {
+  void _showQualityPicker(
+    BuildContext context,
+    VideoPlayerState videoProvider,
+  ) {
     if (videoProvider.streams.isEmpty) return;
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.black.withValues(alpha: 0.9),
@@ -109,22 +108,37 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                     final stream = videoProvider.streams[index];
                     final quality = stream['quality'] as String;
                     final isSelected = quality == videoProvider.selectedQuality;
-                    
+
                     return ListTile(
                       dense: true,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      tileColor: isSelected ? Colors.white12 : Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      tileColor: isSelected
+                          ? Colors.white12
+                          : Colors.transparent,
                       title: Text(
                         quality,
                         style: GoogleFonts.inter(
-                          color: isSelected ? context.themeAccentColor : Colors.white,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? context.themeAccentColor
+                              : Colors.white,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           fontSize: 16,
                         ),
                       ),
-                      trailing: isSelected ? Icon(Icons.check_circle_rounded, color: context.themeAccentColor) : null,
+                      trailing: isSelected
+                          ? Icon(
+                              Icons.check_circle_rounded,
+                              color: context.themeAccentColor,
+                            )
+                          : null,
                       onTap: () {
-                        ref.read(videoPlayerProvider.notifier).changeQuality(quality);
+                        ref
+                            .read(videoPlayerProvider.notifier)
+                            .changeQuality(quality);
                         Navigator.pop(context);
                       },
                     );
@@ -160,28 +174,37 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                 // Video Player Container
                 Center(
                   child: isInitialized
-                    ? ExcludeSemantics(
-                        child: Video(
-                          controller: ctrl,
-                          controls: NoVideoControls, // We use custom controls below
-                          fill: Colors.black,
-                        ),
-                      )
-                    : videoProvider.isLoading
+                      ? ExcludeSemantics(
+                          child: Video(
+                            controller: ctrl,
+                            controls:
+                                NoVideoControls, // We use custom controls below
+                            fill: Colors.black,
+                          ),
+                        )
+                      : videoProvider.isLoading
                       ? Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const CircularProgressIndicator(color: Colors.white),
+                            const CircularProgressIndicator(
+                              color: Colors.white,
+                            ),
                             const SizedBox(height: 16),
                             Text(
                               'Extracting Secure 4K Stream...',
-                              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+                              style: GoogleFonts.inter(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
                             ),
                           ],
                         )
                       : Text(
                           'Video unavailable',
-                          style: GoogleFonts.inter(color: Colors.white70, fontSize: 16),
+                          style: GoogleFonts.inter(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
                         ),
                 ),
 
@@ -211,17 +234,25 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                           children: [
                             // Top Bar
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
                               child: Row(
                                 children: [
                                   BouncyIconButton(
-                                    child: const Icon(Icons.fullscreen_exit_rounded, color: Colors.white, size: 28),
+                                    child: const Icon(
+                                      Icons.fullscreen_exit_rounded,
+                                      color: Colors.white,
+                                      size: 28,
+                                    ),
                                     onPressed: () => Navigator.pop(context),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
@@ -249,11 +280,19 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
 
                                   // Download Video Button
                                   BouncyIconButton(
-                                    child: const Icon(Icons.file_download_rounded, color: Colors.white, size: 26),
+                                    child: const Icon(
+                                      Icons.file_download_rounded,
+                                      color: Colors.white,
+                                      size: 26,
+                                    ),
                                     onPressed: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         SnackBar(
-                                          content: Text('Downloading video for ${widget.song.title}...'),
+                                          content: Text(
+                                            'Downloading video for ${widget.song.title}...',
+                                          ),
                                           behavior: SnackBarBehavior.floating,
                                         ),
                                       );
@@ -263,9 +302,15 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
 
                                   // Quality Selector Button
                                   GestureDetector(
-                                    onTap: () => _showQualityPicker(context, videoProvider),
+                                    onTap: () => _showQualityPicker(
+                                      context,
+                                      videoProvider,
+                                    ),
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: Colors.white24,
                                         borderRadius: BorderRadius.circular(20),
@@ -273,7 +318,11 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.high_quality_rounded, color: Colors.white, size: 18),
+                                          const Icon(
+                                            Icons.high_quality_rounded,
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
                                           const SizedBox(width: 6),
                                           Text(
                                             videoProvider.selectedQuality,
@@ -296,15 +345,24 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 BouncyIconButton(
-                                  child: const Icon(Icons.replay_10_rounded, color: Colors.white, size: 40),
+                                  child: const Icon(
+                                    Icons.replay_10_rounded,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
                                   onPressed: () {
                                     _startHideControlsTimer();
                                     final player = videoProvider.player;
                                     if (player != null) {
-                                      final newPos = player.state.position - const Duration(seconds: 10);
+                                      final newPos =
+                                          player.state.position -
+                                          const Duration(seconds: 10);
                                       player.seek(newPos);
-                                      if (!settingsProviderLocal.useVideoAudioSource) {
-                                        ref.read(audioPlayerProvider.notifier).seek(newPos);
+                                      if (!settingsProviderLocal
+                                          .useVideoAudioSource) {
+                                        ref
+                                            .read(audioPlayerProvider.notifier)
+                                            .seek(newPos);
                                       }
                                     }
                                   },
@@ -319,9 +377,13 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                     shape: BoxShape.circle,
                                   ),
                                   child: StreamBuilder<bool>(
-                                    stream: videoProvider.player?.stream.playing,
+                                    stream:
+                                        videoProvider.player?.stream.playing,
                                     builder: (context, snapshot) {
-                                      final isPlaying = snapshot.data ?? videoProvider.player?.state.playing ?? false;
+                                      final isPlaying =
+                                          snapshot.data ??
+                                          videoProvider.player?.state.playing ??
+                                          false;
                                       return AnimatedPlayPauseButton(
                                         isPlaying: isPlaying,
                                         color: Colors.black,
@@ -332,34 +394,62 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                           if (player != null) {
                                             if (isPlaying) {
                                               player.pause();
-                                              if (!settingsProviderLocal.useVideoAudioSource) {
-                                                ref.read(audioPlayerProvider.notifier).pause();
+                                              if (!settingsProviderLocal
+                                                  .useVideoAudioSource) {
+                                                ref
+                                                    .read(
+                                                      audioPlayerProvider
+                                                          .notifier,
+                                                    )
+                                                    .pause();
                                               }
                                             } else {
                                               player.play();
-                                              if (!settingsProviderLocal.useVideoAudioSource) {
-                                                ref.read(audioPlayerProvider.notifier).seek(player.state.position);
-                                                ref.read(audioPlayerProvider.notifier).play();
+                                              if (!settingsProviderLocal
+                                                  .useVideoAudioSource) {
+                                                ref
+                                                    .read(
+                                                      audioPlayerProvider
+                                                          .notifier,
+                                                    )
+                                                    .seek(
+                                                      player.state.position,
+                                                    );
+                                                ref
+                                                    .read(
+                                                      audioPlayerProvider
+                                                          .notifier,
+                                                    )
+                                                    .play();
                                               }
                                             }
                                             setState(() {});
                                           }
                                         },
                                       );
-                                    }
+                                    },
                                   ),
                                 ),
                                 const SizedBox(width: 36),
                                 BouncyIconButton(
-                                  child: const Icon(Icons.forward_10_rounded, color: Colors.white, size: 40),
+                                  child: const Icon(
+                                    Icons.forward_10_rounded,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
                                   onPressed: () {
                                     _startHideControlsTimer();
                                     final player = videoProvider.player;
                                     if (player != null) {
-                                      final newPos = player.state.position + const Duration(seconds: 10);
+                                      final newPos =
+                                          player.state.position +
+                                          const Duration(seconds: 10);
                                       player.seek(newPos);
-                                      if (!settingsProviderLocal.useVideoAudioSource) {
-                                        ref.read(audioPlayerProvider.notifier).seek(newPos);
+                                      if (!settingsProviderLocal
+                                          .useVideoAudioSource) {
+                                        ref
+                                            .read(audioPlayerProvider.notifier)
+                                            .seek(newPos);
                                       }
                                     }
                                   },
@@ -369,29 +459,54 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
 
                             // Bottom Seek Bar
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
                               child: videoProvider.player != null
-                                ? StreamBuilder<Duration>(
-                                    stream: videoProvider.player!.stream.position,
-                                    builder: (context, snapshot) {
-                                      final position = snapshot.data ?? videoProvider.player!.state.position;
-                                      final duration = videoProvider.player!.state.duration;
-                                      return WavySeekBar(
-                                        position: position,
-                                        duration: duration,
-                                        activeColor: context.themeAccentColor,
-                                        inactiveColor: Colors.white24,
-                                        onSeek: (newPos) {
-                                          _startHideControlsTimer();
-                                          videoProvider.player!.seek(newPos);
-                                          if (!settingsProviderLocal.useVideoAudioSource) {
-                                            ref.read(audioPlayerProvider.notifier).seek(newPos);
-                                          }
+                                  ? ExcludeSemantics(
+                                      child: StreamBuilder<Duration>(
+                                        stream: videoProvider
+                                            .player!
+                                            .stream
+                                            .position,
+                                        builder: (context, snapshot) {
+                                          final position =
+                                              snapshot.data ??
+                                              videoProvider
+                                                  .player!
+                                                  .state
+                                                  .position;
+                                          final duration = videoProvider
+                                              .player!
+                                              .state
+                                              .duration;
+                                          return WavySeekBar(
+                                            position: position,
+                                            duration: duration,
+                                            activeColor:
+                                                context.themeAccentColor,
+                                            inactiveColor: Colors.white24,
+                                            onSeek: (newPos) {
+                                              _startHideControlsTimer();
+                                              videoProvider.player!.seek(
+                                                newPos,
+                                              );
+                                              if (!settingsProviderLocal
+                                                  .useVideoAudioSource) {
+                                                ref
+                                                    .read(
+                                                      audioPlayerProvider
+                                                          .notifier,
+                                                    )
+                                                    .seek(newPos);
+                                              }
+                                            },
+                                          );
                                         },
-                                      );
-                                    },
-                                  )
-                                : const SizedBox.shrink(),
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
                           ],
                         ),

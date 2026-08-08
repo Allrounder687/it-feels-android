@@ -1,33 +1,23 @@
-import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
-import 'package:it_feels_music/features/subscription/paywall_bottom_sheet.dart';
-import 'package:it_feels_music/features/player/lyrics_screen.dart';
-import 'package:it_feels_music/features/social/room_bottom_sheet.dart';
-import 'package:it_feels_music/core/widgets/bouncy_icon_button.dart';
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
-import 'package:it_feels_music/core/widgets/wavy_seek_bar.dart';
 import 'package:it_feels_music/features/player/queue_bottom_sheet.dart';
 import 'package:it_feels_music/features/player/sleep_timer_sheet.dart';
-import 'package:it_feels_music/core/widgets/animated_play_pause_button.dart';
-import 'package:it_feels_music/features/player/fullscreen_video_screen.dart';
 import 'package:it_feels_music/features/home/driving_mode_screen.dart';
-import 'package:media_kit_video/media_kit_video.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
-import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
+import 'package:it_feels_music/features/cast/cast_service.dart'
+    as it_feels_music_cast_service;
 import 'package:it_feels_music/features/cast/cast_bottom_sheet.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
-import 'package:it_feels_music/data/models/song_model.dart';
 
-import 'package:it_feels_music/features/player/widgets/pulse_glow_background.dart';
 import 'package:it_feels_music/features/player/widgets/live_lyrics_preview_card.dart';
 import 'package:it_feels_music/features/player/widgets/now_playing_header.dart';
 import 'package:it_feels_music/features/player/widgets/now_playing_art.dart';
@@ -54,8 +44,8 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     // Initialize into video mode if the miniplayer was tapped while a video was active!
     final videoProvider = ref.read(videoPlayerProvider);
     final audioProvider = ref.read(audioPlayerProvider);
-    if (videoProvider.isVideoActive && videoProvider.currentVideoId != null && audioProvider.currentSong != null) {
-      final vId = videoProvider.currentVideoId!;
+    if (videoProvider.isVideoActive && audioProvider.currentSong != null) {
+      final vId = videoProvider.currentVideoId;
       final sId = audioProvider.currentSong!.id;
       if (vId == sId || vId == 'search:$sId') {
         _isVideoMode = true;
@@ -65,7 +55,12 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     }
   }
 
-  Future<void> _toggleMode(bool toVideo, AudioPlayerState audioProvider, VideoPlayerState videoProvider, SettingsState settingsProv) async {
+  Future<void> _toggleMode(
+    bool toVideo,
+    AudioPlayerState audioProvider,
+    VideoPlayerState videoProvider,
+    SettingsState settingsProv,
+  ) async {
     if (_isVideoMode == toVideo) return;
     final currentSong = audioProvider.currentSong;
     if (currentSong == null) return;
@@ -81,14 +76,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
       // Switching to video
       final position = audioProvider.position;
       final useVideoAudio = settingsProv.useVideoAudioSource;
-      
+
       if (useVideoAudio) {
         ref.read(videoPlayerProvider.notifier).setMuted(false);
       } else {
         // Keep high quality audio playing from music player!
         ref.read(videoPlayerProvider.notifier).setMuted(true);
       }
-      
+
       ref.read(videoPlayerProvider.notifier).setOnVideoStarted(() {
         if (_isVideoMode) {
           if (settingsProv.useVideoAudioSource) {
@@ -99,21 +94,68 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         }
       });
 
-      ref.read(videoPlayerProvider.notifier).playVideo(
-        currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}',
-        currentSong.title,
-        currentSong.artist,
-        query: BackendApiService.cleanSearchQuery(currentSong.title, currentSong.artist),
-        startPosition: position,
-        isBackgroundHandoff: true,
-      );
+      ref
+          .read(videoPlayerProvider.notifier)
+          .playVideo(
+            currentSong.id.contains(':')
+                ? currentSong.id
+                : 'search:${currentSong.id}',
+            currentSong.title,
+            currentSong.artist,
+            query: BackendApiService.cleanSearchQuery(
+              currentSong.title,
+              currentSong.artist,
+            ),
+            startPosition: position,
+            isBackgroundHandoff: true,
+            onToastMessage: (msg) {
+              if (mounted) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(msg)));
+              }
+            },
+          );
     } else {
       // Switching to audio
       final useVideoAudio = settingsProv.useVideoAudioSource;
       if (useVideoAudio) {
-        final position = videoProvider.player?.state.position;
-        if (position != null && position > Duration.zero) {
-          ref.read(audioPlayerProvider.notifier).seek(position);
+        Duration? syncPosition = videoProvider.player?.state.position;
+        if (syncPosition != null && syncPosition > Duration.zero) {
+          final targetDuration = audioProvider.duration;
+          final sourceDuration =
+              videoProvider.player?.state.duration ?? Duration.zero;
+
+          if (targetDuration > Duration.zero &&
+              sourceDuration > Duration.zero) {
+            final diffSeconds =
+                (sourceDuration.inSeconds - targetDuration.inSeconds).abs();
+            if (diffSeconds > 15) {
+              syncPosition = Duration.zero;
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Different version detected. Starting from the beginning.",
+                    ),
+                  ),
+                );
+              }
+            } else {
+              final pct =
+                  syncPosition.inMilliseconds / sourceDuration.inMilliseconds;
+              syncPosition = Duration(
+                milliseconds: (targetDuration.inMilliseconds * pct).toInt(),
+              );
+            }
+
+            if (targetDuration.inSeconds > 2) {
+              final maxDuration = targetDuration - const Duration(seconds: 2);
+              if (syncPosition! > maxDuration) syncPosition = maxDuration;
+              if (syncPosition! < Duration.zero) syncPosition = Duration.zero;
+            }
+          }
+          ref.read(audioPlayerProvider.notifier).seek(syncPosition!);
         }
       }
       videoProvider.player?.pause();
@@ -129,7 +171,10 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     return '$minutes:$seconds';
   }
 
-  void _showQualityPickerBottomSheet(BuildContext context, VideoPlayerState videoProvider) {
+  void _showQualityPickerBottomSheet(
+    BuildContext context,
+    VideoPlayerState videoProvider,
+  ) {
     if (videoProvider.streams.isEmpty) return;
 
     showModalBottomSheet(
@@ -147,7 +192,11 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.hd_rounded, color: context.themeTextColor, size: 24),
+                  Icon(
+                    Icons.hd_rounded,
+                    color: context.themeTextColor,
+                    size: 24,
+                  ),
                   const SizedBox(width: 10),
                   Text(
                     'Select Video Quality',
@@ -171,19 +220,34 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
                     return ListTile(
                       dense: true,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      tileColor: isSelected ? context.themeAccentColor.withValues(alpha: 0.15) : Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      tileColor: isSelected
+                          ? context.themeAccentColor.withValues(alpha: 0.15)
+                          : Colors.transparent,
                       title: Text(
                         quality,
                         style: GoogleFonts.inter(
-                          color: isSelected ? context.themeAccentColor : context.themeTextColor,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? context.themeAccentColor
+                              : context.themeTextColor,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                           fontSize: 16,
                         ),
                       ),
-                      trailing: isSelected ? Icon(Icons.check_circle_rounded, color: context.themeAccentColor) : null,
+                      trailing: isSelected
+                          ? Icon(
+                              Icons.check_circle_rounded,
+                              color: context.themeAccentColor,
+                            )
+                          : null,
                       onTap: () {
-                        ref.read(videoPlayerProvider.notifier).changeQuality(quality);
+                        ref
+                            .read(videoPlayerProvider.notifier)
+                            .changeQuality(quality);
                         Navigator.pop(context);
                       },
                     );
@@ -225,25 +289,55 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                   ),
                 ),
                 ListTile(
-                  leading: Icon(Icons.directions_car_filled_rounded, color: context.themeTextColor),
-                  title: Text('Driving Mode', style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600)),
+                  leading: Icon(
+                    Icons.directions_car_filled_rounded,
+                    color: context.themeTextColor,
+                  ),
+                  title: Text(
+                    'Driving Mode',
+                    style: GoogleFonts.inter(
+                      color: context.themeTextColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const DrivingModeScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DrivingModeScreen(),
+                      ),
+                    );
                   },
                 ),
                 ListTile(
                   leading: Icon(
-                    playerProvider.isSleepTimerActive || playerProvider.sleepAfterCurrentTrack
+                    playerProvider.isSleepTimerActive ||
+                            playerProvider.sleepAfterCurrentTrack
                         ? Icons.bedtime_rounded
                         : Icons.bedtime_outlined,
-                    color: playerProvider.isSleepTimerActive || playerProvider.sleepAfterCurrentTrack
+                    color:
+                        playerProvider.isSleepTimerActive ||
+                            playerProvider.sleepAfterCurrentTrack
                         ? accentColor
                         : context.themeTextColor,
                   ),
-                  title: Text('Sleep Timer', style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600)),
+                  title: Text(
+                    'Sleep Timer',
+                    style: GoogleFonts.inter(
+                      color: context.themeTextColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   trailing: playerProvider.isSleepTimerActive
-                      ? Text('Active', style: GoogleFonts.inter(color: accentColor, fontSize: 12, fontWeight: FontWeight.bold))
+                      ? Text(
+                          'Active',
+                          style: GoogleFonts.inter(
+                            color: accentColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
                       : null,
                   onTap: () {
                     Navigator.pop(context);
@@ -260,39 +354,67 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                     playerProvider.currentVibe == AudioVibe.normal
                         ? Icons.graphic_eq
                         : playerProvider.currentVibe == AudioVibe.slowedReverb
-                            ? Icons.nightlight_round
-                            : Icons.bolt,
+                        ? Icons.nightlight_round
+                        : Icons.bolt,
                     color: playerProvider.currentVibe == AudioVibe.normal
                         ? context.themeTextColor
                         : accentColor,
                   ),
-                  title: Text('Audio Vibes', style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600)),
+                  title: Text(
+                    'Audio Vibes',
+                    style: GoogleFonts.inter(
+                      color: context.themeTextColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   subtitle: Text(
                     playerProvider.currentVibe == AudioVibe.slowedReverb
                         ? '🌙 Slowed + Reverb'
                         : playerProvider.currentVibe == AudioVibe.nightcore
-                            ? '⚡ Nightcore (Sped Up)'
-                            : '🎵 Normal Audio',
-                    style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+                        ? '⚡ Nightcore (Sped Up)'
+                        : '🎵 Normal Audio',
+                    style: GoogleFonts.inter(
+                      color: context.themeMutedTextColor,
+                      fontSize: 12,
+                    ),
                   ),
                   onTap: () {
                     final current = playerProvider.currentVibe;
                     if (current == AudioVibe.normal) {
-                      ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.slowedReverb);
+                      ref
+                          .read(audioPlayerProvider.notifier)
+                          .setAudioVibe(AudioVibe.slowedReverb);
                     } else if (current == AudioVibe.slowedReverb) {
-                      ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.nightcore);
+                      ref
+                          .read(audioPlayerProvider.notifier)
+                          .setAudioVibe(AudioVibe.nightcore);
                     } else {
-                      ref.read(audioPlayerProvider.notifier).setAudioVibe(AudioVibe.normal);
+                      ref
+                          .read(audioPlayerProvider.notifier)
+                          .setAudioVibe(AudioVibe.normal);
                     }
                     Navigator.pop(context);
                   },
                 ),
                 ListTile(
                   leading: Icon(
-                    locator<it_feels_music_cast_service.CastService>().isConnected ? Icons.cast_connected_rounded : Icons.cast_rounded,
-                    color: locator<it_feels_music_cast_service.CastService>().isConnected ? accentColor : context.themeTextColor,
+                    locator<it_feels_music_cast_service.CastService>()
+                            .isConnected
+                        ? Icons.cast_connected_rounded
+                        : Icons.cast_rounded,
+                    color:
+                        locator<it_feels_music_cast_service.CastService>()
+                            .isConnected
+                        ? accentColor
+                        : context.themeTextColor,
                   ),
-                  title: Text('Cast Audio', style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600)),
+                  title: Text(
+                    'Cast Audio',
+                    style: GoogleFonts.inter(
+                      color: context.themeTextColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _showCastBottomSheet(context);
@@ -300,8 +422,17 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                 ),
                 if (currentSong != null)
                   ListTile(
-                    leading: Icon(Icons.more_horiz_rounded, color: context.themeTextColor),
-                    title: Text('More Options', style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600)),
+                    leading: Icon(
+                      Icons.more_horiz_rounded,
+                      color: context.themeTextColor,
+                    ),
+                    title: Text(
+                      'More Options',
+                      style: GoogleFonts.inter(
+                        color: context.themeTextColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       SongOptionsSheet.show(context, currentSong);
@@ -319,10 +450,12 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, child) {
-        ref.listen(audioPlayerProvider.select((p) => p.position), (previous, next) {
-          final song = ref.read(audioPlayerProvider).currentSong;
-          if (song != null) {
-            ref.read(lyricsProvider.notifier).loadLyricsIfNeeded(song, next);
+        ref.listen(audioPlayerProvider.select((p) => p.currentSong), (
+          previous,
+          next,
+        ) {
+          if (next != null) {
+            ref.read(lyricsProvider.notifier).loadLyricsIfNeeded(next);
           }
         });
 
@@ -356,13 +489,20 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                 _isVideoMode = false;
               });
               final settingsProv = ref.read(settingsProvider);
-              ref.read(videoPlayerProvider.notifier).playVideo(
-                currentSong.id.contains(':') ? currentSong.id : 'search:${currentSong.id}',
-                currentSong.title,
-                currentSong.artist,
-                query: BackendApiService.cleanSearchQuery(currentSong.title, currentSong.artist),
-                startPosition: ref.read(audioPlayerProvider).position,
-              );
+              ref
+                  .read(videoPlayerProvider.notifier)
+                  .playVideo(
+                    currentSong.id.contains(':')
+                        ? currentSong.id
+                        : 'search:${currentSong.id}',
+                    currentSong.title,
+                    currentSong.artist,
+                    query: BackendApiService.cleanSearchQuery(
+                      currentSong.title,
+                      currentSong.artist,
+                    ),
+                    startPosition: ref.read(audioPlayerProvider).position,
+                  );
             }
           });
         } else if (currentSong.id != _lastPlayedSongId) {
@@ -372,7 +512,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
         final isFav = playerProvider.isFavorite(currentSong.id);
         final isDown = downloadProviderLocal.isDownloaded(currentSong.id);
-        final isDownloading = downloadProviderLocal.isDownloading(currentSong.id);
+        final isDownloading = downloadProviderLocal.isDownloading(
+          currentSong.id,
+        );
 
         final queue = playerProvider.queue;
         final currentIndex = playerProvider.currentIndex;
@@ -400,23 +542,42 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                 }
               },
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 6,
+                ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final isWide = constraints.maxWidth >= 700;
-                    final artSize = isWide 
-                        ? (constraints.maxWidth * 0.45).clamp(200.0, constraints.maxHeight * 0.75)
-                        : (constraints.maxWidth * 0.78).clamp(140.0, constraints.maxHeight * 0.34);
+                    final artSize = isWide
+                        ? (constraints.maxWidth * 0.45).clamp(
+                            200.0,
+                            math
+                                .max(200.0, constraints.maxHeight * 0.75)
+                                .toDouble(),
+                          )
+                        : (constraints.maxWidth * 0.78).clamp(
+                            140.0,
+                            math
+                                .max(140.0, constraints.maxHeight * 0.34)
+                                .toDouble(),
+                          );
 
                     // Redesigned 3-Zone Clean Header Bar
                     final topAppBar = NowPlayingHeader(
                       isVideoMode: _isVideoMode,
-                      hasViewedVideoForCurrentSong: _hasViewedVideoForCurrentSong,
+                      hasViewedVideoForCurrentSong:
+                          _hasViewedVideoForCurrentSong,
                       surfaceColor: surfaceColor,
                       accentColor: accentColor,
                       onToggleMode: (toVideo) {
                         final settingsProv = ref.read(settingsProvider);
-                        _toggleMode(toVideo, ref.read(audioPlayerProvider), videoProvider, settingsProv);
+                        _toggleMode(
+                          toVideo,
+                          ref.read(audioPlayerProvider),
+                          videoProvider,
+                          settingsProv,
+                        );
                       },
                       onOptionsTap: () => _showPlayerOptionsMenu(context),
                     );
@@ -429,7 +590,8 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                       isPlaying: playerProvider.isPlaying,
                       surfaceColor: surfaceColor,
                       accentColor: accentColor,
-                      onQualityPickerTap: () => _showQualityPickerBottomSheet(context, videoProvider),
+                      onQualityPickerTap: () =>
+                          _showQualityPickerBottomSheet(context, videoProvider),
                     );
 
                     final songInfo = NowPlayingInfo(
@@ -470,7 +632,6 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
                     final liveLyricsCard = LiveLyricsPreviewCard(
                       song: currentSong,
-                      position: playerProvider.position,
                       surfaceColor: surfaceColor,
                       accentColor: accentColor,
                     );
@@ -496,8 +657,10 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   flex: 5,
                                   child: SingleChildScrollView(
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         songInfo,
                                         const SizedBox(height: 16),
@@ -523,7 +686,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
                     // Mobile Layout
                     final screenHeight = MediaQuery.of(context).size.height;
-                    final dynamicSpacer = SizedBox(height: (screenHeight * 0.012).clamp(6.0, 16.0));
+                    final dynamicSpacer = SizedBox(
+                      height: (screenHeight * 0.012).clamp(6.0, 16.0),
+                    );
 
                     return SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
@@ -566,4 +731,3 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     CastBottomSheet.show(context);
   }
 }
-

@@ -1,7 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:confetti/confetti.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:it_feels_music/core/theme/app_colors.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 class PremiumCelebrationDialog extends StatefulWidget {
   final bool isFamilyCoupon;
@@ -9,6 +12,8 @@ class PremiumCelebrationDialog extends StatefulWidget {
   const PremiumCelebrationDialog({super.key, required this.isFamilyCoupon});
 
   static void show(BuildContext context, {required bool isFamilyCoupon}) {
+    final settings = ProviderScope.containerOf(context).read(settingsProvider);
+
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
@@ -18,21 +23,27 @@ class PremiumCelebrationDialog extends StatefulWidget {
         return PremiumCelebrationDialog(isFamilyCoupon: isFamilyCoupon);
       },
       transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final scaleFade = ScaleTransition(
+          scale: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutBack,
+          ),
+          child: FadeTransition(
+            opacity: animation,
+            child: child,
+          ),
+        );
+
+        if (settings.isPerformanceMode) {
+          return scaleFade;
+        }
+
         return BackdropFilter(
           filter: ImageFilter.blur(
             sigmaX: 20 * animation.value,
             sigmaY: 20 * animation.value,
           ),
-          child: ScaleTransition(
-            scale: CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutBack,
-            ),
-            child: FadeTransition(
-              opacity: animation,
-              child: child,
-            ),
-          ),
+          child: scaleFade,
         );
       },
     );

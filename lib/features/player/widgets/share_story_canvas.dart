@@ -115,7 +115,7 @@ class ShareStoryCanvas extends StatelessWidget {
             right: 0,
             child: Column(
               children: [
-                Icon(Icons.music_note_rounded, color: Colors.white54, size: 48),
+                const Icon(Icons.music_note_rounded, color: Colors.white54, size: 48),
                 const SizedBox(height: 16),
                 Text(
                   'It Feels Music',

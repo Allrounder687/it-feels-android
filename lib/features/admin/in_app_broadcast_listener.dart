@@ -6,7 +6,6 @@ import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
-import 'package:it_feels_music/features/subscription/premium_celebration_dialog.dart';
 import 'package:it_feels_music/services/config_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 

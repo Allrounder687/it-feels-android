@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 class CastBottomSheet extends ConsumerWidget {

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
+import 'package:it_feels_music/data/services/podcast_provider.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,6 +16,7 @@ class SearchState {
   final List<Playlist> playlists;
   final List<Map<String, dynamic>> artists;
   final List<Map<String, dynamic>> videos;
+  final List<Song> podcasts;
   final bool isSearching;
   final bool isLoadingMore;
   final int songPage;
@@ -33,6 +34,7 @@ class SearchState {
     this.playlists = const [],
     this.artists = const [],
     this.videos = const [],
+    this.podcasts = const [],
     this.isSearching = false,
     this.isLoadingMore = false,
     this.songPage = 1,
@@ -51,6 +53,7 @@ class SearchState {
     List<Playlist>? playlists,
     List<Map<String, dynamic>>? artists,
     List<Map<String, dynamic>>? videos,
+    List<Song>? podcasts,
     bool? isSearching,
     bool? isLoadingMore,
     int? songPage,
@@ -68,6 +71,7 @@ class SearchState {
       playlists: playlists ?? this.playlists,
       artists: artists ?? this.artists,
       videos: videos ?? this.videos,
+      podcasts: podcasts ?? this.podcasts,
       isSearching: isSearching ?? this.isSearching,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       songPage: songPage ?? this.songPage,
@@ -145,6 +149,7 @@ class SearchNotifier extends Notifier<SearchState> {
         playlists: const [],
         artists: const [],
         videos: const [],
+        podcasts: const [],
         isSearching: false,
         isLoadingMore: false,
         songPage: 1,
@@ -177,10 +182,12 @@ class SearchNotifier extends Notifier<SearchState> {
         final resultsFuture = apiService.searchAll(newQuery);
         final songsFuture = apiService.searchSongs(newQuery, count: 50);
         final nativeSongsFuture = BackendApiService.searchNativeCatalog(newQuery);
+        final podcastFuture = locator<PodcastProvider>().searchPodcasts(newQuery);
 
         final results = await resultsFuture;
         final topSongs = await songsFuture;
         final nativeSongs = await nativeSongsFuture;
+        final podcasts = await podcastFuture;
 
         if (state.query != newQuery) return;
 
@@ -226,6 +233,7 @@ class SearchNotifier extends Notifier<SearchState> {
           playlists: playlists,
           artists: artists,
           videos: videos,
+          podcasts: podcasts,
           isSearching: false,
         );
       } catch (e) {

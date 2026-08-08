@@ -10,6 +10,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:it_feels_music/features/auth/auth_bottom_sheet.dart';
 
+
 class PaywallBottomSheet extends ConsumerStatefulWidget {
   final String featureName;
 
@@ -110,34 +111,33 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
     final subProvider = ref.watch(subscriptionProvider);
     final bottomUiHeight = ref.watch(bottomUiProvider);
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom + bottomUiHeight + 16.0;
+    final settings = ref.watch(settingsProvider);
     
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-      child: Container(
-        padding: EdgeInsets.only(
-          bottom: bottomPadding,
-          top: 40,
-          left: 24,
-          right: 24,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.midnightSurface.withValues(alpha: 0.6),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
+    final contentContainer = Container(
+      padding: EdgeInsets.only(
+        bottom: bottomPadding,
+        top: 40,
+        left: 24,
+        right: 24,
+      ),
+      decoration: BoxDecoration(
+        color: settings.isPerformanceMode ? AppColors.midnightSurface : AppColors.midnightSurface.withValues(alpha: 0.6),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 24),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
             ),
+          ),
             const Icon(Icons.auto_awesome, color: AppColors.midnightAccent, size: 48),
             const SizedBox(height: 16),
             Text(
@@ -305,7 +305,15 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
             ],
         ),
       ),
-      ),
+      );
+
+    if (settings.isPerformanceMode) {
+      return contentContainer;
+    }
+
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+      child: contentContainer,
     );
   }
 }

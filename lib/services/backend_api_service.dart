@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:isolate';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -9,13 +8,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/utils/des_decryptor.dart';
-import 'package:it_feels_music/services/local_proxy_server.dart';
 
 class BackendApiService {
   // Configurable proxy base URL (defaults to user's live Cloudflare Worker URL)
   static String baseUrl = (dotenv.isInitialized ? dotenv.env['PROXY_BASE_URL'] : null) ?? 'https://it-feels-proxy.cleverfox687.workers.dev'; 
   static bool useProxyBackend = true; // Toggle to switch between direct & proxy mode
-  static final YoutubeExplode _yt = YoutubeExplode();
   @visibleForTesting
   static http.Client httpClient = http.Client();
 
@@ -25,8 +22,8 @@ class BackendApiService {
     if (!useProxyBackend) return [];
     try {
       final uri = Uri.parse('$baseUrl/api/v1/recommendations').replace(queryParameters: {
-        if (songId != null) 'songId': songId,
-        if (artist != null) 'artist': artist,
+        'songId': ?songId,
+        'artist': ?artist,
       });
 
       final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 8));
@@ -215,7 +212,7 @@ class BackendApiService {
       final uri = Uri.parse('$baseUrl/api/v1/lyrics').replace(queryParameters: {
         'track': track,
         'artist': artist,
-        if (album != null) 'album': album,
+        'album': ?album,
         if (duration != null && duration > 0) 'duration': duration.toString(),
       });
 
@@ -398,6 +395,7 @@ class BackendApiService {
         if (response.statusCode == 200) {
           final data = await compute<String, dynamic>(jsonDecode, response.body);
           final title = data['title'] ?? 'Music Video';
+          final durationSeconds = data['duration'] as int? ?? 0;
           final videoStreams = data['videoStreams'] as List? ?? [];
           final audioStreams = data['audioStreams'] as List? ?? [];
 
@@ -436,6 +434,7 @@ class BackendApiService {
               'title': title,
               'streams': uniqueQualities.values.toList(),
               'audioUrl': audioUrl,
+              'durationMs': durationSeconds * 1000,
             };
           }
         }
@@ -446,37 +445,6 @@ class BackendApiService {
 
     return {'title': 'Music Video', 'streams': []};
   } 
-  
-  static Future<Map<String, dynamic>> _fetchFromYtDlpBackend(String videoId) async {
-    if (ytDlpBackendUrl.isEmpty) return {'title': 'Music Video', 'streams': []};
-    
-    final cleanId = videoId.contains(':') ? videoId.split(':').last : videoId;
-    final uri = Uri.parse('$ytDlpBackendUrl/api/streams?videoId=$cleanId');
-    
-    int retries = 3;
-    int delaySeconds = 5;
-    
-    for (int i = 0; i < retries; i++) {
-      try {
-        final response = await httpClient.get(uri).timeout(const Duration(seconds: 60));
-        if (response.statusCode == 200) {
-          return await compute<String, dynamic>(jsonDecode, response.body);
-        } else {
-          debugPrint('[BackendApiService] yt-dlp backend non-200 response: ${response.statusCode}');
-        }
-      } catch (e) {
-        debugPrint('[BackendApiService] yt-dlp backend error (attempt ${i+1}/$retries): $e');
-        if (i < retries - 1) {
-          await Future.delayed(Duration(seconds: delaySeconds));
-          delaySeconds *= 2; // Exponential backoff: 5s, 10s, 20s
-          continue;
-        }
-      }
-    }
-    
-    return {'title': 'Music Video', 'streams': []};
-  }
-
   /// Client-side direct stream fallback using youtube_explode_dart (Zero-Lag Isolate)
   static Future<Map<String, dynamic>> _directYoutubeExplodeStreamFallback(String videoId, {String? query}) async {
     debugPrint('[BackendApiService] _directYoutubeExplodeStreamFallback called with videoId=$videoId, query=$query');
@@ -500,7 +468,9 @@ class BackendApiService {
             YoutubeApiClient.ios,
           ],
         );
-        final videoTitle = (await yt.videos.get(cleanId)).title;
+        final video = await yt.videos.get(cleanId);
+        final videoTitle = video.title;
+        final durationMs = video.duration?.inMilliseconds ?? 0;
 
         final List<Map<String, dynamic>> streams = [];
         
@@ -557,6 +527,7 @@ class BackendApiService {
             'title': videoTitle,
             'streams': streams,
             'audioUrl': audioUrl,
+            'durationMs': durationMs,
           };
         }
       } catch (e) {
@@ -792,15 +763,17 @@ class BackendApiService {
 
   /// Fetch Channel Avatar URL
   static Future<String?> getChannelAvatar(String channelId) async {
-    final yt = YoutubeExplode();
-    try {
-      final channel = await yt.channels.get(ChannelId(channelId));
-      return channel.logoUrl;
-    } catch (e) {
-      debugPrint('[BackendApiService] getChannelAvatar error: $e');
-      return null;
-    } finally {
-      yt.close();
-    }
+    return await Isolate.run(() async {
+      final yt = YoutubeExplode();
+      try {
+        final channel = await yt.channels.get(ChannelId(channelId));
+        return channel.logoUrl;
+      } catch (e) {
+        debugPrint('[BackendApiService] getChannelAvatar error: $e');
+        return null;
+      } finally {
+        yt.close();
+      }
+    });
   }
 }

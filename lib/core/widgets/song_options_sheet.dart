@@ -4,9 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
-import 'package:it_feels_music/features/library/download_provider.dart';
-import 'package:it_feels_music/features/settings/hidden_songs_provider.dart';
 import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/features/library/artist_detail_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -384,12 +381,14 @@ class SongOptionsSheet extends ConsumerWidget {
                   return ListView.builder(
                     shrinkWrap: true,
                     itemCount: 5,
-                    itemBuilder: (context, index) => Shimmer.fromColors(
-                      baseColor: context.themeCardColor,
-                      highlightColor: context.themeCardColor.withValues(alpha: 0.5),
-                      child: ListTile(
-                        title: Container(height: 16, width: 120, color: Colors.white, margin: const EdgeInsets.only(right: 150)),
-                        subtitle: Container(height: 12, width: 80, color: Colors.white, margin: const EdgeInsets.only(right: 200, top: 4)),
+                    itemBuilder: (context, index) => ExcludeSemantics(
+                      child: Shimmer.fromColors(
+                        baseColor: context.themeCardColor,
+                        highlightColor: context.themeCardColor.withValues(alpha: 0.5),
+                        child: ListTile(
+                          title: Container(height: 16, width: 120, color: Colors.white, margin: const EdgeInsets.only(right: 150)),
+                          subtitle: Container(height: 12, width: 80, color: Colors.white, margin: const EdgeInsets.only(right: 200, top: 4)),
+                        ),
                       ),
                     ),
                   );
@@ -414,12 +413,14 @@ class SongOptionsSheet extends ConsumerWidget {
                       future: socialService.getFriendDetails(friendUid),
                       builder: (context, friendSnapshot) {
                         if (!friendSnapshot.hasData) {
-                          return Shimmer.fromColors(
-                            baseColor: context.themeCardColor,
-                            highlightColor: context.themeCardColor.withValues(alpha: 0.5),
-                            child: ListTile(
-                              title: Container(height: 16, width: 120, color: Colors.white, margin: const EdgeInsets.only(right: 150)),
-                              subtitle: Container(height: 12, width: 80, color: Colors.white, margin: const EdgeInsets.only(right: 200, top: 4)),
+                          return ExcludeSemantics(
+                            child: Shimmer.fromColors(
+                              baseColor: context.themeCardColor,
+                              highlightColor: context.themeCardColor.withValues(alpha: 0.5),
+                              child: ListTile(
+                                title: Container(height: 16, width: 120, color: Colors.white, margin: const EdgeInsets.only(right: 150)),
+                                subtitle: Container(height: 12, width: 80, color: Colors.white, margin: const EdgeInsets.only(right: 200, top: 4)),
+                              ),
                             ),
                           );
                         }

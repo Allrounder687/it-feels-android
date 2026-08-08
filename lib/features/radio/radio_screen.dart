@@ -6,7 +6,6 @@ import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/radio_api_service.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 class RadioScreen extends ConsumerStatefulWidget {
@@ -221,7 +220,7 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
                           ref.read(audioPlayerProvider.notifier).playSong(station);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Tuning into \${station.title}...'),
+                              content: const Text('Tuning into \${station.title}...'),
                               backgroundColor: context.themeAccentColor,
                               duration: const Duration(seconds: 2),
                             ),

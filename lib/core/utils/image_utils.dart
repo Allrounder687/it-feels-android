@@ -23,7 +23,12 @@ class ImageUtils {
 
     // Default Music API URLs often have resolution patterns like '150x150' or '50x50'.
     // We attempt to replace these with the requested size.
-    String transformedUrl = url.replaceAll(_sizeRegExp, '${size}x$size');
+    // NOTE: JioSaavn CDN (saavncdn.com) maxes out at 500x500. 1000x1000 returns 404.
+    int safeSize = size;
+    if (url.contains('saavncdn.com') && safeSize > 500) {
+      safeSize = 500;
+    }
+    String transformedUrl = url.replaceAll(_sizeRegExp, '${safeSize}x$safeSize');
 
     return transformedUrl;
   }

@@ -7,7 +7,6 @@ import 'package:it_feels_music/services/notification_service.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/main.dart';

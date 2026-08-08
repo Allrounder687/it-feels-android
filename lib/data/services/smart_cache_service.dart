@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:it_feels_music/services/database_service.dart';
 import 'package:it_feels_music/services/download_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
-import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 
 class SmartCacheService {
@@ -14,6 +13,13 @@ class SmartCacheService {
     _isRunning = true;
 
     try {
+      final settings = await StorageService.loadSettings();
+      final bool enableSmartDownloads = settings['enableSmartDownloads'] ?? true;
+      if (!enableSmartDownloads) {
+        debugPrint('[SmartCacheService] Smart Downloads is disabled in settings. Aborting sync.');
+        return;
+      }
+
       debugPrint('[SmartCacheService] Starting background sync of top songs...');
       final dbService = DatabaseService();
       final topSongs = await dbService.getTopPlayedSongs(limit: 50);

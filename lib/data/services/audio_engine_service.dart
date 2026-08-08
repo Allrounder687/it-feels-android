@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:windows_taskbar/windows_taskbar.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/audio_player_handler.dart';
 import 'package:it_feels_music/services/storage_service.dart';
-import 'package:it_feels_music/core/utils/service_locator.dart';
-import 'package:it_feels_music/services/backend_api_service.dart';
+import 'package:window_manager/window_manager.dart';
 
 enum AudioVibe {
   normal,
@@ -57,6 +57,27 @@ class AudioEngineService {
   Future<void> init(AudioPlayerHandler handler) async {
     audioHandler = handler;
     
+    if (!kIsWeb && Platform.isWindows) {
+      try { WindowsTaskbar.setProgressMode(TaskbarProgressMode.normal).catchError((_) {}); } catch (_) {}
+      positionStream.listen((pos) {
+        final dur = duration;
+        if (dur != null && dur.inMilliseconds > 0) {
+          try { WindowsTaskbar.setProgress(pos.inMilliseconds, dur.inMilliseconds).catchError((_) {}); } catch (_) {}
+        }
+      });
+      playerStateStream.listen((state) {
+        try {
+          if (state.processingState == ProcessingState.completed) {
+            WindowsTaskbar.setProgressMode(TaskbarProgressMode.noProgress).catchError((_) {});
+          } else if (state.playing) {
+            WindowsTaskbar.setProgressMode(TaskbarProgressMode.normal).catchError((_) {});
+          } else {
+            WindowsTaskbar.setProgressMode(TaskbarProgressMode.paused).catchError((_) {});
+          }
+        } catch (_) {}
+      });
+    }
+
     final audioSettings = await StorageService.loadAudioSettings();
     await _applyAudioSettings(audioSettings);
   }

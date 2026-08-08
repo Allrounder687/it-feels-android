@@ -4,14 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
-import 'package:it_feels_music/features/player/video_player_provider.dart';
-import 'package:it_feels_music/features/player/video_miniplayer.dart';
+import 'package:it_feels_music/core/widgets/clever_loading_text.dart';
 import 'package:go_router/go_router.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
-import 'package:it_feels_music/features/player/video_player_provider.dart';
 
 class VideoTabScreen extends ConsumerStatefulWidget {
   const VideoTabScreen({super.key});
@@ -231,7 +229,7 @@ class _VideoTabScreenState extends ConsumerState<VideoTabScreen> {
             // Main Content Area
             Expanded(
               child: _isLoading || _isSearching
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.midnightAccent))
+                  ? const Center(child: CleverLoadingText())
                   : _selectedCategoryIndex == 2
                       ? _buildOfflineVideosList()
                       : (_selectedCategoryIndex == 1 || _selectedCategoryIndex >= 3)

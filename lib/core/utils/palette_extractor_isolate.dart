@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -118,9 +116,9 @@ class PaletteExtractor {
       final palette = await PaletteGenerator.fromImage(frame.image);
       frame.image.dispose();
       
-      int background = palette.dominantColor?.color.value ?? 0xff0f0f0f;
-      int surface = palette.lightMutedColor?.color.value ?? palette.mutedColor?.color.value ?? background;
-      int accent = palette.vibrantColor?.color.value ?? palette.dominantColor?.color.value ?? background;
+      int background = palette.dominantColor?.color.toARGB32() ?? 0xff0f0f0f;
+      int surface = palette.lightMutedColor?.color.toARGB32() ?? palette.mutedColor?.color.toARGB32() ?? background;
+      int accent = palette.vibrantColor?.color.toARGB32() ?? palette.dominantColor?.color.toARGB32() ?? background;
       
       return PaletteResult(background, surface, accent);
     } catch (e) {

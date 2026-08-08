@@ -1,6 +1,6 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 
 class TVFocusableCard extends StatefulWidget {
@@ -71,7 +71,10 @@ class _TVFocusableCardState extends State<TVFocusableCard> {
                 border: isWide && _isFocused
                     ? Border.all(color: AppColors.midnightAccent, width: 3)
                     : Border.all(color: Colors.transparent, width: 3),
-                boxShadow: isWide && (_isFocused || _isHovered)
+                boxShadow: isWide && (_isFocused || _isHovered) && 
+                           !(Theme.of(context).platform == TargetPlatform.windows || 
+                             Theme.of(context).platform == TargetPlatform.macOS || 
+                             Theme.of(context).platform == TargetPlatform.linux)
                     ? [
                         BoxShadow(
                           color: AppColors.midnightAccent.withValues(alpha: 0.4),

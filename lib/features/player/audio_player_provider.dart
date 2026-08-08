@@ -5,10 +5,8 @@ import 'dart:math';
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/features/player/active_media_provider.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:vibration/vibration.dart';
@@ -19,35 +17,19 @@ import 'package:it_feels_music/data/services/audio_player_handler.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/database_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
-import 'package:it_feels_music/features/social/room_service.dart';
-import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:it_feels_music/data/services/smart_cache_service.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:isar/isar.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:it_feels_music/core/utils/des_decryptor.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:it_feels_music/services/notification_service.dart';
-import 'package:it_feels_music/features/cast/cast_service.dart' as it_feels_music_cast_service;
+import 'package:it_feels_music/features/cast/cast_service.dart'
+    as it_feels_music_cast_service;
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
-import 'package:it_feels_music/core/utils/device_utils.dart';
 import 'package:it_feels_music/features/player/palette_extractor_service.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/features/social/listen_together_service.dart';
 
-enum AppThemeMode {
-  dynamic,
-  midnight,
-  burgundy,
-  amoled,
-  materialYou,
-  light,
-}
-
-
+enum AppThemeMode { dynamic, midnight, burgundy, amoled, materialYou, light }
 
 @immutable
 class AudioPlayerState {
@@ -128,7 +110,8 @@ class AudioPlayerState {
   });
 
   bool get isInRoom => currentRoomId != null;
-  Duration? get sleepTimerRemaining => sleepTimerEndTime?.difference(DateTime.now());
+  Duration? get sleepTimerRemaining =>
+      sleepTimerEndTime?.difference(DateTime.now());
 
   bool isFavorite(String songId) {
     return favoriteSongs.any((s) => s.id == songId);
@@ -184,7 +167,6 @@ class AudioPlayerState {
         return const Color(0xFF3B82F6);
     }
   }
-
 
   Color get themeTextColor {
     return appThemeMode == AppThemeMode.light ? Colors.black87 : Colors.white;
@@ -308,24 +290,33 @@ class AudioPlayerState {
       isShuffle: isShuffle ?? this.isShuffle,
       isRepeat: isRepeat ?? this.isRepeat,
       favoriteSongs: favoriteSongs ?? this.favoriteSongs,
-      hasSentTelemetryForCurrentSong: hasSentTelemetryForCurrentSong ?? this.hasSentTelemetryForCurrentSong,
+      hasSentTelemetryForCurrentSong:
+          hasSentTelemetryForCurrentSong ?? this.hasSentTelemetryForCurrentSong,
       position: position ?? this.position,
       duration: duration ?? this.duration,
       currentStreamUrl: currentStreamUrl ?? this.currentStreamUrl,
-      extractedBackgroundColor: themeBackgroundColor ?? this.extractedBackgroundColor,
-      extractedSurfaceColor: themeSurfaceColor ?? this.extractedSurfaceColor,
-      extractedAccentColor: themeAccentColor ?? this.extractedAccentColor,
+      extractedBackgroundColor:
+          themeBackgroundColor ?? extractedBackgroundColor,
+      extractedSurfaceColor: themeSurfaceColor ?? extractedSurfaceColor,
+      extractedAccentColor: themeAccentColor ?? extractedAccentColor,
       materialYouSurface: materialYouSurface ?? this.materialYouSurface,
-      materialYouSurfaceContainer: materialYouSurfaceContainer ?? this.materialYouSurfaceContainer,
+      materialYouSurfaceContainer:
+          materialYouSurfaceContainer ?? this.materialYouSurfaceContainer,
       materialYouPrimary: materialYouPrimary ?? this.materialYouPrimary,
       appThemeMode: appThemeMode ?? this.appThemeMode,
-      sleepTimerEndTime: clearSleepTimerEndTime ? null : (sleepTimerEndTime ?? this.sleepTimerEndTime),
+      sleepTimerEndTime: clearSleepTimerEndTime
+          ? null
+          : (sleepTimerEndTime ?? this.sleepTimerEndTime),
       isSleepTimerActive: isSleepTimerActive ?? this.isSleepTimerActive,
-      sleepAfterCurrentTrack: sleepAfterCurrentTrack ?? this.sleepAfterCurrentTrack,
+      sleepAfterCurrentTrack:
+          sleepAfterCurrentTrack ?? this.sleepAfterCurrentTrack,
       isDspEngineEnabled: isDspEngineEnabled ?? this.isDspEngineEnabled,
       uiHapticsEnabled: uiHapticsEnabled ?? this.uiHapticsEnabled,
-      audioSyncHapticsEnabled: audioSyncHapticsEnabled ?? this.audioSyncHapticsEnabled,
-      currentRoomId: clearCurrentRoomId ? null : (currentRoomId ?? this.currentRoomId),
+      audioSyncHapticsEnabled:
+          audioSyncHapticsEnabled ?? this.audioSyncHapticsEnabled,
+      currentRoomId: clearCurrentRoomId
+          ? null
+          : (currentRoomId ?? this.currentRoomId),
       isHost: isHost ?? this.isHost,
       isAutoplayEnabled: isAutoplayEnabled ?? this.isAutoplayEnabled,
       crossfadeDuration: crossfadeDuration ?? this.crossfadeDuration,
@@ -354,14 +345,16 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   AudioPlayerState build() {
     // Sync theme with SettingsProvider for initial state
     final currentTheme = ref.read(settingsProvider).theme;
-    final initialState = AudioPlayerState(appThemeMode: _mapThemeString(currentTheme));
-    
+    final initialState = AudioPlayerState(
+      appThemeMode: _mapThemeString(currentTheme),
+    );
+
     // Defer side-effects until after build completes to prevent 'uninitialized provider' exceptions
     Future.microtask(() {
       _listenToEvents();
       _initMemory();
     });
-    
+
     ref.listen(settingsProvider.select((s) => s.theme), (previous, next) {
       setAppThemeMode(_mapThemeString(next));
     });
@@ -375,23 +368,29 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
   AppThemeMode _mapThemeString(String themeStr) {
     switch (themeStr) {
-      case 'Dynamic (Album Art)': return AppThemeMode.dynamic;
-      case 'Midnight Blue': return AppThemeMode.midnight;
-      case 'Deep Burgundy': return AppThemeMode.burgundy;
-      case 'Pitch Black (AMOLED)': return AppThemeMode.amoled;
-      case 'Light Theme': return AppThemeMode.light;
-      default: return AppThemeMode.materialYou;
+      case 'Dynamic (Album Art)':
+        return AppThemeMode.dynamic;
+      case 'Midnight Blue':
+        return AppThemeMode.midnight;
+      case 'Deep Burgundy':
+        return AppThemeMode.burgundy;
+      case 'Pitch Black (AMOLED)':
+        return AppThemeMode.amoled;
+      case 'Light Theme':
+        return AppThemeMode.light;
+      default:
+        return AppThemeMode.materialYou;
     }
   }
 
   Future<void> _initMemory() async {
     // Let the engine initialize its hardware DSP & speed settings
     await engine.init(locator<AudioPlayerHandler>());
-    
+
     // Wire up Lock Screen & Control Center skip buttons
     audioHandler.onSkipNext = () => skipToNext();
     audioHandler.onSkipPrevious = () => skipToPrevious();
-    
+
     // Sync the Notifier's state with the Engine's initial state
     state = state.copyWith(
       isDspEngineEnabled: engine.isDspEngineEnabled,
@@ -410,7 +409,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       final int savedIndex = pState['currentIndex'];
       final int savedPosition = pState['positionSeconds'];
 
-      if (savedQueue.isNotEmpty && savedIndex >= 0 && savedIndex < savedQueue.length) {
+      if (savedQueue.isNotEmpty &&
+          savedIndex >= 0 &&
+          savedIndex < savedQueue.length) {
         final current = savedQueue[savedIndex];
         state = state.copyWith(
           queue: savedQueue,
@@ -420,13 +421,17 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
           duration: Duration(seconds: current.duration),
         );
 
-        final mediaItems = savedQueue.map<MediaItem>((s) => MediaItem(
-              id: s.id,
-              title: s.title,
-              artist: s.artist,
-              artUri: Uri.tryParse(s.coverArt),
-              duration: Duration(seconds: s.duration),
-            )).toList();
+        final mediaItems = savedQueue
+            .map<MediaItem>(
+              (s) => MediaItem(
+                id: s.id,
+                title: s.title,
+                artist: s.artist,
+                artUri: Uri.tryParse(s.coverArt),
+                duration: Duration(seconds: s.duration),
+              ),
+            )
+            .toList();
 
         await audioHandler.updateQueue(mediaItems);
         await audioHandler.skipToQueueItem(savedIndex);
@@ -435,15 +440,15 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         }
       }
     }
-    
+
     // Trigger smart auto-cache for top played songs
     locator<SmartCacheService>().syncTopSongs();
   }
 
   void _saveMemory() {
     StorageService.savePlaybackState(
-      state.queue, 
-      state.currentIndex, 
+      state.queue,
+      state.currentIndex,
       positionSeconds: state.position.inSeconds,
     );
   }
@@ -465,11 +470,15 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         if (_bufferingTimer == null || !_bufferingTimer!.isActive) {
           _bufferingTimer = Timer(const Duration(milliseconds: 1500), () async {
             if (state.currentSong != null) {
-              final originalUrl = await apiService.getStreamUrl(state.currentSong!);
+              final originalUrl = await apiService.getStreamUrl(
+                state.currentSong!,
+              );
               if (originalUrl != null && !originalUrl.contains('_96.mp4')) {
                 final downgradedUrl = DesDecryptor.get96kbpsUrl(originalUrl);
                 if (downgradedUrl != null && downgradedUrl != originalUrl) {
-                  debugPrint('[AdaptiveNetwork] Excessive buffering detected. Downgrading to 96kbps...');
+                  debugPrint(
+                    '[AdaptiveNetwork] Excessive buffering detected. Downgrading to 96kbps...',
+                  );
                   final pos = engine.position;
                   await engine.playSong(state.currentSong!, downgradedUrl);
                   await engine.seek(pos);
@@ -485,42 +494,39 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       }
 
       if (pState.processingState == ProcessingState.completed) {
-        if (state.sleepAfterCurrentTrack) {
-          state = state.copyWith(sleepAfterCurrentTrack: false);
-          await engine.pause();
-        } else if (state.isRepeat) {
-          await engine.seek(Duration.zero);
-          await engine.play();
-        } else if (state.queue.isNotEmpty && state.isHost == false || (state.isHost && state.currentRoomId != null) || state.currentRoomId == null) {
-          if (state.currentRoomId != null && !state.isHost) return;
-           
-          if (state.currentIndex == state.queue.length - 1 && state.isAutoplayEnabled) {
-            final current = state.queue[state.currentIndex];
-            final recommendations = await apiService.getRecommendedSongs(current);
-            if (recommendations.isNotEmpty) {
-              final newSongs = recommendations.where((s) => !state.queue.any((q) => q.id == s.id)).toList();
-              if (newSongs.isNotEmpty) {
-                final updatedQ = List<Song>.from(state.queue)..addAll(newSongs.take(10));
-                state = state.copyWith(queue: updatedQ);
-                _saveMemory();
-              }
-            }
-          }
-          await skipToNext();
-        }
+        _handleTrackCompleted();
       }
-      
-      if (state.currentRoomId != null && state.isHost && state.currentSong != null) {
-        socialSync.updateRoomState(state.currentSong!, state.position, state.isPlaying);
+
+      if (state.currentRoomId != null &&
+          state.isHost &&
+          state.currentSong != null) {
+        socialSync.updateRoomState(
+          state.currentSong!,
+          state.position,
+          state.isPlaying,
+        );
       }
     });
 
     engine.positionStream.listen((pos) {
-      state = state.copyWith(position: pos);
-      
-      if (!state.hasSentTelemetryForCurrentSong && state.currentSong != null && pos.inSeconds >= 30) {
+      if (!state.hasSentTelemetryForCurrentSong &&
+          state.currentSong != null &&
+          pos.inSeconds >= 30) {
         state = state.copyWith(hasSentTelemetryForCurrentSong: true);
         BackendApiService.sendTelemetryPlay(state.currentSong!);
+      }
+
+      // Windows threading bug fallback: Manually trigger completion if we reach the end of the track
+      // since the native events channel drops the completed event on non-platform threads.
+      if (Platform.isWindows &&
+          state.isPlaying &&
+          state.duration != null &&
+          !state.isLoading) {
+        if (state.duration!.inMilliseconds > 0 && pos.inMilliseconds > 0) {
+          if (state.duration!.inMilliseconds - pos.inMilliseconds <= 250) {
+            _handleTrackCompleted();
+          }
+        }
       }
     });
 
@@ -529,7 +535,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         state = state.copyWith(duration: dur);
       }
     });
-    
+
     // Bind sleep timer streams from engine
     engine.sleepTimerStream.listen((endTime) {
       state = state.copyWith(
@@ -538,12 +544,56 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         isSleepTimerActive: endTime != null,
       );
     });
-    
+
     engine.sleepAfterTrackStream.listen((val) {
       state = state.copyWith(sleepAfterCurrentTrack: val);
     });
-    
+
     _loadFavorites();
+  }
+
+  bool _isHandlingCompletion = false;
+
+  Future<void> _handleTrackCompleted() async {
+    if (_isHandlingCompletion) return;
+    _isHandlingCompletion = true;
+
+    try {
+      if (state.sleepAfterCurrentTrack) {
+        state = state.copyWith(sleepAfterCurrentTrack: false);
+        await engine.pause();
+      } else if (state.isRepeat) {
+        await engine.seek(Duration.zero);
+        await engine.play();
+      } else if (state.queue.isNotEmpty && state.isHost == false ||
+          (state.isHost && state.currentRoomId != null) ||
+          state.currentRoomId == null) {
+        if (state.currentRoomId != null && !state.isHost) return;
+
+        if (state.currentIndex == state.queue.length - 1 &&
+            state.isAutoplayEnabled) {
+          final current = state.queue[state.currentIndex];
+          final recommendations = await locator<MusicApiService>()
+              .getRecommendedSongs(current);
+          if (recommendations.isNotEmpty) {
+            final newSongs = recommendations
+                .where((s) => !state.queue.any((q) => q.id == s.id))
+                .toList();
+            if (newSongs.isNotEmpty) {
+              final updatedQ = List<Song>.from(state.queue)
+                ..addAll(newSongs.take(10));
+              state = state.copyWith(queue: updatedQ);
+              _saveMemory();
+            }
+          }
+        }
+        await skipToNext();
+      }
+    } finally {
+      // Allow a small buffer before re-enabling completion tracking
+      await Future.delayed(const Duration(milliseconds: 1000));
+      _isHandlingCompletion = false;
+    }
   }
 
   void startSleepTimer(Duration duration) => engine.startSleepTimer(duration);
@@ -555,7 +605,11 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     _saveMemory();
   }
 
-  void setMaterialYouColors(Color surface, Color surfaceContainer, Color primary) {
+  void setMaterialYouColors(
+    Color surface,
+    Color surfaceContainer,
+    Color primary,
+  ) {
     state = state.copyWith(
       materialYouSurface: surface,
       materialYouSurfaceContainer: surfaceContainer,
@@ -565,7 +619,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
   Future<void> triggerHaptic({bool heavy = false}) async {
     if (!state.uiHapticsEnabled) return;
-    
+
     if (await Vibration.hasVibrator() ?? false) {
       if (heavy) {
         Vibration.vibrate(duration: 50, amplitude: 128);
@@ -594,8 +648,12 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
   void _startAudioSyncHaptics() {
     _audioSyncHapticTimer?.cancel();
-    _audioSyncHapticTimer = Timer.periodic(const Duration(milliseconds: 600), (timer) async {
-      if (state.isPlaying && state.audioSyncHapticsEnabled && (await Vibration.hasVibrator() ?? false)) {
+    _audioSyncHapticTimer = Timer.periodic(const Duration(milliseconds: 600), (
+      timer,
+    ) async {
+      if (state.isPlaying &&
+          state.audioSyncHapticsEnabled &&
+          (await Vibration.hasVibrator() ?? false)) {
         Vibration.vibrate(duration: 15, amplitude: 40);
       } else {
         timer.cancel();
@@ -631,7 +689,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     state = state.copyWith(currentVibe: vibe);
     await engine.setAudioVibe(vibe);
     triggerHaptic(heavy: true);
-    
+
     // Sync UI state back from engine since the vibe changes speed/pitch/dsp internally
     state = state.copyWith(
       playbackSpeed: engine.playbackSpeed,
@@ -639,8 +697,6 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       isDspEngineEnabled: engine.isDspEngineEnabled,
     );
   }
-
-
 
   void toggleFavorite(Song song) {
     triggerHaptic();
@@ -665,33 +721,48 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     engine.saveAudioSettings();
   }
 
-
-  Future<void> playSong(Song song, {List<Song>? queue, int index = 0, BuildContext? context, String? predefinedStreamUrl}) async {
+  Future<void> playSong(
+    Song song, {
+    List<Song>? queue,
+    int index = 0,
+    BuildContext? context,
+    String? predefinedStreamUrl,
+  }) async {
     final currentToken = ++_playSongGenerationToken;
 
     state = state.copyWith(
       currentSong: song,
       hasSentTelemetryForCurrentSong: false,
     );
-    
-    ref.read(activeMediaProvider.notifier).setActiveMedia(ActiveMediaType.audio);
-    
+
+    ref
+        .read(activeMediaProvider.notifier)
+        .setActiveMedia(ActiveMediaType.audio);
+
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.email != null && !user.emailVerified && !_hasShownEmailVerification) {
+    if (user != null &&
+        user.email != null &&
+        !user.emailVerified &&
+        !_hasShownEmailVerification) {
       _hasShownEmailVerification = true;
       rootScaffoldMessengerKey.currentState?.clearSnackBars();
       rootScaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(
-          content: Text('Please verify your email to unlock exclusive features.', style: const TextStyle(color: Colors.white)),
+          content: const Text(
+            'Please verify your email to unlock exclusive features.',
+            style: TextStyle(color: Colors.white),
+          ),
           backgroundColor: AppColors.midnightPrimary,
           duration: const Duration(seconds: 4),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           action: SnackBarAction(
             label: 'Send Link',
             textColor: Colors.white,
             onPressed: () {
-               user.sendEmailVerification();
+              user.sendEmailVerification();
             },
           ),
         ),
@@ -705,24 +776,48 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
     if (queue != null && queue.isNotEmpty) {
       newQueue = List.from(queue);
-      final foundIndex = newQueue.indexWhere((s) => s.id == song.id || (s.title.toLowerCase() == song.title.toLowerCase() && s.artist.toLowerCase() == song.artist.toLowerCase()));
-      if (foundIndex != -1) {
-        newIndex = foundIndex;
+      if (index >= 0 &&
+          index < newQueue.length &&
+          newQueue[index].id == song.id) {
+        newIndex = index;
       } else {
-        newIndex = index >= 0 && index < newQueue.length ? index : 0;
+        final foundIndex = newQueue.indexWhere(
+          (s) =>
+              s.id == song.id ||
+              (s.title.toLowerCase() == song.title.toLowerCase() &&
+                  s.artist.toLowerCase() == song.artist.toLowerCase()),
+        );
+        if (foundIndex != -1) {
+          newIndex = foundIndex;
+        } else {
+          newIndex = index >= 0 && index < newQueue.length ? index : 0;
+        }
       }
     } else {
-      final existingIndex = newQueue.indexWhere((s) => s.id == song.id || (s.title.toLowerCase() == song.title.toLowerCase() && s.artist.toLowerCase() == song.artist.toLowerCase()));
-      if (existingIndex != -1) {
-        newIndex = existingIndex;
+      if (index >= 0 &&
+          index < newQueue.length &&
+          newQueue[index].id == song.id) {
+        newIndex = index;
       } else {
-        if (newQueue.isEmpty) {
-          newQueue = [song];
-          newIndex = 0;
+        final existingIndex = newQueue.indexWhere(
+          (s) =>
+              s.id == song.id ||
+              (s.title.toLowerCase() == song.title.toLowerCase() &&
+                  s.artist.toLowerCase() == song.artist.toLowerCase()),
+        );
+        if (existingIndex != -1) {
+          newIndex = existingIndex;
         } else {
-          final insertPos = newIndex >= 0 && newIndex < newQueue.length ? newIndex + 1 : newQueue.length;
-          newQueue.insert(insertPos, song);
-          newIndex = insertPos;
+          if (newQueue.isEmpty) {
+            newQueue = [song];
+            newIndex = 0;
+          } else {
+            final insertPos = newIndex >= 0 && newIndex < newQueue.length
+                ? newIndex + 1
+                : newQueue.length;
+            newQueue.insert(insertPos, song);
+            newIndex = insertPos;
+          }
         }
       }
     }
@@ -734,7 +829,6 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     );
     _saveMemory();
 
-    
     locator<PaletteExtractorService>().extract(song.coverArt).then((res) {
       if (res != null) {
         state = state.copyWith(
@@ -743,7 +837,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
           themeAccentColor: res.accentColor,
           appThemeMode: _mapThemeString(ref.read(settingsProvider).theme),
         );
-      } else if (song.coverArt != null) {
+      } else {
         // Fallback for low-ram devices handling
         state = state.copyWith(appThemeMode: AppThemeMode.midnight);
       }
@@ -751,7 +845,10 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
     String? streamUrl;
     final downloads = await StorageService.loadDownloads();
-    final downloadedSong = downloads.cast<Song?>().firstWhere((s) => s?.id == song.id, orElse: () => null);
+    final downloadedSong = downloads.cast<Song?>().firstWhere(
+      (s) => s?.id == song.id,
+      orElse: () => null,
+    );
 
     if (downloadedSong != null && downloadedSong.encryptedMediaUrl != null) {
       String localPath = downloadedSong.encryptedMediaUrl!;
@@ -760,31 +857,40 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         final fileName = localPath.split('/').last;
         localPath = '${dir.path}/downloaded_music/$fileName';
       }
-      
+
       if (File(localPath).existsSync()) {
         streamUrl = localPath;
-        debugPrint('[AudioPlayerNotifier] Playing downloaded file for ${song.title}');
+        debugPrint(
+          '[AudioPlayerNotifier] Playing downloaded file for ${song.title}',
+        );
       }
     }
-    
+
     streamUrl ??= predefinedStreamUrl ?? await apiService.getStreamUrl(song);
 
     if (currentToken != _playSongGenerationToken) {
       debugPrint('[AudioPlayerNotifier] Stale playSong request cancelled');
       return;
     }
-    
+
     if (streamUrl != null) {
       state = state.copyWith(isLoading: false, currentStreamUrl: streamUrl);
       if (locator<it_feels_music_cast_service.CastService>().isConnected) {
         await engine.pause(); // Ensure local is paused
-        await locator<it_feels_music_cast_service.CastService>().loadMedia(song, streamUrl, Duration.zero, true);
+        await locator<it_feels_music_cast_service.CastService>().loadMedia(
+          song,
+          streamUrl,
+          Duration.zero,
+          true,
+        );
       } else {
         await engine.playSong(song, streamUrl);
       }
       socialSync.updatePresence(song, true);
     } else {
-      debugPrint('[AudioPlayerNotifier] Failed to resolve stream for ${song.title}');
+      debugPrint(
+        '[AudioPlayerNotifier] Failed to resolve stream for ${song.title}',
+      );
     }
 
     _updateHomeWidget();
@@ -792,8 +898,10 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
   Future<void> play() async {
     state = state.copyWith(isPlaying: true); // Optimistic UI
-    ref.read(activeMediaProvider.notifier).setActiveMedia(ActiveMediaType.audio);
-    
+    ref
+        .read(activeMediaProvider.notifier)
+        .setActiveMedia(ActiveMediaType.audio);
+
     if (locator<it_feels_music_cast_service.CastService>().isConnected) {
       await locator<it_feels_music_cast_service.CastService>().play();
     } else {
@@ -838,7 +946,11 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     triggerHaptic(heavy: true);
 
     if (engine.audioHandler.player.audioSource == null) {
-      await playSong(state.currentSong!, queue: state.queue, index: state.currentIndex);
+      await playSong(
+        state.currentSong!,
+        queue: state.queue,
+        index: state.currentIndex,
+      );
       return;
     }
 
@@ -871,7 +983,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     } else {
       await engine.seek(pos);
     }
-    
+
     socialSync.updateRoomState(state.currentSong!, pos, state.isPlaying);
   }
 
@@ -896,13 +1008,17 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         nextIndex = 0;
       }
     }
-    await playSong(state.queue[nextIndex], queue: state.queue, index: nextIndex);
+    await playSong(
+      state.queue[nextIndex],
+      queue: state.queue,
+      index: nextIndex,
+    );
   }
 
   Future<void> skipToPrevious([BuildContext? context]) async {
     if (state.queue.isEmpty) return;
     triggerHaptic();
-    
+
     if (state.crossfadeDuration > 0 && state.isPlaying) {
       await _fadeOut();
     }
@@ -911,7 +1027,11 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     if (prevIndex < 0) {
       prevIndex = state.queue.length - 1;
     }
-    await playSong(state.queue[prevIndex], queue: state.queue, index: prevIndex);
+    await playSong(
+      state.queue[prevIndex],
+      queue: state.queue,
+      index: prevIndex,
+    );
   }
 
   Future<void> _fadeOut() async {
@@ -954,12 +1074,16 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
-    if (oldIndex < 0 || oldIndex >= state.queue.length || newIndex < 0 || newIndex > state.queue.length) return;
+    if (oldIndex < 0 ||
+        oldIndex >= state.queue.length ||
+        newIndex < 0 ||
+        newIndex > state.queue.length)
+      return;
 
     final updated = List<Song>.from(state.queue);
     final item = updated.removeAt(oldIndex);
     updated.insert(newIndex, item);
-    
+
     int curIndex = state.currentIndex;
     if (curIndex == oldIndex) {
       curIndex = newIndex;
@@ -996,8 +1120,14 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Future<void> _updateHomeWidget() async {
     if (Platform.isAndroid || Platform.isIOS) {
       try {
-        await HomeWidget.saveWidgetData<String>('title', state.currentSong?.title ?? 'No Song Playing');
-        await HomeWidget.saveWidgetData<String>('artist', state.currentSong?.artist ?? 'It Feels Music');
+        await HomeWidget.saveWidgetData<String>(
+          'title',
+          state.currentSong?.title ?? 'No Song Playing',
+        );
+        await HomeWidget.saveWidgetData<String>(
+          'artist',
+          state.currentSong?.artist ?? 'It Feels Music',
+        );
         await HomeWidget.updateWidget(name: 'MusicWidgetProvider');
       } catch (e) {
         debugPrint('Error updating home widget: $e');
@@ -1008,7 +1138,13 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Future<String?> startBroadcasting(String uid) async {
     if (state.currentSong == null) return null;
     final isPremium = ref.read(subscriptionProvider).isPremium;
-    final roomId = await socialSync.startBroadcasting(uid, state.currentSong!, state.position, state.isPlaying, isPremium);
+    final roomId = await socialSync.startBroadcasting(
+      uid,
+      state.currentSong!,
+      state.position,
+      state.isPlaying,
+      isPremium,
+    );
     if (roomId != null) {
       state = state.copyWith(currentRoomId: roomId, isHost: true);
     }

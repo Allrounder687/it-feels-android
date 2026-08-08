@@ -15,6 +15,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/features/social/social_service.dart';
 
+
 class RoomBottomSheet extends ConsumerStatefulWidget {
   final bool isHost;
   const RoomBottomSheet({super.key, required this.isHost});
@@ -102,44 +103,53 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
     final audioProvider = ref.watch(audioPlayerProvider);
     final bottomUiHeight = ref.watch(bottomUiProvider);
     final bottomPadding = MediaQuery.of(context).viewInsets.bottom + bottomUiHeight + 16.0;
+    final settings = ref.watch(settingsProvider);
+
+    final contentContainer = Container(
+      padding: EdgeInsets.only(
+        bottom: bottomPadding,
+        top: 40,
+        left: 24,
+        right: 24,
+      ),
+      decoration: BoxDecoration(
+        color: settings.isPerformanceMode 
+            ? audioProvider.themeSurfaceColor 
+            : audioProvider.themeSurfaceColor.withValues(alpha: 0.5),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 24),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          if (_isLoading)
+            const CircularProgressIndicator()
+          else if (widget.isHost)
+            _buildHostView(audioProvider)
+          else
+            _buildGuestView(audioProvider),
+        ],
+      ),
+      ),
+    );
+
+    if (settings.isPerformanceMode) {
+      return contentContainer;
+    }
 
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-      child: Container(
-        padding: EdgeInsets.only(
-          bottom: bottomPadding,
-          top: 40,
-          left: 24,
-          right: 24,
-        ),
-        decoration: BoxDecoration(
-          color: audioProvider.themeSurfaceColor.withValues(alpha: 0.5),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            if (_isLoading)
-              const CircularProgressIndicator()
-            else if (widget.isHost)
-              _buildHostView(audioProvider)
-            else
-              _buildGuestView(audioProvider),
-          ],
-        ),
-        ),
-      ),
+      child: contentContainer,
     );
   }
 
@@ -309,9 +319,8 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
               icon: const Icon(Icons.link_rounded, size: 20),
               label: const Text("Share Link"),
               onPressed: () {
-                final link = 'https://app.itfeelsmusic.com/room/$roomId';
                 Share.share(
-                  'Join my Listen Together room on It Feels Music! 🎶\n$link',
+                  'Join my active listening room on It Feels Music: $roomId \n\nhttps://itfeelsmusic.app/room/$roomId',
                   subject: 'Listen Together Invite',
                 );
               },

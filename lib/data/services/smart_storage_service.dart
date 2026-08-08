@@ -2,8 +2,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:it_feels_music/data/models/song_model.dart';
-import 'package:it_feels_music/core/utils/service_locator.dart';
 
 class SmartStorageService {
   static const String _kMaxCacheSizeKey = 'max_cache_size_bytes';

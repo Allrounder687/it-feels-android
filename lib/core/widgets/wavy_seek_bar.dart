@@ -1,5 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 /// A custom animated seek bar with a wavy progress indicator.
 ///
@@ -10,7 +13,7 @@ import 'package:flutter/material.dart';
 ///
 /// It uses a [CustomPaint] to render the wavy path and a [AnimationController]
 /// to drive the wave animation.
-class WavySeekBar extends StatefulWidget {
+class WavySeekBar extends ConsumerStatefulWidget {
   /// The current playback position of the audio.
   final Duration position;
 
@@ -44,10 +47,10 @@ class WavySeekBar extends StatefulWidget {
   });
 
   @override
-  State<WavySeekBar> createState() => _WavySeekBarState();
+  ConsumerState<WavySeekBar> createState() => _WavySeekBarState();
 }
 
-class _WavySeekBarState extends State<WavySeekBar> with SingleTickerProviderStateMixin {
+class _WavySeekBarState extends ConsumerState<WavySeekBar> with SingleTickerProviderStateMixin {
   /// Controller for the continuous wave animation.
   late AnimationController _waveController;
   
@@ -64,14 +67,23 @@ class _WavySeekBarState extends State<WavySeekBar> with SingleTickerProviderStat
     _activePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round;
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..isAntiAlias = true
+      ..filterQuality = FilterQuality.high;
       
     _inactivePaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round;
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..isAntiAlias = true
+      ..filterQuality = FilterQuality.high;
       
-    _thumbPaint = Paint()..style = PaintingStyle.fill;
+    _thumbPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true
+      ..filterQuality = FilterQuality.high;
     
     _waveController = AnimationController(
       vsync: this, // Provides the ticker for the animation
@@ -104,6 +116,53 @@ class _WavySeekBarState extends State<WavySeekBar> with SingleTickerProviderStat
     final maxMs = math.max(1, widget.duration.inMilliseconds);
     final posMs = widget.position.inMilliseconds.clamp(0, maxMs);
     final fraction = posMs / maxMs; 
+
+    final settings = ref.watch(settingsProvider);
+    if (settings.graphicsQuality == GraphicsQuality.low) {
+      if (_waveController.isAnimating) _waveController.stop();
+      return ExcludeSemantics(
+        child: SizedBox(
+          height: 36,
+          child: SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 3.5,
+              activeTrackColor: widget.activeColor,
+              inactiveTrackColor: widget.inactiveColor,
+              thumbColor: widget.activeColor,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7.0),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
+              trackShape: const RoundedRectSliderTrackShape(),
+            ),
+            child: Slider(
+              value: fraction,
+              onChanged: (val) {
+                if (widget.onSeek != null) {
+                  final newPos = Duration(milliseconds: (maxMs * val).round());
+                  widget.onSeek!(newPos);
+                }
+              },
+            ),
+          ),
+        ),
+      );
+    } else {
+      if (!_waveController.isAnimating) _waveController.repeat();
+      
+      final isHighQuality = settings.graphicsQuality == GraphicsQuality.high;
+      final filterQuality = isHighQuality ? FilterQuality.high : FilterQuality.low;
+      
+      _activePaint
+        ..isAntiAlias = isHighQuality
+        ..filterQuality = filterQuality;
+        
+      _inactivePaint
+        ..isAntiAlias = isHighQuality
+        ..filterQuality = filterQuality;
+        
+      _thumbPaint
+        ..isAntiAlias = isHighQuality
+        ..filterQuality = filterQuality;
+    }
 
     return ExcludeSemantics(
       child: LayoutBuilder(

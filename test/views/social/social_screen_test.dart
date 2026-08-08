@@ -20,8 +20,11 @@ class MockSocialService extends Mock implements SocialService {}
 class MockRoomService extends Mock implements RoomService {}
 class MockFirebaseAuth extends Mock implements FirebaseAuth {}
 class MockUser extends Mock implements User {}
+// ignore: subtype_of_sealed_class
 class MockDocumentSnapshot extends Mock implements DocumentSnapshot {}
+// ignore: subtype_of_sealed_class
 class MockQuerySnapshot extends Mock implements QuerySnapshot {}
+// ignore: subtype_of_sealed_class
 class MockQueryDocumentSnapshot extends Mock implements QueryDocumentSnapshot {}
 class MockDatabaseEvent extends Mock implements DatabaseEvent {}
 class MockLyricsService extends Mock implements LyricsService {}
@@ -109,8 +112,8 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: appProviderContainer,
-        child: MaterialApp(
-          home: Scaffold(body: const SocialScreen()),
+        child: const MaterialApp(
+          home: Scaffold(body: SocialScreen()),
         ),
       ),
     );

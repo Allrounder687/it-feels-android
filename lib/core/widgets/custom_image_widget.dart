@@ -20,7 +20,7 @@ class CustomImageWidget extends ConsumerWidget {
     this.fit = BoxFit.cover,
     this.width,
     this.height,
-    this.size = 500, // Default to standard 500px resolution
+    this.size = 1000, // Default to high resolution 1000px for sharp desktop/mobile screens
     this.errorWidget,
   });
 
@@ -30,10 +30,18 @@ class CustomImageWidget extends ConsumerWidget {
     
     int targetSize = size;
     String finalUrl = imageUrl;
+    FilterQuality imageFilterQuality = FilterQuality.high;
+    
     try {
       final settings = ref.read(settingsProvider);
-      if (settings.isDataSaverEnabled) {
-        targetSize = 150;
+      if (settings.graphicsQuality == GraphicsQuality.low || settings.isDataSaverEnabled) {
+        // Drop size by half for low quality to save memory, but don't hardcode to 150
+        targetSize = (size * 0.25).toInt().clamp(150, 500);
+        imageFilterQuality = FilterQuality.low;
+      } else if (settings.graphicsQuality == GraphicsQuality.medium) {
+        // For medium, scale down slightly but allow decent resolution
+        targetSize = (size * 0.5).toInt().clamp(250, 500);
+        imageFilterQuality = FilterQuality.low;
       }
       finalUrl = ImageUtils.getSizedCoverArt(finalUrl, size: targetSize);
     } catch (_) {}
@@ -44,8 +52,11 @@ class CustomImageWidget extends ConsumerWidget {
         fit: fit,
         width: width,
         height: height,
-        memCacheWidth: targetSize,
-        errorWidget: errorWidget ?? (context, url, error) => const Icon(Icons.music_note, color: Colors.grey),
+        filterQuality: imageFilterQuality,
+        errorWidget: errorWidget ?? (context, url, error) {
+          debugPrint('CachedNetworkImage ERROR for $url: $error');
+          return const Icon(Icons.music_note, color: Colors.grey);
+        },
       );
     } else {
       return Image.file(
@@ -53,7 +64,7 @@ class CustomImageWidget extends ConsumerWidget {
         fit: fit,
         width: width,
         height: height,
-        cacheWidth: targetSize,
+        filterQuality: imageFilterQuality,
         errorBuilder: (context, error, stackTrace) => errorWidget != null ? errorWidget!(context, imageUrl, error) : const Icon(Icons.music_note, color: Colors.grey),
       );
     }

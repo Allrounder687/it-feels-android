@@ -1,7 +1,6 @@
 import 'package:it_feels_music/main.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/home/home_screen.dart';
 import 'package:it_feels_music/features/search/search_screen.dart';
@@ -9,10 +8,11 @@ import 'package:it_feels_music/features/library/library_screen.dart';
 import 'package:it_feels_music/features/player/video_tab_screen.dart';
 import 'package:it_feels_music/features/player/now_playing_screen.dart';
 import 'package:it_feels_music/features/player/video_player_screen.dart';
-import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/features/social/social_screen.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
 import 'package:it_feels_music/features/social/room_deep_link_screen.dart';
+import 'package:it_feels_music/features/player/desktop_miniplayer_screen.dart';
+import 'package:it_feels_music/features/search/raycast_search_overlay.dart';
 import 'main_navigation_wrapper.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -46,9 +46,12 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/search',
-              pageBuilder: (context, state) => const NoTransitionPage(
-                child: SearchScreen(),
-              ),
+              pageBuilder: (context, state) {
+                final q = state.uri.queryParameters['q'];
+                return NoTransitionPage(
+                  child: SearchScreen(initialQuery: q),
+                );
+              },
             ),
           ],
         ),
@@ -152,6 +155,31 @@ final GoRouter appRouter = GoRouter(
         final roomId = state.pathParameters['roomId'] ?? '';
         return NoTransitionPage(
           child: RoomDeepLinkScreen(roomId: roomId),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/desktop_miniplayer',
+      parentNavigatorKey: rootNavigatorKey,
+      pageBuilder: (context, state) {
+        return CustomTransitionPage(
+          child: const DesktopMiniplayerScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        );
+      },
+    ),
+    GoRoute(
+      path: '/raycast',
+      parentNavigatorKey: rootNavigatorKey,
+      pageBuilder: (context, state) {
+        return CustomTransitionPage(
+          opaque: false, // Must be transparent for frosted glass overlay
+          child: const RaycastSearchOverlay(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
         );
       },
     ),

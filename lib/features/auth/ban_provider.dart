@@ -40,7 +40,7 @@ class BanNotifier extends Notifier<BanState> {
         .snapshots()
         .listen((snapshot) {
       if (snapshot.exists) {
-        final data = snapshot.data() as Map<String, dynamic>?;
+        final data = snapshot.data();
         final isBanned = data?['isBanned'] ?? false;
         if (state.isBanned != isBanned) {
           state = BanState(isBanned: isBanned);

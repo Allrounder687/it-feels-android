@@ -24,6 +24,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _nameController = TextEditingController();
   String _avatarPath = '';
 
+  @override
   void initState() {
     super.initState();
     final profile = ref.read(profileProvider);

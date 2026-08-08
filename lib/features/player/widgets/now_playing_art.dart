@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
-import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/player/fullscreen_video_screen.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/player/widgets/pulse_glow_background.dart';
+import 'package:it_feels_music/core/widgets/clever_loading_text.dart';
 
 class NowPlayingArt extends ConsumerWidget {
   final bool isVideoMode;
@@ -58,7 +58,7 @@ class NowPlayingArt extends ConsumerWidget {
                   children: [
                     Positioned.fill(
                       child: videoProvider.isLoading 
-                        ? Center(child: CircularProgressIndicator(color: accentColor))
+                        ? const CleverLoadingText()
                         : videoProvider.videoController != null
                           ? ExcludeSemantics(
                               child: Video(

@@ -12,8 +12,6 @@ import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
-import 'package:it_feels_music/features/settings/settings_provider.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
 
 @immutable
 class VideoPlayerState {
@@ -209,7 +207,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     _initGuestRoomSync(roomId);
   }
 
-  Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition, bool isBackgroundHandoff = false}) async {
+  Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition, bool isBackgroundHandoff = false, void Function(String)? onToastMessage}) async {
     if (state.currentVideoId == videoId && state.player != null) {
       state = state.copyWith(isVideoActive: true);
       if (startPosition != null) {
@@ -271,6 +269,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
 
     final streamList = List<Map<String, dynamic>>.from(streamData['streams'] ?? []);
     final audioUrl = streamData['audioUrl'] as String? ?? '';
+    final durationMs = streamData['durationMs'] as int? ?? 0;
 
     state = state.copyWith(
       streams: streamList,
@@ -290,7 +289,13 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       if (isBackgroundHandoff) {
         state = state.copyWith(selectedQuality: '360p');
       }
-      _initializeStreamForQuality(state.selectedQuality, startPosition: startPosition, isBackgroundHandoff: isBackgroundHandoff);
+      _initializeStreamForQuality(
+        state.selectedQuality, 
+        startPosition: startPosition, 
+        isBackgroundHandoff: isBackgroundHandoff,
+        targetDurationMs: durationMs,
+        onToastMessage: onToastMessage,
+      );
     } else {
       state = state.copyWith(isLoading: false);
     }
@@ -325,7 +330,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     }
   }
 
-  Future<void> _initializeStreamForQuality(String targetQuality, {Duration? startPosition, bool isBackgroundHandoff = false}) async {
+  Future<void> _initializeStreamForQuality(String targetQuality, {Duration? startPosition, bool isBackgroundHandoff = false, int targetDurationMs = 0, void Function(String)? onToastMessage}) async {
     if (state.streams.isEmpty) return;
 
     state = state.copyWith(isLoading: true);
@@ -336,8 +341,33 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     // audio position right before creating the player to prevent a massive desync!
     if (isBackgroundHandoff) {
       final audioProv = ref.read(audioPlayerProvider);
+      final sourceDuration = audioProv.duration;
+      
       if (audioProv.isPlaying) {
         syncPosition = audioProv.position;
+      }
+      
+      // Perform duration mismatch and relative sync logic!
+      if (targetDurationMs > 0 && sourceDuration > Duration.zero) {
+        final targetDuration = Duration(milliseconds: targetDurationMs);
+        final diffSeconds = (sourceDuration.inSeconds - targetDuration.inSeconds).abs();
+        
+        if (diffSeconds > 15) {
+          // Threshold mismatch! Start from 00:00
+          syncPosition = Duration.zero;
+          onToastMessage?.call("Different version detected. Starting from the beginning.");
+        } else {
+          // Relative sync (percentage based)
+          final pct = syncPosition.inMilliseconds / sourceDuration.inMilliseconds;
+          syncPosition = Duration(milliseconds: (targetDuration.inMilliseconds * pct).toInt());
+        }
+        
+        // Safety clamp to ensure we never seek past target end
+        if (targetDuration.inSeconds > 2) {
+          final maxDuration = targetDuration - const Duration(seconds: 2);
+          if (syncPosition > maxDuration) syncPosition = maxDuration;
+          if (syncPosition < Duration.zero) syncPosition = Duration.zero;
+        }
       }
     }
 

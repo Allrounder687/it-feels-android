@@ -13,9 +13,10 @@ class SkeletonLoadingList extends StatelessWidget {
       itemBuilder: (context, index) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: Shimmer.fromColors(
-            baseColor: context.themeCardColor.withValues(alpha: 0.5),
-            highlightColor: context.themeCardColor.withValues(alpha: 0.8),
+          child: ExcludeSemantics(
+            child: Shimmer.fromColors(
+              baseColor: context.themeCardColor.withValues(alpha: 0.5),
+              highlightColor: context.themeCardColor.withValues(alpha: 0.8),
             child: Row(
               children: [
                 Container(
@@ -53,6 +54,7 @@ class SkeletonLoadingList extends StatelessWidget {
                 ),
               ],
             ),
+          ),
           ),
         );
       },

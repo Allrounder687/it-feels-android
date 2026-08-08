@@ -1,5 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:logger/logger.dart';
+import 'package:it_feels_music/data/services/podcast_provider.dart';
+import 'package:it_feels_music/data/services/youtube_podcast_provider.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:it_feels_music/services/notification_service.dart';
@@ -55,4 +57,5 @@ Future<void> setupServiceLocator() async {
   locator.registerLazySingleton<ListenTogetherService>(() => ListenTogetherService());
   locator.registerLazySingleton<DownloadService>(() => DownloadService(apiService: locator<MusicApiService>()));
   locator.registerLazySingleton<SmartCacheService>(() => SmartCacheService());
+  locator.registerLazySingleton<PodcastProvider>(() => YouTubePodcastProvider());
 }

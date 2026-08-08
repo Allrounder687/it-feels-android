@@ -307,7 +307,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         ),
                         Switch(
                           value: isBanned,
-                          activeColor: Colors.redAccent,
+                          activeThumbColor: Colors.redAccent,
                           inactiveTrackColor: context.themeBackgroundColor,
                           onChanged: (val) => _toggleBan(uid, isBanned),
                         ),

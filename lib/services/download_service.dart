@@ -20,14 +20,31 @@ class DownloadService {
   Future<void> _initDownloader() async {
     if (_initialized) return;
     
-    // Configure background OS notifications for Android/iOS
-    await FileDownloader().configureNotification(
-      running: const TaskNotification('Downloading...', 'file: {filename}'),
-      complete: const TaskNotification('Download Complete', 'file: {filename}'),
-      error: const TaskNotification('Download Failed', 'file: {filename}'),
-      progressBar: true,
-    );
+    // Configure background OS notifications only for mobile platforms where it is supported cleanly
+    if (Platform.isAndroid || Platform.isIOS) {
+      FileDownloader().configureNotification(
+        running: const TaskNotification('Downloading...', 'file: {filename}'),
+        complete: const TaskNotification('Download Complete', 'file: {filename}'),
+        error: const TaskNotification('Download Failed', 'file: {filename}'),
+        progressBar: true,
+      );
+    }
     _initialized = true;
+  }
+
+  /// Returns the current directory where downloaded files are saved
+  Future<String> getDownloadDirectoryPath() async {
+    final settings = await StorageService.loadSettings();
+    final customPath = settings['customDownloadPath'] ?? '';
+    
+    if (customPath.isNotEmpty) {
+      return customPath;
+    } else if (Platform.isAndroid) {
+      return '/storage/emulated/0/Music/IT-Feels';
+    } else {
+      final dir = await getApplicationDocumentsDirectory();
+      return '${dir.path}/downloaded_music';
+    }
   }
 
   /// Download a single song for offline playback via background OS task

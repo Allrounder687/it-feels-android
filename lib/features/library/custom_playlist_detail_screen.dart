@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,12 +5,8 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/data/models/custom_playlist.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
-import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
-import 'package:it_feels_music/core/widgets/mini_player.dart';
-import 'package:it_feels_music/features/player/now_playing_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/social/social_service.dart' as it_feels_music_social_service;
 import 'package:cloud_firestore/cloud_firestore.dart' as it_feels_music_firestore;
@@ -382,12 +377,14 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                   return ListView.builder(
                     shrinkWrap: true,
                     itemCount: 5,
-                    itemBuilder: (context, index) => Shimmer.fromColors(
-                      baseColor: context.themeCardColor,
-                      highlightColor: context.themeCardColor.withValues(alpha: 0.5),
-                      child: ListTile(
-                        title: Container(height: 16, width: 120, color: Colors.white, margin: const EdgeInsets.only(right: 150)),
-                        subtitle: Container(height: 12, width: 80, color: Colors.white, margin: const EdgeInsets.only(right: 200, top: 4)),
+                    itemBuilder: (context, index) => ExcludeSemantics(
+                      child: Shimmer.fromColors(
+                        baseColor: context.themeCardColor,
+                        highlightColor: context.themeCardColor.withValues(alpha: 0.5),
+                        child: ListTile(
+                          title: Container(height: 16, width: 120, color: Colors.white, margin: const EdgeInsets.only(right: 150)),
+                          subtitle: Container(height: 12, width: 80, color: Colors.white, margin: const EdgeInsets.only(right: 200, top: 4)),
+                        ),
                       ),
                     ),
                   );
@@ -412,12 +409,14 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                       future: socialService.getFriendDetails(friendUid),
                       builder: (context, friendSnapshot) {
                         if (!friendSnapshot.hasData) {
-                          return Shimmer.fromColors(
-                            baseColor: context.themeCardColor,
-                            highlightColor: context.themeCardColor.withValues(alpha: 0.5),
-                            child: ListTile(
-                              title: Container(height: 16, width: 120, color: Colors.white, margin: const EdgeInsets.only(right: 150)),
-                              subtitle: Container(height: 12, width: 80, color: Colors.white, margin: const EdgeInsets.only(right: 200, top: 4)),
+                          return ExcludeSemantics(
+                            child: Shimmer.fromColors(
+                              baseColor: context.themeCardColor,
+                              highlightColor: context.themeCardColor.withValues(alpha: 0.5),
+                              child: ListTile(
+                                title: Container(height: 16, width: 120, color: Colors.white, margin: const EdgeInsets.only(right: 150)),
+                                subtitle: Container(height: 12, width: 80, color: Colors.white, margin: const EdgeInsets.only(right: 200, top: 4)),
+                              ),
                             ),
                           );
                         }

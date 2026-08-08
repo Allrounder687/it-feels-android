@@ -1,10 +1,14 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
+enum GraphicsQuality { high, medium, low }
 
 @immutable
 class SettingsState {
+  bool get enablePerformanceMode => graphicsQuality == GraphicsQuality.low;
+  bool get isPerformanceMode => graphicsQuality == GraphicsQuality.low;
   final String wifiQuality;
   final String mobileQuality;
   final String downloadQuality;
@@ -20,6 +24,8 @@ class SettingsState {
   final bool isDataSaverEnabled;
   final bool enableHardwareDecoding;
   final String defaultVideoQuality;
+  final GraphicsQuality graphicsQuality;
+  final bool enableSmartDownloads;
 
   const SettingsState({
     this.wifiQuality = '320 kbps (Very High)',
@@ -37,6 +43,8 @@ class SettingsState {
     this.isDataSaverEnabled = false,
     this.enableHardwareDecoding = true,
     this.defaultVideoQuality = '480p',
+    this.graphicsQuality = GraphicsQuality.high,
+    this.enableSmartDownloads = true,
   });
 
   SettingsState copyWith({
@@ -55,6 +63,8 @@ class SettingsState {
     bool? isDataSaverEnabled,
     bool? enableHardwareDecoding,
     String? defaultVideoQuality,
+    GraphicsQuality? graphicsQuality,
+    bool? enableSmartDownloads,
   }) {
     return SettingsState(
       wifiQuality: wifiQuality ?? this.wifiQuality,
@@ -72,6 +82,8 @@ class SettingsState {
       isDataSaverEnabled: isDataSaverEnabled ?? this.isDataSaverEnabled,
       enableHardwareDecoding: enableHardwareDecoding ?? this.enableHardwareDecoding,
       defaultVideoQuality: defaultVideoQuality ?? this.defaultVideoQuality,
+      graphicsQuality: graphicsQuality ?? this.graphicsQuality,
+      enableSmartDownloads: enableSmartDownloads ?? this.enableSmartDownloads,
     );
   }
 }
@@ -93,6 +105,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
     BackendApiService.useProxyBackend = useProxy;
     BackendApiService.baseUrl = proxyUrlVal;
 
+    final loadedQuality = GraphicsQuality.values.firstWhere(
+      (e) => e.name == settings['graphicsQuality'],
+      orElse: () => GraphicsQuality.high,
+    );
+
     state = state.copyWith(
       wifiQuality: settings['wifiQuality'],
       mobileQuality: settings['mobileQuality'],
@@ -108,8 +125,30 @@ class SettingsNotifier extends Notifier<SettingsState> {
       isDataSaverEnabled: settings['isDataSaverEnabled'] == true,
       enableHardwareDecoding: settings['enableHardwareDecoding'] ?? true, // Default to true
       defaultVideoQuality: settings['defaultVideoQuality'] as String? ?? '480p',
+      graphicsQuality: loadedQuality,
+      enableSmartDownloads: settings['enableSmartDownloads'] ?? true,
       defaultCategory: defaultCat,
     );
+
+    _applyGraphicsQuality(loadedQuality);
+  }
+
+  void _applyGraphicsQuality(GraphicsQuality quality) {
+    if (kIsWeb) return; // PaintingBinding imageCache isn't easily manipulatable the same way on Web
+    switch (quality) {
+      case GraphicsQuality.low:
+        PaintingBinding.instance.imageCache.maximumSize = 50;
+        PaintingBinding.instance.imageCache.maximumSizeBytes = 20 * 1024 * 1024; // 20 MB
+        break;
+      case GraphicsQuality.medium:
+        PaintingBinding.instance.imageCache.maximumSize = 150;
+        PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // 50 MB
+        break;
+      case GraphicsQuality.high:
+        PaintingBinding.instance.imageCache.maximumSize = 300;
+        PaintingBinding.instance.imageCache.maximumSizeBytes = 150 * 1024 * 1024; // 150 MB
+        break;
+    }
   }
 
   void setWifiQuality(String quality) {
@@ -124,6 +163,17 @@ class SettingsNotifier extends Notifier<SettingsState> {
 
   void setEnableHardwareDecoding(bool enable) {
     state = state.copyWith(enableHardwareDecoding: enable);
+    _save();
+  }
+
+  void setGraphicsQuality(GraphicsQuality quality) {
+    state = state.copyWith(graphicsQuality: quality);
+    _applyGraphicsQuality(quality);
+    _save();
+  }
+
+  void setEnableSmartDownloads(bool enable) {
+    state = state.copyWith(enableSmartDownloads: enable);
     _save();
   }
 
@@ -213,6 +263,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
       isDataSaverEnabled: state.isDataSaverEnabled,
       enableHardwareDecoding: state.enableHardwareDecoding,
       defaultVideoQuality: state.defaultVideoQuality,
+      graphicsQuality: state.graphicsQuality.name,
+      enableSmartDownloads: state.enableSmartDownloads,
     );
   }
 }

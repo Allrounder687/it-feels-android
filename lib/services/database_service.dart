@@ -145,11 +145,15 @@ class DatabaseService {
       if (queryWords.isEmpty) return [];
 
       // Search where searchVector contains any of the query words
-      return await _isar!.songs
-          .filter()
-          .anyOf(queryWords, (q, String word) => q.searchVectorElementStartsWith(word))
-          .limit(limit)
-          .findAll();
+      return await Isolate.run(() {
+        final isar = Isar.getInstance('it_feels_db');
+        if (isar == null) return <Song>[];
+        return isar.songs
+            .filter()
+            .anyOf(queryWords, (q, String word) => q.searchVectorElementStartsWith(word))
+            .limit(limit)
+            .findAllSync();
+      });
     } catch (e) {
       debugPrint('[DatabaseService] searchSongs error: $e');
       return [];
@@ -165,15 +169,18 @@ class DatabaseService {
       await ensureInitialized();
       if (!isInitialized) return [];
       final twoWeeksAgo = DateTime.now().subtract(const Duration(days: 14));
-      
-      return await _isar!.songs
-          .filter()
-          .playCountGreaterThan(10)
-          .and()
-          .lastPlayedAtGreaterThan(twoWeeksAgo)
-          .sortByPlayCountDesc()
-          .limit(limit)
-          .findAll();
+      return await Isolate.run(() {
+        final isar = Isar.getInstance('it_feels_db');
+        if (isar == null) return <Song>[];
+        return isar.songs
+            .filter()
+            .playCountGreaterThan(10)
+            .and()
+            .lastPlayedAtGreaterThan(twoWeeksAgo)
+            .sortByPlayCountDesc()
+            .limit(limit)
+            .findAllSync();
+      });
     } catch (e) {
       debugPrint('[DatabaseService] getOnRepeat error: $e');
       return [];
@@ -184,12 +191,16 @@ class DatabaseService {
     try {
       await ensureInitialized();
       if (!isInitialized) return [];
-      return await _isar!.songs
-          .filter()
-          .playCountGreaterThan(0)
-          .sortByPlayCountDesc()
-          .limit(limit)
-          .findAll();
+      return await Isolate.run(() {
+        final isar = Isar.getInstance('it_feels_db');
+        if (isar == null) return <Song>[];
+        return isar.songs
+            .filter()
+            .playCountGreaterThan(0)
+            .sortByPlayCountDesc()
+            .limit(limit)
+            .findAllSync();
+      });
     } catch (e) {
       debugPrint('[DatabaseService] getTopPlayedSongs error: $e');
       return [];
@@ -201,15 +212,18 @@ class DatabaseService {
       await ensureInitialized();
       if (!isInitialized) return [];
       final threeMonthsAgo = DateTime.now().subtract(const Duration(days: 90));
-      
-      return await _isar!.songs
-          .filter()
-          .isFavoriteEqualTo(true)
-          .and()
-          .lastPlayedAtLessThan(threeMonthsAgo)
-          .sortByLastPlayedAt() // Ascending (oldest first)
-          .limit(limit)
-          .findAll();
+      return await Isolate.run(() {
+        final isar = Isar.getInstance('it_feels_db');
+        if (isar == null) return <Song>[];
+        return isar.songs
+            .filter()
+            .isFavoriteEqualTo(true)
+            .and()
+            .lastPlayedAtLessThan(threeMonthsAgo)
+            .sortByLastPlayedAt() // Ascending (oldest first)
+            .limit(limit)
+            .findAllSync();
+      });
     } catch (e) {
       debugPrint('[DatabaseService] getForgottenFavorites error: $e');
       return [];
@@ -305,12 +319,16 @@ class DatabaseService {
       if (!isInitialized) return [];
       
       // Get songs that have a playback position set, ordered by lastPlayedAt descending
-      return await _isar!.songs
-          .filter()
-          .playbackPositionMsGreaterThan(10000) // Must have played at least 10 seconds
-          .sortByLastPlayedAtDesc()
-          .limit(limit)
-          .findAll();
+      return await Isolate.run(() {
+        final isar = Isar.getInstance('it_feels_db');
+        if (isar == null) return <Song>[];
+        return isar.songs
+            .filter()
+            .playbackPositionMsGreaterThan(10000) // Must have played at least 10 seconds
+            .sortByLastPlayedAtDesc()
+            .limit(limit)
+            .findAllSync();
+      });
     } catch (e) {
       debugPrint('[DatabaseService] getContinueWatching error: $e');
       return [];

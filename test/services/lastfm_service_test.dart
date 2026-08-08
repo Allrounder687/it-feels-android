@@ -31,8 +31,6 @@ void main() {
     mockClient = MockClient();
     lastfmService = LastfmService(
       client: mockClient,
-      apiKey: 'test_key',
-      sharedSecret: 'test_secret',
     );
     registerFallbackValue(Uri());
   });

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,22 +13,17 @@ import 'package:go_router/go_router.dart';
 
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
-import 'package:it_feels_music/features/player/video_player_provider.dart';
-import 'package:it_feels_music/features/library/listening_history_provider.dart';
-import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
-import 'package:it_feels_music/features/home/custom_title_bar.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/playlist_import_service.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
+import 'package:it_feels_music/core/widgets/premium_title_bar.dart';
 import 'package:it_feels_music/core/widgets/mini_player.dart';
 import 'package:it_feels_music/features/player/video_miniplayer.dart';
-import 'package:it_feels_music/features/player/now_playing_screen.dart';
 import 'package:it_feels_music/features/player/active_media_provider.dart';
 import 'package:it_feels_music/core/widgets/import_progress_banner.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
-import 'package:it_feels_music/features/library/download_provider.dart';
 import 'package:it_feels_music/features/social/unread_count_provider.dart';
 import 'package:it_feels_music/services/config_service.dart';
 import 'package:it_feels_music/features/admin/force_update_screen.dart';
@@ -45,11 +41,64 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
   Song? _lastLoggedSong;
   late StreamSubscription _intentSubscription;
   String _lastCheckedClipboard = '';
+  int _slowFrameCount = 0;
+  DateTime? _lastStutterWarning;
+
+  void _onFrameTimings(List<FrameTiming> timings) {
+    if (!mounted) return;
+    
+    final currentQuality = ref.read(settingsProvider).graphicsQuality;
+    // If already at lowest quality, do nothing.
+    if (currentQuality == GraphicsQuality.low) {
+      _slowFrameCount = 0;
+      return;
+    }
+
+    for (final timing in timings) {
+      // If a frame took more than ~33ms (which means we dropped below 30FPS)
+      if (timing.totalSpan.inMilliseconds > 33) {
+        _slowFrameCount++;
+      } else {
+        // Recovering frames resets the counter slowly or completely.
+        _slowFrameCount = 0;
+      }
+    }
+
+    // If we hit 15 consecutive slow frames (severe stutter)
+    if (_slowFrameCount > 15) {
+      _slowFrameCount = 0;
+      final now = DateTime.now();
+      
+      // Throttle the auto-detection to at most once per hour so we don't spam the user
+      // if they purposefully disable it.
+      if (_lastStutterWarning == null || now.difference(_lastStutterWarning!).inHours > 1) {
+        _lastStutterWarning = now;
+        
+        // Auto-downgrade
+        final newQuality = currentQuality == GraphicsQuality.high 
+            ? GraphicsQuality.medium 
+            : GraphicsQuality.low;
+            
+        ref.read(settingsProvider.notifier).setGraphicsQuality(newQuality);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Heavy stutter detected. Graphics Quality lowered to ${newQuality.name.toUpperCase()} for a smoother experience.'),
+              duration: const Duration(seconds: 5),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    SchedulerBinding.instance.addTimingsCallback(_onFrameTimings);
     
     if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
       // Listen to media sharing incoming links while app is in memory
@@ -130,6 +179,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    SchedulerBinding.instance.removeTimingsCallback(_onFrameTimings);
     _intentSubscription.cancel();
     super.dispose();
   }
@@ -291,7 +341,8 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
         policy: OrderedTraversalPolicy(),
         child: Column(
           children: [
-          // Removed CustomTitleBar to use native Windows title bar
+          // Custom 2026-tier title bar for desktop
+          PremiumTitleBar(isWideScreen: MediaQuery.of(context).size.width >= 600),
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -324,24 +375,30 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                                 ),
                               ],
                             ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const SizedBox(height: 12),
-                                _buildNavItem(0, Icons.home_rounded, "Home", isVertical: true),
-                                const SizedBox(height: 24),
-                                _buildNavItem(1, Icons.search_rounded, "Search", isVertical: true),
-                                const SizedBox(height: 24),
-                                _buildNavItem(2, Icons.library_music_rounded, "Library", isVertical: true),
-                                const SizedBox(height: 24),
-                                if (enableVideos) ...[
-                                  _buildNavItem(3, Icons.video_library_rounded, "Videos", isVertical: true),
-                                  const SizedBox(height: 24),
-                                ],
-                                _buildNavItem(4, Icons.people_rounded, "Social", isVertical: true),
-                                const SizedBox(height: 24),
-                                _buildNavItem(5, Icons.settings_outlined, "Settings", isVertical: true, hasUpdate: ref.watch(shorebirdUpdatePendingProvider)),
-                              ],
+                            child: Center(
+                              child: SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const SizedBox(height: 12),
+                                    _buildNavItem(0, Icons.home_rounded, "Home", isVertical: true),
+                                    const SizedBox(height: 24),
+                                    _buildNavItem(1, Icons.search_rounded, "Search", isVertical: true),
+                                    const SizedBox(height: 24),
+                                    _buildNavItem(2, Icons.library_music_rounded, "Library", isVertical: true),
+                                    const SizedBox(height: 24),
+                                    if (enableVideos) ...[
+                                      _buildNavItem(3, Icons.video_library_rounded, "Videos", isVertical: true),
+                                      const SizedBox(height: 24),
+                                    ],
+                                    _buildNavItem(4, Icons.people_rounded, "Social", isVertical: true),
+                                    const SizedBox(height: 24),
+                                    _buildNavItem(5, Icons.settings_outlined, "Settings", isVertical: true, hasUpdate: ref.watch(shorebirdUpdatePendingProvider)),
+                                    const SizedBox(height: 12),
+                                  ],
+                                ),
+                              ),
                             ),
                           );
                           return child;
@@ -358,10 +415,10 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper> w
                         
                         // Video Miniplayer Overlay (PiP)
                         if (showVideoPiP)
-                          Positioned(
+                          const Positioned(
                             bottom: 90, // Above the audio MiniPlayer
                             right: 16,
-                            child: const VideoMiniplayer(),
+                            child: VideoMiniplayer(),
                           ),
 
                         // Floating MiniPlayer Overlay

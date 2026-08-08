@@ -1,8 +1,6 @@
 import 'package:it_feels_music/main.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
 
 extension ThemeContext on BuildContext {
   Color get themeTextColor => appProviderContainer.read(audioPlayerProvider).themeTextColor;

@@ -1,17 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/widgets/animated_play_pause_button.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
-import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart';
 import 'package:it_feels_music/features/cast/cast_bottom_sheet.dart';
-import 'package:it_feels_music/features/settings/settings_provider.dart';
 
 class MiniPlayer extends ConsumerWidget {
   final VoidCallback onTap;
@@ -34,11 +30,7 @@ class MiniPlayer extends ConsumerWidget {
         final currentSong = playerProvider.currentSong;
         if (currentSong == null) return const SizedBox.shrink();
 
-        final progress = (playerProvider.duration.inMilliseconds > 0)
-            ? (playerProvider.position.inMilliseconds /
-                      playerProvider.duration.inMilliseconds)
-                  .clamp(0.0, 1.0)
-            : 0.0;
+
 
         final bottomInset = MediaQuery.of(context).viewPadding.bottom;
         return Padding(
@@ -70,23 +62,25 @@ class MiniPlayer extends ConsumerWidget {
                     left: 0,
                     right: 0,
                     top: 0,
-                    child: StreamBuilder<Duration>(
-                      stream: ref.read(audioPlayerProvider.notifier).audioHandler.player.positionStream,
-                      initialData: playerProvider.position,
-                      builder: (context, snapshot) {
-                        final pos = snapshot.data ?? playerProvider.position;
-                        final progress = (playerProvider.duration.inMilliseconds > 0)
-                            ? (pos.inMilliseconds / playerProvider.duration.inMilliseconds).clamp(0.0, 1.0)
-                            : 0.0;
-                        return LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 2.5,
-                          backgroundColor: context.themeTextColor12,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            playerProvider.themeAccentColor,
-                          ),
-                        );
-                      },
+                    child: ExcludeSemantics(
+                      child: StreamBuilder<Duration>(
+                        stream: ref.read(audioPlayerProvider.notifier).audioHandler.player.positionStream,
+                        initialData: playerProvider.position,
+                        builder: (context, snapshot) {
+                          final pos = snapshot.data ?? playerProvider.position;
+                          final progress = (playerProvider.duration.inMilliseconds > 0)
+                              ? (pos.inMilliseconds / playerProvider.duration.inMilliseconds).clamp(0.0, 1.0)
+                              : 0.0;
+                          return LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 2.5,
+                            backgroundColor: context.themeTextColor12,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              playerProvider.themeAccentColor,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
 

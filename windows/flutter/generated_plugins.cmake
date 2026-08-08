@@ -3,6 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
+  app_links
   bonsoir_windows
   cloud_firestore
   connectivity_plus
@@ -10,6 +11,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_auth
   firebase_core
   firebase_database
+  hotkey_manager_windows
   isar_flutter_libs
   just_audio_windows
   media_kit_libs_windows_video
@@ -18,13 +20,17 @@ list(APPEND FLUTTER_PLUGIN_LIST
   screen_brightness_windows
   screen_retriever_windows
   share_plus
+  tray_manager
   url_launcher_windows
   volume_controller
   window_manager
+  windows_single_instance
+  windows_taskbar
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
   jni
+  smtc_windows
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

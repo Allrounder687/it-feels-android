@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:io';
 import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:smtc_windows/smtc_windows.dart';
 import 'music_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 
@@ -16,6 +17,8 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   VoidCallback? onSkipNext;
   VoidCallback? onSkipPrevious;
   Future<void> Function()? onToggleFavorite;
+  
+  SMTCWindows? _smtc;
 
   AudioPlayerHandler({required this.apiService}) {
     _equalizer = AndroidEqualizer();
@@ -38,11 +41,48 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   AndroidLoudnessEnhancer get loudnessEnhancer => _loudnessEnhancer;
 
   void _init() {
+    if (!kIsWeb && Platform.isWindows) {
+      try {
+        _smtc = SMTCWindows(
+          config: const SMTCConfig(
+            fastForwardEnabled: false,
+            nextEnabled: true,
+            pauseEnabled: true,
+            playEnabled: true,
+            rewindEnabled: false,
+            prevEnabled: true,
+            stopEnabled: true,
+          ),
+        );
+        _smtc?.buttonPressStream.listen((event) {
+          switch (event) {
+            case PressedButton.play:
+              play();
+              break;
+            case PressedButton.pause:
+              pause();
+              break;
+            case PressedButton.next:
+              skipToNext();
+              break;
+            case PressedButton.previous:
+              skipToPrevious();
+              break;
+            case PressedButton.stop:
+              stop();
+              break;
+            default:
+              break;
+          }
+        });
+      } catch (e) {
+        debugPrint("Failed to init SMTC: $e");
+      }
+    }
+    
     _player.playbackEventStream.listen(_broadcastState);
     _player.playingStream.listen((_) {
-      if (_player.playbackEvent != null) {
-        _broadcastState(_player.playbackEvent);
-      }
+      _broadcastState(_player.playbackEvent);
     });
   }
 
@@ -70,10 +110,10 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
     playbackState.add(playbackState.value.copyWith(
       controls: [
-        MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Previous', action: MediaAction.skipToPrevious),
-        if (playing) MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Pause', action: MediaAction.pause) else MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Play', action: MediaAction.play),
-        MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Next', action: MediaAction.skipToNext),
-        MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Stop', action: MediaAction.stop),
+        const MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Previous', action: MediaAction.skipToPrevious),
+        if (playing) const MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Pause', action: MediaAction.pause) else const MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Play', action: MediaAction.play),
+        const MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Next', action: MediaAction.skipToNext),
+        const MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Stop', action: MediaAction.stop),
       ],
       systemActions: const {
         MediaAction.seek,
@@ -93,6 +133,10 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       speed: _player.speed,
       queueIndex: event.currentIndex,
     ));
+
+    if (_smtc != null) {
+      _smtc!.setPlaybackStatus(playing ? PlaybackStatus.playing : PlaybackStatus.paused);
+    }
   }
 
   Future<void> playSong(Song song, String streamUrl) async {
@@ -106,6 +150,16 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         artUri: song.coverArt.isNotEmpty ? (song.coverArt.startsWith('http') ? Uri.parse(song.coverArt) : Uri.file(song.coverArt)) : null,
       );
       mediaItem.add(item);
+      
+      if (_smtc != null) {
+        _smtc!.updateMetadata(MusicMetadata(
+          title: song.title,
+          artist: song.artist,
+          album: song.album ?? '',
+          thumbnail: song.coverArt,
+        ));
+      }
+      
       await _player.stop(); // Flush existing AV pipeline to prevent 00:00 deadlocks
 
       if (streamUrl.startsWith('/') || streamUrl.startsWith('file://') || RegExp(r'^[a-zA-Z]:[/\\]').hasMatch(streamUrl)) {

@@ -4,13 +4,17 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:it_feels_music/core/utils/error_reporter.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:it_feels_music/data/services/audio_engine_service.dart';
+import 'dart:async';
 
 enum LyricsMode { synced, static }
 
 @immutable
 class LyricsState {
   final LyricsMode mode;
-  final LyricsResult? lyricsResult;
+  final Map<String, LyricsResult> availableLyrics;
+  final String? activeProvider;
   final bool lyricsNotFound;
   final bool isLoading;
   final String? loadedSongId;
@@ -20,7 +24,8 @@ class LyricsState {
 
   const LyricsState({
     this.mode = LyricsMode.synced,
-    this.lyricsResult,
+    this.availableLyrics = const {},
+    this.activeProvider,
     this.lyricsNotFound = false,
     this.isLoading = false,
     this.loadedSongId,
@@ -29,11 +34,17 @@ class LyricsState {
     this.fontFamily = 'Plus Jakarta Sans',
   });
 
-  LyricsResult get result => lyricsResult ?? LyricsResult();
+  LyricsResult get result => activeProvider != null
+      ? availableLyrics[activeProvider]!
+      : LyricsResult();
+
+  LyricsResult? get lyricsResult =>
+      activeProvider != null ? availableLyrics[activeProvider] : null;
 
   LyricsState copyWith({
     LyricsMode? mode,
-    LyricsResult? lyricsResult,
+    Map<String, LyricsResult>? availableLyrics,
+    String? activeProvider,
     bool? lyricsNotFound,
     bool? isLoading,
     String? loadedSongId,
@@ -43,7 +54,10 @@ class LyricsState {
   }) {
     return LyricsState(
       mode: mode ?? this.mode,
-      lyricsResult: lyricsResult ?? this.lyricsResult,
+      availableLyrics: availableLyrics ?? this.availableLyrics,
+      activeProvider: activeProvider != null
+          ? (activeProvider.isEmpty ? null : activeProvider)
+          : this.activeProvider,
       lyricsNotFound: lyricsNotFound ?? this.lyricsNotFound,
       isLoading: isLoading ?? this.isLoading,
       loadedSongId: loadedSongId ?? this.loadedSongId,
@@ -70,10 +84,21 @@ class LyricsState {
 class LyricsNotifier extends Notifier<LyricsState> {
   final ItemScrollController itemScrollController = ItemScrollController();
   late final LyricsService _lyricsService;
+  Timer? _timeoutTimer;
 
   @override
   LyricsState build() {
     _lyricsService = LyricsService();
+    final engine = locator<AudioEngineService>();
+    engine.positionStream.listen((position) {
+      if (state.lyricsResult != null && state.lyricsResult!.hasSynced) {
+        final newIndex = state.getActiveLineIndex(position);
+        if (newIndex != state.activeIndex) {
+          state = state.copyWith(activeIndex: newIndex);
+          scrollToActiveIndex();
+        }
+      }
+    });
     return const LyricsState();
   }
 
@@ -107,30 +132,61 @@ class LyricsNotifier extends Notifier<LyricsState> {
     state = state.copyWith(syncOffsetMs: 350);
   }
 
-  Future<void> loadLyricsIfNeeded(Song song, Duration position) async {
+  void switchProvider(String providerName) {
+    if (state.availableLyrics.containsKey(providerName)) {
+      state = state.copyWith(activeProvider: providerName, activeIndex: -1);
+      scrollToActiveIndex(force: true);
+    }
+  }
+
+  Future<void> loadLyricsIfNeeded(Song song) async {
     if (state.loadedSongId != song.id) {
+      _timeoutTimer?.cancel();
       state = state.copyWith(
         loadedSongId: song.id,
         isLoading: true,
-        lyricsResult: null,
+        availableLyrics: {},
+        activeProvider: "",
         lyricsNotFound: false,
       );
 
-      final res = await _lyricsService.fetchLyrics(song);
-      final notFound = res == null || (!res.hasStatic && !res.hasSynced);
-      state = state.copyWith(
-        lyricsResult: res,
-        isLoading: false,
-        lyricsNotFound: notFound,
+      // Clear the activeProvider by passing "" to copyWith (handled in copyWith logic)
+      state = LyricsState(
+        loadedSongId: song.id,
+        isLoading: true,
+        availableLyrics: const {},
+        activeProvider: null,
+        lyricsNotFound: false,
+        fontFamily: state.fontFamily,
+        syncOffsetMs: state.syncOffsetMs,
       );
-    }
 
-    if (state.lyricsResult != null && state.lyricsResult!.hasSynced) {
-      final newIndex = state.getActiveLineIndex(position);
-      if (newIndex != state.activeIndex) {
-        state = state.copyWith(activeIndex: newIndex);
-        scrollToActiveIndex();
-      }
+      _lyricsService.fetchLyrics(
+        song,
+        onResult: (res) {
+          // Ensure we are still on the same song
+          if (state.loadedSongId != song.id) return;
+
+          final newMap = Map<String, LyricsResult>.from(state.availableLyrics);
+          newMap[res.source] = res;
+
+          String? newActive = state.activeProvider;
+          newActive ??= res.source;
+
+          state = state.copyWith(
+            availableLyrics: newMap,
+            activeProvider: newActive,
+            isLoading: false,
+            lyricsNotFound: false,
+          );
+        },
+      );
+
+      _timeoutTimer = Timer(const Duration(seconds: 5), () {
+        if (state.loadedSongId == song.id && state.availableLyrics.isEmpty) {
+          state = state.copyWith(isLoading: false, lyricsNotFound: true);
+        }
+      });
     }
   }
 
@@ -146,27 +202,47 @@ class LyricsNotifier extends Notifier<LyricsState> {
   }
 
   Future<void> fetchLyrics(Song song, {BuildContext? context}) async {
-    state = state.copyWith(
+    _timeoutTimer?.cancel();
+    state = LyricsState(
+      loadedSongId: song.id,
       isLoading: true,
-      lyricsResult: null,
+      availableLyrics: const {},
+      activeProvider: null,
       lyricsNotFound: false,
+      fontFamily: state.fontFamily,
+      syncOffsetMs: state.syncOffsetMs,
     );
 
-    final res = await _lyricsService.fetchLyrics(
+    _lyricsService.fetchLyrics(
       song,
       onError: (message) {
         if (context != null) {
           ErrorReporter.showError(context, message);
         }
       },
+      onResult: (res) {
+        if (state.loadedSongId != song.id) return;
+
+        final newMap = Map<String, LyricsResult>.from(state.availableLyrics);
+        newMap[res.source] = res;
+
+        String? newActive = state.activeProvider;
+        newActive ??= res.source;
+
+        state = state.copyWith(
+          availableLyrics: newMap,
+          activeProvider: newActive,
+          isLoading: false,
+          lyricsNotFound: false,
+        );
+      },
     );
 
-    final notFound = res == null || (!res.hasStatic && !res.hasSynced);
-    state = state.copyWith(
-      isLoading: false,
-      lyricsResult: res,
-      lyricsNotFound: notFound,
-    );
+    _timeoutTimer = Timer(const Duration(seconds: 5), () {
+      if (state.loadedSongId == song.id && state.availableLyrics.isEmpty) {
+        state = state.copyWith(isLoading: false, lyricsNotFound: true);
+      }
+    });
   }
 }
 
