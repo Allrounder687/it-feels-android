@@ -1,3 +1,6 @@
+## v3.5.29+63
+- **Windows Build Fix**: Fixed C2338 coroutine deprecation static assertion error on Windows by defining `_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS` in CMake for MSVC 14.41+.
+
 ## v3.5.28+62
 - **Windows Desktop Resiliency & Premium UI**:
   - **SMTC Double Initialization Crash**: Fixed a critical Windows background crash (`flutter_rust_bridge has not been initialized`) by safely pruning duplicate `SMTCWindows.initialize()` calls from `main.dart`, correctly restoring initialization hierarchy before `MediaKit`.
