@@ -64,12 +64,7 @@ class PaletteExtractor {
 
       try {
         // Send to isolate or run on main thread for Desktop
-        PaletteResult? isolateResult;
-        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-          isolateResult = await _isolateEntryPoint(imageUrl);
-        } else {
-          isolateResult = await compute(_isolateEntryPoint, imageUrl);
-        }
+        PaletteResult? isolateResult = await _isolateEntryPoint(imageUrl);
 
         if (isolateResult == null || currentToken != _generationToken) {
           _memoryCache[imageUrl] = PaletteResult(0, 0, 0, isFailed: true);

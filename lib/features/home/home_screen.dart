@@ -797,16 +797,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 left: -50,
                 right: -50,
                 height: 400,
-                child: ImageFiltered(
-                  imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: topGradientColor,
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        topGradientColor,
+                        topGradientColor.withValues(alpha: 0.0),
+                      ],
+                      stops: const [0.2, 1.0],
                     ),
                   ),
                 ),
-                ),
+              ),
               SafeArea(
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (ScrollNotification scrollInfo) {

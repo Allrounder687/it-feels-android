@@ -127,12 +127,9 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                             children: [
                               // Blurred Artist Image Background
                               if (widget.artistImage?.isNotEmpty == true)
-                                ImageFiltered(
-                                  imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                                  child: CustomImageWidget(
-                                    imageUrl: widget.artistImage!,
-                                    fit: BoxFit.cover,
-                                  ),
+                                CustomImageWidget(
+                                  imageUrl: widget.artistImage!,
+                                  fit: BoxFit.cover,
                                 ),
                               Positioned.fill(
                                 child: Container(color: context.themeBackgroundColor.withValues(alpha: 0.7)),

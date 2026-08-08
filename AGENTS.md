@@ -2,6 +2,12 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **A/V Sync, Isolate Crash & UI Polish (v3.5.27):**
+  - **PaletteExtractor Isolate Crash:** Removed `compute()` isolate spawning in `palette_extractor_isolate.dart`, running color extraction synchronously on the main thread to prevent random `IllegalArgumentException` / `NullPointerException` isolate registry crashes during rapid song skipping.
+  - **CustomAction Notification Crash:** Hardcoded exact resource IDs (`mipmap/ic_launcher`) in `AudioPlayerHandler`'s `MediaControl` instantiations to prevent `AudioService` from throwing `IllegalArgumentException: You must specify an icon resource id to build a CustomAction` on Android.
+  - **Millisecond A/V Handoff Sync:** Fixed a massive 1.5s audio desync on the very first video toggle. Modified `_initializeStreamForQuality` to accept `isBackgroundHandoff: true`, dynamically polling the true, real-time audio position in the final microsecond *after* the blocking `youtube_explode` network fetch completes, rather than using the outdated timestamp captured at button press.
+  - **Dual-Audio Glitch:** Intercepted song changes in `video_player_provider.dart` via `audioPlayerProvider` listener. Previously, the background `media_kit` instance would continue playing the old music video if the user skipped to a new audio track. Now explicitly calls `closeVideo()` immediately on track ID mismatch.
+  - **CleverLoadingText:** Replaced the default `CircularProgressIndicator` in `VideoPlayerScreen` with a custom `CleverLoadingText` widget that elegantly fades through fun phrases ("Bribing the YouTube algorithm...", "Reticulating audio splines..."). This completely masks the main-thread stuttering caused by `youtube_explode_dart` HTML parsing.
 - **Radio Resilience & Layout Fixes (v3.5.26+60):**
   - **Radio Buffer Loop:** Fixed an infinite fallback loop on live Radio streams (M3U8) in `audio_player_provider.dart` that caused the player to violently reload the stream every 1.5 seconds, throwing framework exceptions.
   - **Smart Cache:** Prevented background isolate auto-caching from attempting to download live radio streams indefinitely.
@@ -90,3 +96,6 @@ This file tracks major technical decisions, features implemented, and architectu
 - **Custom Painters and Math:** NEVER iterate pixel-by-pixel (e.g., `x += 1.0`) in custom painters like `WavySeekBar`. Do not flood the GC with thousands of transient `Offset` nodes. REQUIRED: Maintain a minimum step size of 4.0 (e.g., `x += 4.0`) for all wave and sine-based path generations to cut math operations by 75%.
 - **Data Hydration:** NEVER execute unbounded FFI deserialization or massive data list mapping on the main UI thread. REQUIRED: Large payloads (e.g., fetching thousands of audio tracks via Isar) must be paginated or explicitly wrapped in `Isolate.run()` to prevent main-thread UI locking.
 - **Execution:** If a user requests a new feature, implement the business logic without touching the files governing the `WavySeekBar`, `PulseGlowBackground`, or `MainNavigationWrapper` unless explicitly ordered to override this directive.
+
+## DEVICE & TESTING DIRECTIVES
+- **Rooted Device Debugging:** The connected device is rooted. We can extensively debug applications directly without needing to install a separate debugging APK. ALWAYS attach live logs to the existing 'It Feels' app during development to monitor performance, observe what works perfectly, and catch any errors the app might be throwing.

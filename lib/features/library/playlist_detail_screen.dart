@@ -154,12 +154,9 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                             children: [
                               // Blurred Artwork Background
                               if (_coverArt.isNotEmpty)
-                                ImageFiltered(
-                                  imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                                  child: CustomImageWidget(
-                                    imageUrl: _coverArt,
-                                    fit: BoxFit.cover,
-                                  ),
+                                CustomImageWidget(
+                                  imageUrl: _coverArt,
+                                  fit: BoxFit.cover,
                                 ),
                               Positioned.fill(
                                 child: Container(color: context.themeBackgroundColor.withValues(alpha: 0.6)),

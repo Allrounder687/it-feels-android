@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/widgets/clever_loading_text.dart';
 import 'package:it_feels_music/core/providers/fullscreen_provider.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/player/video_miniplayer.dart';
@@ -246,7 +247,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                         color: Colors.transparent,
                         child: Center(
                           child: videoProvider.isLoading
-                              ? const CircularProgressIndicator(color: AppColors.midnightAccent)
+                              ? const CleverLoadingText()
                               : (videoProvider.videoController != null)
                                   ? ExcludeSemantics(
                                       child: Video(

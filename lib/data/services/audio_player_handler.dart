@@ -70,10 +70,10 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
     playbackState.add(playbackState.value.copyWith(
       controls: [
-        MediaControl.skipToPrevious,
-        if (playing) MediaControl.pause else MediaControl.play,
-        MediaControl.skipToNext,
-        MediaControl.stop,
+        MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Previous', action: MediaAction.skipToPrevious),
+        if (playing) MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Pause', action: MediaAction.pause) else MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Play', action: MediaAction.play),
+        MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Next', action: MediaAction.skipToNext),
+        MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Stop', action: MediaAction.stop),
       ],
       systemActions: const {
         MediaAction.seek,

@@ -177,12 +177,9 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                           children: [
                             // Blurred Artwork Background
                             if (coverArtUrl.isNotEmpty)
-                              ImageFiltered(
-                                imageFilter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                                child: CustomImageWidget(
-                                  imageUrl: coverArtUrl,
-                                  fit: BoxFit.cover,
-                                ),
+                              CustomImageWidget(
+                                imageUrl: coverArtUrl,
+                                fit: BoxFit.cover,
                               ),
                             Positioned.fill(
                               child: Container(color: context.themeBackgroundColor.withValues(alpha: 0.6)),

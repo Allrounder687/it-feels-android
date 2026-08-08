@@ -1,3 +1,11 @@
+## v3.5.27+61
+- **A/V Sync, Isolate Crash & UI Polish**:
+  - **PaletteExtractor Isolate Crash**: Removed `compute()` isolate spawning in `palette_extractor_isolate.dart`, running color extraction synchronously on the main thread to prevent random `IllegalArgumentException` / `NullPointerException` isolate registry crashes during rapid song skipping.
+  - **CustomAction Notification Crash**: Hardcoded exact resource IDs (`mipmap/ic_launcher`) in `AudioPlayerHandler`'s `MediaControl` instantiations to prevent `AudioService` from throwing `IllegalArgumentException: You must specify an icon resource id to build a CustomAction` on Android.
+  - **Millisecond A/V Handoff Sync**: Fixed a massive 1.5s audio desync on the very first video toggle. Modified `_initializeStreamForQuality` to accept `isBackgroundHandoff: true`, dynamically polling the true, real-time audio position in the final microsecond *after* the blocking `youtube_explode` network fetch completes, rather than using the outdated timestamp captured at button press.
+  - **Dual-Audio Glitch**: Intercepted song changes in `video_player_provider.dart` via `audioPlayerProvider` listener. Previously, the background `media_kit` instance would continue playing the old music video if the user skipped to a new audio track. Now explicitly calls `closeVideo()` immediately on track ID mismatch.
+  - **CleverLoadingText**: Replaced the default `CircularProgressIndicator` in `VideoPlayerScreen` with a custom `CleverLoadingText` widget that elegantly fades through fun phrases. This completely masks the main-thread stuttering caused by `youtube_explode_dart` HTML parsing.
+
 ## v3.5.26+60
 - **Radio Buffer Loop Fix**: Fixed a critical crash and performance degradation on live Radio streaming channels. Radio streams (M3U8 URLs) were triggering an infinite reload loop within the `AdaptiveNetwork` fallback because their URLs did not contain Saavn-specific quality suffixes (`_96.mp4`), causing the system to constantly try and fail to downgrade the stream.
 - **Smart Cache Optimization**: Prevented `SmartCacheService` from attempting to auto-download endless live Radio streams in the background by explicitly ignoring `radio:` stream IDs.

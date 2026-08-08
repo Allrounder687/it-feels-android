@@ -124,6 +124,15 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     
     // React to external audio player state changes (like Notification/Headset controls)
     ref.listen(audioPlayerProvider, (previous, current) {
+      if (previous?.currentSong?.id != current.currentSong?.id && current.currentSong != null) {
+        // Song has changed in the audio player (e.g. skipped track). 
+        // We MUST kill the video player to prevent dual-audio overlapping!
+        if (state.isVideoActive || state.player != null) {
+          closeVideo();
+        }
+        return;
+      }
+
       final settings = ref.read(settingsProvider);
       final isSameSong = current.currentSong != null && 
                          (state.currentVideoId == current.currentSong!.id || 
@@ -281,7 +290,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       if (isBackgroundHandoff) {
         state = state.copyWith(selectedQuality: '360p');
       }
-      _initializeStreamForQuality(state.selectedQuality, startPosition: startPosition);
+      _initializeStreamForQuality(state.selectedQuality, startPosition: startPosition, isBackgroundHandoff: isBackgroundHandoff);
     } else {
       state = state.copyWith(isLoading: false);
     }
@@ -316,12 +325,23 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     }
   }
 
-  Future<void> _initializeStreamForQuality(String targetQuality, {Duration? startPosition}) async {
+  Future<void> _initializeStreamForQuality(String targetQuality, {Duration? startPosition, bool isBackgroundHandoff = false}) async {
     if (state.streams.isEmpty) return;
 
     state = state.copyWith(isLoading: true);
 
-    final previousPosition = startPosition ?? state.player?.state.position ?? Duration.zero;
+    Duration syncPosition = startPosition ?? state.player?.state.position ?? Duration.zero;
+    
+    // The fetch might have taken seconds. If this is a handoff, we MUST grab the real-time 
+    // audio position right before creating the player to prevent a massive desync!
+    if (isBackgroundHandoff) {
+      final audioProv = ref.read(audioPlayerProvider);
+      if (audioProv.isPlaying) {
+        syncPosition = audioProv.position;
+      }
+    }
+
+    final previousPosition = syncPosition;
     final wasPlaying = state.player?.state.playing ?? true;
 
     await state.player?.dispose();
