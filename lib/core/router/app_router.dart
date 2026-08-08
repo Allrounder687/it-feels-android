@@ -12,6 +12,7 @@ import 'package:it_feels_music/features/player/video_player_screen.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/features/social/social_screen.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
+import 'package:it_feels_music/features/social/room_deep_link_screen.dart';
 import 'main_navigation_wrapper.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -141,6 +142,16 @@ final GoRouter appRouter = GoRouter(
               child: child,
             );
           },
+        );
+      },
+    ),
+    GoRoute(
+      path: '/room/:roomId',
+      parentNavigatorKey: rootNavigatorKey,
+      pageBuilder: (context, state) {
+        final roomId = state.pathParameters['roomId'] ?? '';
+        return NoTransitionPage(
+          child: RoomDeepLinkScreen(roomId: roomId),
         );
       },
     ),

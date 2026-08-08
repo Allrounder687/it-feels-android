@@ -2,6 +2,10 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Radio Resilience & Layout Fixes (v3.5.26+60):**
+  - **Radio Buffer Loop:** Fixed an infinite fallback loop on live Radio streams (M3U8) in `audio_player_provider.dart` that caused the player to violently reload the stream every 1.5 seconds, throwing framework exceptions.
+  - **Smart Cache:** Prevented background isolate auto-caching from attempting to download live radio streams indefinitely.
+  - **Infinite Size Exception:** Swapped `OverflowBox` for `SizedBox` in `now_playing_actions.dart` to strictly constrain the hidden 1080x1920 story share canvas, fixing `RenderConstrainedOverflowBox` crashes.
 - **CI/CD Resiliency & Lock Screen Fix (v3.5.25+59):**
   - **Environment Build Crash (Exit Code 70):** Injected `touch .env` into all GitHub Actions pipelines (`ota_release`, `shorebird_patch`, `ios-unsigned-build`) to satisfy `flutter_dotenv` bundling requirements that were failing because `.env` is omitted from Git.
   - **Lock Screen/Control Center Audio Fix:** Wired up missing `audioHandler.onSkipNext` and `onSkipPrevious` hooks inside `AudioPlayerNotifier._initMemory()` to correctly delegate native OS media intents down to the newly decoupled `AudioEngineService`, fixing the 00:00 stall bug during background track switching.

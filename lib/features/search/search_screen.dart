@@ -8,7 +8,7 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
-import 'package:it_feels_music/features/player/widgets/wavy_seek_bar.dart';
+import 'package:it_feels_music/core/widgets/wavy_seek_bar.dart';
 import 'package:it_feels_music/core/widgets/skeleton_loading_list.dart';
 import 'package:it_feels_music/features/player/video_miniplayer.dart';
 import 'package:go_router/go_router.dart';

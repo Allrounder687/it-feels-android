@@ -561,6 +561,104 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  Widget _buildJumpBackInCarousel(BuildContext context, List<Song> history, AudioPlayerState playerProvider) {
+    if (history.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Row(
+              children: [
+                Icon(Icons.history_rounded, color: context.themeAccentColor, size: 20),
+                const SizedBox(width: 8),
+                Text("Jump Back In", style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: context.themeTextColor, letterSpacing: -0.5)),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 190,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: history.length,
+              itemBuilder: (context, index) {
+                final song = history[index];
+                final isPlaying = playerProvider.currentSong?.id == song.id && playerProvider.isPlaying;
+                
+                return Padding(
+                  padding: const EdgeInsets.only(right: 14),
+                  child: TVFocusableCard(
+                    onTap: () {
+                      if (playerProvider.currentSong?.id != song.id) {
+                        ref.read(audioPlayerProvider.notifier).playSong(song, queue: history, index: index);
+                      } else {
+                        ref.read(audioPlayerProvider.notifier).togglePlayPause();
+                      }
+                    },
+                    child: SizedBox(
+                      width: 140,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: CustomImageWidget(
+                                  imageUrl: song.coverArt ?? '',
+                                  width: 140,
+                                  height: 140,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                  ),
+                                  child: Center(
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: context.themeAccentColor.withValues(alpha: 0.9),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                        color: context.themeInvertedTextColor,
+                                        size: 28,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            song.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.interSemiBold.copyWith(color: context.themeTextColor, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSongCarousel(BuildContext context, String title, List<Song> songs, AudioPlayerState playerProvider) {
     if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
     return SliverToBoxAdapter(
@@ -852,6 +950,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   SliverToBoxAdapter(
                     child: _buildHeroBanner(context, activeSongs.first, playerProvider),
                   ),
+                  
+                if (homeProv.continueWatching.isNotEmpty && selectedCat == "For You")
+                  _buildJumpBackInCarousel(context, homeProv.continueWatching, playerProvider),
 
                 if (homeProv.isLoading)
                   SliverToBoxAdapter(
@@ -958,10 +1059,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.only(bottom: 16, top: 16), child: SmartRecommendationsRow())),
                     _buildPlaylistCarousel(context, "Daily Mixes", homeProv.youPlaylists),
                     _buildPlaylistCarousel(context, "Curated Moods", homeProv.moodPlaylists),
-                    
-                    // Moved Continue Watching to bottom and renamed logic
-                    if (homeProv.continueWatching.isNotEmpty)
-                      _buildSongCarousel(context, "Video History", homeProv.continueWatching, playerProvider),
                   ]
                 ] 
                 else if (selectedCat == "Music") ...[

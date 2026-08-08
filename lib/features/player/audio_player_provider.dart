@@ -467,9 +467,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
             if (state.currentSong != null) {
               final originalUrl = await apiService.getStreamUrl(state.currentSong!);
               if (originalUrl != null && !originalUrl.contains('_96.mp4')) {
-                debugPrint('[AdaptiveNetwork] Excessive buffering detected. Downgrading to 96kbps...');
                 final downgradedUrl = DesDecryptor.get96kbpsUrl(originalUrl);
-                if (downgradedUrl != null) {
+                if (downgradedUrl != null && downgradedUrl != originalUrl) {
+                  debugPrint('[AdaptiveNetwork] Excessive buffering detected. Downgrading to 96kbps...');
                   final pos = engine.position;
                   await engine.playSong(state.currentSong!, downgradedUrl);
                   await engine.seek(pos);

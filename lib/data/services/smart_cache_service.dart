@@ -26,7 +26,10 @@ class SmartCacheService {
       final downloadedList = await StorageService.loadDownloads();
       final downloadedIds = downloadedList.map((s) => s.id).toSet();
 
-      final songsToDownload = topSongs.where((song) => !downloadedIds.contains(song.id)).toList();
+      final songsToDownload = topSongs.where((song) => 
+        !downloadedIds.contains(song.id) && 
+        !song.id.startsWith('radio:')
+      ).toList();
 
       if (songsToDownload.isEmpty) {
         debugPrint('[SmartCacheService] All top 50 songs are already cached.');

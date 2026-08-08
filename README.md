@@ -4,7 +4,7 @@
 A premium, modern Flutter Android music application built with the design aesthetics of **IT Feels Music** and powered by the **FEELS Cloud Proxy Engine**.
 
 ![IT Feels Music Banner](https://img.shields.io/badge/IT%20Feels%20Music-Edition-FF4081?style=for-the-badge&logo=flutter)
-![Version](https://img.shields.io/badge/Version-3.5.25-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-3.5.26-blue?style=for-the-badge)
 ![Flutter Version](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter)
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
@@ -96,6 +96,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 
 ## Recent Updates
+- **Radio Resilience & Bug Fixes (3.5.26):** Fixed infinite fallback loops and `OverflowBox` layout exceptions, and prevented live radio streams from being auto-cached.
 - **Search Pagination & DI Architecture Release (3.5.15):** Integrated pagination for songs, albums, and playlists, added video search capabilities, and added ability to remove individual recent searches. Refactored `RadioApiService`, `SocialService`, and `LastfmService` for Dependency Injection to unblock testing. Fixed widget teardown exceptions in `VideoPlayerScreen` and cached Firebase streams in `SocialScreen`. Fixed CI pipeline issues with Shorebird and Filepicker.
 - **Agent Steering Path & Infrastructure:** Established a unified agent steering path ([`docs/STEERING_PATH.md`](docs/STEERING_PATH.md)) to align all AI agent-driven development, updated existing agent specifications (`agents/`), and developed a new `doc-writer-skill` for automated documentation management.
 - **Account Entitlement & Engine Resiliency Release (3.5.8):** Bound premium status strictly to authenticated user IDs (`/users/<uid>`), isolating guests and secondary accounts. Added isolate detection and fallback retries in `DatabaseService` to prevent `Collection id is invalid` crashes. Handled Firebase Auth error codes (`admin-restricted-operation`, `too-many-requests`) and set system locale. Optimized Piped stream extraction failover to 2.5s timeouts across healthy mirrors.

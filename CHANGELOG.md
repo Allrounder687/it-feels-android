@@ -1,3 +1,8 @@
+## v3.5.26+60
+- **Radio Buffer Loop Fix**: Fixed a critical crash and performance degradation on live Radio streaming channels. Radio streams (M3U8 URLs) were triggering an infinite reload loop within the `AdaptiveNetwork` fallback because their URLs did not contain Saavn-specific quality suffixes (`_96.mp4`), causing the system to constantly try and fail to downgrade the stream.
+- **Smart Cache Optimization**: Prevented `SmartCacheService` from attempting to auto-download endless live Radio streams in the background by explicitly ignoring `radio:` stream IDs.
+- **Syntax & Layout Fixes**: Resolved unmatched parentheses in `NowPlayingActions` and replaced an unconstrained `OverflowBox` with a strict `SizedBox(width: 1080, height: 1920)` for the background share canvas, fixing a "RenderConstrainedOverflowBox object was given an infinite size" rendering exception. Fixed undefined properties in `CustomImageWidget` (`cacheKey`, `isCircular`) and `Song` (`artworkUrl` -> `coverArt`).
+
 ## v3.5.25+59
 - **CI/CD Resiliency & Environment Variables**: Fixed a critical build failure (Exit Code 70) in GitHub Actions caused by missing `.env` file bundling. Added automated pipeline logic to inject a dummy `.env` placeholder, resolving compile-time errors in `flutter_dotenv` on remote CI runners.
 - **Audio Lock Screen Controls**: Fixed an issue where the player would become unresponsive on the lock screen or control center, especially when switching tracks rapidly or when background tracks completed. Wired `audioHandler.onSkipNext` and `onSkipPrevious` hooks directly to the newly isolated `AudioEngineService` in `audio_player_provider.dart` to correctly bridge native media controls to Flutter states.

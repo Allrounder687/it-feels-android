@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'dart:ui';
@@ -303,7 +304,26 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.link_rounded, size: 20),
+              label: const Text("Share Link"),
+              onPressed: () {
+                final link = 'https://app.itfeelsmusic.com/room/$roomId';
+                Share.share(
+                  'Join my Listen Together room on It Feels Music! 🎶\n$link',
+                  subject: 'Listen Together Invite',
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white.withValues(alpha: 0.2),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(width: 8),
             ElevatedButton(
               onPressed: () {
                 ref.read(audioPlayerProvider.notifier).leaveSession();
