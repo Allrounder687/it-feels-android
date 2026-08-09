@@ -49,8 +49,7 @@ jobs:
       - name: Build Unsigned MSIX
         run: >
           dart run msix:create
-          --pack-only
-          --no-sign
+          --store
           --version ${{ steps.version.outputs.QUAD_VERSION }}
           --output-name ItFeels-Windows-x64
 
