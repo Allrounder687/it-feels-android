@@ -731,27 +731,18 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
     final isSelected = widget.navigationShell.currentIndex == index;
     return Consumer(
       builder: (context, ref, child) {
-        final content = TVFocusableCard(
+        final content = _HoverNavItem(
+          index: index,
+          isSelected: isSelected,
+          isVertical: isVertical,
+          hideLabel: hideLabel,
           onTap: () {
             widget.navigationShell.goBranch(
               index,
               initialLocation: index == widget.navigationShell.currentIndex,
             );
           },
-          child: Center(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              padding: EdgeInsets.symmetric(
-                horizontal: isVertical ? 12 : (hideLabel ? 12 : 14),
-                vertical: isVertical ? 16 : 14,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? context.themeNavPillColor
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Stack(
+          child: Stack(
                 children: [
                   isVertical
                       ? Column(
@@ -875,11 +866,71 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                     ),
                 ],
               ),
-            ),
-          ),
         );
         return isVertical ? content : Expanded(child: content);
       },
+    );
+  }
+}
+
+class _HoverNavItem extends StatefulWidget {
+  final int index;
+  final bool isSelected;
+  final bool isVertical;
+  final bool hideLabel;
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _HoverNavItem({
+    required this.index,
+    required this.isSelected,
+    required this.isVertical,
+    required this.hideLabel,
+    required this.child,
+    required this.onTap,
+  });
+
+  @override
+  State<_HoverNavItem> createState() => _HoverNavItemState();
+}
+
+class _HoverNavItemState extends State<_HoverNavItem> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: TVFocusableCard(
+        onTap: widget.onTap,
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: EdgeInsets.symmetric(
+              horizontal: widget.isVertical ? 12 : (widget.hideLabel ? 12 : 14),
+              vertical: widget.isVertical ? 16 : 14,
+            ),
+            decoration: BoxDecoration(
+              color: widget.isSelected
+                  ? context.themeNavPillColor
+                  : (_isHovered ? context.themeAccentColor.withValues(alpha: 0.1) : Colors.transparent),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: _isHovered || widget.isSelected
+                  ? [
+                      BoxShadow(
+                        color: (widget.isSelected ? context.themeNavPillColor : context.themeAccentColor).withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: widget.child,
+          ),
+        ),
+      ),
     );
   }
 }

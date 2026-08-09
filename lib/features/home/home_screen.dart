@@ -1224,9 +1224,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               final isSelected = index == _selectedFilterIndex;
                               return Padding(
                                 padding: const EdgeInsets.only(right: 10),
-                                child: TVFocusableCard(
-                                  autofocus: index == 0,
-                                  focusedScale: 1.1,
+                                child: _GlassmorphicChip(
+                                  label: _filters[index],
+                                  isSelected: isSelected,
                                   onTap: () {
                                     setState(
                                       () => _selectedFilterIndex = index,
@@ -1249,43 +1249,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             .fetchMoods();
                                     }
                                   },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 18,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? Theme.of(
-                                              context,
-                                            ).colorScheme.primary
-                                          : Theme.of(context)
-                                                .colorScheme
-                                                .surfaceContainerHighest,
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: isSelected
-                                            ? Colors.transparent
-                                            : Theme.of(context).dividerColor
-                                                  .withValues(alpha: 0.5),
-                                        width: 0.5,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      _filters[index],
-                                      style: GoogleFonts.inter(
-                                        color: isSelected
-                                            ? Theme.of(
-                                                context,
-                                              ).colorScheme.onPrimary
-                                            : Theme.of(
-                                                context,
-                                              ).colorScheme.onSurfaceVariant,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
                                 ),
                               );
                             },
@@ -1717,5 +1680,81 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
     return const SliverToBoxAdapter(child: SizedBox.shrink());
+  }
+}
+
+class _GlassmorphicChip extends StatefulWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _GlassmorphicChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_GlassmorphicChip> createState() => _GlassmorphicChipState();
+}
+
+class _GlassmorphicChipState extends State<_GlassmorphicChip> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: TVFocusableCard(
+        onTap: widget.onTap,
+        focusedScale: 1.1,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          transform: Matrix4.identity()..scale(_isHovered && !widget.isSelected ? 1.05 : 1.0),
+          decoration: BoxDecoration(
+            color: widget.isSelected
+                ? context.themeAccentColor
+                : context.themeSurfaceColor.withValues(alpha: _isHovered ? 0.3 : 0.1),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: widget.isSelected
+                  ? Colors.transparent
+                  : Colors.white.withValues(alpha: _isHovered ? 0.2 : 0.1),
+              width: 1,
+            ),
+            boxShadow: widget.isSelected || _isHovered
+                ? [
+                    BoxShadow(
+                      color: (widget.isSelected ? context.themeAccentColor : Colors.white).withValues(alpha: 0.2),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                child: Text(
+                  widget.label,
+                  style: GoogleFonts.inter(
+                    color: widget.isSelected
+                        ? context.themeBackgroundColor
+                        : context.themeTextColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

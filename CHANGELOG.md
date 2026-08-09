@@ -1,3 +1,7 @@
+## v3.5.32+66
+- **Desktop UI Polish**: Unified the desktop sidebar and category chips with a frosted glassmorphic design that cleanly adapts to hover states.
+- **Layout Fixes**: Resolved strict layout constraints that caused 'For You' text bounding boxes to overflow or clip.
+
 ## v3.5.29+63
 - **Windows Build Fix**: Fixed C2338 coroutine deprecation static assertion error on Windows by defining `_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS` in CMake for MSVC 14.41+.
 - **Windows MSIX Installer & Auto-Update Architecture**:
@@ -466,4 +470,5 @@ All notable changes to **IT Feels Music** will be documented in this file.
 - Improved Bottom Navigation Bar click area and icon sizes.
 - Fixed MiniPlayer visibility in custom app bar screens (Playlist, Artist, Custom Playlist details) by utilizing Scaffold's bottomNavigationBar.
 - Refactored AudioPlayerProvider as the single source of truth for app state and theming.
+
 
