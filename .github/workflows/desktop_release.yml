@@ -181,7 +181,7 @@ jobs:
             --icon-size 100 \
             --app-drop-link 450 190 \
             "../../../../../it-feels-macos-${{ github.ref_name }}.dmg" \
-            "it_feels_music.app"
+            "pixel_player_saavn.app"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
