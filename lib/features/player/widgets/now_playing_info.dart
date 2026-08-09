@@ -67,9 +67,42 @@ class NowPlayingInfo extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
+            _buildSourceBadge(),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildSourceBadge() {
+    String sourceName = 'SAAVN';
+    Color sourceColor = Colors.tealAccent;
+    
+    if (currentSong.id.startsWith('youtube:') || currentSong.id.startsWith('search:')) {
+      sourceName = 'YOUTUBE';
+      sourceColor = Colors.redAccent;
+    } else if (currentSong.id.startsWith('spotify:')) {
+      sourceName = 'SPOTIFY';
+      sourceColor = const Color(0xFF1DB954); // Spotify Green
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: sourceColor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: sourceColor.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        sourceName,
+        style: GoogleFonts.inter(
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          color: sourceColor,
+          letterSpacing: 1.0,
+        ),
+      ),
     );
   }
 }

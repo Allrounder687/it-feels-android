@@ -120,7 +120,7 @@ class PlaybackSessionNotifier extends Notifier<PlaybackSessionState> {
     state = state.copyWith(status: PlaybackSessionStatus.resolving);
     
     // Resolve stream
-    await _resolver.resolveStream(videoId, query: query);
+    await _resolver.resolveStream(videoId, query: query, song: song, isVideoMode: state.mode == PlaybackMode.video);
     
     if (currentToken != _generationToken) return;
     state = state.copyWith(status: PlaybackSessionStatus.buffering);
@@ -141,7 +141,7 @@ class PlaybackSessionNotifier extends Notifier<PlaybackSessionState> {
     if (!await DeviceUtils.isLowRamDevice() && state.currentIndex + 1 < state.queue.length) {
       final nextSong = state.queue[state.currentIndex + 1];
       final nextVideoId = nextSong.id.contains(':') ? nextSong.id : 'search:${nextSong.id}';
-      _resolver.preResolve(nextVideoId, query: '${nextSong.title} ${nextSong.artist}');
+      _resolver.preResolve(nextVideoId, query: '${nextSong.title} ${nextSong.artist}', song: nextSong, isVideoMode: state.mode == PlaybackMode.video);
     }
   }
 

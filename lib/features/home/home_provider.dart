@@ -9,6 +9,7 @@ import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/services/database_service.dart';
 import 'package:it_feels_music/data/services/youtube_podcast_provider.dart';
+import 'package:it_feels_music/data/services/spotify_api_service.dart';
 
 @immutable
 class HomeState {
@@ -785,16 +786,46 @@ class HomeNotifier extends Notifier<HomeState> {
   Future<void> loadHomepageData([BuildContext? context]) async {
     state = state.copyWith(isLoading: true);
 
-    final data = await apiService.fetchHomepageData(
-      onError: (message) {
-        if (context != null) {
-          ErrorReporter.showError(context, message);
-        }
-      },
-    );
+    bool usedSpotify = false;
+    List<Song> trending = [];
+    List<Playlist> rawPlaylists = [];
 
-    final trending = List<Song>.from(data['trending'] ?? []);
-    final rawPlaylists = List<Playlist>.from(data['playlists'] ?? []);
+    try {
+      final spotifyApi = SpotifyApiService();
+      final featuredPlaylists = await spotifyApi.getFeaturedPlaylists();
+      
+      if (featuredPlaylists.isNotEmpty) {
+        // Fetch tracks for the first featured playlist to use as trending
+        final firstPlaylistId = featuredPlaylists.first.id;
+        final trendingTracks = await spotifyApi.getPlaylistTracks(firstPlaylistId);
+        
+        if (trendingTracks.isNotEmpty) {
+          trending = trendingTracks.map((t) => t.toSong()).toList();
+          rawPlaylists = featuredPlaylists;
+          
+          final newReleases = await spotifyApi.getNewReleases();
+          rawPlaylists.addAll(newReleases);
+          
+          usedSpotify = true;
+          debugPrint('[HomeNotifier] Successfully loaded storefront via Spotify API');
+        }
+      }
+    } catch (e) {
+      debugPrint('[HomeNotifier] Spotify API failed: $e. Falling back to Saavn.');
+    }
+
+    if (!usedSpotify) {
+      final data = await apiService.fetchHomepageData(
+        onError: (message) {
+          if (context != null) {
+            ErrorReporter.showError(context, message);
+          }
+        },
+      );
+      trending = List<Song>.from(data['trending'] ?? []);
+      rawPlaylists = List<Playlist>.from(data['playlists'] ?? []);
+      debugPrint('[HomeNotifier] Loaded storefront via Saavn Fallback');
+    }
 
     state = state.copyWith(
       trendingSongs: trending,

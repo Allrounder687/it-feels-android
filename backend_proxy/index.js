@@ -7,6 +7,15 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 
+// Spotify Token Cache
+let cachedSpotifyToken = null;
+let spotifyTokenExpiry = 0; // Unix timestamp in ms
+
+// Basic in-memory rate limiting for the token endpoint
+const tokenRequests = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10;
+
 // Health check endpoint
 app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'it-feels-yt-proxy' });
@@ -14,6 +23,61 @@ app.get('/', (req, res) => {
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+app.get('/spotify/token', async (req, res) => {
+  // Rate limiting check
+  const ip = req.ip;
+  const now = Date.now();
+  const reqData = tokenRequests.get(ip) || { count: 0, startTime: now };
+  
+  if (now - reqData.startTime > RATE_LIMIT_WINDOW) {
+    reqData.count = 1;
+    reqData.startTime = now;
+  } else {
+    reqData.count++;
+  }
+  tokenRequests.set(ip, reqData);
+
+  if (reqData.count > MAX_REQUESTS_PER_WINDOW) {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
+
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    return res.status(500).json({ error: 'Spotify credentials not configured on the server' });
+  }
+
+  // Check if token is cached and valid (expires in > 60 seconds)
+  if (cachedSpotifyToken && (spotifyTokenExpiry - now > 60000)) {
+    return res.json({ access_token: cachedSpotifyToken, expires_in: Math.floor((spotifyTokenExpiry - now) / 1000) });
+  }
+
+  try {
+    const response = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic ' + Buffer.from(clientId + ':' + clientSecret).toString('base64')
+      },
+      body: 'grant_type=client_credentials'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Spotify API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    cachedSpotifyToken = data.access_token;
+    spotifyTokenExpiry = now + (data.expires_in * 1000);
+
+    res.json({ access_token: cachedSpotifyToken, expires_in: data.expires_in });
+  } catch (error) {
+    console.error('Error fetching Spotify token:', error);
+    res.status(500).json({ error: 'Failed to fetch Spotify token' });
+  }
 });
 
 app.get('/api/streams', async (req, res) => {

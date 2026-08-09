@@ -4,6 +4,9 @@ import 'package:it_feels_music/data/models/cache_models.dart';
 import 'package:it_feels_music/services/database_service.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:isar/isar.dart';
+import 'package:it_feels_music/data/services/music_api_service.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
+import 'dart:math';
 
 class StreamResolver {
   static final StreamResolver _instance = StreamResolver._internal();
@@ -14,8 +17,8 @@ class StreamResolver {
   final Map<String, Future<Map<String, dynamic>>> _inFlightRequests = {};
   
   /// Get video streams with caching and deduplication
-  Future<Map<String, dynamic>> resolveStream(String videoId, {String? query, bool bypassCache = false}) async {
-    final cacheKey = '$videoId|${query ?? ""}';
+  Future<Map<String, dynamic>> resolveStream(String videoId, {String? query, bool bypassCache = false, Song? song, bool isVideoMode = false}) async {
+    final cacheKey = '$videoId|${query ?? ""}|$isVideoMode';
 
     if (!bypassCache) {
       // 1. Check Memory Cache
@@ -72,7 +75,7 @@ class StreamResolver {
     }
 
     // 4. Fetch from BackendApiService
-    final future = _fetchAndCache(videoId, query, cacheKey);
+    final future = _fetchAndCache(videoId, query, cacheKey, song, isVideoMode);
     _inFlightRequests[cacheKey] = future;
     
     try {
@@ -83,8 +86,14 @@ class StreamResolver {
     }
   }
 
-  Future<Map<String, dynamic>> _fetchAndCache(String videoId, String? query, String cacheKey) async {
-    final result = await BackendApiService.getVideoStreams(videoId, query: query, bypassCache: true);
+  Future<Map<String, dynamic>> _fetchAndCache(String videoId, String? query, String cacheKey, Song? song, bool isVideoMode) async {
+    Map<String, dynamic> result = {};
+
+    if (videoId.startsWith('spotify:')) {
+      result = await _resolveSpotifyCascade(videoId, query, song, isVideoMode);
+    } else {
+      result = await BackendApiService.getVideoStreams(videoId, query: query, bypassCache: true);
+    }
     
     if (result.isNotEmpty && result['streams'] != null && (result['streams'] as List).isNotEmpty) {
       // Set TTL to 10 minutes
@@ -111,8 +120,15 @@ class StreamResolver {
             ..quality = bestStream['quality'] ?? 'unknown'
             ..expiryTime = expiryTime
             ..resolvedAt = DateTime.now()
-            ..resolverVersion = 1
+            ..resolverVersion = 2 // Bumped for Spotify Cascade
             ..failureCount = 0;
+
+          // Store mapped source if available
+          if (result['mappedSourceId'] != null) {
+            // We can reuse the `quality` field or store it somewhere else, but Isar cache model
+            // might need a field for mapped source. For now, we rely on the in-memory cache
+            // or re-resolving the query on expiry.
+          }
 
           await db.isar!.writeTxn(() async {
             await db.isar!.cachedStreams.put(cachedStream);
@@ -126,10 +142,95 @@ class StreamResolver {
     return result;
   }
 
-  void preResolve(String videoId, {String? query}) {
-    // Fire and forget
-    resolveStream(videoId, query: query).catchError((_) => {});
+  /// Extracts title and artist from query, assuming format "Title Artist" 
+  /// (Since we only get query string in resolver, we do best effort or parse it).
+  Future<Map<String, dynamic>> _resolveSpotifyCascade(String spotifyId, String? query, Song? song, bool isVideoMode) async {
+    if (song == null) {
+      // Fallback if no song object provided
+      return BackendApiService.getVideoStreams(spotifyId, query: query, bypassCache: true);
+    }
+
+    final String title = song.title;
+    final String artist = song.artist;
+    final int durationMs = song.duration * 1000;
+
+    // STEP 1: Saavn Search Cascade (Bypass if Video Mode)
+    if (!isVideoMode) {
+      try {
+      final saavnApi = MusicApiService();
+      final results = await saavnApi.searchSongs('$title $artist', count: 10);
+      
+      if (results.isNotEmpty) {
+        // Scoring
+        final cleanTargetTitle = _normalizeString(title);
+        final targetArtists = artist.toLowerCase().split(',').map((e) => e.trim()).toList();
+        
+        Song? bestMatch;
+        for (final candidate in results) {
+          final candidateTitle = _normalizeString(candidate.title);
+          final candidateDuration = candidate.duration * 1000;
+          
+          bool titleMatch = candidateTitle == cleanTargetTitle || candidateTitle.contains(cleanTargetTitle) || cleanTargetTitle.contains(candidateTitle);
+          
+          // Artist Overlap
+          final candidateArtists = candidate.artist.toLowerCase().split(',').map((e) => e.trim()).toList();
+          bool artistMatch = targetArtists.any((ta) => candidateArtists.any((ca) => ca.contains(ta) || ta.contains(ca)));
+          
+          // Duration within 15s
+          bool durationMatch = durationMs == 0 || (candidateDuration - durationMs).abs() <= 15000;
+
+          if (titleMatch && artistMatch && durationMatch) {
+            bestMatch = candidate;
+            break; // Accept first strict match
+          }
+        }
+
+        if (bestMatch != null) {
+          debugPrint('[StreamCascade] Saavn match found: ${bestMatch.title}');
+          final streamUrl = await saavnApi.getStreamUrl(bestMatch);
+          if (streamUrl != null) {
+            return {
+              'title': bestMatch.title,
+              'streams': [
+                {'quality': '360p', 'url': streamUrl, 'mimeType': 'audio/mp4', 'videoOnly': false, 'isSaavn': true}
+              ],
+              'audioUrl': streamUrl,
+              'durationMs': bestMatch.duration * 1000,
+              'mappedSourceId': 'saavn:${bestMatch.id}',
+            };
+          }
+        }
+      } catch (e) {
+        debugPrint('[StreamCascade] Saavn fallback failed: $e');
+      }
+    }
+
+    // STEP 2: YouTube Fallback
+    debugPrint('[StreamCascade] Falling back to YouTube for: $title $artist');
+    final queryForYoutube = '${song.title} ${song.artist.split(',').first} official music video';
+    final ytResult = await BackendApiService.getVideoStreams(spotifyId, query: queryForYoutube, bypassCache: true);
+    if (ytResult.isNotEmpty) {
+       ytResult['mappedSourceId'] = 'youtube'; // Ideally we'd capture the actual resolved YouTube ID
+    }
+    return ytResult;
   }
+
+  String _normalizeString(String input) {
+    return input.toLowerCase()
+        .replaceAll(RegExp(r'\(.*?\)'), '')
+        .replaceAll(RegExp(r'\[.*?\]'), '')
+        .replaceAll(RegExp(r'feat\..*'), '')
+        .replaceAll(RegExp(r'ft\..*'), '')
+        .replaceAll(RegExp(r'remastered.*'), '')
+        .trim();
+  }
+
+
+  void preResolve(String videoId, {String? query, Song? song, bool isVideoMode = false}) {
+    // Fire and forget
+    resolveStream(videoId, query: query, song: song, isVideoMode: isVideoMode).catchError((_) => {});
+  }
+
 
   void clearCache(String videoId) {
     _memoryCache.removeWhere((key, value) => key.startsWith('$videoId|'));
@@ -142,7 +243,7 @@ class StreamResolver {
   }
 
   /// Handle 401/403/410 errors from player by clearing cache and retrying once.
-  Future<Map<String, dynamic>> handlePlaybackError(String videoId, {String? query}) async {
+  Future<Map<String, dynamic>> handlePlaybackError(String videoId, {String? query, Song? song}) async {
     // Check failure count
     final cacheKey = '$videoId|${query ?? ""}';
     int failureCount = 0;
@@ -164,7 +265,7 @@ class StreamResolver {
     
     clearCache(videoId);
     
-    final result = await resolveStream(videoId, query: query, bypassCache: true);
+    final result = await resolveStream(videoId, query: query, bypassCache: true, song: song);
     
     // Update failure count
     try {
