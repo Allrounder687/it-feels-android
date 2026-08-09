@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
+import 'package:it_feels_music/data/services/deezer_api_service.dart';
+import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/widgets/skeleton_loading_list.dart';
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/widgets/animated_equalizer.dart';
@@ -44,13 +46,19 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       return;
     }
 
-    final api = MusicApiService();
     Map<String, dynamic> data;
 
-    if (widget.playlist.type == 'album') {
-      data = await api.fetchAlbumDetails(widget.playlist.id);
+    if (widget.playlist.id.startsWith('dz_')) {
+      final dzApi = DeezerApiService();
+      final dzId = widget.playlist.id.replaceFirst('dz_', '');
+      data = await dzApi.fetchPlaylistDetails(dzId);
     } else {
-      data = await api.fetchPlaylistDetails(widget.playlist.id);
+      final api = MusicApiService();
+      if (widget.playlist.type == 'album') {
+        data = await api.fetchAlbumDetails(widget.playlist.id);
+      } else {
+        data = await api.fetchPlaylistDetails(widget.playlist.id);
+      }
     }
 
     if (mounted) {

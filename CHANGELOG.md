@@ -1,3 +1,11 @@
+## v3.5.35+69
+- **Stream Engine Resilience**:
+  - **Zero-Lag YoutubeExplode Fallback**: Engineered a completely native, client-side fallback engine in `BackendApiService.getStreamUrl` using a background isolate. If the Cloudflare proxy fails to resolve an audio stream (e.g. dead Piped nodes or sleeping Render instances), the app instantly searches YouTube natively via `youtube_explode_dart` to seamlessly extract the Opus audio URL.
+  - **Strict Stream Title Matching**: Hardened the Cloudflare proxy's Saavn fallback loop. It now strictly rejects fuzzy matches if Saavn tries to serve a random track, properly deferring to YouTube for perfect audio extraction.
+- **Library Discovery Improvements**:
+  - **Deezer Playlist Native Resolution**: Added a robust interceptor in `PlaylistDetailScreen` to natively load full tracklists for Deezer playlists instead of returning 0 tracks via Saavn.
+  - **Personalized 'For You' Aesthetic**: Overhauled `home_provider.dart` to mask technical library IDs with premium, curated shelf titles (e.g. "Made For You", "Fresh Finds").
+
 ## v3.5.33+67
 - **AV Sync & Video UX Polish**:
   - **Frozen Video Seekbar Fix**: Restored the instant `player.seek(newPos)` in both `WavySeekBar` instances (`now_playing_progress.dart` and `fullscreen_video_screen.dart`), making the video player seek UI perfectly responsive again.

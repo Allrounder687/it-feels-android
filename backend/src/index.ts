@@ -7,6 +7,8 @@ import { SpotifyProvider } from './providers/spotify';
 import { LrcLibProvider } from './providers/lrclib';
 import { MusixmatchProvider } from './providers/musixmatch';
 import { LastfmProvider } from './providers/lastfm';
+import { DeezerProvider } from './providers/deezer';
+import { ListenBrainzProvider } from './providers/listenbrainz';
 
 type Bindings = {
   SEARCH_CACHE: KVNamespace;
@@ -97,6 +99,30 @@ app.get('/health', (c) => {
     ageRestrictionBypass: true,
     timestamp: new Date().toISOString(),
   });
+});
+
+// Deezer Proxy
+app.get('/api/v1/deezer/*', async (c) => {
+  const path = c.req.path.replace('/api/v1/deezer/', '');
+  const query = new URL(c.req.url).searchParams;
+  try {
+    const data = await DeezerProvider.proxy(path, query);
+    return c.json(data);
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+// ListenBrainz Proxy
+app.get('/api/v1/listenbrainz/*', async (c) => {
+  const path = c.req.path.replace('/api/v1/listenbrainz/', '');
+  const query = new URL(c.req.url).searchParams;
+  try {
+    const data = await ListenBrainzProvider.proxy(path, query);
+    return c.json(data);
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
 });
 
 // Spotify Token Endpoint
@@ -521,10 +547,10 @@ app.get('/api/v1/stream', async (c) => {
         if (streamUrl) {
           return c.json({ success: true, provider: 'youtube', id, streamUrl, bitrate: '160kbps' });
         }
-      } else if (id.startsWith('spotify:') && title && artist) {
-        const streamUrl = await SpotifyProvider.getAudioStream(title, artist);
+      } else if ((id.startsWith('spotify:') || id.startsWith('dz_')) && title && artist) {
+        const streamUrl = await SpotifyProvider.getAudioStream(title, artist, c.env.YT_DLP_BASE_URL);
         if (streamUrl) {
-          return c.json({ success: true, provider: 'spotify', id, streamUrl });
+          return c.json({ success: true, provider: 'chain', id, streamUrl });
         }
       } else {
         // Default: JioSaavn ID lookup (cleanId)
@@ -537,7 +563,7 @@ app.get('/api/v1/stream', async (c) => {
 
     // 3. Title + Artist fallback matching
     if (title && artist) {
-      const streamUrl = await SpotifyProvider.getAudioStream(title, artist);
+      const streamUrl = await SpotifyProvider.getAudioStream(title, artist, c.env.YT_DLP_BASE_URL);
       if (streamUrl) {
         return c.json({ success: true, provider: 'chain', streamUrl });
       }

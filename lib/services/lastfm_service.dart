@@ -279,4 +279,28 @@ class LastfmService {
       }
     }
   }
+
+  /// Get user's top tracks for recommendations
+  Future<List<Map<String, dynamic>>> getUserTopTracks(String username, {int limit = 5}) async {
+    final apiKey = _apiKey;
+    if (apiKey == null) return [];
+    
+    try {
+      final response = await _client.get(
+        Uri.parse('$_lastfmApiBaseUrl?method=user.gettoptracks&user=$username&api_key=$apiKey&limit=$limit&format=json'),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['toptracks'] != null && data['toptracks']['track'] != null) {
+          return List<Map<String, dynamic>>.from(data['toptracks']['track']);
+        }
+      } else {
+        _logger.w('Failed to fetch user top tracks: ${response.body}');
+      }
+    } catch (e) {
+      _logger.e('Error fetching user top tracks: $e');
+    }
+    return [];
+  }
 }

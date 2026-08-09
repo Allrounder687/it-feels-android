@@ -64,12 +64,22 @@ export class SpotifyProvider {
   /**
    * Provider Chaining (extraDeps): Resolves stream for Spotify tracks via Saavn / YouTube
    */
-  static async getAudioStream(trackTitle: string, artistName: string): Promise<string | null> {
+  static async getAudioStream(trackTitle: string, artistName: string, ytDlpUrl?: string): Promise<string | null> {
     // 1. Primary Chain: Try Saavn 320kbps high-res matching
     try {
       const saavnSearch = await SaavnProvider.search(`${trackTitle} ${artistName}`, 1, 5);
-      if (saavnSearch.length > 0 && saavnSearch[0].streamUrl) {
-        return saavnSearch[0].streamUrl;
+      if (saavnSearch.length > 0) {
+        // Strict Match Enforcement
+        const topResult = saavnSearch[0];
+        const matchTitle = topResult.title.toLowerCase();
+        const targetTitle = trackTitle.toLowerCase();
+        
+        // Accept only if titles closely match (e.g. subset of each other) to prevent playing random songs
+        if (matchTitle.includes(targetTitle) || targetTitle.includes(matchTitle)) {
+           if (topResult.streamUrl) {
+             return topResult.streamUrl;
+           }
+        }
       }
     } catch (e) {
       // Fall through to YouTube
@@ -79,7 +89,17 @@ export class SpotifyProvider {
     try {
       const ytSearch = await YoutubeProvider.search(`${trackTitle} ${artistName}`, 3);
       if (ytSearch.length > 0) {
-        const streamUrl = await YoutubeProvider.getAudioStream(ytSearch[0].id);
+        let streamUrl = await YoutubeProvider.getAudioStream(ytSearch[0].id);
+        if (!streamUrl && ytDlpUrl) {
+          try {
+            const cleanId = ytSearch[0].id.includes(':') ? ytSearch[0].id.split(':')[1] : ytSearch[0].id;
+            const res = await fetch(`${ytDlpUrl}/api/streams?videoId=${cleanId}`);
+            if (res.ok) {
+              const data = await res.json() as any;
+              streamUrl = data.audioUrl || null;
+            }
+          } catch (e) {}
+        }
         if (streamUrl) return streamUrl;
       }
     } catch (e) {

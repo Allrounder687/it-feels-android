@@ -1,15 +1,16 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/core/utils/error_reporter.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/models/feed_shelf.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
+import 'package:it_feels_music/data/services/deezer_api_service.dart';
+import 'package:it_feels_music/services/lastfm_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/services/database_service.dart';
 import 'package:it_feels_music/data/services/youtube_podcast_provider.dart';
-import 'package:it_feels_music/data/services/spotify_api_service.dart';
 
 @immutable
 class HomeState {
@@ -164,9 +165,13 @@ class HomeState {
 }
 
 class HomeNotifier extends Notifier<HomeState> {
+  final saavnApi = MusicApiService();
+  final deezerApi = DeezerApiService();
+  late final LastfmService lastfmService;
 
   @override
   HomeState build() {
+    lastfmService = locator<LastfmService>();
     Future.microtask(() {
       _initCategory();
       loadHomepageData();
@@ -236,42 +241,58 @@ class HomeNotifier extends Notifier<HomeState> {
     int page,
   ) async {
     final newShelves = <FeedShelf>[];
-    final saavnApi = MusicApiService();
 
     try {
       if (category == 'Music') {
-        // Endless scrolling through Curated Categories
+        // Endless scrolling through Deezer Curated Categories
         final offsets = [
-          ['Pop', 'Viral Hits', 'Hip-Hop', 'K-Pop', 'Chill'],
-          ['Lo-Fi', 'Gaming', 'Workout', 'Romance', 'Acoustic'],
-          ['Party', 'Electronic', 'Rock', 'Indie', 'Jazz'],
-          ['Classical', 'R&B', 'Country', 'Anime', 'Focus']
+          ['Pop', 'Hip Hop', 'R&B', 'Electronic', 'Rock'],
+          ['Indie', 'Jazz', 'Classical', 'K-Pop', 'Chill'],
+          ['Gaming', 'Workout', 'Romance', 'Party', 'Acoustic'],
+          ['Country', 'Folk', 'Metal', 'Punk', 'Focus']
         ];
         final idx = page % offsets.length;
         final queries = offsets[idx];
         
         for (var query in queries) {
-          final playlists = await saavnApi.searchPlaylists(query, count: 10);
+          final playlists = await deezerApi.searchPlaylists(query, limit: 10);
           if (playlists.isNotEmpty) {
-            newShelves.add(FeedShelf(title: query, type: ShelfType.playlistCarousel, items: playlists));
+            newShelves.add(FeedShelf(title: '$query Trending', type: ShelfType.playlistCarousel, items: playlists));
           }
         }
       } else if (category == 'For You') {
-        // Endless scrolling through For You / Moods
+        // Multi-source Recommendation Engine: Last.fm + Deezer
+        final isLoggedIn = await lastfmService.isLoggedIn();
+        if (isLoggedIn && page == 0) {
+           final username = await lastfmService.getUsername();
+           if (username != null) {
+              // Get user's top tracks as seeds
+              final topTracks = await lastfmService.getUserTopTracks(username, limit: 5);
+              if (topTracks.isNotEmpty) {
+                 newShelves.add(FeedShelf(title: 'Because You Like ${topTracks.first['artist']['name']}', type: ShelfType.playlistCarousel, items: await deezerApi.searchPlaylists(topTracks.first['artist']['name'], limit: 10)));
+              }
+           }
+        }
+        
         final offsets = [
-          ['New Releases', 'Top Hits', 'Trending', 'Pop', 'Indie'],
-          ['Party', 'Workout', 'Chill', 'Focus', 'Romance'],
-          ['Acoustic', 'Classical', 'Jazz', 'Rock', 'R&B'],
-          ['Gaming', 'Sleep', 'Travel', 'Commute', 'Study']
+          {'query': 'Daily Mix', 'title': 'Made For You'},
+          {'query': 'New Releases', 'title': 'Fresh Finds'},
+          {'query': 'Discover', 'title': 'Discover Something New'},
+          {'query': 'Top Hits', 'title': 'Jump Back In'},
+          {'query': 'Chill', 'title': 'Unwind & Chill'},
+          {'query': 'Focus', 'title': 'Deep Focus'},
+          {'query': 'Workout', 'title': 'Beast Mode'},
+          {'query': 'Acoustic', 'title': 'Acoustic Mornings'},
         ];
         
-        final idx = page % offsets.length;
-        final queries = offsets[idx];
+        // 2 items per page
+        final idx = (page * 2) % offsets.length;
+        final selectedOffsets = [offsets[idx], offsets[(idx + 1) % offsets.length]];
         
-        for (var query in queries) {
-          final playlists = await saavnApi.searchPlaylists(query, count: 10);
+        for (var item in selectedOffsets) {
+          final playlists = await deezerApi.searchPlaylists(item['query']!, limit: 10);
           if (playlists.isNotEmpty) {
-            newShelves.add(FeedShelf(title: '$query Playlists', type: ShelfType.playlistCarousel, items: playlists));
+            newShelves.add(FeedShelf(title: item['title']!, type: ShelfType.playlistCarousel, items: playlists));
           }
         }
       } else if (category == 'Podcasts') {
@@ -285,23 +306,28 @@ class HomeNotifier extends Notifier<HomeState> {
         final queries = offsets[idx];
         
         for (var query in queries) {
-          final podcasts = await saavnApi.searchPlaylists('$query Podcast', count: 10);
+          final podcasts = await deezerApi.searchPlaylists('$query Podcast', limit: 10);
           if (podcasts.isNotEmpty) {
             newShelves.add(FeedShelf(title: '$query Podcasts', type: ShelfType.playlistCarousel, items: podcasts));
           }
         }
       } else if (category == 'Charts') {
+        if (page == 0) {
+          final charts = await deezerApi.getCharts();
+          if (charts['playlists'] != null && charts['playlists'].isNotEmpty) {
+             newShelves.add(FeedShelf(title: 'Global Top Charts', type: ShelfType.playlistCarousel, items: charts['playlists']));
+          }
+        }
         final offsets = [
-          ['Top 50 Global', 'Top 50 USA', 'Viral 50 Global', 'Top 50 India', 'Billboard Hot 100'],
-          ['UK Top 40', 'Top 50 Canada', 'Top 50 Australia', 'Viral 50 USA', 'Viral 50 India'],
-          ['Top 50 Hits', 'Global Top Playlists', 'Trending on TikTok', 'Chart Toppers', 'Viral Hits']
+          ['Global Top 50', 'USA Top 50', 'UK Top 40', 'Viral Hits'],
+          ['Top 50 Hits', 'Billboard', 'TikTok Trending', 'Chart Toppers']
         ];
         
         final idx = page % offsets.length;
         final queries = offsets[idx];
         
         for (var query in queries) {
-          final playlists = await saavnApi.searchPlaylists(query, count: 10);
+          final playlists = await deezerApi.searchPlaylists(query, limit: 10);
           if (playlists.isNotEmpty) {
              newShelves.add(FeedShelf(title: query, type: ShelfType.playlistCarousel, items: playlists));
           }
@@ -653,7 +679,7 @@ class HomeNotifier extends Notifier<HomeState> {
 
     try {
       final moods = ['Chill', 'Party', 'Lofi', 'Romance', 'Workout'];
-      final futures = moods.map(
+      final futures = moods.map<Future<List<Playlist>>>(
         (mood) =>
             saavnApi.searchPlaylists('${state.moodLanguage} $mood', count: 4),
       );
@@ -687,7 +713,7 @@ class HomeNotifier extends Notifier<HomeState> {
 
     try {
       final queries = ['Top 50', 'Billboard', 'Viral', 'Global 100'];
-      final futures = queries.map(
+      final futures = queries.map<Future<List<Playlist>>>(
         (query) => saavnApi.searchPlaylists(query, count: 8),
       );
       final results = await Future.wait(futures);
@@ -722,18 +748,27 @@ class HomeNotifier extends Notifier<HomeState> {
     List<Playlist> rawPlaylists = [];
 
     try {
-      final data = await MusicApiService().fetchHomepageData(
-        onError: (message) {
-          if (context != null) {
-            ErrorReporter.showError(context, message);
-          }
-        },
-      );
-      trending = List<Song>.from(data['trending'] ?? []);
-      rawPlaylists = List<Playlist>.from(data['playlists'] ?? []);
-      debugPrint('[HomeNotifier] Loaded storefront via Saavn');
+      // Primary discovery via Deezer Charts
+      final charts = await deezerApi.getCharts();
+      if (charts['tracks'].isNotEmpty) {
+        trending = charts['tracks'];
+        rawPlaylists = charts['playlists'];
+        debugPrint('[HomeNotifier] Loaded storefront via Deezer API');
+      } else {
+        // Fallback to Saavn if Deezer is fully restricted
+        final data = await saavnApi.fetchHomepageData(
+          onError: (message) {
+            if (context != null) {
+              ErrorReporter.showError(context, message);
+            }
+          },
+        );
+        trending = List<Song>.from(data['trending'] ?? []);
+        rawPlaylists = List<Playlist>.from(data['playlists'] ?? []);
+        debugPrint('[HomeNotifier] Loaded storefront via Saavn Fallback');
+      }
     } catch (e) {
-      debugPrint('[HomeNotifier] Saavn API failed: $e');
+      debugPrint('[HomeNotifier] Deezer/Saavn API failed: $e');
     }
 
     state = state.copyWith(

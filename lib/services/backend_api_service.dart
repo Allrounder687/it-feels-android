@@ -195,7 +195,22 @@ class BackendApiService {
         }
       }
     } catch (e) {
-      // Fallback to local decryption
+      debugPrint('[BackendApiService] Proxy stream resolution failed: $e');
+    }
+
+    // Zero-Lag Isolate YoutubeExplode Fallback
+    try {
+      debugPrint('[BackendApiService] Attempting direct YoutubeExplode fallback for ${song.title}');
+      final searchResults = await _directInnerTubeVideoSearch('${song.title} ${song.artist}', limit: 1);
+      if (searchResults.isNotEmpty) {
+        final videoId = searchResults[0]['id'] as String;
+        final streamData = await _directYoutubeExplodeStreamFallback(videoId);
+        if (streamData['audioUrl'] != null && streamData['audioUrl'].toString().isNotEmpty) {
+          return streamData['audioUrl'].toString();
+        }
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] Local YT fallback failed: $e');
     }
 
     if (song.encryptedMediaUrl != null) {
