@@ -707,12 +707,17 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
               } else {
                 return Stack(
                   children: [
-                    MediaQuery(
-                      data: MediaQuery.of(context).copyWith(
-                        padding: EdgeInsets.only(top: isDesktop ? 48.0 : 0.0),
-                      ),
-                      child: appContent,
-                    ),
+                    if (isDesktop)
+                      MediaQuery(
+                        data: MediaQuery.of(context).copyWith(
+                          padding: MediaQuery.of(context)
+                              .padding
+                              .copyWith(top: 48.0),
+                        ),
+                        child: appContent,
+                      )
+                    else
+                      appContent,
                     if (isDesktop)
                       Positioned(top: 0, left: 0, right: 0, child: titleBar),
                   ],
