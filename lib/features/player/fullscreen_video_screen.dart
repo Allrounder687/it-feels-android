@@ -489,9 +489,8 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                             inactiveColor: Colors.white24,
                                             onSeek: (newPos) {
                                               _startHideControlsTimer();
-                                              if (settingsProviderLocal.useVideoAudioSource) {
-                                                videoProvider.player!.seek(newPos);
-                                              } else {
+                                              videoProvider.player?.seek(newPos);
+                                              if (!settingsProviderLocal.useVideoAudioSource) {
                                                 ref.read(audioPlayerProvider.notifier).seek(newPos);
                                               }
                                             },

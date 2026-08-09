@@ -2,6 +2,11 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **AV Sync & Video UX Polish (v3.5.33+67):**
+  - **Frozen Video Seekbar Fix:** Restored the instant `player.seek(newPos)` in both `WavySeekBar` instances (`now_playing_progress.dart` and `fullscreen_video_screen.dart`), making the video player seek UI perfectly responsive again.
+  - **Double-Seek Sync Lockup Fix:** Hardened the `video_player_provider.dart` A/V sync engine. It now checks for `drift > 1000ms` before forcing a slave video seek, safely bypassing the catastrophic double-seek race condition when the UI explicitly scrubs both players simultaneously. 
+  - **Quality Change Scrub Resilience:** Fixed an issue where changing video quality reset playback to `0:00`. Bypassed the unreliable `media_kit` native `start` extra string for HLS/Muxed streams by injecting a hard `await player.seek(previousPosition);` immediately following stream initialization.
+  - **Retry Match & Custom Link Consistency:** Fixed the `Retry Match` button in `video_player_screen.dart` doing nothing by explicitly appending the `forceReload: true` parameter, mirroring the logic previously patched into `now_playing_art.dart`.
 - **AV Sync Engine Overhaul & Pause Glitch Fixes (v3.5.32):**
   - **Double-Seek Race Condition:** Fixed a critical bug in `WavySeekBar` where dragging the slider in Video Mode would concurrently issue `seek()` commands to both the `just_audio` and `media_kit` pipelines. This race condition confused `media_kit`, causing it to drop its `playing` state and permanently hang. The UI now correctly delegates the seek command exclusively to the master audio engine when AV Sync is active.
   - **Scrub Resumption:** Fixed an issue where the background video engine remained paused after catching up to a scrubbed audio timestamp. Explicitly added `state.player!.play()` within the `video_player_provider.dart` syncing bridge.

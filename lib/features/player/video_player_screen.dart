@@ -574,6 +574,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                             videoProvider.currentTitle,
                             videoProvider.currentUploader,
                             query: newQuery,
+                            forceReload: true,
                           );
                     }
                   } else if (value == 'custom') {

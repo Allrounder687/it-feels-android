@@ -162,8 +162,12 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       if (isSynced && state.isVideoActive && state.player != null && current.isPlaying && previous != null) {
         final diff = (current.position - previous.position).inMilliseconds.abs();
         if (diff > 2000) {
-          state.player!.seek(current.position);
-          state.player!.play();
+          // Only seek video if it didn't already get seeked by the UI (drift > 1000ms)
+          final drift = (state.player!.state.position - current.position).inMilliseconds.abs();
+          if (drift > 1000) {
+            state.player!.seek(current.position);
+            state.player!.play();
+          }
         } else {
           // Continuous Drift Correction
           final videoPosition = state.player!.state.position;
@@ -171,8 +175,11 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
           final drift = (videoPosition - audioPosition).inMilliseconds;
           
           if (drift.abs() > 800) {
-            // Aggressive correction for huge random drifts
-            state.player!.seek(audioPosition);
+            // Aggressive correction for huge random drifts not caught by diff > 2000
+            // DO NOT seek here if diff is small, just let it drift correct, or only seek if drift is VERY large
+            if (drift.abs() > 2000) {
+              state.player!.seek(audioPosition);
+            }
           } else if (drift > 100) {
             // Video is ahead, slow down
             if (state.player!.state.rate != 0.95) state.player!.setRate(0.95);
@@ -461,6 +468,11 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       );
       
       await player.open(media, play: false);
+      
+      // Explicitly seek to the requested start position since 'start' extra might be ignored by some HLS/Muxed parsers
+      if (previousPosition > Duration.zero) {
+        await player.seek(previousPosition);
+      }
       
       // If it's a separated video-only stream, we need to attach the audio stream
       if (selectedStream['videoOnly'] == true && state.audioUrl.isNotEmpty) {

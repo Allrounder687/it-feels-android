@@ -1,9 +1,9 @@
 ## v3.5.33+67
-- **AV Sync Engine Overhaul & Pause Glitch Fixes**:
-  - **Double-Seek Race Condition**: Fixed a critical bug in `WavySeekBar` where dragging the slider in Video Mode would concurrently issue `seek()` commands to both the `just_audio` and `media_kit` pipelines. This race condition confused `media_kit`, causing it to drop its `playing` state and permanently hang. The UI now correctly delegates the seek command exclusively to the master audio engine when AV Sync is active.
-  - **Scrub Resumption**: Fixed an issue where the background video engine remained paused after catching up to a scrubbed audio timestamp. Explicitly added `state.player!.play()` within the `video_player_provider.dart` syncing bridge.
-  - **Continuous Soft Drift Correction**: Solved long-term audio/video desync (lip-sync drift) that occurred over several minutes. Injected a real-time monitor into `video_player_provider.dart` that continuously compares the muted video's playback position against the master audio's position. If the video falls slightly behind or ahead, the engine transparently speeds up (1.05x) or slows down (0.95x) the video stream to micro-adjust its frame buffer back into perfect alignment without triggering a stuttering hard `seek()`.
-  - **Retry Match & Custom Link Dialogs**: Fixed an issue where tapping 'Retry Match' or submitting a custom YouTube URL did nothing because the underlying `playVideo` function detected no change in the video ID. Injected a `forceReload: true` parameter to bypass this lock and guarantee a fresh stream initialization. Also updated the Custom Link button text to explicitly contrast against the `Pitch Black` theme.
+- **AV Sync & Video UX Polish**:
+  - **Frozen Video Seekbar Fix**: Restored the instant `player.seek(newPos)` in both `WavySeekBar` instances (`now_playing_progress.dart` and `fullscreen_video_screen.dart`), making the video player seek UI perfectly responsive again.
+  - **Double-Seek Sync Lockup Fix**: Hardened the `video_player_provider.dart` A/V sync engine. It now checks for `drift > 1000ms` before forcing a slave video seek, safely bypassing the catastrophic double-seek race condition when the UI explicitly scrubs both players simultaneously. 
+  - **Quality Change Scrub Resilience**: Fixed an issue where changing video quality reset playback to `0:00`. Bypassed the unreliable `media_kit` native `start` extra string for HLS/Muxed streams by injecting a hard `await player.seek(previousPosition);` immediately following stream initialization.
+  - **Retry Match & Custom Link Consistency**: Fixed the `Retry Match` button in `video_player_screen.dart` doing nothing by explicitly appending the `forceReload: true` parameter, mirroring the logic previously patched into `now_playing_art.dart`.
 
 ## v3.5.32+66
 - **Desktop UI Polish**: Unified the desktop sidebar and category chips with a frosted glassmorphic design that cleanly adapts to hover states.
