@@ -31,13 +31,21 @@ class SpotifyApiService {
     _isFetchingToken = true;
     try {
       final proxyUrl = Uri.parse('${BackendApiService.baseUrl}/spotify/token');
-      final response = await http.get(proxyUrl).timeout(const Duration(seconds: 10));
+      final response = await http.get(
+        proxyUrl,
+        headers: {
+          'User-Agent': 'it-feels/1.0',
+          'Accept': 'application/json',
+        }
+      ).timeout(const Duration(seconds: 10));
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         _accessToken = data['access_token'];
         _tokenExpiry = DateTime.now().add(Duration(seconds: data['expires_in'] - 60));
         return _accessToken;
+      } else {
+        debugPrint('[SpotifyApiService] API returned non-200. Status: ${response.statusCode}, Body: ${response.body}, URL: $proxyUrl');
       }
     } catch (e) {
       debugPrint('[SpotifyApiService] Error fetching token from proxy: $e');
