@@ -1,5 +1,8 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:window_manager/window_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -25,6 +28,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
+        flexibleSpace: kIsWeb ? null : (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux ? null : const DragToMoveArea(child: SizedBox.expand())),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -67,7 +71,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
               ),
             ),
 
-          _buildSectionHeader("⚡ Speed & Pitch"),
+          _buildSectionHeader("âš¡ Speed & Pitch"),
           const SizedBox(height: 8),
           Text(
             "Slow down for vibes, or pitch shift for karaoke.",
@@ -130,7 +134,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
           ),
           const SizedBox(height: 32),
 
-          _buildSectionHeader("🎛️ It Feels DSP Engine"),
+          _buildSectionHeader("ðŸŽ›ï¸ It Feels DSP Engine"),
           const SizedBox(height: 8),
           Text(
             "Our custom-tuned Digital Signal Processor. Enables a premium, punchy EQ and hardware loudness boost for an audiophile experience.",
@@ -157,7 +161,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
             ),
           const SizedBox(height: 32),
 
-          _buildSectionHeader("📳 Haptic Feedback"),
+          _buildSectionHeader("ðŸ“³ Haptic Feedback"),
           const SizedBox(height: 8),
           Text(
             "Premium physical responses to your interactions.",
@@ -184,7 +188,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           const SizedBox(height: 32),
-          _buildSectionHeader("🎚️ Crossfade"),
+          _buildSectionHeader("ðŸŽšï¸ Crossfade"),
           const SizedBox(height: 8),
           Text(
             "Smoothly fade one song into the next for gapless playback.",
@@ -238,3 +242,4 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
     );
   }
 }
+

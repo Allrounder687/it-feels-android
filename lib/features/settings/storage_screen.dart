@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:window_manager/window_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -28,6 +31,7 @@ class StorageScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
+        flexibleSpace: kIsWeb ? null : (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux ? null : const DragToMoveArea(child: SizedBox.expand())),
         backgroundColor: context.themeBackgroundColor,
         elevation: 0,
         title: Text(
@@ -49,7 +53,7 @@ class StorageScreen extends ConsumerWidget {
               children: [
                 _buildStorageBar(context, state),
                 const SizedBox(height: 32),
-                _buildSectionHeader(context, "⚙️ Auto-Download"),
+                _buildSectionHeader(context, "âš™ï¸ Auto-Download"),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text("Auto-Download Favorites",
@@ -63,7 +67,7 @@ class StorageScreen extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: 32),
-                _buildSectionHeader(context, "🗑️ Smart Cache Manager"),
+                _buildSectionHeader(context, "ðŸ—‘ï¸ Smart Cache Manager"),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text("Max Cache Size",
@@ -201,3 +205,4 @@ class StorageScreen extends ConsumerWidget {
     );
   }
 }
+

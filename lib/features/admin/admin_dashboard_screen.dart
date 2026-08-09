@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:window_manager/window_manager.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -59,6 +62,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
+        flexibleSpace: kIsWeb ? null : (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux ? null : const DragToMoveArea(child: SizedBox.expand())),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -268,7 +272,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '$deviceModel • $locationStr',
+                            '$deviceModel â€¢ $locationStr',
                             style: GoogleFonts.inter(
                               color: context.themeMutedTextColor,
                               fontSize: 12,
@@ -278,7 +282,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Active: $lastActiveStr • Usage: ${_formatDuration(totalSeconds)}',
+                            'Active: $lastActiveStr â€¢ Usage: ${_formatDuration(totalSeconds)}',
                             style: GoogleFonts.inter(
                               color: context.themeMutedTextColor,
                               fontSize: 12,
@@ -565,3 +569,4 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 }
+

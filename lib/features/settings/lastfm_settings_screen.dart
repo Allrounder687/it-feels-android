@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:window_manager/window_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -54,6 +57,7 @@ class _LastfmSettingsScreenState extends ConsumerState<LastfmSettingsScreen> {
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
+        flexibleSpace: kIsWeb ? null : (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux ? null : const DragToMoveArea(child: SizedBox.expand())),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -195,3 +199,4 @@ class _LastfmSettingsScreenState extends ConsumerState<LastfmSettingsScreen> {
     );
   }
 }
+

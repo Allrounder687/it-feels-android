@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:window_manager/window_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -13,6 +16,7 @@ class HiddenSongsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
+        flexibleSpace: kIsWeb ? null : (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux ? null : const DragToMoveArea(child: SizedBox.expand())),
         backgroundColor: context.themeBackgroundColor,
         elevation: 0,
         title: Text(
@@ -55,7 +59,7 @@ class HiddenSongsScreen extends ConsumerWidget {
                       ),
                     ),
                     subtitle: Text(
-                      "${song.artist} • Hidden from recommendations",
+                      "${song.artist} â€¢ Hidden from recommendations",
                       style: GoogleFonts.inter(
                         color: context.themeMutedTextColor,
                         fontSize: 12,
@@ -83,3 +87,4 @@ class HiddenSongsScreen extends ConsumerWidget {
     );
   }
 }
+

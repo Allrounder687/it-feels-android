@@ -31,7 +31,7 @@ class NowPlayingHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final videoProvider = ref.watch(videoPlayerProvider);
     
-    return Row(
+    final content = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
@@ -140,5 +140,11 @@ class NowPlayingHeader extends ConsumerWidget {
         ),
       ],
     );
+
+    if (kIsWeb || (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux)) {
+      return content;
+    }
+    
+    return DragToMoveArea(child: content);
   }
 }

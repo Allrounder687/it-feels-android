@@ -1448,32 +1448,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           )
                         else ...[
-                          // Top Artists Section (Derived from history, fallback to trending)
-                          Builder(
-                            builder: (context) {
-                              List<String> artists = historyProvider
-                                  .getTopArtists(limit: 8);
-                              if (artists.isEmpty) {
-                                artists = homeProv.trendingSongs
-                                    .map((e) => e.artist)
-                                    .where((a) => a.isNotEmpty)
-                                    .toSet()
-                                    .take(8)
-                                    .toList();
-                              }
-                              if (artists.isNotEmpty) {
-                                return _buildTopArtistsCarousel(
-                                  context,
-                                  artists,
-                                  historyProvider,
-                                  homeProv.trendingSongs,
-                                );
-                              }
-                              return const SliverToBoxAdapter(
-                                child: SizedBox.shrink(),
-                              );
-                            },
-                          ),
+                          // Top Artists Removed by User Request
+                          const SliverToBoxAdapter(child: SizedBox.shrink()),
 
                           // Spotify style 2x3 grid (Jump Back In or Quick Picks)
                           Builder(

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:window_manager/window_manager.dart';
@@ -147,14 +148,30 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset(
-                'assets/images/icon.png',
-                width: 20,
-                height: 20,
-                color: _isFocused ? null : Colors.grey.withValues(alpha: 0.5),
-                colorBlendMode: _isFocused
-                    ? BlendMode.dst
-                    : BlendMode.saturation,
+              Container(
+                width: 24,
+                height: 24,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: context.themeAccentColor.withValues(alpha: _isFocused ? 0.15 : 0.05),
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: [
+                    BoxShadow(
+                      color: context.themeAccentColor.withValues(alpha: _isFocused ? 0.2 : 0.0),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  "IF",
+                  style: GoogleFonts.outfit(
+                    color: _isFocused ? context.themeAccentColor : context.themeMutedTextColor,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                    letterSpacing: -0.5,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Text(

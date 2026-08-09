@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:window_manager/window_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -13,6 +16,7 @@ class AISettingsScreen extends ConsumerWidget {
         return Scaffold(
           backgroundColor: context.themeBackgroundColor,
           appBar: AppBar(
+        flexibleSpace: kIsWeb ? null : (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux ? null : const DragToMoveArea(child: SizedBox.expand())),
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
@@ -32,7 +36,7 @@ class AISettingsScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             children: [
               // AI Enabled toggle
-              _buildSectionHeader(context, "🤖 AI Features"),
+              _buildSectionHeader(context, "ðŸ¤– AI Features"),
               const SizedBox(height: 8),
               _buildSwitchTile(
                 context: context,
@@ -288,3 +292,4 @@ class AISettingsScreen extends ConsumerWidget {
     );
   }
 }
+

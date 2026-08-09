@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:window_manager/window_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -45,6 +48,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
+        flexibleSpace: kIsWeb ? null : (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux ? null : const DragToMoveArea(child: SizedBox.expand())),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -123,7 +127,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                             style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600),
                           ),
                           subtitle: Text(
-                            "${song.artist} • ${song.playCount} plays",
+                            "${song.artist} â€¢ ${song.playCount} plays",
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
@@ -153,3 +157,4 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     );
   }
 }
+

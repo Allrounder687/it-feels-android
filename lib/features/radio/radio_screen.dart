@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io';
+import 'package:window_manager/window_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -24,15 +27,15 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
   String _currentQuery = '';
 
   final Map<String, String> _quickFilters = {
-    '🔥 Top': '',
-    '🇮🇳 India': 'India',
-    '🇺🇸 USA': 'United States',
-    '🇬🇧 UK': 'United Kingdom',
-    '🇯🇵 Japan': 'Japan',
-    '🎷 Jazz': 'Jazz',
-    '📰 News': 'News',
-    '🎸 Rock': 'Rock',
-    '🎧 Lofi': 'Lofi',
+    'ðŸ”¥ Top': '',
+    'ðŸ‡®ðŸ‡³ India': 'India',
+    'ðŸ‡ºðŸ‡¸ USA': 'United States',
+    'ðŸ‡¬ðŸ‡§ UK': 'United Kingdom',
+    'ðŸ‡¯ðŸ‡µ Japan': 'Japan',
+    'ðŸŽ· Jazz': 'Jazz',
+    'ðŸ“° News': 'News',
+    'ðŸŽ¸ Rock': 'Rock',
+    'ðŸŽ§ Lofi': 'Lofi',
   };
 
   @override
@@ -81,6 +84,7 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
     return Scaffold(
       backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
+        flexibleSpace: kIsWeb ? null : (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux ? null : const DragToMoveArea(child: SizedBox.expand())),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -217,7 +221,7 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
                         trailing: Icon(Icons.play_circle_fill_rounded, color: context.themeAccentColor, size: 32),
                         onTap: () {
                           // Play the station directly using the encryptedMediaUrl (which holds the resolved URL)
-                          ref.read(audioPlayerProvider.notifier).playSong(station);
+                          ref.read(audioPlayerProvider.notifier).playSong(station, predefinedStreamUrl: station.encryptedMediaUrl);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Text('Tuning into \${station.title}...'),
@@ -235,3 +239,5 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
     );
   }
 }
+
+
