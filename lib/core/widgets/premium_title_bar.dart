@@ -7,9 +7,9 @@ import 'package:window_manager/window_manager.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
-import 'package:it_feels_music/features/profile/profile_screen.dart';
-import 'package:it_feels_music/features/profile/profile_provider.dart';
-import 'package:it_feels_music/features/room/room_bottom_sheet.dart';
+import 'package:it_feels_music/features/settings/profile_screen.dart';
+import 'package:it_feels_music/features/settings/profile_provider.dart';
+import 'package:it_feels_music/features/social/room_bottom_sheet.dart';
 import 'package:it_feels_music/features/radio/radio_screen.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
 import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
@@ -309,7 +309,7 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => const ProfileScreen(),
+              builder: (_) => ProfileScreen(),
             ),
           ),
           child: Container(

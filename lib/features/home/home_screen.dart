@@ -27,9 +27,8 @@ import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
 import 'package:it_feels_music/core/theme/app_dimensions.dart';
 import 'package:it_feels_music/features/radio/radio_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
-import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final VoidCallback openFullPlayer;
@@ -1201,6 +1200,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       ),
                                     ),
                                   ),
+                                  ],
                                 ],
                               ),
                             ],

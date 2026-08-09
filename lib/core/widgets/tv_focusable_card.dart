@@ -32,13 +32,13 @@ class _TVFocusableCardState extends State<TVFocusableCard> {
       return false;
     }
     if (Platform.isAndroid) {
-      if (FocusManager.instance.highlightMode == FocusHighlightMode.keyboard) {
+      if (FocusManager.instance.highlightMode == FocusHighlightMode.traditional) {
         return true;
       }
       return false;
     }
     if (Platform.isWindows || Platform.isLinux) {
-      return FocusManager.instance.highlightMode == FocusHighlightMode.keyboard;
+      return FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
     }
     return false;
   }
