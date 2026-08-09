@@ -29,6 +29,7 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:app_links/app_links.dart';
+import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
 
 import 'dart:ui';
 import 'dart:io';
@@ -235,9 +236,7 @@ Future<void> main(List<String> args) async {
     if (Platform.isWindows) {
       await windowManager.setPreventClose(true);
       
-      await trayManager.setIcon(
-        Platform.isWindows ? 'assets/images/icon.ico' : 'assets/images/icon.png',
-      );
+      await trayManager.setIcon('assets/images/icon.png');
 
       Menu menu = Menu(
         items: [
@@ -321,18 +320,33 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                 builder: (context, child) {
                   final isBanned = ref.watch(banProvider).isBanned;
                   if (isBanned) return const BannedScreen();
-                  return Consumer(
-                    builder: (context, ref, childWidget) {
-                      final isFullscreen = ref.watch(fullscreenProvider);
-                      return Column(
-                        children: [
-                          Expanded(
-                            child: childWidget!,
-                          ),
-                        ],
-                      );
+                  return Focus(
+                    onKeyEvent: (node, event) {
+                      if (event is KeyDownEvent) {
+                        if (event.logicalKey == LogicalKeyboardKey.tab ||
+                            event.logicalKey.keyLabel.startsWith('Arrow')) {
+                          isKeyboardNavigating.value = true;
+                        }
+                      }
+                      return KeyEventResult.ignored;
                     },
-                    child: InAppBroadcastListener(child: child ?? const SizedBox()),
+                    child: Listener(
+                      onPointerDown: (_) => isKeyboardNavigating.value = false,
+                      onPointerHover: (_) => isKeyboardNavigating.value = false,
+                      child: Consumer(
+                        builder: (context, ref, childWidget) {
+                          final isFullscreen = ref.watch(fullscreenProvider);
+                          return Column(
+                            children: [
+                              Expanded(
+                                child: childWidget!,
+                              ),
+                            ],
+                          );
+                        },
+                        child: InAppBroadcastListener(child: child ?? const SizedBox()),
+                      ),
+                    ),
                   );
                 },
               );
@@ -364,11 +378,13 @@ class AppWindowListener extends WindowListener with TrayListener {
   }
 
   @override
-  void onTrayMenuItemClick(MenuItem menuItem) {
+  void onTrayMenuItemClick(MenuItem menuItem) async {
     if (menuItem.key == 'show_app') {
       windowManager.show();
       windowManager.focus();
     } else if (menuItem.key == 'exit_app') {
+      await windowManager.setPreventClose(false);
+      await windowManager.destroy();
       exit(0);
     }
   }
