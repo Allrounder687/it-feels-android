@@ -121,9 +121,9 @@ class SpotifyApiService {
     return [];
   }
 
-  Future<List<Map<String, dynamic>>> getCategories() async {
+  Future<List<Map<String, dynamic>>> getCategories({int offset = 0, int limit = 20}) async {
     try {
-      final uri = Uri.parse('$_baseUrl/browse/categories?country=$_market&limit=20');
+      final uri = Uri.parse('$_baseUrl/browse/categories?country=$_market&limit=$limit&offset=$offset');
       final response = await _getWithRetry(uri);
       
       if (response.statusCode == 200) {
@@ -138,6 +138,29 @@ class SpotifyApiService {
       }
     } catch (e) {
       debugPrint('[SpotifyApiService] Error fetching categories: $e');
+    }
+    return [];
+  }
+
+  Future<List<Playlist>> getCategoryPlaylists(String categoryId, {int limit = 10, int offset = 0}) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/browse/categories/$categoryId/playlists?country=$_market&limit=$limit&offset=$offset');
+      final response = await _getWithRetry(uri);
+      
+      if (response.statusCode == 200) {
+        final data = await compute(jsonDecode, response.body);
+        final items = data['playlists']?['items'] as List? ?? [];
+        
+        return items.where((item) => item != null).map((item) => Playlist(
+          id: item['id'],
+          title: item['name'] ?? 'Playlist',
+          coverArt: (item['images'] != null && (item['images'] as List).isNotEmpty) ? item['images'][0]['url'] : '',
+          songCount: item['tracks']?['total'] ?? 0,
+          type: 'playlist',
+        )).toList();
+      }
+    } catch (e) {
+      debugPrint('[SpotifyApiService] Error fetching category playlists: $e');
     }
     return [];
   }

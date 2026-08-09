@@ -119,11 +119,14 @@ app.get('/spotify/token', async (c) => {
   }
 
   try {
+    const cleanId = clientId.replace(/[^\x00-\x7F]/g, "").trim();
+    const cleanSecret = clientSecret.replace(/[^\x00-\x7F]/g, "").trim();
+
     const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': 'Basic ' + btoa(`${clientId}:${clientSecret}`)
+        'Authorization': 'Basic ' + btoa(`${cleanId}:${cleanSecret}`)
       },
       body: 'grant_type=client_credentials'
     });

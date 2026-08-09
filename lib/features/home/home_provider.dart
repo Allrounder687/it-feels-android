@@ -208,8 +208,8 @@ class HomeNotifier extends Notifier<HomeState> {
     if (state.isLoadingFeed[cat] == true) return;
     final int currentPage = state.feedPagesLoaded[cat] ?? 0;
 
-    // STOP POINT for infinite scroll: Max 5 dynamic paginations per tab
-    if (currentPage >= 5) return;
+    // STOP POINT for infinite scroll: Max 20 dynamic paginations per tab
+    if (currentPage >= 20) return;
 
     state = state.copyWith(isLoadingFeed: {...state.isLoadingFeed, cat: true});
 
@@ -238,146 +238,94 @@ class HomeNotifier extends Notifier<HomeState> {
     int page,
   ) async {
     final newShelves = <FeedShelf>[];
-    List<List<dynamic>> queries = [];
+    final spotifyApi = SpotifyApiService();
 
-    // Dynamic extraction from current state
-    final topArtists = state.trendingSongs
-        .map((e) => e.artist.split(',').first.trim())
-        .where((a) => a.isNotEmpty)
-        .toSet()
-        .toList();
-    topArtists.shuffle();
-    final randArtist1 = topArtists.isNotEmpty ? topArtists[0] : 'Arijit Singh';
-    final randArtist2 = topArtists.length > 1 ? topArtists[1] : 'The Weeknd';
-    final randArtist3 = topArtists.length > 2
-        ? topArtists[2]
-        : 'Shreya Ghoshal';
-
-    if (category == 'For You') {
-      queries = [
-        ['Featured Artists', ShelfType.artistGrid, randArtist1],
-        [
-          'Recommended Stations',
-          ShelfType.playlistCarousel,
-          '$randArtist1 Mix',
-        ],
-        ['Chill Mix', ShelfType.songCarousel, 'playlist:Chill Mix'],
-        ['Biggest Hits', ShelfType.songCarousel, randArtist2],
-        ['Artists You Might Like', ShelfType.artistGrid, randArtist3],
-        ['Party', ShelfType.playlistCarousel, 'Party Hits'],
-        ['Late Night Vibes', ShelfType.songCarousel, 'playlist:Late Night'],
-        ['Discover Weekly', ShelfType.playlistCarousel, 'Discover'],
-        ['Acoustic Covers', ShelfType.songCarousel, 'playlist:Acoustic Covers'],
-        ['Trending Producers', ShelfType.artistGrid, 'Producer'],
-      ];
-    } else if (category == 'Music') {
-      queries = [
-        ['Global Top Artists', ShelfType.artistGrid, 'Global Hits'],
-        ['New Music Friday', ShelfType.playlistCarousel, 'New Releases'],
-        ['Pop Rising', ShelfType.songCarousel, 'playlist:Pop Rising'],
-        ['Indie Hits', ShelfType.playlistCarousel, 'Indie'],
-        ['Rock Classics', ShelfType.songCarousel, 'playlist:Rock Classics'],
-        ['Rising Artists', ShelfType.artistGrid, 'Rising Artists'],
-        ['Hip Hop Nation', ShelfType.playlistCarousel, 'Hip Hop'],
-        ['Electronic Dance', ShelfType.songCarousel, 'playlist:EDM Top'],
-        ['R&B Grooves', ShelfType.playlistCarousel, 'R&B'],
-        ['Jazz & Blues', ShelfType.artistGrid, 'Jazz'],
-      ];
-    } else if (category == 'Podcasts') {
-      queries = [
-        ['Top Creators', ShelfType.artistGrid, 'Podcast channels'],
-        ['True Crime', ShelfType.playlistCarousel, 'True Crime Podcast'],
-        [
-          'Comedy Specials',
-          ShelfType.songCarousel,
-          'Comedy Podcast full episode',
-        ],
-        ['Educational', ShelfType.playlistCarousel, 'Educational Podcast'],
-        ['Business & Tech', ShelfType.playlistCarousel, 'Business Podcast'],
-        ['Daily News', ShelfType.songCarousel, 'News Podcast full episode'],
-        ['Health & Wellness', ShelfType.playlistCarousel, 'Health Podcast'],
-        ['Sports Talk', ShelfType.songCarousel, 'Sports Podcast full episode'],
-        ['Pop Culture', ShelfType.playlistCarousel, 'Pop Culture Podcast'],
-        ['Motivation', ShelfType.artistGrid, 'Motivation Podcast'],
-      ];
-    } else {
-      queries = [
-        ['Top 50 Global', ShelfType.songCarousel, 'playlist:Top 50 Global'],
-        ['Viral Artists', ShelfType.artistGrid, 'Viral'],
-        ['Global Viral 50', ShelfType.playlistCarousel, 'Viral 50'],
-        ['Billboard Hot 100', ShelfType.playlistCarousel, 'Billboard'],
-        ['Top 50 USA', ShelfType.songCarousel, 'playlist:Top 50 USA'],
-        ['UK Top 40', ShelfType.playlistCarousel, 'UK Top'],
-        ['Top 50 India', ShelfType.songCarousel, 'playlist:Top 50 India'],
-        ['Global Top Playlists', ShelfType.playlistCarousel, 'Top Playlists'],
-        [
-          'Trending on TikTok',
-          ShelfType.songCarousel,
-          'playlist:TikTok Trending',
-        ],
-        ['Chart Toppers', ShelfType.artistGrid, 'Chart Toppers'],
-      ];
-    }
-
-    final start = (page * 2) % queries.length;
-    for (var i = start; i < start + 2 && i < queries.length; i++) {
-      final title = queries[i][0] as String;
-      final type = queries[i][1] as ShelfType;
-      final query = queries[i].length > 2 ? queries[i][2] as String : title;
-
-      try {
-        if (type == ShelfType.artistGrid) {
-          final searchRes = await spotifyApi.searchAll(query);
-          final artists = (searchRes['artists'] as List).take(6).toList();
-          if (artists.isNotEmpty) {
-            newShelves.add(FeedShelf(title: title, type: type, items: artists));
-          } else {
-            // Fallback
-            final songs = await spotifyApi.searchSongs(query, count: 10);
-            final artistNames = songs
-                .map((s) => s.artist)
-                .where((a) => a.isNotEmpty)
-                .toSet()
-                .take(6)
-                .toList();
-            if (artistNames.isNotEmpty)
-              newShelves.add(
-                FeedShelf(title: title, type: type, items: artistNames),
-              );
+    try {
+      if (category == 'Music') {
+        // Endless scrolling through Spotify Categories
+        final limit = 5;
+        final offset = page * limit;
+        final categories = await spotifyApi.getCategories(offset: offset, limit: limit);
+        
+        for (var cat in categories) {
+          final catId = cat['id'];
+          final catName = cat['name'] ?? 'Playlist';
+          final playlists = await spotifyApi.getCategoryPlaylists(catId, limit: 10);
+          if (playlists.isNotEmpty) {
+            newShelves.add(FeedShelf(title: catName, type: ShelfType.playlistCarousel, items: playlists));
           }
-        } else if (type == ShelfType.songCarousel) {
-          if (query.startsWith('playlist:')) {
-            final actualQuery = query.substring(9);
-            final playlists = await spotifyApi.searchPlaylists(
-              actualQuery,
-              count: 5,
-            );
-            if (playlists.isNotEmpty) {
-              final tracks = await spotifyApi.getPlaylistTracks(
-                playlists.first.id,
-              );
-              final songs = tracks.map((t) => t.toSong()).toList();
-              if (songs.isNotEmpty)
-                newShelves.add(
-                  FeedShelf(title: title, type: type, items: songs),
-                );
-            }
-          } else {
-            final songs = await spotifyApi.searchSongs(query, count: 15);
-            if (songs.isNotEmpty)
-              newShelves.add(FeedShelf(title: title, type: type, items: songs));
-          }
-        } else if (type == ShelfType.playlistCarousel) {
-          final playlists = await spotifyApi.searchPlaylists(query, count: 10);
-          if (playlists.isNotEmpty)
-            newShelves.add(
-              FeedShelf(title: title, type: type, items: playlists),
-            );
         }
-      } catch (e) {
-        debugPrint('[HomeNotifier] Error generating shelf $title: $e');
+      } else if (category == 'For You') {
+        // Endless scrolling through For You / Moods
+        final offsets = [
+          ['New Releases', 'Top Hits', 'Trending', 'Pop', 'Indie'],
+          ['Party', 'Workout', 'Chill', 'Focus', 'Romance'],
+          ['Acoustic', 'Classical', 'Jazz', 'Rock', 'R&B'],
+          ['Gaming', 'Sleep', 'Travel', 'Commute', 'Study']
+        ];
+        
+        final idx = page % offsets.length;
+        final queries = offsets[idx];
+        
+        for (var query in queries) {
+          final playlists = await spotifyApi.searchPlaylists(query, count: 10);
+          if (playlists.isNotEmpty) {
+            newShelves.add(FeedShelf(title: '$query Playlists', type: ShelfType.playlistCarousel, items: playlists));
+          }
+        }
+      } else if (category == 'Podcasts') {
+        final offsets = [
+          ['True Crime', 'Comedy', 'Educational', 'Business', 'Technology'],
+          ['News', 'Health', 'Sports', 'Pop Culture', 'History'],
+          ['Society', 'Science', 'Arts', 'Fiction', 'Music Commentary']
+        ];
+        
+        final idx = page % offsets.length;
+        final queries = offsets[idx];
+        
+        for (var query in queries) {
+          final podcasts = await spotifyApi.searchPlaylists('$query Podcast', count: 10);
+          if (podcasts.isNotEmpty) {
+            newShelves.add(FeedShelf(title: '$query Podcasts', type: ShelfType.playlistCarousel, items: podcasts));
+          }
+        }
+      } else if (category == 'Charts') {
+        final offsets = [
+          ['Top 50 Global', 'Top 50 USA', 'Viral 50 Global', 'Top 50 India', 'Billboard Hot 100'],
+          ['UK Top 40', 'Top 50 Canada', 'Top 50 Australia', 'Viral 50 USA', 'Viral 50 India'],
+          ['Top 50 Hits', 'Global Top Playlists', 'Trending on TikTok', 'Chart Toppers', 'Viral Hits']
+        ];
+        
+        final idx = page % offsets.length;
+        final queries = offsets[idx];
+        
+        for (var query in queries) {
+          final playlists = await spotifyApi.searchPlaylists(query, count: 10);
+          if (playlists.isNotEmpty) {
+             newShelves.add(FeedShelf(title: query, type: ShelfType.playlistCarousel, items: playlists));
+          }
+        }
       }
+      
+      // If we didn't add any shelves, fallback to artists
+      if (newShelves.isEmpty) {
+        final topArtists = state.trendingSongs
+            .map((e) => e.artist.split(',').first.trim())
+            .where((a) => a.isNotEmpty)
+            .toSet()
+            .toList();
+        topArtists.shuffle();
+        final randArtist = topArtists.isNotEmpty ? topArtists.first : 'Arijit Singh';
+        final artists = await spotifyApi.searchAll(randArtist);
+        final artistList = (artists['artists'] as List).take(6).toList();
+        if (artistList.isNotEmpty) {
+          newShelves.add(FeedShelf(title: 'Recommended Artists', type: ShelfType.artistGrid, items: artistList));
+        }
+      }
+    } catch (e) {
+      debugPrint('[HomeNotifier] Error generating shelf for $category: $e');
     }
+
     return newShelves;
   }
 
