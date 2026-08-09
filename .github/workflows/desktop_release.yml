@@ -56,7 +56,7 @@ jobs:
       - name: Copy Unsigned MSIX for Dev Artifact
         shell: powershell
         run: |
-          Copy-Item "build\msix\ItFeels-Windows-x64.msix" "ItFeels-Windows-x64-unsigned.msix"
+          Copy-Item "build\windows\x64\runner\Release\ItFeels-Windows-x64.msix" "ItFeels-Windows-x64-unsigned.msix"
 
       # --- Optional SignPath Foundation Signing ---
       - name: Upload Unsigned MSIX for Signing
@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: unsigned-msix
-          path: build/msix/ItFeels-Windows-x64.msix
+          path: build/windows/x64/runner/Release/ItFeels-Windows-x64.msix
 
       - name: Submit to SignPath Foundation
         if: env.SIGNPATH_API_TOKEN != ''
@@ -91,7 +91,7 @@ jobs:
             $publisher = "CN=SignPath Foundation, O=SignPath Foundation, C=AT"
           } else {
             Write-Host "Using unsigned MSIX (no signing secret configured)"
-            Copy-Item "build\msix\ItFeels-Windows-x64.msix" "ItFeels-Windows-x64.msix"
+            Copy-Item "build\windows\x64\runner\Release\ItFeels-Windows-x64.msix" "ItFeels-Windows-x64.msix"
             $publisher = "CN=Allrounder687, O=Allrounder687, C=US"
           }
           Write-Output "PUBLISHER=$publisher" >> $env:GITHUB_ENV
