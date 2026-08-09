@@ -7,6 +7,13 @@ import 'package:window_manager/window_manager.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
+import 'package:it_feels_music/features/profile/profile_screen.dart';
+import 'package:it_feels_music/features/profile/profile_provider.dart';
+import 'package:it_feels_music/features/room/room_bottom_sheet.dart';
+import 'package:it_feels_music/features/radio/radio_screen.dart';
+import 'package:it_feels_music/features/settings/settings_screen.dart';
+import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
+import 'package:it_feels_music/features/player/audio_player_provider.dart';
 
 class PremiumTitleBar extends ConsumerStatefulWidget {
   final bool isWideScreen;
@@ -292,35 +299,87 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
   }
 
   Widget _buildRightControls(BuildContext context) {
+    final playerProvider = ref.watch(audioPlayerProvider);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Connectivity Indicator
-        Icon(
-          Icons.wifi_rounded,
-          size: 14,
-          color: context.themeAccentColor.withValues(alpha: _isFocused ? 0.8 : 0.4),
-        ),
-        const SizedBox(width: 12),
-        // User Profile / Avatar
-        Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: context.themeTextColor.withValues(alpha: 0.1),
-            border: Border.all(
-              color: context.themeTextColor.withValues(alpha: 0.1),
-              width: 1,
+        // Profile Avatar
+        TVFocusableCard(
+          focusedScale: 1.1,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ProfileScreen(),
             ),
           ),
-          child: Icon(
-            Icons.person_rounded,
-            size: 14,
-            color: context.themeTextColor.withValues(alpha: 0.6),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            child: Consumer(
+              builder: (context, ref, _) {
+                final profile = ref.watch(profileProvider);
+                final hasAvatar = profile.userAvatar.isNotEmpty &&
+                    File(profile.userAvatar).existsSync();
+                return CircleAvatar(
+                  radius: 12,
+                  backgroundColor: context.themeAccentColor.withValues(alpha: 0.2),
+                  backgroundImage: hasAvatar
+                      ? FileImage(File(profile.userAvatar))
+                      : null,
+                  child: hasAvatar
+                      ? null
+                      : Icon(
+                          Icons.person_outline,
+                          color: context.themeTextColor,
+                          size: 14,
+                        ),
+                );
+              },
+            ),
           ),
         ),
-        const SizedBox(width: 16),
+        // Listen Together
+        IconButton(
+          padding: const EdgeInsets.all(4),
+          constraints: const BoxConstraints(),
+          icon: Icon(
+            Icons.cell_tower_rounded,
+            color: playerProvider.isInRoom ? Colors.greenAccent : context.themeTextColor,
+            size: 16,
+          ),
+          onPressed: () => RoomBottomSheet.show(context, isHost: false),
+          tooltip: 'Listen Together',
+        ),
+        // Radio Stations
+        IconButton(
+          padding: const EdgeInsets.all(4),
+          constraints: const BoxConstraints(),
+          icon: Icon(
+            Icons.radio,
+            color: context.themeTextColor,
+            size: 16,
+          ),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const RadioScreen()),
+          ),
+          tooltip: 'Radio Stations',
+        ),
+        // Settings
+        IconButton(
+          padding: const EdgeInsets.all(4),
+          constraints: const BoxConstraints(),
+          icon: Icon(
+            Icons.settings_outlined,
+            color: context.themeTextColor,
+            size: 16,
+          ),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SettingsScreen()),
+          ),
+          tooltip: 'Settings',
+        ),
+        const SizedBox(width: 8),
         // Window Controls
         _CaptionButton(
           icon: Icons.remove,

@@ -1,3 +1,5 @@
+import 'package:launch_at_startup/launch_at_startup.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
@@ -47,7 +49,7 @@ Future<void> main(List<String> args) async {
   // Enforce strict global ImageCache bounds to prevent Out-Of-Memory exceptions
   PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // 50 MB
   PaintingBinding.instance.imageCache.maximumSize = 100; // 100 images maximum
-
+  
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
@@ -57,6 +59,16 @@ Future<void> main(List<String> args) async {
         await SMTCWindows.initialize();
       } catch (_) {}
     }
+  }
+
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    try {
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      LaunchAtStartup.instance.setup(
+        appName: packageInfo.appName,
+        appPath: Platform.resolvedExecutable,
+      );
+    } catch (_) {}
   }
 
   try {
@@ -357,8 +369,7 @@ class AppWindowListener extends WindowListener with TrayListener {
       windowManager.show();
       windowManager.focus();
     } else if (menuItem.key == 'exit_app') {
-      windowManager.destroy();
+      exit(0);
     }
   }
 }
-

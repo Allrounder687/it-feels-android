@@ -1097,6 +1097,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  if (!(!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux))) ...[
                                   if (ref
                                       .watch(aiSettingsProvider)
                                       .isConfigured)

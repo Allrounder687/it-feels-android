@@ -1,4 +1,4 @@
-
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
@@ -27,10 +27,27 @@ class _TVFocusableCardState extends State<TVFocusableCard> {
   bool _isFocused = false;
   bool _isHovered = false;
 
+  bool get _shouldShowOutline {
+    if (Platform.isMacOS || Platform.isIOS) {
+      return false;
+    }
+    if (Platform.isAndroid) {
+      if (FocusManager.instance.highlightMode == FocusHighlightMode.keyboard) {
+        return true;
+      }
+      return false;
+    }
+    if (Platform.isWindows || Platform.isLinux) {
+      return FocusManager.instance.highlightMode == FocusHighlightMode.keyboard;
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Only apply TV/Desktop scaling if the screen is wide enough
     final isWide = MediaQuery.of(context).size.width > 600;
+    final showOutline = _shouldShowOutline && _isFocused;
 
     return Focus(
       autofocus: widget.autofocus,
@@ -68,7 +85,7 @@ class _TVFocusableCardState extends State<TVFocusableCard> {
               duration: const Duration(milliseconds: 200),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: isWide && _isFocused
+                border: showOutline
                     ? Border.all(color: AppColors.midnightAccent, width: 3)
                     : Border.all(color: Colors.transparent, width: 3),
                 boxShadow: isWide && (_isFocused || _isHovered) && 

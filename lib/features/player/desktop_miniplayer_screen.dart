@@ -31,9 +31,6 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
 
   @override
   void dispose() {
-    if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
-      windowManager.setTitleBarStyle(TitleBarStyle.normal);
-    }
     super.dispose();
   }
 
@@ -176,7 +173,13 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                                   setState(() => _isDebouncing = true);
                                   
                                   if (hasVideo) {
-                                    await videoState.player?.playOrPause();
+                                    if (isPlaying) {
+                                      await videoState.player?.pause();
+                                      await engine.pause();
+                                    } else {
+                                      await videoState.player?.play();
+                                      await engine.play();
+                                    }
                                   } else {
                                     if (isPlaying) {
                                       await engine.pause();

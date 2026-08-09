@@ -14,6 +14,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   hotkey_manager_windows
   isar_flutter_libs
   just_audio_windows
+  launch_at_startup
   media_kit_libs_windows_video
   media_kit_video
   permission_handler_windows

@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
@@ -27,6 +29,7 @@ class SettingsState {
   final GraphicsQuality graphicsQuality;
   final bool enableSmartDownloads;
   final bool useSolidTitleBar;
+  final bool launchAtStartup;
 
   const SettingsState({
     this.wifiQuality = '320 kbps (Very High)',
@@ -47,6 +50,7 @@ class SettingsState {
     this.graphicsQuality = GraphicsQuality.high,
     this.enableSmartDownloads = true,
     this.useSolidTitleBar = false,
+    this.launchAtStartup = false,
   });
 
   SettingsState copyWith({
@@ -68,6 +72,7 @@ class SettingsState {
     GraphicsQuality? graphicsQuality,
     bool? enableSmartDownloads,
     bool? useSolidTitleBar,
+    bool? launchAtStartup,
   }) {
     return SettingsState(
       wifiQuality: wifiQuality ?? this.wifiQuality,
@@ -88,6 +93,7 @@ class SettingsState {
       graphicsQuality: graphicsQuality ?? this.graphicsQuality,
       enableSmartDownloads: enableSmartDownloads ?? this.enableSmartDownloads,
       useSolidTitleBar: useSolidTitleBar ?? this.useSolidTitleBar,
+      launchAtStartup: launchAtStartup ?? this.launchAtStartup,
     );
   }
 }
@@ -132,6 +138,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       graphicsQuality: loadedQuality,
       enableSmartDownloads: settings['enableSmartDownloads'] ?? true,
       useSolidTitleBar: settings['useSolidTitleBar'] ?? false,
+      launchAtStartup: settings['launchAtStartup'] ?? false,
       defaultCategory: defaultCat,
     );
 
@@ -271,11 +278,24 @@ class SettingsNotifier extends Notifier<SettingsState> {
       graphicsQuality: state.graphicsQuality.name,
       enableSmartDownloads: state.enableSmartDownloads,
       useSolidTitleBar: state.useSolidTitleBar,
+      launchAtStartup: state.launchAtStartup,
     );
   }
 
   Future<void> toggleSolidTitleBar(bool value) async {
     state = state.copyWith(useSolidTitleBar: value);
+    _save();
+  }
+
+  Future<void> toggleLaunchAtStartup(bool value) async {
+    state = state.copyWith(launchAtStartup: value);
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+      if (value) {
+        await LaunchAtStartup.instance.enable();
+      } else {
+        await LaunchAtStartup.instance.disable();
+      }
+    }
     _save();
   }
 }

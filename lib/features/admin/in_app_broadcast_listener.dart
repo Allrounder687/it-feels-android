@@ -95,26 +95,30 @@ class _InAppBroadcastListenerState extends State<InAppBroadcastListener> {
     }
   }
 
-  void _listenForPremiumUpgrades() async {
+  void _listenForPremiumUpgrades() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    _wasPremium = prefs.getBool('isPremiumFamily_${user.uid}') ?? false;
+    bool isInitialized = false;
 
     _premiumSubscription = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .snapshots()
-        .listen((doc) async {
+        .listen((doc) {
       if (doc.exists) {
         final data = doc.data();
         if (data != null) {
           final isPremiumNow = data['isPremiumFamily'] == true;
           
+          if (!isInitialized) {
+             _wasPremium = isPremiumNow;
+             isInitialized = true;
+             return;
+          }
+          
           if (isPremiumNow && !_wasPremium) {
             _wasPremium = true;
-            await prefs.setBool('isPremiumFamily_${user.uid}', true);
             
             if (mounted) {
               try {
@@ -135,7 +139,6 @@ class _InAppBroadcastListenerState extends State<InAppBroadcastListener> {
             }
           } else if (!isPremiumNow && _wasPremium) {
              _wasPremium = false;
-             await prefs.setBool('isPremiumFamily_${user.uid}', false);
           }
         }
       }

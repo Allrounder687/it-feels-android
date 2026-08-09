@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -58,38 +58,12 @@ class SubscriptionService {
   Future<bool> checkPremiumStatus(String uid) async {
     if (kIsWeb || uid.isEmpty) return false;
 
-    // 0. Check account-bound local cache (for offline support)
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool('isPremiumFamily_$uid') == true || prefs.getBool('isPremium_$uid') == true) {
-        return true;
-      }
-      
-      // Fallback: Migrate legacy global premium cache to account-bound cache
-      if (prefs.getBool('isPremiumDevice') == true) {
-        await prefs.setBool('isPremium_$uid', true);
-        await prefs.remove('isPremiumDevice'); // Clean up old cache
-        
-        // Also save this legacy migration to Firestore to persist it across devices if possible
-        try {
-          await _firestore.collection('users').doc(uid).collection('entitlements').doc('premium').set({
-            'isActive': true,
-            'expiresAt': null, // Legacy coupons were usually lifetime
-            'grantedBy': 'legacy_migration',
-          }, SetOptions(merge: true));
-        } catch (_) {}
-        
-        return true;
-      }
-    } catch (_) {}
 
     // 1. Check RevenueCat Status (if keys configured)
     if (!_googleApiKey.contains('API_KEY_HERE')) {
       try {
         final customerInfo = await Purchases.getCustomerInfo();
         if (customerInfo.entitlements.all[entitlementId]?.isActive == true) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('isPremium_$uid', true);
           return true;
         }
       } catch (e) {
@@ -103,9 +77,6 @@ class SubscriptionService {
       if (userDoc.exists) {
         final data = userDoc.data();
         if (data != null && (data['isPremiumFamily'] == true || data['isPremium'] == true)) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('isPremiumFamily_$uid', true);
-          await prefs.setBool('isPremium_$uid', true);
           return true;
         }
       }
@@ -116,26 +87,15 @@ class SubscriptionService {
         if (data != null && data['isActive'] == true) {
           final expiry = data['expiresAt'] as Timestamp?;
           if (expiry == null || expiry.toDate().isAfter(DateTime.now())) {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setBool('isPremium_$uid', true);
             return true;
           }
         }
       }
     } catch (e) {
       debugPrint("Firestore Entitlement Error: $e");
-      final prefs = await SharedPreferences.getInstance();
-      if (prefs.getBool('isPremiumFamily_$uid') == true || prefs.getBool('isPremium_$uid') == true) {
-        return true;
-      }
     }
 
-    // If neither cloud nor user-bound cache has active entitlement, update user-bound cache to false
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('isPremium_$uid', false);
-      await prefs.setBool('isPremiumFamily_$uid', false);
-    } catch (_) {}
+
 
     return false;
   }
@@ -158,8 +118,7 @@ class SubscriptionService {
       final result = await Purchases.purchasePackage(package);
       final active = result.customerInfo.entitlements.all[entitlementId]?.isActive == true;
       if (active) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isPremiumDevice', true);
+        // Validation moved strictly to backend
       }
       return active;
     } catch (e) {
@@ -173,8 +132,7 @@ class SubscriptionService {
       final customerInfo = await Purchases.restorePurchases();
       final active = customerInfo.entitlements.all[entitlementId]?.isActive == true;
       if (active) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isPremiumDevice', true);
+        // Validation moved strictly to backend
       }
       return active;
     } catch (e) {
@@ -190,9 +148,6 @@ class SubscriptionService {
     // Special Lifetime Coupon "FAMILY"
     if (cleanCode == 'FAMILY') {
       try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isPremiumFamily_$uid', true);
-
         await _firestore.collection('users').doc(uid).set({
           'isPremiumFamily': true,
         }, SetOptions(merge: true));
