@@ -197,6 +197,7 @@ msix_config:
   architecture: x64
   capabilities: internetClient
   protocol_activation: itfeels
+  file_extension: .mp3, .flac, .m4a
   store: false
   install_certificate: false
 
