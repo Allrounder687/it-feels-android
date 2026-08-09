@@ -423,30 +423,23 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                           SafeArea(
                             right: false,
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(32),
+                              borderRadius: const BorderRadius.horizontal(right: Radius.circular(16)),
                               child: Builder(
                                 builder: (context) {
                                   final child = Container(
-                                    width: 96,
-                                    margin: const EdgeInsets.only(
-                                      left: 12,
-                                      top: 12,
-                                      bottom: 12,
-                                    ),
+                                    width: 90,
                                     decoration: BoxDecoration(
                                       color: kDebugMode
                                           ? context.themeSurfaceColor
                                           : context.themeSurfaceColor
                                                 .withValues(alpha: 0.7),
-                                      borderRadius: BorderRadius.circular(32),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: context.themeInvertedTextColor
-                                              .withValues(alpha: 0.2),
-                                          blurRadius: 20,
-                                          offset: const Offset(8, 0),
+                                      borderRadius: const BorderRadius.horizontal(right: Radius.circular(16)),
+                                      border: Border(
+                                        right: BorderSide(
+                                          color: context.themeTextColor.withValues(alpha: 0.05),
+                                          width: 1,
                                         ),
-                                      ],
+                                      ),
                                     ),
                                     child: Center(
                                       child: SingleChildScrollView(
