@@ -170,10 +170,8 @@ class SpotifyApiService {
         final data = await compute(jsonDecode, response.body);
         final items = data['tracks']?['items'] as List? ?? [];
         final albumImages = data['images'] as List? ?? [];
-        final albumArtUrl = albumImages.isNotEmpty ? albumImages[0]['url'] : '';
         
         return items.map((item) {
-          // Album tracks response doesn't include the album object inside the track
           item['album'] = {'name': data['name'], 'images': albumImages};
           return TrackRef.fromJson(item);
         }).toList();
@@ -182,5 +180,125 @@ class SpotifyApiService {
       debugPrint('[SpotifyApiService] Error fetching album tracks: $e');
     }
     return [];
+  }
+
+  Future<List<Song>> searchSongs(String query, {int count = 20}) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/search?q=${Uri.encodeComponent(query)}&type=track&market=$_market&limit=$count');
+      final response = await _getWithRetry(uri);
+      
+      if (response.statusCode == 200) {
+        final data = await compute(jsonDecode, response.body);
+        final items = data['tracks']?['items'] as List? ?? [];
+        
+        return items.where((item) => item != null).map((item) {
+          return TrackRef.fromJson(item).toSong();
+        }).toList();
+      }
+    } catch (e) {
+      debugPrint('[SpotifyApiService] Error searching songs: $e');
+    }
+    return [];
+  }
+
+  Future<List<Playlist>> searchPlaylists(String query, {int count = 20}) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/search?q=${Uri.encodeComponent(query)}&type=playlist&market=$_market&limit=$count');
+      final response = await _getWithRetry(uri);
+      
+      if (response.statusCode == 200) {
+        final data = await compute(jsonDecode, response.body);
+        final items = data['playlists']?['items'] as List? ?? [];
+        
+        return items.where((item) => item != null).map((item) => Playlist(
+          id: item['id'],
+          title: item['name'] ?? 'Playlist',
+          coverArt: (item['images'] != null && (item['images'] as List).isNotEmpty) ? item['images'][0]['url'] : '',
+          songCount: item['tracks']?['total'] ?? 0,
+          type: 'playlist',
+        )).toList();
+      }
+    } catch (e) {
+      debugPrint('[SpotifyApiService] Error searching playlists: $e');
+    }
+    return [];
+  }
+
+  Future<List<Playlist>> searchAlbums(String query, {int count = 20}) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/search?q=${Uri.encodeComponent(query)}&type=album&market=$_market&limit=$count');
+      final response = await _getWithRetry(uri);
+      
+      if (response.statusCode == 200) {
+        final data = await compute(jsonDecode, response.body);
+        final items = data['albums']?['items'] as List? ?? [];
+        
+        return items.where((item) => item != null).map((item) => Playlist(
+          id: item['id'],
+          title: item['name'] ?? 'Album',
+          coverArt: (item['images'] != null && (item['images'] as List).isNotEmpty) ? item['images'][0]['url'] : '',
+          songCount: item['total_tracks'] ?? 0,
+          type: 'album',
+        )).toList();
+      }
+    } catch (e) {
+      debugPrint('[SpotifyApiService] Error searching albums: $e');
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> searchAll(String query) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/search?q=${Uri.encodeComponent(query)}&type=track,artist,playlist,album&market=$_market&limit=10');
+      final response = await _getWithRetry(uri);
+      
+      if (response.statusCode == 200) {
+        final data = await compute(jsonDecode, response.body);
+        
+        final artistsItems = data['artists']?['items'] as List? ?? [];
+        final artists = artistsItems.where((item) => item != null).map((item) => {
+          'id': item['id'],
+          'title': item['name'],
+          'image': (item['images'] != null && (item['images'] as List).isNotEmpty) ? item['images'][0]['url'] : '',
+          'type': 'artist',
+        }).toList();
+
+        final songsItems = data['tracks']?['items'] as List? ?? [];
+        final songs = songsItems.where((item) => item != null).map((item) => TrackRef.fromJson(item).toSong()).toList();
+
+        final playlistsItems = data['playlists']?['items'] as List? ?? [];
+        final playlists = playlistsItems.where((item) => item != null).map((item) => Playlist(
+          id: item['id'],
+          title: item['name'] ?? 'Playlist',
+          coverArt: (item['images'] != null && (item['images'] as List).isNotEmpty) ? item['images'][0]['url'] : '',
+          songCount: item['tracks']?['total'] ?? 0,
+          type: 'playlist',
+        )).toList();
+
+        final albumsItems = data['albums']?['items'] as List? ?? [];
+        final albums = albumsItems.where((item) => item != null).map((item) => Playlist(
+          id: item['id'],
+          title: item['name'] ?? 'Album',
+          coverArt: (item['images'] != null && (item['images'] as List).isNotEmpty) ? item['images'][0]['url'] : '',
+          songCount: item['total_tracks'] ?? 0,
+          type: 'album',
+        )).toList();
+
+        return {
+          'artists': artists,
+          'songs': songs,
+          'playlists': playlists,
+          'albums': albums,
+        };
+      }
+    } catch (e) {
+      debugPrint('[SpotifyApiService] Error searching all: $e');
+    }
+    return {
+      'artists': [],
+      'songs': [],
+      'playlists': [],
+      'albums': [],
+    };
   }
 }

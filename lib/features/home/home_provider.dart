@@ -164,13 +164,11 @@ class HomeState {
 }
 
 class HomeNotifier extends Notifier<HomeState> {
-  late final MusicApiService apiService;
+  late final SpotifyApiService spotifyApi;
 
   @override
   HomeState build() {
-    apiService = locator.isRegistered<MusicApiService>()
-        ? locator<MusicApiService>()
-        : MusicApiService();
+    spotifyApi = SpotifyApiService();
     Future.microtask(() {
       _initCategory();
       loadHomepageData();
@@ -329,13 +327,13 @@ class HomeNotifier extends Notifier<HomeState> {
 
       try {
         if (type == ShelfType.artistGrid) {
-          final searchRes = await apiService.searchAll(query);
+          final searchRes = await spotifyApi.searchAll(query);
           final artists = (searchRes['artists'] as List).take(6).toList();
           if (artists.isNotEmpty) {
             newShelves.add(FeedShelf(title: title, type: type, items: artists));
           } else {
             // Fallback
-            final songs = await apiService.searchSongs(query, count: 10);
+            final songs = await spotifyApi.searchSongs(query, count: 10);
             final artistNames = songs
                 .map((s) => s.artist)
                 .where((a) => a.isNotEmpty)
@@ -350,27 +348,27 @@ class HomeNotifier extends Notifier<HomeState> {
         } else if (type == ShelfType.songCarousel) {
           if (query.startsWith('playlist:')) {
             final actualQuery = query.substring(9);
-            final playlists = await apiService.searchPlaylists(
+            final playlists = await spotifyApi.searchPlaylists(
               actualQuery,
               count: 5,
             );
             if (playlists.isNotEmpty) {
-              final details = await apiService.fetchPlaylistDetails(
+              final tracks = await spotifyApi.getPlaylistTracks(
                 playlists.first.id,
               );
-              final songs = details['songs'] as List<Song>;
+              final songs = tracks.map((t) => t.toSong()).toList();
               if (songs.isNotEmpty)
                 newShelves.add(
                   FeedShelf(title: title, type: type, items: songs),
                 );
             }
           } else {
-            final songs = await apiService.searchSongs(query, count: 15);
+            final songs = await spotifyApi.searchSongs(query, count: 15);
             if (songs.isNotEmpty)
               newShelves.add(FeedShelf(title: title, type: type, items: songs));
           }
         } else if (type == ShelfType.playlistCarousel) {
-          final playlists = await apiService.searchPlaylists(query, count: 10);
+          final playlists = await spotifyApi.searchPlaylists(query, count: 10);
           if (playlists.isNotEmpty)
             newShelves.add(
               FeedShelf(title: title, type: type, items: playlists),
@@ -419,19 +417,19 @@ class HomeNotifier extends Notifier<HomeState> {
       final keywords = ['Hindi Songs', 'Bollywood Hits', 'Latest Hindi'];
       final artists = ['Arijit Singh', 'Shreya Ghoshal', 'Pritam'];
 
-      final list1 = await apiService.searchSongs(
+      final list1 = await spotifyApi.searchSongs(
         keywords[random.nextInt(keywords.length)],
         count: 30,
       );
-      final list2 = await apiService.searchSongs(
+      final list2 = await spotifyApi.searchSongs(
         artists[random.nextInt(artists.length)],
         count: 30,
       );
-      final list3 = await apiService.searchSongs(
+      final list3 = await spotifyApi.searchSongs(
         "Hindi Romantic Hits",
         count: 30,
       );
-      final playlists = await apiService.searchPlaylists(
+      final playlists = await spotifyApi.searchPlaylists(
         "Bollywood Hits",
         count: 20,
       );
@@ -452,19 +450,19 @@ class HomeNotifier extends Notifier<HomeState> {
       final keywords = ['Telugu Songs', 'Tollywood Hits', 'Latest Telugu'];
       final artists = ['Sid Sriram Telugu', 'Devi Sri Prasad', 'Thaman S'];
 
-      final list1 = await apiService.searchSongs(
+      final list1 = await spotifyApi.searchSongs(
         keywords[random.nextInt(keywords.length)],
         count: 30,
       );
-      final list2 = await apiService.searchSongs(
+      final list2 = await spotifyApi.searchSongs(
         artists[random.nextInt(artists.length)],
         count: 30,
       );
-      final list3 = await apiService.searchSongs(
+      final list3 = await spotifyApi.searchSongs(
         "Telugu Melody Hits",
         count: 30,
       );
-      final playlists = await apiService.searchPlaylists(
+      final playlists = await spotifyApi.searchPlaylists(
         "Telugu Hits",
         count: 20,
       );
@@ -489,19 +487,19 @@ class HomeNotifier extends Notifier<HomeState> {
         'Yuvan Shankar Raja',
       ];
 
-      final list1 = await apiService.searchSongs(
+      final list1 = await spotifyApi.searchSongs(
         keywords[random.nextInt(keywords.length)],
         count: 30,
       );
-      final list2 = await apiService.searchSongs(
+      final list2 = await spotifyApi.searchSongs(
         artists[random.nextInt(artists.length)],
         count: 30,
       );
-      final list3 = await apiService.searchSongs(
+      final list3 = await spotifyApi.searchSongs(
         "Tamil Melody Hits",
         count: 30,
       );
-      final playlists = await apiService.searchPlaylists(
+      final playlists = await spotifyApi.searchPlaylists(
         "Tamil Hits",
         count: 20,
       );
@@ -520,19 +518,19 @@ class HomeNotifier extends Notifier<HomeState> {
       final keywords = ['Punjabi Songs', 'Punjabi Hits', 'Latest Punjabi'];
       final artists = ['Karan Aujla', 'Diljit Dosanjh', 'AP Dhillon'];
 
-      final list1 = await apiService.searchSongs(
+      final list1 = await spotifyApi.searchSongs(
         keywords[random.nextInt(keywords.length)],
         count: 30,
       );
-      final list2 = await apiService.searchSongs(
+      final list2 = await spotifyApi.searchSongs(
         artists[random.nextInt(artists.length)],
         count: 30,
       );
-      final list3 = await apiService.searchSongs(
+      final list3 = await spotifyApi.searchSongs(
         "Punjabi Party Hits",
         count: 30,
       );
-      final playlists = await apiService.searchPlaylists(
+      final playlists = await spotifyApi.searchPlaylists(
         "Punjabi Hits",
         count: 20,
       );
@@ -572,10 +570,10 @@ class HomeNotifier extends Notifier<HomeState> {
       final artist2 = artists.removeAt(random.nextInt(artists.length));
       final artist3 = artists.removeAt(random.nextInt(artists.length));
 
-      final list1 = await apiService.searchSongs(artist1, count: 30);
-      final list2 = await apiService.searchSongs(artist2, count: 30);
-      final list3 = await apiService.searchSongs(artist3, count: 30);
-      final playlists = await apiService.searchPlaylists(
+      final list1 = await spotifyApi.searchSongs(artist1, count: 30);
+      final list2 = await spotifyApi.searchSongs(artist2, count: 30);
+      final list3 = await spotifyApi.searchSongs(artist3, count: 30);
+      final playlists = await spotifyApi.searchPlaylists(
         "English Pop",
         count: 20,
       );
@@ -611,8 +609,8 @@ class HomeNotifier extends Notifier<HomeState> {
         count: 10,
       );
 
-      // Keep searching playlists on JioSaavn as a fallback just in case users like Saavn podcasts
-      final playlists = await apiService.searchPlaylists("Podcasts", count: 20);
+      // Keep searching playlists on Spotify
+      final playlists = await spotifyApi.searchPlaylists("Podcasts", count: 20);
 
       final combined = _deduplicate([...list1, ...list2]);
       state = state.copyWith(
@@ -628,10 +626,10 @@ class HomeNotifier extends Notifier<HomeState> {
 
   Future<void> fetchIndianAlbums() async {
     try {
-      final hindiAlbums = await apiService.searchAlbums("Hindi", count: 25);
-      final teluguAlbums = await apiService.searchAlbums("Telugu", count: 25);
-      final tamilAlbums = await apiService.searchAlbums("Tamil", count: 25);
-      final punjabiAlbums = await apiService.searchAlbums("Punjabi", count: 25);
+      final hindiAlbums = await spotifyApi.searchAlbums("Hindi", count: 25);
+      final teluguAlbums = await spotifyApi.searchAlbums("Telugu", count: 25);
+      final tamilAlbums = await spotifyApi.searchAlbums("Tamil", count: 25);
+      final punjabiAlbums = await spotifyApi.searchAlbums("Punjabi", count: 25);
 
       final combined = <Playlist>[
         ...hindiAlbums,
@@ -670,7 +668,7 @@ class HomeNotifier extends Notifier<HomeState> {
       final Set<String> usedCovers = {};
 
       for (var artist in queryArtists.take(4)) {
-        final res = await apiService.searchSongs(artist, count: 20);
+        final res = await spotifyApi.searchSongs(artist, count: 20);
         if (res.isNotEmpty) {
           String selectedCover = '';
           for (var song in res) {
@@ -723,7 +721,7 @@ class HomeNotifier extends Notifier<HomeState> {
       final moods = ['Chill', 'Party', 'Lofi', 'Romance', 'Workout'];
       final futures = moods.map(
         (mood) =>
-            apiService.searchPlaylists('${state.moodLanguage} $mood', count: 4),
+            spotifyApi.searchPlaylists('${state.moodLanguage} $mood', count: 4),
       );
       final results = await Future.wait(futures);
 
@@ -756,7 +754,7 @@ class HomeNotifier extends Notifier<HomeState> {
     try {
       final queries = ['Top 50', 'Billboard', 'Viral', 'Global 100'];
       final futures = queries.map(
-        (query) => apiService.searchPlaylists(query, count: 8),
+        (query) => spotifyApi.searchPlaylists(query, count: 8),
       );
       final results = await Future.wait(futures);
 
@@ -815,7 +813,7 @@ class HomeNotifier extends Notifier<HomeState> {
     }
 
     if (!usedSpotify) {
-      final data = await apiService.fetchHomepageData(
+      final data = await MusicApiService().fetchHomepageData(
         onError: (message) {
           if (context != null) {
             ErrorReporter.showError(context, message);
