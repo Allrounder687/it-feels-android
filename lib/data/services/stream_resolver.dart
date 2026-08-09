@@ -162,12 +162,12 @@ class StreamResolver {
       
       if (results.isNotEmpty) {
         // Scoring
-        final cleanTargetTitle = _normalizeString(title);
+        final cleanTargetTitle = normalizeString(title);
         final targetArtists = artist.toLowerCase().split(',').map((e) => e.trim()).toList();
         
         Song? bestMatch;
         for (final candidate in results) {
-          final candidateTitle = _normalizeString(candidate.title);
+          final candidateTitle = normalizeString(candidate.title);
           final candidateDuration = candidate.duration * 1000;
           
           bool titleMatch = candidateTitle == cleanTargetTitle || candidateTitle.contains(cleanTargetTitle) || cleanTargetTitle.contains(candidateTitle);
@@ -215,7 +215,7 @@ class StreamResolver {
     return ytResult;
   }
 
-  String _normalizeString(String input) {
+  static String normalizeString(String input) {
     return input.toLowerCase()
         .replaceAll(RegExp(r'\(.*?\)'), '')
         .replaceAll(RegExp(r'\[.*?\]'), '')
