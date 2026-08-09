@@ -4,7 +4,6 @@ import 'package:audio_session/audio_session.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/services.dart';
 import 'package:it_feels_music/core/theme/app_typography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -29,6 +28,7 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:app_links/app_links.dart';
+import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
 
 import 'dart:ui';
 import 'dart:io';
@@ -46,6 +46,17 @@ late final ProviderContainer appProviderContainer;
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  if (Platform.isWindows) {
+    await WindowsSingleInstance.ensureSingleInstance(
+      args,
+      "it_feels_music_instance",
+      onSecondWindow: (args) async {
+        await windowManager.show();
+        await windowManager.focus();
+      },
+    );
+  }
+
   // Enforce strict global ImageCache bounds to prevent Out-Of-Memory exceptions
   PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // 50 MB
   PaintingBinding.instance.imageCache.maximumSize = 100; // 100 images maximum
@@ -206,17 +217,6 @@ Future<void> main(List<String> args) async {
       },
     );
 
-    if (Platform.isWindows) {
-      await WindowsSingleInstance.ensureSingleInstance(
-        args,
-        "it_feels_music_instance",
-        onSecondWindow: (args) async {
-          await windowManager.show();
-          await windowManager.focus();
-        },
-      );
-    }
-    
     await windowManager.ensureInitialized();
     const windowOptions = WindowOptions(
       size: Size(1280, 720),
@@ -235,9 +235,7 @@ Future<void> main(List<String> args) async {
     if (Platform.isWindows) {
       await windowManager.setPreventClose(true);
       
-      await trayManager.setIcon(
-        Platform.isWindows ? 'assets/images/icon.ico' : 'assets/images/icon.png',
-      );
+      await trayManager.setIcon('assets/images/icon.png');
 
       Menu menu = Menu(
         items: [
@@ -321,18 +319,32 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                 builder: (context, child) {
                   final isBanned = ref.watch(banProvider).isBanned;
                   if (isBanned) return const BannedScreen();
-                  return Consumer(
-                    builder: (context, ref, childWidget) {
-                      final isFullscreen = ref.watch(fullscreenProvider);
-                      return Column(
-                        children: [
-                          Expanded(
-                            child: childWidget!,
-                          ),
-                        ],
-                      );
+                  return Focus(
+                    onKeyEvent: (node, event) {
+                      if (event is KeyDownEvent) {
+                        if (event.logicalKey == LogicalKeyboardKey.tab ||
+                            event.logicalKey.keyLabel.startsWith('Arrow')) {
+                          isKeyboardNavigating.value = true;
+                        }
+                      }
+                      return KeyEventResult.ignored;
                     },
-                    child: InAppBroadcastListener(child: child ?? const SizedBox()),
+                    child: Listener(
+                      onPointerDown: (_) => isKeyboardNavigating.value = false,
+                      onPointerHover: (_) => isKeyboardNavigating.value = false,
+                      child: Consumer(
+                        builder: (context, ref, childWidget) {
+                          return Column(
+                            children: [
+                              Expanded(
+                                child: childWidget!,
+                              ),
+                            ],
+                          );
+                        },
+                        child: InAppBroadcastListener(child: child ?? const SizedBox()),
+                      ),
+                    ),
                   );
                 },
               );
@@ -364,11 +376,13 @@ class AppWindowListener extends WindowListener with TrayListener {
   }
 
   @override
-  void onTrayMenuItemClick(MenuItem menuItem) {
+  void onTrayMenuItemClick(MenuItem menuItem) async {
     if (menuItem.key == 'show_app') {
       windowManager.show();
       windowManager.focus();
     } else if (menuItem.key == 'exit_app') {
+      await windowManager.setPreventClose(false);
+      await windowManager.destroy();
       exit(0);
     }
   }

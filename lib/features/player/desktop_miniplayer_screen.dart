@@ -39,6 +39,7 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
     await windowManager.setMinimumSize(const Size(800, 600));
     await windowManager.setSize(const Size(1280, 720)); // Restore to normal bounds
     await windowManager.setAlignment(Alignment.center);
+    await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     if (mounted) {
       context.pop();
     }
@@ -172,20 +173,16 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                                   if (_isDebouncing) return;
                                   setState(() => _isDebouncing = true);
                                   
-                                  if (hasVideo) {
-                                    if (isPlaying) {
-                                      await videoState.player?.pause();
-                                      await engine.pause();
-                                    } else {
-                                      await videoState.player?.play();
-                                      await engine.play();
-                                    }
+                                  if (isPlaying) {
+                                    if (hasVideo) await videoState.player?.pause();
+                                    await ref.read(audioPlayerProvider.notifier).pause();
                                   } else {
-                                    if (isPlaying) {
-                                      await engine.pause();
-                                    } else {
-                                      await engine.play();
-                                    }
+                                    if (hasVideo) await videoState.player?.play();
+                                    await ref.read(audioPlayerProvider.notifier).playSong(
+                                      currentSong,
+                                      queue: audioState.queue,
+                                      index: audioState.currentIndex,
+                                    );
                                   }
                                   
                                   Future.delayed(const Duration(milliseconds: 300), () {

@@ -1114,92 +1114,95 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       ),
                                       tooltip: 'Ask Feels',
                                     ),
-                                  TVFocusableCard(
-                                    focusedScale: 1.1,
-                                    onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const ProfileScreen(),
+                                  ],
+                                  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) ...[
+                                    TVFocusableCard(
+                                      focusedScale: 1.1,
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const ProfileScreen(),
+                                        ),
+                                      ),
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                        ),
+                                        child: Consumer(
+                                          builder: (context, ref, _) {
+                                            final profile = ref.watch(
+                                              profileProvider,
+                                            );
+                                            final hasAvatar =
+                                                profile.userAvatar.isNotEmpty &&
+                                                File(
+                                                  profile.userAvatar,
+                                                ).existsSync();
+                                            return CircleAvatar(
+                                              radius: 16,
+                                              backgroundColor: context
+                                                  .themeAccentColor
+                                                  .withValues(alpha: 0.2),
+                                              backgroundImage: hasAvatar
+                                                  ? FileImage(
+                                                      File(profile.userAvatar),
+                                                    )
+                                                  : null,
+                                              child: hasAvatar
+                                                  ? null
+                                                  : Icon(
+                                                      Icons.person_outline,
+                                                      color:
+                                                          context.themeTextColor,
+                                                      size: 20,
+                                                    ),
+                                            );
+                                          },
+                                        ),
                                       ),
                                     ),
-                                    child: Container(
-                                      margin: const EdgeInsets.symmetric(
-                                        horizontal: 4,
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.cell_tower_rounded,
+                                        color: playerProvider.isInRoom
+                                            ? Colors.greenAccent
+                                            : context.themeTextColor,
+                                        size: 22,
                                       ),
-                                      child: Consumer(
-                                        builder: (context, ref, _) {
-                                          final profile = ref.watch(
-                                            profileProvider,
-                                          );
-                                          final hasAvatar =
-                                              profile.userAvatar.isNotEmpty &&
-                                              File(
-                                                profile.userAvatar,
-                                              ).existsSync();
-                                          return CircleAvatar(
-                                            radius: 16,
-                                            backgroundColor: context
-                                                .themeAccentColor
-                                                .withValues(alpha: 0.2),
-                                            backgroundImage: hasAvatar
-                                                ? FileImage(
-                                                    File(profile.userAvatar),
-                                                  )
-                                                : null,
-                                            child: hasAvatar
-                                                ? null
-                                                : Icon(
-                                                    Icons.person_outline,
-                                                    color:
-                                                        context.themeTextColor,
-                                                    size: 20,
-                                                  ),
-                                          );
-                                        },
+                                      onPressed: () => RoomBottomSheet.show(
+                                        context,
+                                        isHost: false,
                                       ),
+                                      tooltip: 'Listen Together',
                                     ),
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.cell_tower_rounded,
-                                      color: playerProvider.isInRoom
-                                          ? Colors.greenAccent
-                                          : context.themeTextColor,
-                                      size: 22,
-                                    ),
-                                    onPressed: () => RoomBottomSheet.show(
-                                      context,
-                                      isHost: false,
-                                    ),
-                                    tooltip: 'Listen Together',
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.radio,
-                                      color: context.themeTextColor,
-                                      size: 22,
-                                    ),
-                                    onPressed: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const RadioScreen(),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.radio,
+                                        color: context.themeTextColor,
+                                        size: 22,
                                       ),
-                                    ),
-                                    tooltip: 'Radio Stations',
-                                  ),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.settings_outlined,
-                                      color: context.themeTextColor,
-                                      size: 22,
-                                    ),
-                                    onPressed: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const SettingsScreen(),
+                                      onPressed: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const RadioScreen(),
+                                        ),
                                       ),
+                                      tooltip: 'Radio Stations',
                                     ),
-                                  ),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.settings_outlined,
+                                        color: context.themeTextColor,
+                                        size: 22,
+                                      ),
+                                      onPressed: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => const SettingsScreen(),
+                                        ),
+                                      ),
+                                      tooltip: 'Settings',
+                                    ),
                                   ],
                                 ],
                               ),

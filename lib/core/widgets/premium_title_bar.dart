@@ -338,42 +338,27 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
           ),
         ),
         // Listen Together
-        IconButton(
-          padding: const EdgeInsets.all(4),
-          constraints: const BoxConstraints(),
-          icon: Icon(
-            Icons.cell_tower_rounded,
-            color: playerProvider.isInRoom ? Colors.greenAccent : context.themeTextColor,
-            size: 16,
-          ),
-          onPressed: () => RoomBottomSheet.show(context, isHost: false),
+        _TitleBarIconButton(
+          icon: Icons.cell_tower_rounded,
+          color: playerProvider.isInRoom ? Colors.greenAccent : context.themeTextColor,
+          onTap: () => RoomBottomSheet.show(context, isHost: false),
           tooltip: 'Listen Together',
         ),
         // Radio Stations
-        IconButton(
-          padding: const EdgeInsets.all(4),
-          constraints: const BoxConstraints(),
-          icon: Icon(
-            Icons.radio,
-            color: context.themeTextColor,
-            size: 16,
-          ),
-          onPressed: () => Navigator.push(
+        _TitleBarIconButton(
+          icon: Icons.radio,
+          color: context.themeTextColor,
+          onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const RadioScreen()),
           ),
           tooltip: 'Radio Stations',
         ),
         // Settings
-        IconButton(
-          padding: const EdgeInsets.all(4),
-          constraints: const BoxConstraints(),
-          icon: Icon(
-            Icons.settings_outlined,
-            color: context.themeTextColor,
-            size: 16,
-          ),
-          onPressed: () => Navigator.push(
+        _TitleBarIconButton(
+          icon: Icons.settings_outlined,
+          color: context.themeTextColor,
+          onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const SettingsScreen()),
           ),
@@ -398,6 +383,48 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
           isClose: true,
         ),
       ],
+    );
+  }
+}
+
+class _TitleBarIconButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  final Color color;
+  final String tooltip;
+
+  const _TitleBarIconButton({
+    required this.icon,
+    required this.onTap,
+    required this.color,
+    required this.tooltip,
+  });
+
+  @override
+  State<_TitleBarIconButton> createState() => _TitleBarIconButtonState();
+}
+
+class _TitleBarIconButtonState extends State<_TitleBarIconButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Tooltip(
+          message: widget.tooltip,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            height: 48,
+            color: _isHovered ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
+            child: Icon(widget.icon, size: 16, color: widget.color),
+          ),
+        ),
+      ),
     );
   }
 }

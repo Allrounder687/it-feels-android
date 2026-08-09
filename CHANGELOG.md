@@ -10,8 +10,10 @@
   - Platform-aware `ConfigService` now fetches Firestore `client_config/windows` document on Windows.
   - `ForceUpdateScreen` launches native `ms-appinstaller:` protocol on Windows instead of downloading APKs.
 
+## v3.5.28+63
+- **Mobile Status Bar Fix**: Fixed a critical mobile layout issue where the top app bar would collide with the iOS/Android system status bar (notch/timezone). Removed a blanket `MediaQuery` top padding override that erased the OS `SafeArea` insets on non-desktop devices.
+
 ## v3.5.28+62
-- **Windows Desktop Resiliency & Premium UI**:
   - **SMTC Double Initialization Crash**: Fixed a critical Windows background crash (`flutter_rust_bridge has not been initialized`) by safely pruning duplicate `SMTCWindows.initialize()` calls from `main.dart`, correctly restoring initialization hierarchy before `MediaKit`.
   - **Windows Title Bar**: Resolved a layout issue causing the default OS title bar to render above the custom app title bar. Injected `TitleBarStyle.hidden` into `WindowOptions` to properly override the native OS chrome.
   - **Premium Window Controls**: Overhauled the top drag region to accurately mirror a premium "2026-era" UI. Integrated the user avatar and Wi-Fi connectivity indicator directly into the control strip alongside minimize, maximize, and close buttons.

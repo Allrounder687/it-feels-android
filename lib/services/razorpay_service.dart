@@ -15,7 +15,6 @@ class RazorpayService {
   static const String _backendUrl = 'https://it-feels-proxy.cleverfox687.workers.dev';
   
   Completer<bool>? _paymentCompleter;
-  int _pendingDurationDays = 30;
 
   RazorpayService() {
     if (Platform.isAndroid || Platform.isIOS) {
@@ -32,7 +31,7 @@ class RazorpayService {
 
   Future<bool> checkout(int amountInRupees, int durationDays) async {
     _paymentCompleter = Completer<bool>();
-    _pendingDurationDays = durationDays;
+
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return false;

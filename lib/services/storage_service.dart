@@ -15,8 +15,7 @@ class StorageService {
   static const String _artistHistoryKey = 'artist_history_v1';
   static const String _recentSongsKey = 'recent_songs_v1';
   
-  static const String _audioEqKey = 'audio_eq_bands_v1';
-  static const String _audioLoudnessKey = 'audio_loudness_v1';
+
   static const String _audioSpeedKey = 'audio_speed_v1';
   static const String _audioPitchKey = 'audio_pitch_v1';
 
