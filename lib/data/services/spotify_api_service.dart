@@ -78,6 +78,9 @@ class SpotifyApiService {
         attempts++;
         continue;
       }
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        debugPrint('[SpotifyApiService] Request failed. URL: $uri, Status: ${response.statusCode}, Body: ${response.body}');
+      }
       return response;
     }
     throw Exception('Spotify API rate limit exceeded after retries.');
