@@ -9,6 +9,8 @@ import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/player/widgets/pulse_glow_background.dart';
 import 'package:it_feels_music/core/widgets/clever_loading_text.dart';
+import 'package:it_feels_music/services/storage_service.dart';
+import 'package:it_feels_music/features/player/video_player_provider.dart';
 
 class NowPlayingArt extends ConsumerWidget {
   final bool isVideoMode;
@@ -95,6 +97,56 @@ class NowPlayingArt extends ConsumerWidget {
                               ),
                             ),
                             const SizedBox(width: 8),
+                            PopupMenuButton<String>(
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.65),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.more_vert, color: Colors.white, size: 16),
+                              ),
+                              color: context.themeCardColor,
+                              onSelected: (value) async {
+                                if (value == 'retry') {
+                                  if (videoProvider.originalSongId.isNotEmpty) {
+                                    final newQuery = '${videoProvider.currentTitle} ${videoProvider.currentUploader} official music video';
+                                    ref.read(videoPlayerProvider.notifier).playVideo(
+                                          videoProvider.originalSongId,
+                                          videoProvider.currentTitle,
+                                          videoProvider.currentUploader,
+                                          query: newQuery,
+                                          forceReload: true,
+                                        );
+                                  }
+                                } else if (value == 'custom') {
+                                  _showCustomLinkDialog(context, ref, videoProvider);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  value: 'retry',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.refresh, color: context.themeTextColor),
+                                      const SizedBox(width: 12),
+                                      Text('Retry Match', style: GoogleFonts.inter(color: context.themeTextColor)),
+                                    ],
+                                  ),
+                                ),
+                                PopupMenuItem(
+                                  value: 'custom',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.link, color: context.themeTextColor),
+                                      const SizedBox(width: 12),
+                                      Text('Set Custom Video', style: GoogleFonts.inter(color: context.themeTextColor)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(width: 8),
                             GestureDetector(
                               onTap: onQualityPickerTap,
                               child: Container(
@@ -175,6 +227,77 @@ class NowPlayingArt extends ConsumerWidget {
               ),
             ],
           ),
+    );
+  }
+
+  void _showCustomLinkDialog(BuildContext context, WidgetRef ref, VideoPlayerState videoProvider) {
+    final TextEditingController controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: context.themeSurfaceColor,
+          title: Text(
+            'Set Custom YouTube Video',
+            style: GoogleFonts.outfit(color: context.themeTextColor, fontWeight: FontWeight.bold),
+          ),
+          content: TextField(
+            controller: controller,
+            style: GoogleFonts.inter(color: context.themeTextColor),
+            decoration: InputDecoration(
+              hintText: 'Paste YouTube URL or ID...',
+              hintStyle: GoogleFonts.inter(color: context.themeMutedTextColor),
+              filled: true,
+              fillColor: context.themeCardColor,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: GoogleFonts.inter(color: context.themeMutedTextColor)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.themeAccentColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                final input = controller.text.trim();
+                if (input.isNotEmpty) {
+                  String? customId;
+                  if (input.contains('v=')) {
+                    customId = input.split('v=')[1].split('&').first.substring(0, 11);
+                  } else if (input.contains('youtu.be/')) {
+                    customId = input.split('youtu.be/')[1].split('?').first.substring(0, 11);
+                  } else if (input.length == 11) {
+                    customId = input;
+                  }
+
+                  if (customId != null && videoProvider.originalSongId.isNotEmpty) {
+                    await StorageService.saveCustomVideoLink(
+                      videoProvider.originalSongId,
+                      customId,
+                    );
+                    if (context.mounted) Navigator.pop(context);
+                    ref.read(videoPlayerProvider.notifier).playVideo(
+                          videoProvider.originalSongId,
+                          videoProvider.currentTitle,
+                          videoProvider.currentUploader,
+                          query: '', // Bypass query search since we have exact ID
+                          forceReload: true,
+                        );
+                  }
+                }
+              },
+              child: Text('Save & Reload', style: GoogleFonts.inter(color: context.themeInvertedTextColor, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
@@ -134,7 +134,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
           ),
           const SizedBox(height: 32),
 
-          _buildSectionHeader("ðŸŽ›ï¸ It Feels DSP Engine"),
+          _buildSectionHeader("🎛️ It Feels DSP Engine"),
           const SizedBox(height: 8),
           Text(
             "Our custom-tuned Digital Signal Processor. Enables a premium, punchy EQ and hardware loudness boost for an audiophile experience.",
@@ -161,7 +161,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
             ),
           const SizedBox(height: 32),
 
-          _buildSectionHeader("ðŸ“³ Haptic Feedback"),
+          _buildSectionHeader("📳 Haptic Feedback"),
           const SizedBox(height: 8),
           Text(
             "Premium physical responses to your interactions.",
@@ -188,7 +188,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           const SizedBox(height: 32),
-          _buildSectionHeader("ðŸŽšï¸ Crossfade"),
+          _buildSectionHeader("🎚️ Crossfade"),
           const SizedBox(height: 8),
           Text(
             "Smoothly fade one song into the next for gapless playback.",

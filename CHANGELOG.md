@@ -1,4 +1,9 @@
 ## v3.5.32+66
+- **AV Sync Engine Overhaul & Pause Glitch Fixes**:
+  - **Double-Seek Race Condition**: Fixed a critical bug in `WavySeekBar` where dragging the slider in Video Mode would concurrently issue `seek()` commands to both the `just_audio` and `media_kit` pipelines. This race condition confused `media_kit`, causing it to drop its `playing` state and permanently hang. The UI now correctly delegates the seek command exclusively to the master audio engine when AV Sync is active.
+  - **Scrub Resumption**: Fixed an issue where the background video engine remained paused after catching up to a scrubbed audio timestamp. Explicitly added `state.player!.play()` within the `video_player_provider.dart` syncing bridge.
+  - **Continuous Soft Drift Correction**: Solved long-term audio/video desync (lip-sync drift) that occurred over several minutes. Injected a real-time monitor into `video_player_provider.dart` that continuously compares the muted video's playback position against the master audio's position. If the video falls slightly behind or ahead, the engine transparently speeds up (1.05x) or slows down (0.95x) the video stream to micro-adjust its frame buffer back into perfect alignment without triggering a stuttering hard `seek()`.
+  - **Retry Match & Custom Link Dialogs**: Fixed an issue where tapping 'Retry Match' or submitting a custom YouTube URL did nothing because the underlying `playVideo` function detected no change in the video ID. Injected a `forceReload: true` parameter to bypass this lock and guarantee a fresh stream initialization. Also updated the Custom Link button text to explicitly contrast against the `Pitch Black` theme.
 - **Desktop UI Polish**: Unified the desktop sidebar and category chips with a frosted glassmorphic design that cleanly adapts to hover states.
 - **Layout Fixes**: Resolved strict layout constraints that caused 'For You' text bounding boxes to overflow or clip.
 

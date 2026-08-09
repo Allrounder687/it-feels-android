@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 class PulseGlowBackground extends ConsumerStatefulWidget {
   final Color color;
@@ -39,6 +41,10 @@ class _PulseGlowBackgroundState extends ConsumerState<PulseGlowBackground> with 
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(settingsProvider).enablePerformanceMode) {
+      return const SizedBox.shrink();
+    }
+    
     return ExcludeSemantics(
       child: RepaintBoundary(
         child: ScaleTransition(

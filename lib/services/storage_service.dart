@@ -18,6 +18,7 @@ class StorageService {
 
   static const String _audioSpeedKey = 'audio_speed_v1';
   static const String _audioPitchKey = 'audio_pitch_v1';
+  static const String _customVideoLinksKey = 'custom_video_links_v1';
 
   /// Learning Engine: Artist History
   static Future<void> saveListeningHistory(Map<String, int> artistCounts) async {
@@ -414,5 +415,32 @@ class StorageService {
       'name': prefs.getString(_userNameKey) ?? '',
       'avatar': prefs.getString(_userAvatarKey) ?? '',
     };
+  }
+
+  /// Custom Video Linking
+  static Future<void> saveCustomVideoLink(String songId, String videoId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_customVideoLinksKey);
+    Map<String, String> links = {};
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = json.decode(raw) as Map<String, dynamic>;
+        links = decoded.map((k, v) => MapEntry(k, v.toString()));
+      } catch (_) {}
+    }
+    links[songId] = videoId;
+    await prefs.setString(_customVideoLinksKey, json.encode(links));
+  }
+
+  static Future<String?> getCustomVideoLink(String songId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_customVideoLinksKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = json.decode(raw) as Map<String, dynamic>;
+      return decoded[songId]?.toString();
+    } catch (_) {
+      return null;
+    }
   }
 }

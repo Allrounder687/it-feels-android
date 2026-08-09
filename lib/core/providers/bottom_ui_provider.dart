@@ -57,3 +57,5 @@ class MeasureSize extends SingleChildRenderObjectWidget {
     renderObject.onChange = onChange;
   }
 }
+
+final sidebarPinnedProvider = StateProvider<bool>((ref) => false);

@@ -1712,7 +1712,6 @@ class _GlassmorphicChipState extends State<_GlassmorphicChip> {
         focusedScale: 1.1,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          transform: Matrix4.identity()..scale(_isHovered && !widget.isSelected ? 1.05 : 1.0),
           decoration: BoxDecoration(
             color: widget.isSelected
                 ? context.themeAccentColor

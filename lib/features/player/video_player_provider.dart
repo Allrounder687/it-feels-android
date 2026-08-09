@@ -11,6 +11,7 @@ import 'package:it_feels_music/features/player/active_media_provider.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:volume_controller/volume_controller.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
+import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 @immutable
@@ -21,6 +22,7 @@ class VideoPlayerState {
   final bool isLoading;
   final bool isMuted;
   final String currentVideoId;
+  final String originalSongId;
   final String currentTitle;
   final String currentUploader;
   final List<Map<String, dynamic>> streams;
@@ -42,6 +44,7 @@ class VideoPlayerState {
     this.isLoading = false,
     this.isMuted = false,
     this.currentVideoId = '',
+    this.originalSongId = '',
     this.currentTitle = '',
     this.currentUploader = '',
     this.streams = const [],
@@ -65,6 +68,7 @@ class VideoPlayerState {
     bool? isLoading,
     bool? isMuted,
     String? currentVideoId,
+    String? originalSongId,
     String? currentTitle,
     String? currentUploader,
     List<Map<String, dynamic>>? streams,
@@ -87,6 +91,7 @@ class VideoPlayerState {
       isLoading: isLoading ?? this.isLoading,
       isMuted: isMuted ?? this.isMuted,
       currentVideoId: currentVideoId ?? this.currentVideoId,
+      originalSongId: originalSongId ?? this.originalSongId,
       currentTitle: currentTitle ?? this.currentTitle,
       currentUploader: currentUploader ?? this.currentUploader,
       streams: streams ?? this.streams,
@@ -152,6 +157,34 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
           pauseVideo();
         }
       }
+      
+      // Sync on Seek: If position jumps by more than 2 seconds, the user manually scrubbed
+      if (isSynced && state.isVideoActive && state.player != null && current.isPlaying && previous != null) {
+        final diff = (current.position - previous.position).inMilliseconds.abs();
+        if (diff > 2000) {
+          state.player!.seek(current.position);
+          state.player!.play();
+        } else {
+          // Continuous Drift Correction
+          final videoPosition = state.player!.state.position;
+          final audioPosition = current.position;
+          final drift = (videoPosition - audioPosition).inMilliseconds;
+          
+          if (drift.abs() > 800) {
+            // Aggressive correction for huge random drifts
+            state.player!.seek(audioPosition);
+          } else if (drift > 100) {
+            // Video is ahead, slow down
+            if (state.player!.state.rate != 0.95) state.player!.setRate(0.95);
+          } else if (drift < -100) {
+            // Video is behind, speed up
+            if (state.player!.state.rate != 1.05) state.player!.setRate(1.05);
+          } else {
+            // In sync
+            if (state.player!.state.rate != 1.0) state.player!.setRate(1.0);
+          }
+        }
+      }
     });
 
     ref.onDispose(() {
@@ -207,8 +240,14 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     _initGuestRoomSync(roomId);
   }
 
-  Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition, bool isBackgroundHandoff = false, void Function(String)? onToastMessage}) async {
-    if (state.currentVideoId == videoId && state.player != null) {
+  Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition, bool isBackgroundHandoff = false, void Function(String)? onToastMessage, bool forceReload = false}) async {
+    final String originalId = videoId;
+    // Check for custom overridden YouTube ID for this song
+    final customVideoId = await StorageService.getCustomVideoLink(videoId);
+    final effectiveVideoId = customVideoId ?? videoId;
+    videoId = effectiveVideoId;
+
+    if (!forceReload && state.currentVideoId == effectiveVideoId && state.player != null) {
       state = state.copyWith(isVideoActive: true);
       if (startPosition != null) {
         await state.player!.seek(startPosition);
@@ -241,6 +280,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       isLoading: true,
       isVideoActive: true,
       currentVideoId: videoId,
+      originalSongId: originalId, // the passed-in ID before override is the actual song ID
       currentTitle: title,
       currentUploader: uploader,
       streams: const [],
@@ -456,6 +496,11 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     }
     
     if (previousPosition != Duration.zero) {
+      if (Platform.isAndroid || Platform.isIOS) {
+        try {
+          await player.stream.duration.firstWhere((d) => d > Duration.zero).timeout(const Duration(seconds: 3));
+        } catch (_) {} // ignore timeout
+      }
       // Execute the seek immediately after play. Modern media_kit natively queues the seek
       // if the demuxer isn't ready. This removes the catastrophic 4-second blocking delay 
       // that was destroying the audio-video crossfade sync.

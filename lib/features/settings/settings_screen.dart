@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
@@ -79,7 +79,7 @@ class SettingsScreen extends ConsumerWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    "Update Ready! ðŸŽ‰",
+                                    "Update Ready! 🎉",
                                     style: GoogleFonts.outfit(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w700,
@@ -129,7 +129,7 @@ class SettingsScreen extends ConsumerWidget {
                 },
               ),
               // â”€â”€ Category 1: Playback & Audio â”€â”€
-              _buildSectionHeader(context, "ðŸŽµ Playback & Audio"),
+              _buildSectionHeader(context, "🎵 Playback & Audio"),
               const SizedBox(height: 8),
 
               SwitchListTile.adaptive(
@@ -205,7 +205,7 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // â”€â”€ Category 2: Appearance & UI â”€â”€
-              _buildSectionHeader(context, "ðŸŽ¨ Appearance & UI"),
+              _buildSectionHeader(context, "🎨 Appearance & UI"),
               const SizedBox(height: 8),
 
               ListTile(
@@ -269,7 +269,7 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // â”€â”€ Category 3: Storage & Offline â”€â”€
-              _buildSectionHeader(context, "ðŸ’¾ Storage & Offline"),
+              _buildSectionHeader(context, "💾 Storage & Offline"),
               const SizedBox(height: 8),
 
               SwitchListTile.adaptive(
@@ -361,7 +361,7 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // â”€â”€ Category 4: Account & Integrations â”€â”€
-              _buildSectionHeader(context, "ðŸ‘¤ Account & Integrations"),
+              _buildSectionHeader(context, "👤 Account & Integrations"),
               const SizedBox(height: 8),
 
               _buildActionTile(
@@ -407,12 +407,13 @@ class SettingsScreen extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // â”€â”€ Category 5: Advanced Settings â”€â”€
+              // ── Category 5: Advanced Settings ──
               Theme(
                 data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                 child: ExpansionTile(
                   iconColor: context.themeMutedTextColor,
                   collapsedIconColor: context.themeMutedTextColor,
-                  title: Text("âš™ï¸ Advanced Settings", style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700, color: context.themeMutedTextColor)),
+                  title: Text("⚙️ Advanced Settings", style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700, color: context.themeMutedTextColor)),
                   children: [
                     ListTile(
                       title: Text("Use Serverless Proxy Backend", style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: context.themeTextColor)),
@@ -473,7 +474,7 @@ class SettingsScreen extends ConsumerWidget {
 
               const SizedBox(height: 24),
               // Category 5: About
-              _buildSectionHeader(context, "â„¹ï¸ About & Info"),
+              _buildSectionHeader(context, "ℹ️ About & Info"),
               const SizedBox(height: 8),
 
               _buildActionTile(

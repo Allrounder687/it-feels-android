@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter/material.dart';
@@ -43,20 +44,26 @@ class MiniPlayer extends ConsumerWidget {
                   margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   height: 72,
                   decoration: BoxDecoration(
-                    color: kDebugMode ? playerProvider.themeSurfaceColor : playerProvider.themeSurfaceColor.withValues(alpha: 0.7),
+                    color: playerProvider.themeSurfaceColor.withValues(alpha: 0.75),
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      width: 1,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: context.themeInvertedTextColor.withValues(alpha: 0.45),
-                        blurRadius: 18,
-                        offset: const Offset(0, 6),
+                        color: context.themeInvertedTextColor.withValues(alpha: 0.15),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Stack(
-                      children: [
+                    child: BackdropFilter(
+                      filter: kDebugMode ? ImageFilter.blur(sigmaX: 0, sigmaY: 0) : ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                      child: Stack(
+                        children: [
                   // Top Progress Indicator Line (YouTube Music style)
                   Positioned(
                     left: 0,
@@ -191,6 +198,7 @@ class MiniPlayer extends ConsumerWidget {
                 ],
               ),
             ),
+          ),
           );
           return child;
         },

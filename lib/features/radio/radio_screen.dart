@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:window_manager/window_manager.dart';
@@ -27,15 +27,15 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
   String _currentQuery = '';
 
   final Map<String, String> _quickFilters = {
-    'ðŸ”¥ Top': '',
-    'ðŸ‡®ðŸ‡³ India': 'India',
-    'ðŸ‡ºðŸ‡¸ USA': 'United States',
-    'ðŸ‡¬ðŸ‡§ UK': 'United Kingdom',
-    'ðŸ‡¯ðŸ‡µ Japan': 'Japan',
-    'ðŸŽ· Jazz': 'Jazz',
-    'ðŸ“° News': 'News',
-    'ðŸŽ¸ Rock': 'Rock',
-    'ðŸŽ§ Lofi': 'Lofi',
+    '🔥 Top': '',
+    '🇮🇳 India': 'India',
+    '🇺🇸 USA': 'United States',
+    '🇬🇧 UK': 'United Kingdom',
+    '🇯🇵 Japan': 'Japan',
+    '🎷 Jazz': 'Jazz',
+    '📰 News': 'News',
+    '🎸 Rock': 'Rock',
+    '🎧 Lofi': 'Lofi',
   };
 
   @override

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:window_manager/window_manager.dart';
@@ -36,7 +36,7 @@ class AISettingsScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             children: [
               // AI Enabled toggle
-              _buildSectionHeader(context, "ðŸ¤– AI Features"),
+              _buildSectionHeader(context, "🤖 AI Features"),
               const SizedBox(height: 8),
               _buildSwitchTile(
                 context: context,

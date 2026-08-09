@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:window_manager/window_manager.dart';
@@ -67,7 +67,7 @@ class StorageScreen extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: 32),
-                _buildSectionHeader(context, "ðŸ—‘ï¸ Smart Cache Manager"),
+                _buildSectionHeader(context, "🗑️ Smart Cache Manager"),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text("Max Cache Size",

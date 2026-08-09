@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -32,6 +33,7 @@ class PremiumTitleBar extends ConsumerStatefulWidget {
 class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
     with WindowListener {
   bool _isFocused = true;
+  bool _isLogoHovered = false;
 
   @override
   void initState() {
@@ -148,28 +150,63 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 24,
-                height: 24,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: context.themeAccentColor.withValues(alpha: _isFocused ? 0.15 : 0.05),
-                  borderRadius: BorderRadius.circular(6),
-                  boxShadow: [
-                    BoxShadow(
-                      color: context.themeAccentColor.withValues(alpha: _isFocused ? 0.2 : 0.0),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+              MouseRegion(
+                onEnter: (_) => setState(() => _isLogoHovered = true),
+                onExit: (_) => setState(() => _isLogoHovered = false),
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () {
+                    // We need to import bottom_ui_provider.dart at the top to access sidebarPinnedProvider
+                    final current = ref.read(sidebarPinnedProvider);
+                    ref.read(sidebarPinnedProvider.notifier).state = !current;
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: context.themeAccentColor.withValues(alpha: _isFocused ? 0.15 : 0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        if (_isLogoHovered)
+                          BoxShadow(
+                            color: context.themeAccentColor.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 2),
+                          )
+                        else
+                          BoxShadow(
+                            color: context.themeAccentColor.withValues(alpha: _isFocused ? 0.2 : 0.0),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                      ],
                     ),
-                  ],
-                ),
-                child: Text(
-                  "IF",
-                  style: GoogleFonts.outfit(
-                    color: _isFocused ? context.themeAccentColor : context.themeMutedTextColor,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 14,
-                    letterSpacing: -0.5,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(scale: animation, child: child),
+                      ),
+                      child: _isLogoHovered
+                          ? Icon(
+                              Icons.menu_rounded,
+                              key: const ValueKey('menu_icon'),
+                              size: 18,
+                              color: context.themeAccentColor,
+                            )
+                          : Text(
+                              "IF",
+                              key: const ValueKey('text_icon'),
+                              style: GoogleFonts.outfit(
+                                color: _isFocused ? context.themeAccentColor : context.themeMutedTextColor,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 15,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                    ),
                   ),
                 ),
               ),
@@ -236,37 +273,12 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
             ],
           ),
         ),
-        // Progress Sliver
+        // Aesthetic Audio Visualizer Line (Pulsing)
         Positioned(
           bottom: 0,
           left: 0,
           right: 0,
-          child: StreamBuilder<Duration>(
-            stream: ref
-                .read(audioPlayerProvider.notifier)
-                .engine
-                .positionStream,
-            builder: (context, snapshot) {
-              final pos = snapshot.data?.inMilliseconds ?? 0;
-              final dur = ref.read(audioPlayerProvider).duration.inMilliseconds;
-              final progress = dur > 0 ? (pos / dur).clamp(0.0, 1.0) : 0.0;
-              return FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: progress,
-                child: Container(
-                  height: 3,
-                  decoration: BoxDecoration(
-                    color: context.themeAccentColor.withValues(
-                      alpha: _isFocused ? 0.8 : 0.3,
-                    ),
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(3),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
+          child: _PulsingAudioVisualizer(isFocused: _isFocused),
         ),
       ],
     );
@@ -494,6 +506,65 @@ class _CaptionButtonState extends State<_CaptionButton> {
           height: 48,
           color: _isHovered ? hoverColor : Colors.transparent,
           child: Icon(widget.icon, size: 16, color: iconColor),
+        ),
+      ),
+    );
+  }
+}
+
+class _PulsingAudioVisualizer extends StatefulWidget {
+  final bool isFocused;
+  const _PulsingAudioVisualizer({required this.isFocused});
+
+  @override
+  State<_PulsingAudioVisualizer> createState() => _PulsingAudioVisualizerState();
+}
+
+class _PulsingAudioVisualizerState extends State<_PulsingAudioVisualizer>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
+    );
+    _opacityAnimation = Tween<double>(begin: 0.3, end: 0.8).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacityAnimation,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          height: 2,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.transparent,
+                context.themeAccentColor.withValues(alpha: widget.isFocused ? 1.0 : 0.5),
+                Colors.transparent,
+              ],
+            ),
+          ),
         ),
       ),
     );

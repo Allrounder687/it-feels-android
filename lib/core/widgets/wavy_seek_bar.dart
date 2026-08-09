@@ -61,6 +61,9 @@ class _WavySeekBarState extends ConsumerState<WavySeekBar> with SingleTickerProv
   final Path _wavePath = Path();
   final Path _inactivePath = Path();
 
+  bool _isDragging = false;
+  double _dragFraction = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -97,11 +100,33 @@ class _WavySeekBarState extends ConsumerState<WavySeekBar> with SingleTickerProv
     super.dispose();
   }
 
-  /// Handles user interaction (tap or horizontal drag) to seek to a new position.
-  void _handleSeek(Offset localPosition, double width) {
+  void _handleDragStart(Offset localPosition, double width) {
     if (widget.duration.inMilliseconds == 0 || widget.onSeek == null) return;
-    double dx = localPosition.dx.clamp(0.0, width); 
-    double fraction = dx / width; 
+    setState(() {
+      _isDragging = true;
+      _dragFraction = localPosition.dx.clamp(0.0, width) / width;
+    });
+  }
+
+  void _handleDragUpdate(Offset localPosition, double width) {
+    if (!_isDragging) return;
+    setState(() {
+      _dragFraction = localPosition.dx.clamp(0.0, width) / width;
+    });
+  }
+
+  void _handleDragEnd(double width) {
+    if (!_isDragging) return;
+    setState(() {
+      _isDragging = false;
+    });
+    final newPos = Duration(milliseconds: (widget.duration.inMilliseconds * _dragFraction).round());
+    widget.onSeek!(newPos);
+  }
+
+  void _handleTap(Offset localPosition, double width) {
+    if (widget.duration.inMilliseconds == 0 || widget.onSeek == null) return;
+    double fraction = localPosition.dx.clamp(0.0, width) / width;
     final newPos = Duration(milliseconds: (widget.duration.inMilliseconds * fraction).round());
     widget.onSeek!(newPos);
   }
@@ -115,7 +140,7 @@ class _WavySeekBarState extends ConsumerState<WavySeekBar> with SingleTickerProv
 
     final maxMs = math.max(1, widget.duration.inMilliseconds);
     final posMs = widget.position.inMilliseconds.clamp(0, maxMs);
-    final fraction = posMs / maxMs; 
+    final fraction = _isDragging ? _dragFraction : posMs / maxMs; 
 
     final settings = ref.watch(settingsProvider);
     if (settings.graphicsQuality == GraphicsQuality.low) {
@@ -134,8 +159,22 @@ class _WavySeekBarState extends ConsumerState<WavySeekBar> with SingleTickerProv
               trackShape: const RoundedRectSliderTrackShape(),
             ),
             child: Slider(
-              value: fraction,
+              value: _isDragging ? _dragFraction : fraction,
+              onChangeStart: (val) {
+                setState(() {
+                  _isDragging = true;
+                  _dragFraction = val;
+                });
+              },
               onChanged: (val) {
+                setState(() {
+                  _dragFraction = val;
+                });
+              },
+              onChangeEnd: (val) {
+                setState(() {
+                  _isDragging = false;
+                });
                 if (widget.onSeek != null) {
                   final newPos = Duration(milliseconds: (maxMs * val).round());
                   widget.onSeek!(newPos);
@@ -170,8 +209,10 @@ class _WavySeekBarState extends ConsumerState<WavySeekBar> with SingleTickerProv
           final width = constraints.maxWidth; 
           return GestureDetector(
             behavior: HitTestBehavior.opaque, 
-            onHorizontalDragUpdate: (details) => _handleSeek(details.localPosition, width),
-            onTapDown: (details) => _handleSeek(details.localPosition, width),
+            onHorizontalDragStart: (details) => _handleDragStart(details.localPosition, width),
+            onHorizontalDragUpdate: (details) => _handleDragUpdate(details.localPosition, width),
+            onHorizontalDragEnd: (details) => _handleDragEnd(width),
+            onTapDown: (details) => _handleTap(details.localPosition, width),
             child: AnimatedBuilder(
               animation: _waveController, 
               builder: (context, child) {

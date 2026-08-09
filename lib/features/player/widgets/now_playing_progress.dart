@@ -42,9 +42,10 @@ class NowPlayingProgress extends ConsumerWidget {
                 activeColor: accentColor,
                 inactiveColor: context.themeTextColor24,
                 onSeek: (newPos) {
-                  videoProvider.player?.seek(newPos);
                   final settingsProv = ref.read(settingsProvider);
-                  if (!settingsProv.useVideoAudioSource) {
+                  if (settingsProv.useVideoAudioSource) {
+                    videoProvider.player?.seek(newPos);
+                  } else {
                     ref.read(audioPlayerProvider.notifier).seek(newPos);
                   }
                 },
