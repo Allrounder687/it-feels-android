@@ -1,5 +1,14 @@
 ## v3.5.29+63
 - **Windows Build Fix**: Fixed C2338 coroutine deprecation static assertion error on Windows by defining `_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS` in CMake for MSVC 14.41+.
+- **Windows MSIX Installer & Auto-Update Architecture**:
+  - Replaced basic NSIS installer with production-grade MSIX packaging via the `msix` pub package.
+  - Windows App Installer `.appinstaller` manifests enable silent background auto-updates with on-launch checking, rollback protection via `ForceUpdateFromAnyVersion`, and differential (block-level SHA-256) downloads.
+  - Per-user installation (no admin/UAC required) with sandboxed `%LOCALAPPDATA%\Packages\` data preservation across updates.
+  - Stable and beta channel support via separate `.appinstaller` templates with isolated `identity_name` values.
+  - Optional SignPath Foundation HSM code signing integration in CI — gracefully falls back to unsigned MSIX if secrets are not configured.
+  - GitHub Release artifacts: signed `.msix`, unsigned dev `.msix`, `.appinstaller` manifest, and `SHA256SUMS-windows.txt`.
+  - Platform-aware `ConfigService` now fetches Firestore `client_config/windows` document on Windows.
+  - `ForceUpdateScreen` launches native `ms-appinstaller:` protocol on Windows instead of downloading APKs.
 
 ## v3.5.28+62
 - **Windows Desktop Resiliency & Premium UI**:

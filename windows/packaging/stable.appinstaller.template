@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AppInstaller
+    xmlns="http://schemas.microsoft.com/appx/appinstaller/2018"
+    xmlns:s4="http://schemas.microsoft.com/appx/appinstaller/2021"
+    Uri="https://github.com/Allrounder687/it-feels-android/releases/latest/download/ItFeels.appinstaller"
+    Version="{{VERSION}}">
+
+    <MainPackage
+        Name="com.allrounder687.itfeels"
+        Publisher="{{PUBLISHER}}"
+        Version="{{VERSION}}"
+        Uri="https://github.com/Allrounder687/it-feels-android/releases/download/{{TAG}}/ItFeels-Windows-x64.msix"
+        ProcessorArchitecture="x64" />
+
+    <UpdateSettings>
+        <!-- Check for updates every time the app launches -->
+        <OnLaunch HoursBetweenUpdateChecks="0" ShowPrompt="true" UpdateBlocksActivation="false" />
+        <!-- Silent OS-level background polling (~every 8 hours) -->
+        <s4:AutomaticBackgroundTask />
+        <!-- Allow version rollback for emergency patches -->
+        <s4:ForceUpdateFromAnyVersion>true</s4:ForceUpdateFromAnyVersion>
+    </UpdateSettings>
+</AppInstaller>

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -9,6 +10,7 @@ class AppConfig {
   final String updateUrl;
   final String? releaseNotes;
   final String? iosUpdateUrl;
+  final String? windowsUpdateUrl;
 
   AppConfig({
     required this.minVersion,
@@ -17,6 +19,7 @@ class AppConfig {
     required this.updateUrl,
     this.releaseNotes,
     this.iosUpdateUrl,
+    this.windowsUpdateUrl,
   });
 
   factory AppConfig.fromMap(Map<String, dynamic> data) {
@@ -27,14 +30,21 @@ class AppConfig {
       updateUrl: data['update_url'] ?? '',
       releaseNotes: data['release_notes'],
       iosUpdateUrl: data['ios_update_url'],
+      windowsUpdateUrl: data['windows_update_url'],
     );
   }
 }
 
 class ConfigService {
+  static String get _platformConfigDoc {
+    if (!kIsWeb && Platform.isWindows) return 'windows';
+    if (!kIsWeb && Platform.isIOS) return 'ios';
+    return 'android';
+  }
+
   static Future<AppConfig?> fetchRemoteConfig() async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('client_config').doc('android').get();
+      final doc = await FirebaseFirestore.instance.collection('client_config').doc(_platformConfigDoc).get();
       if (doc.exists && doc.data() != null) {
         return AppConfig.fromMap(doc.data()!);
       }

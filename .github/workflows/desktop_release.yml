@@ -7,8 +7,8 @@ on:
       - 'desktop-v*'
 
 jobs:
-  build-windows:
-    name: Build Windows Release
+  build-windows-msix:
+    name: Build Windows MSIX
     runs-on: windows-latest
     permissions:
       contents: write
@@ -31,51 +31,114 @@ jobs:
           flutter config --enable-windows-desktop
           flutter pub get
 
-      - name: Build Windows
+      - name: Extract Version Quadruplet
+        id: version
+        shell: powershell
+        run: |
+          $raw = (Get-Content pubspec.yaml | Select-String "^version:").Line.Split(" ")[1].Trim()
+          $semver = $raw.Split("+")[0]
+          $quad = "$semver.0"
+          $tag = "${{ github.ref_name }}"
+          Write-Output "QUAD_VERSION=$quad" >> $env:GITHUB_OUTPUT
+          Write-Output "SEMVER=$semver" >> $env:GITHUB_OUTPUT
+          Write-Output "TAG=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Build Windows Release
         run: flutter build windows --release
 
-      - name: Install NSIS
-        run: choco install nsis
+      - name: Build Unsigned MSIX
+        run: >
+          dart run msix:create
+          --pack-only
+          --no-sign
+          --version ${{ steps.version.outputs.QUAD_VERSION }}
+          --output-name ItFeels-Windows-x64
 
-      - name: Build NSIS Installer
+      - name: Copy Unsigned MSIX for Dev Artifact
+        shell: powershell
         run: |
-          $nsi = @"
-          Name "IT Feels"
-          OutFile "it-feels-windows-${{ github.ref_name }}-setup.exe"
-          InstallDir "`$PROGRAMFILES\IT Feels"
-          RequestExecutionLevel admin
-          
-          Page directory
-          Page instfiles
-          
-          UninstPage uninstConfirm
-          UninstPage instfiles
-          
-          Section "Install"
-            SetOutPath "`$INSTDIR"
-            File /r "build\windows\x64\runner\Release\*"
-            
-            WriteUninstaller "`$INSTDIR\uninstall.exe"
-            
-            CreateShortcut "`$DESKTOP\IT Feels.lnk" "`$INSTDIR\it_feels_music.exe"
-            CreateDirectory "`$SMPROGRAMS\IT Feels"
-            CreateShortcut "`$SMPROGRAMS\IT Feels\IT Feels.lnk" "`$INSTDIR\it_feels_music.exe"
-            CreateShortcut "`$SMPROGRAMS\IT Feels\Uninstall IT Feels.lnk" "`$INSTDIR\uninstall.exe"
-          SectionEnd
-          
-          Section "Uninstall"
-            RMDir /r "`$INSTDIR"
-            Delete "`$DESKTOP\IT Feels.lnk"
-            RMDir /r "`$SMPROGRAMS\IT Feels"
-          SectionEnd
-          "@
-          Set-Content -Path installer.nsi -Value $nsi
-          makensis installer.nsi
+          Copy-Item "build\msix\ItFeels-Windows-x64.msix" "ItFeels-Windows-x64-unsigned.msix"
 
+      # --- Optional SignPath Foundation Signing ---
+      - name: Upload Unsigned MSIX for Signing
+        if: env.SIGNPATH_API_TOKEN != ''
+        id: upload-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-msix
+          path: build/msix/ItFeels-Windows-x64.msix
+
+      - name: Submit to SignPath Foundation
+        if: env.SIGNPATH_API_TOKEN != ''
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: '${{ secrets.SIGNPATH_ORG_ID }}'
+          project-slug: 'it-feels-android'
+          signing-policy-slug: 'release-signing'
+          github-artifact-id: '${{ steps.upload-unsigned.outputs.artifact-id }}'
+          wait-for-completion: true
+          output-artifact-directory: 'signed-output'
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+
+      # --- Prepare Final MSIX (signed or unsigned) ---
+      - name: Resolve Final MSIX
+        shell: powershell
+        run: |
+          if (Test-Path "signed-output\ItFeels-Windows-x64.msix") {
+            Write-Host "Using SignPath-signed MSIX"
+            Copy-Item "signed-output\ItFeels-Windows-x64.msix" "ItFeels-Windows-x64.msix"
+            $publisher = "CN=SignPath Foundation, O=SignPath Foundation, C=AT"
+          } else {
+            Write-Host "Using unsigned MSIX (no signing secret configured)"
+            Copy-Item "build\msix\ItFeels-Windows-x64.msix" "ItFeels-Windows-x64.msix"
+            $publisher = "CN=Allrounder687, O=Allrounder687, C=US"
+          }
+          Write-Output "PUBLISHER=$publisher" >> $env:GITHUB_ENV
+
+      # --- Generate .appinstaller for Auto-Updates ---
+      - name: Generate AppInstaller Manifest
+        shell: powershell
+        run: |
+          $ver = "${{ steps.version.outputs.QUAD_VERSION }}"
+          $tag = "${{ steps.version.outputs.TAG }}"
+          $pub = $env:PUBLISHER
+
+          $template = Get-Content "windows\packaging\stable.appinstaller.template" -Raw
+          $xml = $template `
+            -replace '\{\{VERSION\}\}', $ver `
+            -replace '\{\{TAG\}\}', $tag `
+            -replace '\{\{PUBLISHER\}\}', $pub
+          Set-Content -Path "ItFeels.appinstaller" -Value $xml -Encoding UTF8
+
+      # --- SHA-256 Checksums ---
+      - name: Generate SHA-256 Checksums
+        shell: powershell
+        run: |
+          $files = @(
+            "ItFeels-Windows-x64.msix",
+            "ItFeels-Windows-x64-unsigned.msix",
+            "ItFeels.appinstaller"
+          )
+          $checksums = @()
+          foreach ($f in $files) {
+            if (Test-Path $f) {
+              $hash = (Get-FileHash $f -Algorithm SHA256).Hash
+              $checksums += "$hash  $f"
+            }
+          }
+          $checksums | Set-Content -Path "SHA256SUMS-windows.txt"
+
+      # --- Upload to GitHub Release ---
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: it-feels-windows-${{ github.ref_name }}-setup.exe
+          files: |
+            ItFeels-Windows-x64.msix
+            ItFeels-Windows-x64-unsigned.msix
+            ItFeels.appinstaller
+            SHA256SUMS-windows.txt
           generate_release_notes: false
 
   build-macos:

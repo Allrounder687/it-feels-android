@@ -47,6 +47,18 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
       return;
     }
 
+    // Windows: Launch ms-appinstaller protocol for MSIX auto-update
+    if (Platform.isWindows) {
+      final appInstallerUrl = 'ms-appinstaller:?source=${Uri.encodeComponent(widget.updateUrl)}';
+      try {
+        await launchUrl(Uri.parse(appInstallerUrl));
+      } catch (e) {
+        // Fallback: open GitHub releases page in browser
+        await launchUrl(Uri.parse(widget.updateUrl), mode: LaunchMode.externalApplication);
+      }
+      return;
+    }
+
     setState(() {
       _isDownloading = true;
       _progress = 0.0;
@@ -243,6 +255,42 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                       child: Text(
                         "Download IPA (Safari)",
                         style: GoogleFonts.inter(fontSize: 16, color: Colors.white70, decoration: TextDecoration.underline),
+                      ),
+                    ),
+                  ],
+                )
+              else if (Platform.isWindows)
+                Column(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: _downloadAndInstall,
+                      icon: const Icon(Icons.system_update_alt_rounded),
+                      label: Text(
+                        "Update via App Installer",
+                        style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.midnightAccent,
+                        foregroundColor: Colors.black,
+                        minimumSize: const Size(double.infinity, 56),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: () => launchUrl(
+                        Uri.parse(widget.updateUrl),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      child: Text(
+                        "Download from GitHub",
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          color: Colors.white70,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     ),
                   ],

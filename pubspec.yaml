@@ -123,6 +123,7 @@ dev_dependencies:
   isar_generator: ^3.1.0+1
   flutter_launcher_icons: ^0.14.4
   fake_cloud_firestore: ^4.2.0
+  msix: ^3.16.7
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -185,6 +186,19 @@ flutter_launcher_icons:
   image_path: "assets/icon.png"
   adaptive_icon_background: "#090D16"
   adaptive_icon_foreground: "assets/icon.png"
+
+msix_config:
+  display_name: IT Feels Music
+  publisher_display_name: Allrounder687
+  identity_name: com.allrounder687.itfeels
+  publisher: CN=Allrounder687, O=Allrounder687, C=US
+  logo_path: assets/icon.png
+  executable_name: it_feels_music.exe
+  architecture: x64
+  capabilities: internetClient
+  protocol_activation: itfeels
+  store: false
+  install_certificate: false
 
 dependency_overrides:
   flutter_rust_bridge: 2.11.1

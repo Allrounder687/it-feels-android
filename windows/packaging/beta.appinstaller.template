@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AppInstaller
+    xmlns="http://schemas.microsoft.com/appx/appinstaller/2018"
+    xmlns:s4="http://schemas.microsoft.com/appx/appinstaller/2021"
+    Uri="https://github.com/Allrounder687/it-feels-android/releases/latest/download/ItFeels-Beta.appinstaller"
+    Version="{{VERSION}}">
+
+    <MainPackage
+        Name="com.allrounder687.itfeels.beta"
+        Publisher="{{PUBLISHER}}"
+        Version="{{VERSION}}"
+        Uri="https://github.com/Allrounder687/it-feels-android/releases/download/{{TAG}}/ItFeels-Windows-x64-Beta.msix"
+        ProcessorArchitecture="x64" />
+
+    <UpdateSettings>
+        <OnLaunch HoursBetweenUpdateChecks="0" ShowPrompt="true" UpdateBlocksActivation="false" />
+        <s4:AutomaticBackgroundTask />
+        <s4:ForceUpdateFromAnyVersion>true</s4:ForceUpdateFromAnyVersion>
+    </UpdateSettings>
+</AppInstaller>
