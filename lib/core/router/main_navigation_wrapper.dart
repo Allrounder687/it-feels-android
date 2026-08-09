@@ -429,10 +429,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                                   final child = Container(
                                     width: 90,
                                     decoration: BoxDecoration(
-                                      color: kDebugMode
-                                          ? context.themeSurfaceColor
-                                          : context.themeSurfaceColor
-                                                .withValues(alpha: 0.7),
+                                      color: Colors.transparent,
                                       borderRadius: const BorderRadius.horizontal(right: Radius.circular(16)),
                                       border: Border(
                                         right: BorderSide(
