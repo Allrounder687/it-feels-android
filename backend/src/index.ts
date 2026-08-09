@@ -20,7 +20,13 @@ type Bindings = {
   RAZORPAY_KEY_SECRET?: string;
   LASTFM_API_KEY?: string;
   LASTFM_SHARED_SECRET?: string;
+  SPOTIFY_CLIENT_ID?: string;
+  SPOTIFY_CLIENT_SECRET?: string;
 };
+
+// Spotify Token Cache (per isolate)
+let cachedSpotifyToken: string | null = null;
+let spotifyTokenExpiry = 0; // Unix timestamp in ms
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -91,6 +97,53 @@ app.get('/health', (c) => {
     ageRestrictionBypass: true,
     timestamp: new Date().toISOString(),
   });
+});
+
+// Spotify Token Endpoint
+app.get('/spotify/token', async (c) => {
+  const clientId = c.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = c.env.SPOTIFY_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    return c.json({ error: 'Spotify credentials not configured on the server' }, 500);
+  }
+
+  const now = Date.now();
+
+  // Check if token is cached and valid (expires in > 60 seconds)
+  if (cachedSpotifyToken && (spotifyTokenExpiry - now > 60000)) {
+    return c.json({ 
+      access_token: cachedSpotifyToken, 
+      expires_in: Math.floor((spotifyTokenExpiry - now) / 1000) 
+    });
+  }
+
+  try {
+    const response = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic ' + btoa(`${clientId}:${clientSecret}`)
+      },
+      body: 'grant_type=client_credentials'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Spotify API error: ${response.status}`);
+    }
+
+    const data = await response.json() as any;
+    cachedSpotifyToken = data.access_token;
+    spotifyTokenExpiry = now + (data.expires_in * 1000);
+
+    return c.json({ 
+      access_token: cachedSpotifyToken, 
+      expires_in: data.expires_in 
+    });
+  } catch (error: any) {
+    console.error('Error fetching Spotify token:', error);
+    return c.json({ error: 'Failed to fetch Spotify token', details: error.message }, 500);
+  }
 });
 
 // Last.fm Integration
