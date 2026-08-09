@@ -34,13 +34,48 @@ jobs:
       - name: Build Windows
         run: flutter build windows --release
 
-      - name: Zip Release
-        run: Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath it-feels-windows-${{ github.ref_name }}.zip
+      - name: Install NSIS
+        run: choco install nsis
+
+      - name: Build NSIS Installer
+        run: |
+          $nsi = @"
+          Name "IT Feels"
+          OutFile "it-feels-windows-${{ github.ref_name }}-setup.exe"
+          InstallDir "`$PROGRAMFILES\IT Feels"
+          RequestExecutionLevel admin
+          
+          Page directory
+          Page instfiles
+          
+          UninstPage uninstConfirm
+          UninstPage instfiles
+          
+          Section "Install"
+            SetOutPath "`$INSTDIR"
+            File /r "build\windows\x64\runner\Release\*"
+            
+            WriteUninstaller "`$INSTDIR\uninstall.exe"
+            
+            CreateShortcut "`$DESKTOP\IT Feels.lnk" "`$INSTDIR\it_feels_music.exe"
+            CreateDirectory "`$SMPROGRAMS\IT Feels"
+            CreateShortcut "`$SMPROGRAMS\IT Feels\IT Feels.lnk" "`$INSTDIR\it_feels_music.exe"
+            CreateShortcut "`$SMPROGRAMS\IT Feels\Uninstall IT Feels.lnk" "`$INSTDIR\uninstall.exe"
+          SectionEnd
+          
+          Section "Uninstall"
+            RMDir /r "`$INSTDIR"
+            Delete "`$DESKTOP\IT Feels.lnk"
+            RMDir /r "`$SMPROGRAMS\IT Feels"
+          SectionEnd
+          "@
+          Set-Content -Path installer.nsi -Value $nsi
+          makensis installer.nsi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: it-feels-windows-${{ github.ref_name }}.zip
+          files: it-feels-windows-${{ github.ref_name }}-setup.exe
           generate_release_notes: false
 
   build-macos:
@@ -70,14 +105,23 @@ jobs:
       - name: Build MacOS
         run: flutter build macos --release
 
-      - name: Zip Release
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG
         run: |
           cd build/macos/Build/Products/Release
-          zip -r ../../../../../it-feels-macos-${{ github.ref_name }}.zip *.app
-          cd ../../../../..
+          create-dmg \
+            --volname "IT Feels" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --app-drop-link 450 190 \
+            "../../../../../it-feels-macos-${{ github.ref_name }}.dmg" \
+            "it_feels_music.app"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: it-feels-macos-${{ github.ref_name }}.zip
+          files: it-feels-macos-${{ github.ref_name }}.dmg
           generate_release_notes: false
