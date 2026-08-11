@@ -11,6 +11,7 @@ class TVFocusableCard extends StatefulWidget {
   final VoidCallback? onLongPress;
   final bool autofocus;
   final double focusedScale;
+  final double borderRadius;
 
   const TVFocusableCard({
     super.key,
@@ -19,6 +20,7 @@ class TVFocusableCard extends StatefulWidget {
     this.onLongPress,
     this.autofocus = false,
     this.focusedScale = 1.05,
+    this.borderRadius = 12.0,
   });
 
   @override
@@ -90,7 +92,7 @@ class _TVFocusableCardState extends State<TVFocusableCard> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(widget.borderRadius),
                     border: showOutline
                         ? Border.all(color: AppColors.midnightAccent, width: 3)
                         : Border.all(color: Colors.transparent, width: 3),
@@ -108,7 +110,7 @@ class _TVFocusableCardState extends State<TVFocusableCard> {
                         : [],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(9), // slightly less than 12 to fit inside border
+                    borderRadius: BorderRadius.circular(widget.borderRadius > 3 ? widget.borderRadius - 3 : widget.borderRadius),
                     child: widget.child,
                   ),
                 ),

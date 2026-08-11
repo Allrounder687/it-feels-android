@@ -100,11 +100,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           .read(audioPlayerProvider.notifier)
           .playSong(heroSong, queue: [heroSong], index: 0),
       focusedScale: 1.02,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: ShaderMask(
+        shaderCallback: (rect) {
+          return const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.black, Colors.black, Colors.transparent],
+            stops: [0.0, 0.85, 1.0],
+          ).createShader(rect);
+        },
+        blendMode: BlendMode.dstIn,
+        child: Container(
+          margin: EdgeInsets.only(bottom: 16, top: isWide ? 0 : 16, left: isWide ? 0 : 20, right: isWide ? 0 : 20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
+          borderRadius: isWide ? BorderRadius.zero : BorderRadius.circular(24),
+          boxShadow: isWide ? null : [
             BoxShadow(
               color: context.themeInvertedTextColor.withValues(alpha: 0.15),
               blurRadius: 20,
@@ -113,7 +123,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: isWide ? BorderRadius.zero : BorderRadius.circular(24),
           child: Stack(
             children: [
               Positioned.fill(
@@ -237,6 +247,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ), // Stack
         ), // ClipRRect
       ), // Container
+      ), // ShaderMask
     );
   }
 
@@ -256,12 +267,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       sliver: SliverGrid(
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: MediaQuery.of(context).size.width >= 1200
-              ? 4
-              : MediaQuery.of(context).size.width >= 800
-              ? 3
-              : 2,
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 360,
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
           mainAxisExtent: 64,
@@ -589,11 +596,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 40, bottom: 16),
             child: Text(
               title,
               style: AppTypography.outfitExtraBold.copyWith(
-                fontSize: 22,
+                fontSize: 26,
                 color: context.themeTextColor,
               ),
             ),
@@ -824,14 +831,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 40, bottom: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   title,
                   style: GoogleFonts.outfit(
-                    fontSize: 22,
+                    fontSize: 26,
                     fontWeight: FontWeight.w800,
                     color: context.themeTextColor,
                   ),
@@ -866,14 +873,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             builder: (context, constraints) {
               final screenWidth = MediaQuery.of(context).size.width;
               final isWide = screenWidth >= 600;
-              final crossAxisCount = isWide ? 4 : 3;
-              final carouselHeight = isWide ? 290.0 : 220.0;
+              final crossAxisCount = isWide ? 2 : 3;
+              final carouselHeight = isWide ? 150.0 : 220.0;
 
               // In a horizontal GridView:
               // crossAxis is vertical (height), mainAxis is horizontal (width).
               // We want each item to be wide enough to take up most of the screen on mobile,
               // but constrained to a reasonable max width on tablets so they don't stretch into strips.
-              final itemWidth = isWide ? 260.0 : (screenWidth * 0.85);
+              final itemWidth = isWide ? (screenWidth > 1200 ? 380.0 : 320.0) : (screenWidth * 0.85);
 
               // Calculate effective row height
               // crossAxisSpacing is the vertical spacing between rows (12.0)

@@ -5,6 +5,11 @@
 - **Library Discovery Improvements**:
   - **Deezer Playlist Native Resolution**: Added a robust interceptor in `PlaylistDetailScreen` to natively load full tracklists for Deezer playlists instead of returning 0 tracks via Saavn.
   - **Personalized 'For You' Aesthetic**: Overhauled `home_provider.dart` to mask technical library IDs with premium, curated shelf titles (e.g. "Made For You", "Fresh Finds").
+- **UI Polish & Gesture Controls**:
+  - **Desktop Navigation Redesign**: Shrunk the desktop sidebar default width to a sleek 0px to 90px hidden state, and fully wired the title bar pin button to fluidly expand it to a full 240px with text labels. Fixed hardcoded container clipping to properly restore perfectly rounded 'Stadium' edges on hover states.
+  - **Video Fullscreen Pinch**: Added multi-touch `ScaleUpdate` gesture detection in `VideoPlayerScreen` that seamlessly detects two-finger outwards pinches to trigger fullscreen video mode natively, without losing one-finger vertical swipe controls.
+  - **Desktop AV Handoff Layout**: Locked the main audio `MiniPlayer` to stay persistently visible at the bottom of the screen during desktop video playback, providing a reliable master control surface below the floating `VideoMiniplayer` PiP.
+  - **App Brand Identity**: Completely updated and re-generated all launcher icons across Android, iOS, Windows, macOS, and Web to the latest branding.
 
 ## v3.5.33+67
 - **AV Sync & Video UX Polish**:

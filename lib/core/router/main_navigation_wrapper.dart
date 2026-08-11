@@ -358,9 +358,12 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
         !ref.watch(settingsProvider.select((s) => s.useVideoAudioSource)) &&
         isSameSong;
 
-    final bool showAudioMiniPlayer =
-        activeMediaType == ActiveMediaType.audio ||
-        (activeMediaType == ActiveMediaType.video && isMutedCanvas);
+    final isWide = MediaQuery.of(context).size.width > 600;
+    final bool showAudioMiniPlayer = isWide 
+        ? activeMediaType != ActiveMediaType.none
+        : (activeMediaType == ActiveMediaType.audio ||
+          (activeMediaType == ActiveMediaType.video && isMutedCanvas));
+          
     final bool showVideoPiP =
         activeMediaType == ActiveMediaType.video && !isMutedCanvas;
 
@@ -424,10 +427,14 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                             right: false,
                             child: ClipRRect(
                               borderRadius: const BorderRadius.horizontal(right: Radius.circular(16)),
-                              child: Builder(
-                                builder: (context) {
-                                  final child = Container(
-                                    width: 90,
+                              child: Consumer(
+                                builder: (context, ref, child) {
+                                  final isSidebarPinned = ref.watch(sidebarPinnedProvider);
+                                  
+                                  return AnimatedContainer(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOutCubic,
+                                    width: isSidebarPinned ? 90 : 0,
                                     decoration: BoxDecoration(
                                       color: Colors.transparent,
                                       borderRadius: const BorderRadius.horizontal(right: Radius.circular(16)),
@@ -442,63 +449,66 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                                       child: SingleChildScrollView(
                                         physics: const BouncingScrollPhysics(),
                                         child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.center,
                                           children: [
-                                            const SizedBox(height: 12),
+                                            const SizedBox(height: 24),
                                             _buildNavItem(
                                               0,
                                               Icons.home_rounded,
                                               "Home",
                                               isVertical: true,
+                                              hideLabel: true,
                                             ),
-                                            const SizedBox(height: 24),
+                                            const SizedBox(height: 12),
                                             _buildNavItem(
                                               1,
                                               Icons.search_rounded,
                                               "Search",
                                               isVertical: true,
+                                              hideLabel: true,
                                             ),
-                                            const SizedBox(height: 24),
+                                            const SizedBox(height: 12),
                                             _buildNavItem(
                                               2,
                                               Icons.library_music_rounded,
                                               "Library",
                                               isVertical: true,
+                                              hideLabel: true,
                                             ),
-                                            const SizedBox(height: 24),
+                                            const SizedBox(height: 12),
                                             if (enableVideos) ...[
                                               _buildNavItem(
                                                 3,
                                                 Icons.video_library_rounded,
                                                 "Videos",
                                                 isVertical: true,
+                                                hideLabel: true,
                                               ),
-                                              const SizedBox(height: 24),
+                                              const SizedBox(height: 12),
                                             ],
                                             _buildNavItem(
                                               4,
                                               Icons.people_rounded,
                                               "Social",
                                               isVertical: true,
+                                              hideLabel: true,
                                             ),
-                                            const SizedBox(height: 24),
+                                            const SizedBox(height: 12),
                                             _buildNavItem(
                                               5,
                                               Icons.settings_outlined,
                                               "Settings",
                                               isVertical: true,
+                                              hideLabel: true,
                                               hasUpdate: ref.watch(
                                                 shorebirdUpdatePendingProvider,
                                               ),
                                             ),
-                                            const SizedBox(height: 12),
                                           ],
                                         ),
                                       ),
                                     ),
                                   );
-                                  return child;
                                 },
                               ),
                             ),
@@ -618,46 +628,46 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                                             mainAxisAlignment:
                                                 MainAxisAlignment.spaceAround,
                                             children: [
-                                              _buildNavItem(
+                                              Expanded(child: _buildNavItem(
                                                 0,
                                                 Icons.home_rounded,
                                                 "Home",
                                                 hideLabel: isNarrowScreen,
-                                              ),
-                                              _buildNavItem(
+                                              )),
+                                              Expanded(child: _buildNavItem(
                                                 1,
                                                 Icons.search_rounded,
                                                 "Search",
                                                 hideLabel: isNarrowScreen,
-                                              ),
-                                              _buildNavItem(
+                                              )),
+                                              Expanded(child: _buildNavItem(
                                                 2,
                                                 Icons.library_music_rounded,
                                                 "Library",
                                                 hideLabel: isNarrowScreen,
-                                              ),
+                                              )),
                                               if (enableVideos)
-                                                _buildNavItem(
+                                                Expanded(child: _buildNavItem(
                                                   3,
                                                   Icons.video_library_rounded,
                                                   "Videos",
                                                   hideLabel: isNarrowScreen,
-                                                ),
-                                              _buildNavItem(
-                                                4,
+                                                )),
+                                              Expanded(child: _buildNavItem(
+                                                enableVideos ? 4 : 3,
                                                 Icons.people_rounded,
                                                 "Social",
                                                 hideLabel: isNarrowScreen,
-                                              ),
-                                              _buildNavItem(
-                                                5,
+                                              )),
+                                              Expanded(child: _buildNavItem(
+                                                enableVideos ? 5 : 4,
                                                 Icons.settings_outlined,
                                                 "Settings",
                                                 hideLabel: isNarrowScreen,
                                                 hasUpdate: ref.watch(
                                                   shorebirdUpdatePendingProvider,
                                                 ),
-                                              ),
+                                              )),
                                             ],
                                           ),
                                         );
@@ -795,7 +805,6 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                           ],
                         )
                       : Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             label == "Social"
                                 ? Consumer(
@@ -828,17 +837,19 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                                         : context.themeMutedTextColor,
                                     size: 26,
                                   ),
-                            if (isSelected && !hideLabel) ...[
-                              const SizedBox(width: 6),
+                            if (!hideLabel) ...[
+                              const SizedBox(width: 16),
                               Flexible(
                                 child: Text(
                                   label,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
-                                    color: context.themeNavPillTextColor,
+                                    color: isSelected
+                                        ? context.themeNavPillTextColor
+                                        : context.themeMutedTextColor,
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 11.5,
+                                    fontSize: 15,
                                   ),
                                 ),
                               ),
@@ -867,7 +878,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                 ],
               ),
         );
-        return isVertical ? content : Expanded(child: content);
+        return content;
       },
     );
   }
@@ -905,6 +916,7 @@ class _HoverNavItemState extends State<_HoverNavItem> {
       cursor: SystemMouseCursors.click,
       child: TVFocusableCard(
         onTap: widget.onTap,
+        borderRadius: 20,
         child: Center(
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 250),

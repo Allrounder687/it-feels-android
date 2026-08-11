@@ -1,39 +1,28 @@
-!define APPNAME "It Feels Music"
-!define COMPANYNAME "Kreo"
-!define DESCRIPTION "A premium music application"
-!define EXENAME "it_feels_music.exe"
-!define VERSION "3.5.27"
-
-Name "${APPNAME}"
-OutFile "ItFeelsMusic_Setup.exe"
-InstallDir "$PROGRAMFILES\${COMPANYNAME}\${APPNAME}"
-
+Name "IT Feels"
+OutFile "it-feels-windows-v3.5.35-setup.exe"
+InstallDir "$PROGRAMFILES\IT Feels"
 RequestExecutionLevel admin
 
 Page directory
 Page instfiles
 
-Section "install"
-    SetOutPath "$INSTDIR"
-    File /r "build\windows\x64\runner\Release\*"
+UninstPage uninstConfirm
+UninstPage instfiles
 
-    WriteUninstaller "$INSTDIR\uninstall.exe"
-    CreateShortcut "$SMPROGRAMS\${APPNAME}.lnk" "$INSTDIR\${EXENAME}"
-    CreateShortcut "$DESKTOP\${APPNAME}.lnk" "$INSTDIR\${EXENAME}"
-    
-    # Registry information for add/remove programs
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME}"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayIcon" "$\"$INSTDIR\${EXENAME}$\""
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "Publisher" "${COMPANYNAME}"
-    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayVersion" "${VERSION}"
+Section "Install"
+  SetOutPath "$INSTDIR"
+  File /r "build\windows\x64\runner\Release\*"
+  
+  WriteUninstaller "$INSTDIR\uninstall.exe"
+  
+  CreateShortcut "$DESKTOP\IT Feels.lnk" "$INSTDIR\it_feels_music.exe"
+  CreateDirectory "$SMPROGRAMS\IT Feels"
+  CreateShortcut "$SMPROGRAMS\IT Feels\IT Feels.lnk" "$INSTDIR\it_feels_music.exe"
+  CreateShortcut "$SMPROGRAMS\IT Feels\Uninstall IT Feels.lnk" "$INSTDIR\uninstall.exe"
 SectionEnd
 
-Section "uninstall"
-    Delete "$INSTDIR\uninstall.exe"
-    Delete "$SMPROGRAMS\${APPNAME}.lnk"
-    Delete "$DESKTOP\${APPNAME}.lnk"
-    RMDir /r "$INSTDIR"
-    
-    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
+Section "Uninstall"
+  RMDir /r "$INSTDIR"
+  Delete "$DESKTOP\IT Feels.lnk"
+  RMDir /r "$SMPROGRAMS\IT Feels"
 SectionEnd

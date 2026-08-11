@@ -36,6 +36,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
   // Variables for gesture tracking
   double? _dragStartX;
   double? _dragStartY;
+  bool _hasToggledFullscreenThisGesture = false;
 
   @override
   void initState() {
@@ -109,19 +110,34 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     }
   }
 
-  void _onVerticalDragStart(DragStartDetails details) {
-    _dragStartX = details.globalPosition.dx;
-    _dragStartY = details.globalPosition.dy;
+  void _onScaleStart(ScaleStartDetails details) {
+    _hasToggledFullscreenThisGesture = false;
+    if (details.pointerCount == 1) {
+      _dragStartX = details.focalPoint.dx;
+      _dragStartY = details.focalPoint.dy;
+    }
   }
 
-  void _onVerticalDragUpdate(
-    DragUpdateDetails details,
+  void _onScaleUpdate(
+    ScaleUpdateDetails details,
     VideoPlayerState provider,
   ) {
+    if (details.pointerCount >= 2) {
+      if (_hasToggledFullscreenThisGesture) return;
+      if (details.scale > 1.2 && !_isFullscreen) {
+        _hasToggledFullscreenThisGesture = true;
+        _toggleFullscreen();
+      } else if (details.scale < 0.8 && _isFullscreen) {
+        _hasToggledFullscreenThisGesture = true;
+        _toggleFullscreen();
+      }
+      return;
+    }
+
     if (_dragStartX == null || _dragStartY == null) return;
 
     final screenWidth = MediaQuery.of(context).size.width;
-    final dy = details.primaryDelta ?? 0;
+    final dy = details.focalPointDelta.dy;
 
     // Negative dy means sliding UP (increase), positive means DOWN (decrease)
     final delta = -(dy / 200.0); // Sensitivity
@@ -135,7 +151,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     }
   }
 
-  void _onVerticalDragEnd(DragEndDetails details) {
+  void _onScaleEnd(ScaleEndDetails details) {
     _dragStartX = null;
     _dragStartY = null;
   }
@@ -247,10 +263,10 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                     .seek(const Duration(seconds: 10));
               }
             },
-            onVerticalDragStart: _onVerticalDragStart,
-            onVerticalDragUpdate: (details) =>
-                _onVerticalDragUpdate(details, videoProvider),
-            onVerticalDragEnd: _onVerticalDragEnd,
+            onScaleStart: _onScaleStart,
+            onScaleUpdate: (details) =>
+                _onScaleUpdate(details, videoProvider),
+            onScaleEnd: _onScaleEnd,
             child: Container(
               color: Colors.transparent,
               child: Center(

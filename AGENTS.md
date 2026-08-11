@@ -7,6 +7,11 @@ This file tracks major technical decisions, features implemented, and architectu
   - **Strict Stream Title Matching**: Hardened the Cloudflare proxy's Saavn fallback loop. It now strictly rejects fuzzy matches if Saavn tries to serve a random track, properly deferring to YouTube for perfect audio extraction.
   - **Deezer Playlist Native Resolution**: Added a robust interceptor in `PlaylistDetailScreen` to natively load full tracklists for Deezer playlists instead of returning 0 tracks via Saavn.
   - **Personalized 'For You' Aesthetic**: Overhauled `home_provider.dart` to mask technical library IDs with premium, curated shelf titles (e.g. "Made For You", "Fresh Finds").
+- **UI Polish & Gesture Controls**:
+  - **Desktop Navigation Redesign**: Shrunk the desktop sidebar default width to a sleek 0px hidden state, and fully wired the title bar pin button to fluidly expand it to a full 240px with text labels. Fixed hardcoded container clipping to properly restore perfectly rounded 'Stadium' edges on hover states.
+  - **Video Fullscreen Pinch**: Added multi-touch `ScaleUpdate` gesture detection in `VideoPlayerScreen` that seamlessly detects two-finger outwards pinches to trigger fullscreen video mode natively, without losing one-finger vertical swipe controls.
+  - **Desktop AV Handoff Layout**: Locked the main audio `MiniPlayer` to stay persistently visible at the bottom of the screen during desktop video playback, providing a reliable master control surface below the floating `VideoMiniplayer` PiP.
+  - **App Brand Identity**: Completely updated and re-generated all launcher icons across Android, iOS, Windows, macOS, and Web to the latest branding.
 - **AV Sync & Video UX Polish (v3.5.33+67):**
   - **Frozen Video Seekbar Fix:** Restored the instant `player.seek(newPos)` in both `WavySeekBar` instances (`now_playing_progress.dart` and `fullscreen_video_screen.dart`), making the video player seek UI perfectly responsive again.
   - **Double-Seek Sync Lockup Fix:** Hardened the `video_player_provider.dart` A/V sync engine. It now checks for `drift > 1000ms` before forcing a slave video seek, safely bypassing the catastrophic double-seek race condition when the UI explicitly scrubs both players simultaneously. 
