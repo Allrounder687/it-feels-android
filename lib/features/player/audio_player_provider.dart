@@ -740,33 +740,35 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         .setActiveMedia(ActiveMediaType.audio);
 
     final user = FirebaseAuth.instance.currentUser;
-    if (user != null &&
-        user.email != null &&
-        !user.emailVerified &&
-        !_hasShownEmailVerification) {
-      _hasShownEmailVerification = true;
-      rootScaffoldMessengerKey.currentState?.clearSnackBars();
-      rootScaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: const Text(
-            'Please verify your email to unlock exclusive features.',
-            style: TextStyle(color: Colors.white),
-          ),
-          backgroundColor: AppColors.midnightPrimary,
-          duration: const Duration(seconds: 4),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          action: SnackBarAction(
-            label: 'Send Link',
-            textColor: Colors.white,
-            onPressed: () {
-              user.sendEmailVerification();
-            },
-          ),
-        ),
-      );
+    if (user != null && user.email != null && !_hasShownEmailVerification) {
+      user.reload().then((_) {
+        final reloadedUser = FirebaseAuth.instance.currentUser;
+        if (reloadedUser != null && !reloadedUser.emailVerified) {
+          _hasShownEmailVerification = true;
+          rootScaffoldMessengerKey.currentState?.clearSnackBars();
+          rootScaffoldMessengerKey.currentState?.showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Please verify your email to unlock exclusive features.',
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: AppColors.midnightPrimary,
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              action: SnackBarAction(
+                label: 'Send Link',
+                textColor: Colors.white,
+                onPressed: () {
+                  reloadedUser.sendEmailVerification();
+                },
+              ),
+            ),
+          );
+        }
+      });
     }
 
     _preloadQueueLyricsAndMedia();

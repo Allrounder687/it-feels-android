@@ -17,7 +17,6 @@ class SubscriptionProvider extends ChangeNotifier {
   
   bool _isPremium = false;
   bool _isLoading = true;
-  StreamSubscription<DocumentSnapshot>? _firestoreSubscription;
 
   bool get isPremium => _isPremium;
   bool get isLoading => _isLoading;
@@ -33,26 +32,8 @@ class SubscriptionProvider extends ChangeNotifier {
     await checkStatus();
     
     FirebaseAuth.instance.authStateChanges().listen((user) async {
-      _firestoreSubscription?.cancel();
       if (user != null) {
         await _service.login(user.uid);
-        
-        // Listen for real-time admin toggles or coupon syncs
-        _firestoreSubscription = FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots().listen((doc) {
-          if (doc.exists) {
-            final data = doc.data();
-            if (data != null && (data['isPremiumFamily'] == true || data['isPremium'] == true)) {
-              if (!_isPremium) {
-                _isPremium = true;
-                notifyListeners();
-              }
-            } else {
-              // Re-check full status if root doc says false (might have a valid entitlement subcollection)
-              checkStatus();
-            }
-          }
-        });
-        
       } else {
         await _service.logout();
       }
@@ -161,7 +142,6 @@ class SubscriptionProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _firestoreSubscription?.cancel();
     _razorpayService.dispose();
     super.dispose();
   }

@@ -97,9 +97,22 @@ class DownloadNotifier extends Notifier<DownloadState> {
   }
 
   Future<void> downloadBatch(List<Song> songs) async {
-    for (final song in songs) {
-      if (!state.isDownloaded(song.id)) {
-        await downloadSong(song);
+    const batchSize = 5;
+    for (int i = 0; i < songs.length; i += batchSize) {
+      final end = (i + batchSize < songs.length) ? i + batchSize : songs.length;
+      final batch = songs.sublist(i, end);
+      
+      for (final song in batch) {
+        if (!state.isDownloaded(song.id)) {
+          await downloadSong(song);
+        }
+      }
+      
+      // Explicitly yield to the event loop after processing a batch.
+      // This allows the Garbage Collector to sweep dead memory and prevents OOM crashes
+      // on budget Android devices when downloading massive playlists.
+      if (end < songs.length) {
+        await Future.delayed(const Duration(milliseconds: 1000));
       }
     }
   }

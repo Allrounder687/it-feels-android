@@ -125,6 +125,50 @@ app.get('/api/v1/listenbrainz/*', async (c) => {
   }
 });
 
+// Premium Verification Endpoint
+app.get('/api/v1/premium/verify', async (c) => {
+  const uid = c.req.query('uid');
+  const authHeader = c.req.header('Authorization');
+  
+  if (!uid || !authHeader) {
+    return c.json({ error: 'Missing uid or Authorization header' }, 400);
+  }
+
+  try {
+    const firestoreUrl = `https://firestore.googleapis.com/v1/projects/it-feels/databases/(default)/documents/users/${uid}`;
+    
+    const response = await fetch(firestoreUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': authHeader,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+         return c.json({ isPremium: false, reason: 'Document not found' });
+      }
+      throw new Error(`Firestore API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // Firestore REST API represents booleans like: { fields: { isPremium: { booleanValue: true } } }
+    const isPremium = data.fields?.isPremium?.booleanValue === true;
+    const isPremiumFamily = data.fields?.isPremiumFamily?.booleanValue === true;
+
+    return c.json({ 
+      isPremium: isPremium || isPremiumFamily,
+      success: true 
+    });
+
+  } catch (error: any) {
+    console.error('Error verifying premium status:', error);
+    return c.json({ error: 'Failed to verify premium status', details: error.message }, 500);
+  }
+});
+
 // Spotify Token Endpoint
 app.get('/spotify/token', async (c) => {
   const clientId = c.env.SPOTIFY_CLIENT_ID;

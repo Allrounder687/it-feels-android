@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:it_feels_music/services/backend_api_service.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -71,31 +73,34 @@ class SubscriptionService {
       }
     }
 
-    // 2. Check Custom Firestore Coupon / Entitlement
+    // 2. Check via Cloudflare Worker (Bypasses unreliable local Firestore cache)
     try {
-      final userDoc = await _firestore.collection('users').doc(uid).get();
-      if (userDoc.exists) {
-        final data = userDoc.data();
-        if (data != null && (data['isPremiumFamily'] == true || data['isPremium'] == true)) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return false;
+      
+      final token = await user.getIdToken(true); // Force refresh to get latest claims if any
+      if (token == null) return false;
+
+      final url = Uri.parse('${BackendApiService.baseUrl}/api/v1/premium/verify?uid=$uid');
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'X-Feels-Secret': dotenv.env['API_SECRET'] ?? '',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['isPremium'] == true) {
           return true;
         }
-      }
-
-      final doc = await _firestore.collection('users').doc(uid).collection('entitlements').doc('premium').get();
-      if (doc.exists) {
-        final data = doc.data();
-        if (data != null && data['isActive'] == true) {
-          final expiry = data['expiresAt'] as Timestamp?;
-          if (expiry == null || expiry.toDate().isAfter(DateTime.now())) {
-            return true;
-          }
-        }
+      } else {
+        debugPrint("Cloudflare Premium Verification failed: ${response.body}");
       }
     } catch (e) {
-      debugPrint("Firestore Entitlement Error: $e");
+      debugPrint("Cloudflare Premium Check Error: $e");
     }
-
-
 
     return false;
   }

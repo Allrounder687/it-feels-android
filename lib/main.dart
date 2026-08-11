@@ -234,7 +234,8 @@ Future<void> main(List<String> args) async {
     if (Platform.isWindows) {
       await windowManager.setPreventClose(true);
       
-      await trayManager.setIcon('assets/images/icon.png');
+      await trayManager.setIcon('assets/images/icon.ico');
+      await trayManager.setToolTip('IT Feels Music');
 
       Menu menu = Menu(
         items: [

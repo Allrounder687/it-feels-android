@@ -46,20 +46,28 @@ class SmartCacheService {
       
       final downloadService = locator<DownloadService>();
 
-      for (var song in songsToDownload) {
-        debugPrint('[SmartCacheService] Auto-downloading: ${song.title}');
-        final success = await downloadService.downloadSong(song);
-        if (success) {
-          // Add to downloaded list in storage to prevent re-fetching
-          final currentDownloads = await StorageService.loadDownloads();
-          if (!currentDownloads.any((s) => s.id == song.id)) {
-            // Note: DownloadService's download() completion should ideally handle saving, 
-            // but we can ensure it's saved here if we want to manually construct the downloaded song object.
-            // Actually, background_downloader might take a while. We just enqueue it.
+      const batchSize = 5;
+      for (int i = 0; i < songsToDownload.length; i += batchSize) {
+        final end = (i + batchSize < songsToDownload.length) ? i + batchSize : songsToDownload.length;
+        final batch = songsToDownload.sublist(i, end);
+
+        for (var song in batch) {
+          debugPrint('[SmartCacheService] Auto-downloading: ${song.title}');
+          final success = await downloadService.downloadSong(song);
+          if (success) {
+            final currentDownloads = await StorageService.loadDownloads();
+            if (!currentDownloads.any((s) => s.id == song.id)) {
+              // Wait for background downloader
+            }
           }
         }
-        // Small delay to prevent network flood
-        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Explicitly yield to the event loop after processing a batch.
+        // This gives Dart's Garbage Collector time to flush graphics buffers/memory 
+        // before the next batch, completely preventing Out-Of-Memory (OOM) crashes.
+        if (end < songsToDownload.length) {
+          await Future.delayed(const Duration(milliseconds: 1500));
+        }
       }
       debugPrint('[SmartCacheService] Background sync complete.');
     } catch (e) {

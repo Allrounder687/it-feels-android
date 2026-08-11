@@ -4,6 +4,7 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'dart:ui';
@@ -303,27 +304,9 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton.icon(
-              icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
-              label: const Text("Invite Friends 👥"),
+              icon: const Icon(Icons.person_add_alt_1_rounded, size: 16),
+              label: const Text("Invite"),
               onPressed: () => _showInviteFriendsDialog(context, roomId),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.amberAccent,
-                foregroundColor: Colors.black,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.link_rounded, size: 20),
-              label: const Text("Share Link"),
-              onPressed: () {
-                Share.share(
-                  'Join my active listening room on It Feels Music: $roomId \n\nhttps://itfeelsmusic.app/room/$roomId',
-                  subject: 'Listen Together Invite',
-                );
-              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white.withValues(alpha: 0.2),
                 foregroundColor: Colors.white,
@@ -333,6 +316,34 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
               ),
             ),
             const SizedBox(width: 8),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.chat_bubble_rounded, size: 16),
+              label: const Text("WhatsApp"),
+              onPressed: () async {
+                final currentSong = ref.read(audioPlayerProvider).currentSong;
+                final songName = currentSong?.title ?? "music";
+                final text = Uri.encodeComponent('Come listen to $songName with me live on IT-Feels! \n\nhttps://itfeelsmusic.app/room/$roomId');
+                final whatsappUrl = Uri.parse('whatsapp://send?text=$text');
+                
+                if (await canLaunchUrl(whatsappUrl)) {
+                  await launchUrl(whatsappUrl);
+                } else {
+                  Share.share(
+                    'Join my active listening room on It Feels Music: $roomId \n\nhttps://itfeelsmusic.app/room/$roomId',
+                    subject: 'Listen Together Invite',
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.greenAccent.shade400,
+                foregroundColor: Colors.black,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(width: 8),
+
             ElevatedButton(
               onPressed: () {
                 ref.read(audioPlayerProvider.notifier).leaveSession();

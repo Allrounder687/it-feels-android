@@ -4,7 +4,7 @@
 A premium, modern Flutter Android music application built with the design aesthetics of **IT Feels Music** and powered by the **FEELS Cloud Proxy Engine**.
 
 ![IT Feels Music Banner](https://img.shields.io/badge/IT%20Feels%20Music-Edition-FF4081?style=for-the-badge&logo=flutter)
-![Version](https://img.shields.io/badge/Version-3.5.26-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-3.6.0-blue?style=for-the-badge)
 ![Flutter Version](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter)
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
@@ -15,9 +15,11 @@ A premium, modern Flutter Android music application built with the design aesthe
 
 - **IT Feels Music UI Aesthetics**: High-contrast dark themes (Burgundy `#220F19` & Midnight Blue `#090D16`), organic artwork bubble collages (`HeroCollage`), display typography (`Outfit` & `Inter`), dynamic glassmorphism, adaptive frosted control capsule, 3-zone clean top bar, inlined stream quality badges (`320 KBPS`/`LOSSLESS`), and custom squiggly progress bars (`WavySeekBar`).
 - **Live Social Suite & Admin Telemetry**: Includes real-time listening parties, direct track sharing to friends' inboxes, reactive in-app broadcasts, and full Admin Dashboard analytics.
+- **Native Intent Sharing**: Instantly invite friends to Listen Together rooms using zero-fee native WhatsApp deep links (`url_launcher`).
 - **Zero Cognitive Overload UX**: Graceful empty states, smooth animated transitions on all player controls, and zero-wait background video loading that falls back to 60fps album art while resolving streams.
 - **Unified Multi-Backend Search Engine**: Concurrently queries both the Saavn API and the IT-Feels Native Catalog, automatically merging, deduplicating, and relevance-sorting results with distinct UI badging.
 - **Instant Native Video Extraction**: Bypasses external proxies with a highly optimized local `youtube_explode_dart` engine that strictly fetches pre-muxed 720p streams to guarantee zero-latency audio/video synchronization.
+- **Batched Isolates & GC-Yielding**: Background downloading and smart caching runs inside yielding batch loops to give the Dart Garbage Collector time to sweep dead memory, completely preventing OOM crashes on budget devices.
 - **Multi-Provider Smart Playlist Engine:** Leverages three highly cost-efficient 2026 LLM backend proxies (ChatGPT `gpt-5.6-luna`, Claude `haiku-4-5-20251001`, Gemini `3.5-flash-lite`) for playlist generation, fully protected and routed via the Cloudflare Edge.
 - **Backend E2E Validation:** Ships with a standalone native Node.js testing harness (`npm run test`) for the Cloudflare Worker to rapidly iterate on AI prompts and KV caching without needing the mobile client.
 - **Curated Moods & Charts**: Dedicated dynamic tabs for curated mood playlists (with English/Hindi toggle) and top global streaming charts.
@@ -25,7 +27,7 @@ A premium, modern Flutter Android music application built with the design aesthe
 - **Fully Populated Library Tabs**: Real dynamic data for `SONGS`, `FAVORITES`, `DOWNLOADS`, `ALBUMS`, `ARTIST`, and `PLAYLISTS`.
 - **Offline Download Manager**: Full `DownloadService` allowing users to download 320kbps audio streams (`.mp3`/`.mp4`) and cover art to local device storage (`path_provider`) for offline playback.
 - **Full Artist Discography (`ArtistDetailScreen`)**: Artist search (e.g., "Atif Aslam", "Arijit Singh") displays verified artist cards with avatar image, top songs, and discography albums & singles grid.
-- **Cloud-Powered High Quality Audio**: Real-time DES-ECB link decryption and 320kbps AAC/MP4 stream URL resolution (`DesDecryptor`).
+- **Cloud-Powered High Quality Audio**: Real-time DES-ECB link decryption and 320kbps AAC/MP4 stream URL resolution (`DesDecryptor`), validated remotely via Cloudflare Workers for Premium users.
 - **30pt High-Contrast Synced Lyrics**: Devanagari-to-Romanized transliteration (`HinglishTransliterator`) with enlarged 30pt bold active line autoscroll, interactive tap-to-seek playback, and smooth scale transitions.
 - **Categorized Audio Quality & Settings**: Dedicated `SettingsScreen` for Wi-Fi streaming quality (`320 kbps` / `160 kbps`), mobile data quality, download quality, storage management, and theme selection.
 - **Hero Artwork Transitions & Persistent MiniPlayer**: Seamless morphing of album cover art and persistent MiniPlayer visibility across all internal app routes.
@@ -40,7 +42,7 @@ A premium, modern Flutter Android music application built with the design aesthe
 - **Audio Playback Engine**: `just_audio` & `audio_service`
 - **Networking**: `http`
 - **Crypto & Decryption**: `encrypt` & `pointycastle` (DES-ECB deciphering)
-- **State Management**: `provider`
+- **State Management**: `provider` & `flutter_riverpod`
 - **Image Caching & Palette**: `cached_network_image` & `palette_generator`
 - **Local Storage & Database**: `isar`, `shared_preferences` & `path_provider`
 - **UI & Fonts**: `google_fonts` (Outfit & Inter)
@@ -96,6 +98,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 
 ## Recent Updates
+- **OOM-Prevention & Social Expansion (3.6.0):** Added zero-cost native WhatsApp intent deep linking for Listen Together rooms. Overhauled the audio caching and background download logic using GC-yielding batch loops, completely preventing Out-Of-Memory exceptions on 2GB RAM devices when downloading massive playlists. Re-routed Premium validation logic to a secure Cloudflare Worker to instantly unlock lyrics for premium users without race conditions.
 - **Radio Resilience & Bug Fixes (3.5.26):** Fixed infinite fallback loops and `OverflowBox` layout exceptions, and prevented live radio streams from being auto-cached.
 - **Search Pagination & DI Architecture Release (3.5.15):** Integrated pagination for songs, albums, and playlists, added video search capabilities, and added ability to remove individual recent searches. Refactored `RadioApiService`, `SocialService`, and `LastfmService` for Dependency Injection to unblock testing. Fixed widget teardown exceptions in `VideoPlayerScreen` and cached Firebase streams in `SocialScreen`. Fixed CI pipeline issues with Shorebird and Filepicker.
 - **Agent Steering Path & Infrastructure:** Established a unified agent steering path ([`docs/STEERING_PATH.md`](docs/STEERING_PATH.md)) to align all AI agent-driven development, updated existing agent specifications (`agents/`), and developed a new `doc-writer-skill` for automated documentation management.
