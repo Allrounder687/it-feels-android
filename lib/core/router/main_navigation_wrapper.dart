@@ -42,7 +42,7 @@ class MainNavigationWrapper extends ConsumerStatefulWidget {
 class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
     with WidgetsBindingObserver {
   Song? _lastLoggedSong;
-  late StreamSubscription _intentSubscription;
+  StreamSubscription? _intentSubscription;
   String _lastCheckedClipboard = '';
   int _slowFrameCount = 0;
   DateTime? _lastStutterWarning;
@@ -195,7 +195,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     SchedulerBinding.instance.removeTimingsCallback(_onFrameTimings);
-    _intentSubscription.cancel();
+    _intentSubscription?.cancel();
     super.dispose();
   }
 

@@ -571,7 +571,7 @@ class BackendApiService {
     }
 
     // Direct InnerTube client fallback
-    return _directInnerTubeVideoSearch(query);
+    return directInnerTubeVideoSearch(query);
   }
 
   /// Get Trending Videos for Dedicated Video Tab
@@ -594,8 +594,9 @@ class BackendApiService {
     return _directInnerTubeTrendingVideos();
   }
 
-  /// Direct InnerTube Video Search
-  static Future<List<Map<String, dynamic>>> _directInnerTubeVideoSearch(String query, {int limit = 20}) async {
+  /// Performs a raw HTTP POST directly to YouTube InnerTube API v1 (bypassing youtube_explode_dart)
+  /// Useful when youtube_explode_dart is broken or blocked
+  static Future<List<Map<String, dynamic>>> directInnerTubeVideoSearch(String query, {int limit = 20}) async {
     return await Isolate.run(() async {
       try {
         final uri = Uri.parse('https://www.youtube.com/youtubei/v1/search');
@@ -633,12 +634,23 @@ class BackendApiService {
               final thumbnail = renderer['thumbnail']?['thumbnails']?.last?['url'] ?? 'https://i.ytimg.com/vi/$videoId/hqdefault.jpg';
               final views = renderer['viewCountText']?['simpleText'] ?? renderer['shortViewCountText']?['simpleText'] ?? 'Popular';
               final uploadedAt = renderer['publishedTimeText']?['simpleText'] ?? 'Recently';
+              
+              final lengthStr = renderer['lengthText']?['simpleText'] ?? '0:00';
+              int durationSeconds = 0;
+              try {
+                final parts = lengthStr.split(':');
+                if (parts.length == 3) {
+                  durationSeconds = int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60 + int.parse(parts[2]);
+                } else if (parts.length == 2) {
+                  durationSeconds = int.parse(parts[0]) * 60 + int.parse(parts[1]);
+                }
+              } catch (_) {}
 
               videos.add({
                 'id': 'youtube:$videoId',
                 'title': title,
                 'uploader': uploader,
-                'duration': 0,
+                'duration': durationSeconds,
                 'thumbnail': thumbnail,
                 'views': views,
                 'uploadedAt': uploadedAt,
