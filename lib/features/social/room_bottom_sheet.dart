@@ -322,14 +322,14 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
               onPressed: () async {
                 final currentSong = ref.read(audioPlayerProvider).currentSong;
                 final songName = currentSong?.title ?? "music";
-                final text = Uri.encodeComponent('Come listen to $songName with me live on IT-Feels! \n\nhttps://allrounder687.github.io/itfeelsmusic-website/room/$roomId');
+                final text = Uri.encodeComponent('Come listen to $songName with me live on IT-Feels! \n\nhttps://allrounder687.github.io/room/$roomId');
                 final url = 'whatsapp://send?text=$text';
                 
                 if (await canLaunchUrl(Uri.parse(url))) {
                   await launchUrl(Uri.parse(url));
                 } else {
                   Share.share(
-                    'Join my active listening room on It Feels Music: $roomId \n\nhttps://allrounder687.github.io/itfeelsmusic-website/room/$roomId',
+                    'Join my active listening room on It Feels Music: $roomId \n\nhttps://allrounder687.github.io/room/$roomId',
                   );
                 }
               },
