@@ -198,33 +198,121 @@ class NowPlayingArt extends ConsumerWidget {
                   isPlaying: isPlaying,
                 ),
               ),
-              Hero(
-                tag: 'cover_${currentSong.id}',
-                child: Container(
-                  width: artSize,
-                  height: artSize,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(isWide ? 36 : 24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: context.themeInvertedTextColor.withValues(alpha: 0.35),
-                        blurRadius: isWide ? 40 : 24,
-                        offset: Offset(0, isWide ? 20 : 12),
+              StatefulBuilder(
+                builder: (context, setState) {
+                  bool isHovering = false;
+                  return MouseRegion(
+                    onEnter: (_) => isWide ? setState(() => isHovering = true) : null,
+                    onExit: (_) => isWide ? setState(() => isHovering = false) : null,
+                    child: AnimatedScale(
+                      scale: isHovering ? 1.03 : 1.0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutBack,
+                      child: Hero(
+                        tag: 'cover_${currentSong.id}',
+                        child: Container(
+                          width: artSize,
+                          height: artSize,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(isWide ? 36 : 24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: context.themeInvertedTextColor.withValues(alpha: 0.35),
+                                blurRadius: isWide ? 40 : 24,
+                                offset: Offset(0, isWide ? 20 : 12),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(isWide ? 36 : 24),
+                            child: currentSong.coverArt.isNotEmpty
+                                ? CustomImageWidget(
+                                    imageUrl: currentSong.coverArt,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (context, url, error) => Container(color: surfaceColor),
+                                  )
+                                : Container(color: surfaceColor),
+                          ),
+                        ),
                       ),
+                    ),
+                  );
+                },
+              ),
+              if (isWide)
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 10,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          (currentSong.streamUrl?.toLowerCase().endsWith('.flac') ?? false) || (currentSong.streamUrl?.toLowerCase().endsWith('.alac') ?? false)
+                              ? 'LOSSLESS'
+                              : (currentSong.streamUrl?.toLowerCase().endsWith('.wav') ?? false)
+                                  ? 'HIGH-RES'
+                                  : '320 KBPS',
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.amber,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Builder(builder: (context) {
+                        String sourceName = 'SAAVN';
+                        Color sourceColor = Colors.tealAccent;
+                        
+                        if (currentSong.id.startsWith('youtube:') || currentSong.id.startsWith('search:')) {
+                          sourceName = 'YOUTUBE';
+                          sourceColor = Colors.redAccent;
+                        } else if (currentSong.id.startsWith('spotify:')) {
+                          sourceName = 'SPOTIFY';
+                          sourceColor = const Color(0xFF1DB954);
+                        }
+
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 10,
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            sourceName,
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: sourceColor,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        );
+                      }),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(isWide ? 36 : 24),
-                    child: currentSong.coverArt.isNotEmpty
-                        ? CustomImageWidget(
-                            imageUrl: currentSong.coverArt,
-                            fit: BoxFit.cover,
-                            errorWidget: (context, url, error) => Container(color: surfaceColor),
-                          )
-                        : Container(color: surfaceColor),
-                  ),
                 ),
-              ),
             ],
           ),
     );

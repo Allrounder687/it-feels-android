@@ -90,12 +90,9 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
     if (!kIsWeb &&
         (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
       await windowManager.ensureInitialized();
-      if (_isFullscreen) {
-        await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-      } else {
-        await windowManager.setTitleBarStyle(TitleBarStyle.normal);
-      }
       await windowManager.setFullScreen(_isFullscreen);
+      // Always keep TitleBarStyle.hidden to preserve custom PremiumTitleBar
+      await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     } else {
       if (_isFullscreen) {
         SystemChrome.setPreferredOrientations([

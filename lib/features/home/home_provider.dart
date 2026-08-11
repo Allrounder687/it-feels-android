@@ -296,6 +296,7 @@ class HomeNotifier extends Notifier<HomeState> {
           }
         }
       } else if (category == 'Podcasts') {
+        final ytPodcastProvider = YouTubePodcastProvider();
         final offsets = [
           ['True Crime', 'Comedy', 'Educational', 'Business', 'Technology'],
           ['News', 'Health', 'Sports', 'Pop Culture', 'History'],
@@ -306,30 +307,38 @@ class HomeNotifier extends Notifier<HomeState> {
         final queries = offsets[idx];
         
         for (var query in queries) {
-          final podcasts = await deezerApi.searchPlaylists('$query Podcast', limit: 10);
+          final podcasts = await ytPodcastProvider.searchPodcasts('$query Podcast', count: 10);
           if (podcasts.isNotEmpty) {
-            newShelves.add(FeedShelf(title: '$query Podcasts', type: ShelfType.playlistCarousel, items: podcasts));
+            newShelves.add(FeedShelf(title: '$query Podcasts', type: ShelfType.songCarousel, items: podcasts));
           }
         }
       } else if (category == 'Charts') {
         if (page == 0) {
           final charts = await deezerApi.getCharts();
           if (charts['playlists'] != null && charts['playlists'].isNotEmpty) {
-             newShelves.add(FeedShelf(title: 'Global Top Charts', type: ShelfType.playlistCarousel, items: charts['playlists']));
+             newShelves.add(FeedShelf(title: 'The Global Soundscape', type: ShelfType.playlistCarousel, items: charts['playlists']));
           }
         }
         final offsets = [
-          ['Global Top 50', 'USA Top 50', 'UK Top 40', 'Viral Hits'],
-          ['Top 50 Hits', 'Billboard', 'TikTok Trending', 'Chart Toppers']
+          [
+            {'q': 'Global Top 50', 't': 'Stateside Supremacy'}, 
+            {'q': 'UK Top 40', 't': 'UK Chart Toppers'}, 
+            {'q': 'Viral Hits', 't': 'Viral Frequencies'}
+          ],
+          [
+            {'q': 'Top 50 Hits', 't': 'Hits of the Moment'}, 
+            {'q': 'Billboard', 't': 'Billboard Titans'}, 
+            {'q': 'TikTok Trending', 't': 'Trending on TikTok'}
+          ]
         ];
         
         final idx = page % offsets.length;
         final queries = offsets[idx];
         
-        for (var query in queries) {
-          final playlists = await deezerApi.searchPlaylists(query, limit: 10);
+        for (var item in queries) {
+          final playlists = await deezerApi.searchPlaylists(item['q']!, limit: 10);
           if (playlists.isNotEmpty) {
-             newShelves.add(FeedShelf(title: query, type: ShelfType.playlistCarousel, items: playlists));
+             newShelves.add(FeedShelf(title: item['t']!, type: ShelfType.playlistCarousel, items: playlists));
           }
         }
       }
@@ -569,15 +578,10 @@ class HomeNotifier extends Notifier<HomeState> {
         count: 10,
       );
 
-      // Keep searching playlists on Spotify
-      final playlists = await saavnApi.searchPlaylists("Podcasts", count: 20);
-
       final combined = _deduplicate([...list1, ...list2]);
       state = state.copyWith(
         podcastSongs: combined.isNotEmpty ? combined : state.podcastSongs,
-        podcastPlaylists: playlists.isNotEmpty
-            ? playlists
-            : state.podcastPlaylists,
+        podcastPlaylists: [], // Disabled: we only fetch podcasts natively via YouTube Explode now
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchPodcasts error: $e');

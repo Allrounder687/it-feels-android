@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:it_feels_music/features/search/search_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
@@ -34,6 +35,8 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
     with WindowListener {
   bool _isFocused = true;
   bool _isLogoHovered = false;
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -44,6 +47,8 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
   @override
   void dispose() {
     windowManager.removeListener(this);
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -242,45 +247,52 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
   }
 
   Widget _buildNowPlayingIndicator(song) {
-    return Stack(
-      children: [
-        Align(
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.graphic_eq_rounded,
-                size: 14,
-                color: context.themeAccentColor.withValues(
-                  alpha: _isFocused ? 0.8 : 0.4,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  "${song.title} • ${song.artist}",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: context.themeTextColor.withValues(
-                      alpha: _isFocused ? 0.9 : 0.5,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => context.push('/now_playing'),
+        child: Stack(
+          children: [
+            Align(
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.graphic_eq_rounded,
+                    size: 14,
+                    color: context.themeAccentColor.withValues(
+                      alpha: _isFocused ? 0.8 : 0.4,
                     ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      "${song.title} • ${song.artist}",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: context.themeTextColor.withValues(
+                          alpha: _isFocused ? 0.9 : 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            // Aesthetic Audio Visualizer Line (Pulsing)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _PulsingAudioVisualizer(isFocused: _isFocused),
+            ),
+          ],
         ),
-        // Aesthetic Audio Visualizer Line (Pulsing)
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: _PulsingAudioVisualizer(isFocused: _isFocused),
-        ),
-      ],
+      ),
     );
   }
 
@@ -289,39 +301,70 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
 
     return Align(
       alignment: Alignment.center,
-      child: InkWell(
-        onTap: () => context.push('/search'),
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          height: 32,
-          constraints: const BoxConstraints(maxWidth: 300),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: context.themeBackgroundColor.withValues(
-              alpha: _isFocused ? 0.3 : 0.1,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: context.themeTextColor.withValues(alpha: 0.1),
-            ),
+      child: Container(
+        height: 32,
+        constraints: const BoxConstraints(maxWidth: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: context.themeBackgroundColor.withValues(
+            alpha: _isFocused ? 0.3 : 0.1,
           ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.search_rounded,
-                size: 16,
-                color: context.themeTextColor.withValues(alpha: 0.5),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "Search It Feels...",
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: context.themeTextColor.withValues(alpha: 0.1),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.search_rounded,
+              size: 16,
+              color: context.themeTextColor.withValues(alpha: 0.5),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
                 style: TextStyle(
                   fontSize: 12,
+                  color: context.themeTextColor,
+                ),
+                decoration: InputDecoration(
+                  hintText: "Search It Feels...",
+                  hintStyle: TextStyle(
+                    fontSize: 12,
+                    color: context.themeTextColor.withValues(alpha: 0.5),
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.only(bottom: 14),
+                ),
+                onChanged: (val) {
+                  setState(() {});
+                  final uri = GoRouterState.of(context).uri.toString();
+                  if (uri != '/search') {
+                    context.go('/search');
+                    Future.microtask(() => _searchFocusNode.requestFocus());
+                  }
+                  ref.read(searchProvider.notifier).search(val);
+                },
+              ),
+            ),
+            if (_searchController.text.isNotEmpty)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _searchController.clear();
+                  });
+                  ref.read(searchProvider.notifier).search('');
+                },
+                child: Icon(
+                  Icons.close,
+                  size: 14,
                   color: context.themeTextColor.withValues(alpha: 0.5),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -550,19 +593,21 @@ class _PulsingAudioVisualizerState extends State<_PulsingAudioVisualizer>
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _opacityAnimation,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Container(
-          height: 2,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.transparent,
-                context.themeAccentColor.withValues(alpha: widget.isFocused ? 1.0 : 0.5),
-                Colors.transparent,
-              ],
+    return ExcludeSemantics(
+      child: FadeTransition(
+        opacity: _opacityAnimation,
+        child: ScaleTransition(
+          scale: _scaleAnimation,
+          child: Container(
+            height: 2,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  context.themeAccentColor.withValues(alpha: widget.isFocused ? 1.0 : 0.5),
+                  Colors.transparent,
+                ],
+              ),
             ),
           ),
         ),

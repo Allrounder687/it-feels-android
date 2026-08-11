@@ -558,7 +558,7 @@ class BackendApiService {
   static Future<List<Map<String, dynamic>>> searchVideos(String query) async {
     try {
       final uri = Uri.parse('$baseUrl/api/v1/videos/search').replace(queryParameters: {'query': query});
-      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 6));
+      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(milliseconds: 2500));
       if (response.statusCode == 200) {
         final data = await compute<String, dynamic>(jsonDecode, response.body);
         final List list = data['videos'] ?? [];
@@ -566,8 +566,8 @@ class BackendApiService {
           return list.map((item) => Map<String, dynamic>.from(item)).toList();
         }
       }
-    } catch (e) {
-      debugPrint('[BackendApiService] searchVideos proxy error: $e');
+    } catch (_) {
+      // Silently fail over to native InnerTube engine (2.5s timeout reached)
     }
 
     // Direct InnerTube client fallback

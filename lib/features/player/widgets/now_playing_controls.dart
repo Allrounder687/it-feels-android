@@ -29,34 +29,24 @@ class NowPlayingPrimaryControls extends ConsumerWidget {
     return Container(
       height: isWide ? 86 : 74,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: surfaceColor.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(isWide ? 43 : 37),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           BouncyIconButton(
-            child: Icon(Icons.replay_10_rounded, color: context.themeMutedTextColor, size: isWide ? 30 : 26),
+            child: Icon(Icons.replay_10_rounded, color: context.themeMutedTextColor, size: isWide ? 28 : 24),
             onPressed: () {
-              final settingsProv = ref.read(settingsProvider);
               if (isVideoMode) {
+                final settingsProv = ref.read(settingsProvider);
                 final pos = videoProvider.player?.state.position ?? Duration.zero;
-                final newPos = pos - const Duration(seconds: 10);
+                final newPos = pos - const Duration(seconds: 15);
                 videoProvider.player?.seek(newPos);
                 if (!settingsProv.useVideoAudioSource) {
                   ref.read(audioPlayerProvider.notifier).seek(newPos);
                 }
               } else {
-                ref.read(audioPlayerProvider.notifier).seekBackward();
+                final pos = playerProvider.position;
+                final newPos = pos - const Duration(seconds: 15);
+                ref.read(audioPlayerProvider.notifier).seek(newPos);
               }
             },
           ),
@@ -137,18 +127,20 @@ class NowPlayingPrimaryControls extends ConsumerWidget {
             },
           ),
           BouncyIconButton(
-            child: Icon(Icons.forward_10_rounded, color: context.themeMutedTextColor, size: isWide ? 30 : 26),
+            child: Icon(Icons.forward_10_rounded, color: context.themeMutedTextColor, size: isWide ? 28 : 24),
             onPressed: () {
-              final settingsProv = ref.read(settingsProvider);
               if (isVideoMode) {
+                final settingsProv = ref.read(settingsProvider);
                 final pos = videoProvider.player?.state.position ?? Duration.zero;
-                final newPos = pos + const Duration(seconds: 10);
+                final newPos = pos + const Duration(seconds: 15);
                 videoProvider.player?.seek(newPos);
                 if (!settingsProv.useVideoAudioSource) {
                   ref.read(audioPlayerProvider.notifier).seek(newPos);
                 }
               } else {
-                ref.read(audioPlayerProvider.notifier).seekForward();
+                final pos = playerProvider.position;
+                final newPos = pos + const Duration(seconds: 15);
+                ref.read(audioPlayerProvider.notifier).seek(newPos);
               }
             },
           ),
@@ -179,6 +171,16 @@ class NowPlayingSecondaryControls extends ConsumerWidget {
         children: [
           BouncyIconButton(
             child: Icon(
+              Icons.shuffle_rounded, 
+              color: playerProvider.isShuffle ? accentColor : context.themeMutedTextColor, 
+              size: 24,
+            ),
+            onPressed: () {
+              ref.read(audioPlayerProvider.notifier).toggleShuffle();
+            },
+          ),
+          BouncyIconButton(
+            child: Icon(
               Icons.cell_tower_rounded, 
               color: playerProvider.isInRoom ? Colors.greenAccent : context.themeMutedTextColor, 
               size: 24,
@@ -194,14 +196,6 @@ class NowPlayingSecondaryControls extends ConsumerWidget {
                 );
               }
             },
-          ),
-          BouncyIconButton(
-            child: Icon(
-              Icons.shuffle_rounded, 
-              color: playerProvider.isShuffle ? accentColor : context.themeMutedTextColor, 
-              size: 24,
-            ),
-            onPressed: () => ref.read(audioPlayerProvider.notifier).toggleShuffle(),
           ),
           PopupMenuButton<double>(
             icon: Icon(Icons.speed_rounded, color: context.themeMutedTextColor, size: 24),
@@ -233,7 +227,9 @@ class NowPlayingSecondaryControls extends ConsumerWidget {
               color: playerProvider.isRepeat ? accentColor : context.themeMutedTextColor, 
               size: 24,
             ),
-            onPressed: () => ref.read(audioPlayerProvider.notifier).toggleRepeat(),
+            onPressed: () {
+              ref.read(audioPlayerProvider.notifier).toggleRepeat();
+            },
           ),
         ],
       ),

@@ -138,6 +138,33 @@ class SearchNotifier extends Notifier<SearchState> {
     state = state.copyWith(recentSearches: recent);
   }
 
+  int _calculateRelevance(String query, String target, {bool isArtist = false}) {
+    if (target.isEmpty) return 0;
+    int score = 0;
+    final qLower = query.toLowerCase().trim();
+    final tLower = target.toLowerCase().trim();
+
+    if (qLower == tLower) {
+      score += 100;
+      if (isArtist) score += 50; // Exact match on artist is a very strong signal
+    } else if (tLower.startsWith(qLower)) {
+      score += 60;
+    } else if (tLower.contains(qLower)) {
+      score += 30;
+    }
+
+    final qTokens = qLower.split(' ').where((t) => t.isNotEmpty).toList();
+    int tokensMatched = 0;
+    for (final token in qTokens) {
+      if (tLower.contains(token)) tokensMatched++;
+    }
+    if (qTokens.isNotEmpty) {
+      score += ((tokensMatched / qTokens.length) * 40).round();
+    }
+    
+    return score;
+  }
+
   void search(String newQuery, {BuildContext? context}) {
     _debounceTimer?.cancel();
 
@@ -196,7 +223,24 @@ class SearchNotifier extends Notifier<SearchState> {
         var artists = List<Map<String, dynamic>>.from(results['artists'] ?? []);
         List<Song> songs = [];
 
-        if (artists.isNotEmpty && artists.first['id'] != null && artists.first['id'].toString().isNotEmpty) {
+        // Relevance Ranking
+        artists.sort((a, b) {
+          final scoreA = _calculateRelevance(newQuery, a['title'] ?? '', isArtist: true);
+          final scoreB = _calculateRelevance(newQuery, b['title'] ?? '', isArtist: true);
+          return scoreB.compareTo(scoreA);
+        });
+
+        topSongs.sort((a, b) {
+          final scoreA = _calculateRelevance(newQuery, a.title);
+          final scoreB = _calculateRelevance(newQuery, b.title);
+          return scoreB.compareTo(scoreA);
+        });
+
+        int bestArtistScore = artists.isNotEmpty ? _calculateRelevance(newQuery, artists.first['title'] ?? '', isArtist: true) : 0;
+        int bestSongScore = topSongs.isNotEmpty ? _calculateRelevance(newQuery, topSongs.first.title) : 0;
+
+        // If an artist is a very strong match, prioritize it as the "Top Result" and fetch their catalog
+        if (bestArtistScore > 0 && bestArtistScore >= bestSongScore) {
           final artistId = artists.first['id'].toString();
           final artistData = await apiService.fetchArtistDetails(artistId);
           
@@ -209,6 +253,7 @@ class SearchNotifier extends Notifier<SearchState> {
             }
           }
         } else {
+          // Otherwise, just show the songs
           songs = topSongs.isNotEmpty ? topSongs : List<Song>.from(results['songs'] ?? []);
         }
 
@@ -216,10 +261,10 @@ class SearchNotifier extends Notifier<SearchState> {
         if (nativeSongs.isNotEmpty) {
           final taggedNativeSongs = nativeSongs.map((s) => s.copyWith(album: '${s.album} (IT-Feels)')).toList();
           
-          // Filter out duplicates (if native result is same as saavn result by id or name)
+          // Filter out duplicates
           final nativeIds = taggedNativeSongs.map((s) => s.id).toSet();
           songs.removeWhere((s) => nativeIds.contains(s.id));
-          // Insert native songs right below the #1 global Saavn result to preserve relevance balance
+          // Insert native songs near the top
           int insertIndex = songs.isNotEmpty ? 1 : 0;
           songs.insertAll(insertIndex, taggedNativeSongs);
         }

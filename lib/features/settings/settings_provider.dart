@@ -35,7 +35,7 @@ class SettingsState {
     this.wifiQuality = '320 kbps (Very High)',
     this.mobileQuality = '160 kbps (High)',
     this.downloadQuality = '320 kbps (Very High)',
-    this.theme = 'Dynamic (Album Art)',
+    this.theme = 'Pitch Black (AMOLED)',
     this.defaultCategory = 'Bollywood',
     this.customDownloadPath = '',
     this.enableAndroidAuto = false,

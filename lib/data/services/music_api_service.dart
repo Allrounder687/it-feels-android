@@ -414,6 +414,7 @@ class MusicApiService {
       return {
         'topSongs': topSongs,
         'albums': albums,
+        'image': (data['image'] ?? '').toString().replaceAll('150x150', '500x500').replaceAll('50x50', '500x500'),
       };
     } catch (e) {
       debugPrint('[MusicApiService] Artist details error for ID $artistId: $e');

@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:screen_retriever/screen_retriever.dart';
+import 'package:it_feels_music/features/cast/cast_bottom_sheet.dart';
 
 class NowPlayingHeader extends ConsumerWidget {
   final bool isVideoMode;
@@ -103,7 +104,14 @@ class NowPlayingHeader extends ConsumerWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
+            if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) ...[
+              IconButton(
+                icon: Icon(Icons.fullscreen_rounded, color: context.themeTextColor, size: 28),
+                onPressed: () {
+                  context.push('/fullscreen_music');
+                },
+                tooltip: 'Full Screen Player',
+              ),
               IconButton(
                 icon: Icon(Icons.picture_in_picture_alt, color: context.themeTextColor, size: 24),
                 onPressed: () async {
@@ -131,6 +139,21 @@ class NowPlayingHeader extends ConsumerWidget {
                 },
                 tooltip: 'Miniplayer',
               ),
+            ],
+            IconButton(
+              icon: Icon(Icons.cast_rounded, color: context.themeTextColor, size: 24),
+              onPressed: () {
+                CastBottomSheet.show(context);
+              },
+              tooltip: 'Cast',
+            ),
+            IconButton(
+              icon: Icon(Icons.graphic_eq_rounded, color: context.themeTextColor, size: 24),
+              onPressed: () {
+                context.push('/audio_settings');
+              },
+              tooltip: 'Equalizer',
+            ),
             IconButton(
               icon: Icon(Icons.more_vert_rounded, color: context.themeTextColor, size: 26),
               onPressed: onOptionsTap,

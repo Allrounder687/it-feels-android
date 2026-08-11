@@ -1,3 +1,14 @@
+## v3.6.1+71
+- **Search Engine UI & Routing Polish**:
+  - **Relevance & Ranking Engine**: Completely replaced the blind `artists.first` string matching implementation in `search_provider.dart` with a weighted mathematical scoring system. Exact query matches now receive +100 points, Artist queries receive +50, and multi-token queries calculate partial overlap. 
+  - **Desktop Widescreen Layout**: Replaced the narrow mobile layout in `search_screen.dart` with a massive Apple Music-style split view on desktop (>800px). Added a 360px "Top Result" hero card on the left, with the top 5 matching tracks stacked vertically on the right with transparent hover states.
+  - **Focus Retention Routing**: Refactored `PremiumTitleBar` global search to bind a `FocusNode` to the input field, swapping `context.push` for `context.go('/search')` to navigate within the `ShellRoute` without unmounting the navigation shell. Handled `microtask` focus requests to guarantee seamless sentence typing.
+  - **Home Screen Discoverability**: Overhauled `home_provider.dart` to fully strip Deezer/Saavn dependencies from the Podcasts feed. Podcasts are now fetched exclusively natively via `youtube_explode_dart`. Updated Charts feed pagination to use premium curated titles (e.g. "The Global Soundscape", "Stateside Supremacy").
+  - **Timeout Resiliency**: Lowered the `BackendApiService` video proxy timeout from 6.0 seconds to 2.5 seconds, ensuring a blazing fast fallback to native InnerTube engine without hanging the UI.
+
+## v3.6.0+70
+- **Accessibility Flood Fix (Windows):** Wrapped `AnimatedEqualizer` and `_PulsingAudioVisualizer` inside `ExcludeSemantics`. This eliminates continuous `ui::AXTree` layout recalculations at 60fps on Windows, fixing a severe core crash that occurred sporadically when a song or radio stream was playing.
+
 ## v3.5.35+69
 - **Stream Engine Resilience**:
   - **Zero-Lag YoutubeExplode Fallback**: Engineered a completely native, client-side fallback engine in `BackendApiService.getStreamUrl` using a background isolate. If the Cloudflare proxy fails to resolve an audio stream (e.g. dead Piped nodes or sleeping Render instances), the app instantly searches YouTube natively via `youtube_explode_dart` to seamlessly extract the Opus audio URL.

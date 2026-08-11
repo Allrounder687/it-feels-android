@@ -96,39 +96,18 @@ class _NowPlayingActionsState extends ConsumerState<NowPlayingActions> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          GestureDetector(
-            onTap: () => ref.read(audioPlayerProvider.notifier).toggleFavorite(widget.currentSong),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: widget.surfaceColor.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    widget.isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                    color: widget.isFav ? Colors.pinkAccent : context.themeMutedTextColor,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    widget.isFav ? "Liked" : "Like",
-                    style: AppTypography.interSemiBold.copyWith(
-                      color: context.themeTextColor,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
+          IconButton(
+            onPressed: () => ref.read(audioPlayerProvider.notifier).toggleFavorite(widget.currentSong),
+            tooltip: widget.isFav ? "Unlike" : "Like",
+            icon: Icon(
+              widget.isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              color: widget.isFav ? Colors.pinkAccent : context.themeMutedTextColor,
+              size: 28,
             ),
           ),
-          const SizedBox(width: 6),
-          GestureDetector(
-            onTap: () async {
+          const SizedBox(width: 16),
+          IconButton(
+            onPressed: () async {
               if (widget.isDown) {
                 await ref.read(downloadProvider.notifier).removeDownload(widget.currentSong);
                 if (context.mounted) {
@@ -148,43 +127,21 @@ class _NowPlayingActionsState extends ConsumerState<NowPlayingActions> {
                 }
               }
             },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: widget.surfaceColor.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  widget.isDownloading
-                      ? SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: context.themeTextColor),
-                        )
-                      : Icon(
-                          widget.isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
-                          color: widget.isDown ? widget.accentColor : context.themeMutedTextColor,
-                          size: 18,
-                        ),
-                  const SizedBox(width: 5),
-                  Text(
-                    widget.isDown ? "Downloaded" : "Download",
-                    style: AppTypography.interSemiBold.copyWith(
-                      color: context.themeTextColor,
-                      fontSize: 13,
-                    ),
+            tooltip: widget.isDown ? "Downloaded" : "Download",
+            icon: widget.isDownloading
+                ? SizedBox(
+                    width: 28, height: 28,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: context.themeTextColor),
+                  )
+                : Icon(
+                    widget.isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
+                    color: widget.isDown ? widget.accentColor : context.themeMutedTextColor,
+                    size: 28,
                   ),
-                ],
-              ),
-            ),
           ),
-          const SizedBox(width: 6),
-          InkWell(
-            onTap: () {
+          const SizedBox(width: 16),
+          IconButton(
+            onPressed: () {
               final sub = ref.read(subscriptionProvider);
               if (sub.isPremium) {
                 Navigator.push(
@@ -195,61 +152,19 @@ class _NowPlayingActionsState extends ConsumerState<NowPlayingActions> {
                 PaywallBottomSheet.show(context, featureName: "Lyrics");
               }
             },
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: widget.surfaceColor.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.lyrics_outlined, color: context.themeMutedTextColor, size: 18),
-                  const SizedBox(width: 5),
-                  Text(
-                    "Lyrics",
-                    style: AppTypography.interSemiBold.copyWith(
-                      color: context.themeTextColor,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            tooltip: "Lyrics",
+            icon: Icon(Icons.lyrics_outlined, color: context.themeMutedTextColor, size: 28),
           ),
-          const SizedBox(width: 6),
-          InkWell(
-            onTap: _shareSong,
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: widget.surfaceColor.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _isSharing ? SizedBox(
-                    width: 18, height: 18,
+          const SizedBox(width: 16),
+          IconButton(
+            onPressed: _shareSong,
+            tooltip: "Share",
+            icon: _isSharing
+                ? SizedBox(
+                    width: 28, height: 28,
                     child: CircularProgressIndicator(strokeWidth: 2, color: context.themeMutedTextColor),
-                  ) : Icon(Icons.share_outlined, color: context.themeMutedTextColor, size: 18),
-                  const SizedBox(width: 5),
-                  Text(
-                    "Share",
-                    style: AppTypography.interSemiBold.copyWith(
-                      color: context.themeTextColor,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                  )
+                : Icon(Icons.share_outlined, color: context.themeMutedTextColor, size: 28),
           ),
         ],
       ),

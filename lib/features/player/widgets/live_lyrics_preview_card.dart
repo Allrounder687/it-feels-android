@@ -11,12 +11,14 @@ class LiveLyricsPreviewCard extends ConsumerWidget {
   final Song song;
   final Color surfaceColor;
   final Color accentColor;
+  final bool isWide;
 
   const LiveLyricsPreviewCard({
     super.key,
     required this.song,
     required this.surfaceColor,
     required this.accentColor,
+    this.isWide = false,
   });
 
   @override
@@ -157,7 +159,7 @@ class LiveLyricsPreviewCard extends ConsumerWidget {
                     )
                   else
                     SizedBox(
-                      height: 85,
+                      height: isWide ? 140 : 85,
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 350),
                         switchInCurve: Curves.easeOutCubic,
@@ -189,18 +191,18 @@ class LiveLyricsPreviewCard extends ConsumerWidget {
                                   color: context.themeMutedTextColor.withValues(
                                     alpha: 0.35,
                                   ),
-                                  fontSize: 12,
+                                  fontSize: isWide ? 16 : 12,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                             if (prevLine.isNotEmpty) const SizedBox(height: 3),
                             Text(
                               currentLine,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.outfit(
                                 color: context.themeTextColor,
-                                fontSize: 17,
+                                fontSize: isWide ? 24 : 17,
                                 fontWeight: FontWeight.w800,
                                 shadows: [
                                   BoxShadow(
@@ -221,7 +223,7 @@ class LiveLyricsPreviewCard extends ConsumerWidget {
                                   color: context.themeMutedTextColor.withValues(
                                     alpha: 0.6,
                                   ),
-                                  fontSize: 13,
+                                  fontSize: isWide ? 18 : 13,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),

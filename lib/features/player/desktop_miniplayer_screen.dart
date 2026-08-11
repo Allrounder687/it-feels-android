@@ -9,6 +9,8 @@ import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'dart:ui';
+import 'package:google_fonts/google_fonts.dart';
 
 class DesktopMiniplayerScreen extends ConsumerStatefulWidget {
   const DesktopMiniplayerScreen({super.key});
@@ -25,7 +27,7 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
   void initState() {
     super.initState();
     if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
-      windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+      windowManager.setTitleBarStyle(TitleBarStyle.hidden, windowButtonVisibility: false);
     }
   }
 
@@ -39,7 +41,7 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
     await windowManager.setMinimumSize(const Size(800, 600));
     await windowManager.setSize(const Size(1280, 720)); // Restore to normal bounds
     await windowManager.setAlignment(Alignment.center);
-    await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+    await windowManager.setTitleBarStyle(TitleBarStyle.hidden, windowButtonVisibility: false);
     if (mounted) {
       context.pop();
     }
@@ -84,9 +86,9 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
               if (hasVideo)
                 Video(controller: videoState.videoController!, fit: BoxFit.cover, controls: NoVideoControls)
               else
-                CustomImageWidget(
-                  imageUrl: currentSong.coverArt,
-                  fit: BoxFit.cover,
+                _PiPLyricsView(
+                  song: currentSong,
+                  engine: engine,
                 ),
 
               // Overlay Gradient
@@ -167,6 +169,14 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                                 onPressed: () => engine.skipToPrevious(),
                               ),
                               IconButton(
+                                icon: const Icon(Icons.replay_10, color: Colors.white),
+                                iconSize: 24,
+                                onPressed: () {
+                                  final newPos = engine.position - const Duration(seconds: 15);
+                                  engine.seek(newPos < Duration.zero ? Duration.zero : newPos);
+                                },
+                              ),
+                              IconButton(
                                 icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.white),
                                 iconSize: 32,
                                 onPressed: () async {
@@ -191,6 +201,14 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                                 },
                               ),
                               IconButton(
+                                icon: const Icon(Icons.forward_10, color: Colors.white),
+                                iconSize: 24,
+                                onPressed: () {
+                                  final newPos = engine.position + const Duration(seconds: 15);
+                                  engine.seek(newPos);
+                                },
+                              ),
+                              IconButton(
                                 icon: const Icon(Icons.skip_next, color: Colors.white),
                                 iconSize: 24,
                                 onPressed: () => engine.skipToNext(),
@@ -209,3 +227,82 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
     );
   }
 }
+
+class _PiPLyricsView extends ConsumerWidget {
+  final dynamic song;
+  final AudioEngineService engine;
+
+  const _PiPLyricsView({required this.song, required this.engine});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lyricsState = ref.watch(lyricsProvider);
+    final lyricsResult = lyricsState.lyricsResult;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Blurred Background
+        CustomImageWidget(
+          imageUrl: song.coverArt,
+          fit: BoxFit.cover,
+        ),
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 30.0, sigmaY: 30.0),
+          child: Container(color: Colors.black.withValues(alpha: 0.5)),
+        ),
+        // Lyrics Content
+        StreamBuilder<Duration>(
+          stream: engine.positionStream,
+          initialData: engine.position,
+          builder: (context, snapshot) {
+            final position = snapshot.data ?? Duration.zero;
+
+            String currentLine = "Playing ${song.title}...";
+            if (lyricsState.isLoading) {
+              currentLine = "Searching lyrics...";
+            } else if (lyricsResult != null && lyricsResult.hasSynced) {
+              final activeIdx = lyricsState.getActiveLineIndex(position);
+              if (activeIdx >= 0 && activeIdx < lyricsResult.syncedLyrics.length) {
+                currentLine = lyricsResult.syncedLyrics[activeIdx].text;
+              }
+            } else if (lyricsResult != null && lyricsResult.hasStatic && lyricsResult.staticLyrics != null) {
+              currentLine = "Lyrics available (Static)";
+            } else if (lyricsState.lyricsNotFound) {
+              currentLine = "";
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 60.0),
+              child: Center(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Text(
+                    currentLine,
+                    key: ValueKey(currentLine),
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      shadows: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.5),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+

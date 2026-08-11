@@ -86,7 +86,7 @@ class SubscriptionService {
         url,
         headers: {
           'Authorization': 'Bearer $token',
-          'X-Feels-Secret': dotenv.env['API_SECRET'] ?? '',
+          'X-Feels-Secret': (dotenv.isInitialized ? dotenv.env['API_SECRET'] : null) ?? 'development_secret_123',
         },
       );
 

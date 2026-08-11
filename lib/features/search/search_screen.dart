@@ -65,13 +65,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         final settingsProviderObj = ref.watch(settingsProvider);
         final categories = ["ALL", "SONGS", "ARTISTS", "ALBUMS", "PLAYLISTS", "VIDEOS", "PODCASTS"];
 
-        final songs = searchProviderObj.songs.where((s) => !hiddenProviderObj.isHidden(s.id)).toList();
+        final rawSongs = searchProviderObj.songs.where((s) => !hiddenProviderObj.isHidden(s.id));
+        final List<Song> songs = [];
+        final Set<String> seenSearchKeys = {};
+        for (var s in rawSongs) {
+          final norm = '${s.title.trim().toLowerCase()}_${s.artist.trim().toLowerCase()}';
+          if (!seenSearchKeys.contains(norm)) {
+            seenSearchKeys.add(norm);
+            songs.add(s);
+          }
+        }
         final albums = searchProviderObj.albums;
         final playlists = searchProviderObj.playlists;
         final videos = searchProviderObj.videos;
         final podcasts = searchProviderObj.podcasts;
 
-        bool hasNoResults = _searchController.text.isNotEmpty &&
+        bool hasNoResults = searchProviderObj.query.isNotEmpty &&
             !searchProviderObj.isSearching &&
             songs.isEmpty &&
             albums.isEmpty &&
@@ -92,44 +101,31 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "Search",
-                        style: GoogleFonts.outfit(
-                          fontSize: 36,
-                          fontWeight: FontWeight.w900,
-                          color: context.themeTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Search Input Pill
-                      Container(
-                        decoration: BoxDecoration(
-                          color: context.themeUnselectedPillColor,
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          style: GoogleFonts.inter(color: context.themeUnselectedPillTextColor),
-                          decoration: InputDecoration(
-                            hintText: "Search songs, artists, albums, playlists...",
-                            hintStyle: GoogleFonts.inter(color: context.themeMutedTextColor),
-                            prefixIcon: Icon(Icons.search, color: context.themeMutedTextColor),
-                            suffixIcon: _searchController.text.isNotEmpty
-                                ? IconButton(
-                                    icon: Icon(Icons.clear, color: context.themeMutedTextColor),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      ref.read(searchProvider.notifier).search('');
-                                    },
-                                  )
-                                : null,
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.arrow_back, color: context.themeTextColor),
+                            onPressed: () {
+                              if (context.canPop()) {
+                                context.pop();
+                              } else {
+                                context.go('/');
+                              }
+                            },
+                            padding: EdgeInsets.zero,
+                            alignment: Alignment.centerLeft,
                           ),
-                          onChanged: (val) => ref.read(searchProvider.notifier).search(val),
-                        ),
+                          Text(
+                            "Search",
+                            style: GoogleFonts.outfit(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w900,
+                              color: context.themeTextColor,
+                            ),
+                          ),
+                        ],
                       ),
+
                     ],
                   ),
                 ),
@@ -176,159 +172,72 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
                 const SizedBox(height: 12),
 
+                if (searchProviderObj.isSearching && (songs.isNotEmpty || albums.isNotEmpty || searchProviderObj.artists.isNotEmpty))
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                    child: LinearProgressIndicator(
+                      color: Theme.of(context).colorScheme.primary,
+                      backgroundColor: Colors.transparent,
+                      minHeight: 2,
+                    ),
+                  ),
+                if (searchProviderObj.isSearching && (songs.isNotEmpty || albums.isNotEmpty || searchProviderObj.artists.isNotEmpty))
+                  const SizedBox(height: 12),
+
                 // Search Results List
                 Expanded(
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 900),
+                      constraints: const BoxConstraints(maxWidth: 1600),
                       child: searchProviderObj.isSearching && songs.isEmpty && albums.isEmpty
                           ? const SkeletonLoadingList()
-                          : _searchController.text.isEmpty
+                          : searchProviderObj.query.isEmpty
                           ? _buildBrowseGrid(context, searchProviderObj.recentSearches)
                           : hasNoResults
-                          ? _buildEmptyState(context, _searchController.text)
-                          : ListView(
+                          ? _buildEmptyState(context, searchProviderObj.query)
+                          : LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isDesktop = constraints.maxWidth > 800;
+                                return ListView(
                               controller: _scrollController,
                               padding: const EdgeInsets.symmetric(horizontal: 20),
                               children: [
                                 // Artists Direct Match Section
-                                if (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 2) ...[
+                                if (isDesktop && _selectedCategoryIndex == 0) ...[
+                                  _buildDesktopTopSection(context, searchProviderObj, songs),
+                                  const SizedBox(height: 32),
+                                ],
+
+                                if (!isDesktop && (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 2)) ...[
                                   if (searchProviderObj.artists.isNotEmpty) _buildTopResultCard(context, searchProviderObj.artists.first),
                                   const SizedBox(height: 16),
-
                                   if (searchProviderObj.artists.length > 1) ...[
-                                    Text(
-                                      "Artists",
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        color: context.themeTextColor,
-                                      ),
-                                    ),
+                                    Text("Artists", style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700, color: context.themeTextColor)),
                                     const SizedBox(height: 8),
-                                    ...searchProviderObj.artists.skip(1).map((artist) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 6),
-                                    child: Material(
-                                      color: context.themeCardColor.withValues(alpha: 0.5),
-                                      borderRadius: BorderRadius.circular(16),
-                                      child: ListTile(
-                                        leading: CircleAvatar(
-                                          backgroundColor: context.themeAccentColor,
-                                          backgroundImage: artist['image']?.toString().isNotEmpty == true 
-                                              ? CachedNetworkImageProvider(artist['image']) 
-                                              : null,
-                                          child: artist['image']?.toString().isNotEmpty == true 
-                                              ? null 
-                                              : Icon(Icons.person, color: context.themeInvertedTextColor),
-                                        ),
-                                        title: Text(
-                                          artist['title'] ?? _searchController.text,
-                                          style: GoogleFonts.inter(
-                                            color: context.themeTextColor,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                        subtitle: Text(
-                                          "Explore full artist discography",
-                                          style: GoogleFonts.inter(
-                                            color: context.themeMutedTextColor,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                        trailing: Icon(Icons.chevron_right, color: context.themeMutedTextColor),
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => ArtistDetailScreen(
-                                                artistName: artist['title'] ?? _searchController.text,
-                                                artistImage: artist['image'],
-                                                artistId: artist['id']?.toString(),
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  )),
+                                    ...searchProviderObj.artists.skip(1).map((artist) => _buildMobileArtistTile(context, artist)),
                                     const SizedBox(height: 16),
                                   ],
                                 ],
+                                
+                                if (isDesktop && _selectedCategoryIndex == 2) ...[
+                                  Text("Artists", style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w800, color: context.themeTextColor)),
+                                  const SizedBox(height: 16),
+                                  GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 200, mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 0.8),
+                                    itemCount: searchProviderObj.artists.length,
+                                    itemBuilder: (ctx, i) => _buildTopResultCard(context, searchProviderObj.artists[i]),
+                                  ),
+                                  const SizedBox(height: 32),
+                                ],
 
                                 // Songs Section
-                                if ((_selectedCategoryIndex == 0 || _selectedCategoryIndex == 1) && songs.isNotEmpty) ...[
-                                  Text(
-                                    "Songs",
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                      color: context.themeTextColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ...songs.map((song) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 6),
-                                        child: Material(
-                                          color: context.themeCardColor.withValues(alpha: 0.5),
-                                          borderRadius: BorderRadius.circular(16),
-                                          child: ListTile(
-                                            leading: ClipRRect(
-                                              borderRadius: BorderRadius.circular(12),
-                                              child: SizedBox(
-                                                width: 44,
-                                                height: 44,
-                                                child: song.coverArt.isNotEmpty
-                                                    ? CustomImageWidget(
-                                                        imageUrl: song.coverArt,
-                                                        fit: BoxFit.cover,
-                                                      )
-                                                    : Icon(Icons.music_note, color: context.themeTextColor),
-                                              ),
-                                            ),
-                                            title: Text(
-                                              song.title,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.inter(
-                                                color: context.themeTextColor,
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            subtitle: Row(
-                                              children: [
-                                                _buildProviderBadge(context, song),
-                                                const SizedBox(width: 6),
-                                                Expanded(
-                                                  child: Text(
-                                                    song.artist,
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: GoogleFonts.inter(
-                                                      color: context.themeMutedTextColor,
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            trailing: IconButton(
-                                              icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
-                                              onPressed: () {
-                                                SongOptionsSheet.show(context, song, playlistContext: songs);
-                                              },
-                                            ),
-                                            onTap: () {
-                                              ref.read(audioPlayerProvider.notifier).playSong(song, queue: songs, index: songs.indexOf(song));
-                                            },
-                                            onLongPress: () {
-                                              SongOptionsSheet.show(context, song, playlistContext: songs);
-                                            },
-                                          ),
-                                        ),
-                                      )),
-                                  const SizedBox(height: 16),
+                                if ((_selectedCategoryIndex == 0 || _selectedCategoryIndex == 1) && songs.isNotEmpty && !(isDesktop && _selectedCategoryIndex == 0)) ...[
+                                  Text("Songs", style: GoogleFonts.outfit(fontSize: isDesktop ? 24 : 18, fontWeight: isDesktop ? FontWeight.w800 : FontWeight.w700, color: context.themeTextColor)),
+                                  const SizedBox(height: 12),
+                                  ...songs.map((song) => isDesktop ? _buildDesktopTrackRow(context, song, songs) : _buildMobileSongTile(context, song, songs)),
+                                  const SizedBox(height: 24),
                                 ],
 
                                 // Albums Section
@@ -342,54 +251,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  ...albums.map((album) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 6),
-                                        child: Material(
-                                          color: context.themeCardColor.withValues(alpha: 0.5),
-                                          borderRadius: BorderRadius.circular(16),
-                                          child: ListTile(
-                                            leading: ClipRRect(
-                                              borderRadius: BorderRadius.circular(12),
-                                              child: SizedBox(
-                                                width: 44,
-                                                height: 44,
-                                                child: album.coverArt.isNotEmpty
-                                                    ? CustomImageWidget(
-                                                        imageUrl: album.coverArt,
-                                                        fit: BoxFit.cover,
-                                                      )
-                                                    : Icon(Icons.album, color: context.themeTextColor),
-                                              ),
-                                            ),
-                                            title: Text(
-                                              album.title,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: GoogleFonts.inter(
-                                                color: context.themeTextColor,
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                            subtitle: Text(
-                                              "Album",
-                                              style: GoogleFonts.inter(
-                                                color: context.themeMutedTextColor,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            trailing: Icon(Icons.chevron_right, color: context.themeMutedTextColor),
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (_) => PlaylistDetailScreen(playlist: album),
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                      )),
+                                  GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                                      maxCrossAxisExtent: 180,
+                                      mainAxisSpacing: 20,
+                                      crossAxisSpacing: 20,
+                                      childAspectRatio: 0.75,
+                                    ),
+                                    itemCount: albums.length,
+                                    itemBuilder: (ctx, i) => _buildAlbumGridCard(context, albums[i]),
+                                  ),
                                   const SizedBox(height: 16),
                                 ],
 
@@ -560,7 +433,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                               },
                                             ),
                                             onTap: () {
-                                              ref.read(audioPlayerProvider.notifier).playSong(song, queue: podcasts, index: podcasts.indexOf(song));
+                                              ref.read(audioPlayerProvider.notifier).playSong(song, queue: [song], index: 0);
                                             },
                                           ),
                                         ),
@@ -575,8 +448,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                   ),
 
                                 SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
-                              ],
-                            ),
+                                ],
+                              );
+                            },
+                          ),
                     ),
                   ),
                 ),
@@ -615,7 +490,211 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
+
+  Widget _buildMobileArtistTile(BuildContext context, Map<String, dynamic> artist) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: context.themeCardColor.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: context.themeAccentColor,
+            backgroundImage: artist['image']?.toString().isNotEmpty == true ? CachedNetworkImageProvider(artist['image']) : null,
+            child: artist['image']?.toString().isNotEmpty == true ? null : Icon(Icons.person, color: context.themeInvertedTextColor),
+          ),
+          title: Text(artist['title'] ?? ref.read(searchProvider).query, style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w700, fontSize: 15)),
+          subtitle: Text("Explore full artist discography", style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
+          trailing: Icon(Icons.chevron_right, color: context.themeMutedTextColor),
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => ArtistDetailScreen(artistName: artist['title'] ?? ref.read(searchProvider).query, artistImage: artist['image'], artistId: artist['id']?.toString())));
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileSongTile(BuildContext context, Song song, List<Song> playlistContext) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: context.themeCardColor.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(16),
+        child: ListTile(
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 44,
+              height: 44,
+              child: song.coverArt.isNotEmpty ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover) : Icon(Icons.music_note, color: context.themeTextColor),
+            ),
+          ),
+          title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 14)),
+          subtitle: Row(
+            children: [
+              _buildProviderBadge(context, song),
+              const SizedBox(width: 6),
+              Expanded(child: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12))),
+            ],
+          ),
+          trailing: IconButton(icon: Icon(Icons.more_vert, color: context.themeMutedTextColor), onPressed: () => SongOptionsSheet.show(context, song, playlistContext: playlistContext)),
+          onTap: () => ref.read(audioPlayerProvider.notifier).playSong(song, queue: [song], index: 0),
+          onLongPress: () => SongOptionsSheet.show(context, song, playlistContext: playlistContext),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopTrackRow(BuildContext context, Song song, List<Song> playlistContext) {
+    String formatDuration(int seconds) {
+      if (seconds <= 0) return '';
+      final m = seconds ~/ 60;
+      final s = seconds % 60;
+      return '$m:${s.toString().padLeft(2, '0')}';
+    }
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        hoverColor: Colors.white.withValues(alpha: 0.06),
+        onTap: () => ref.read(audioPlayerProvider.notifier).playSong(song, queue: [song], index: 0),
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: song.coverArt.isNotEmpty ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover) : Icon(Icons.music_note, color: context.themeMutedTextColor),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 14)),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        _buildProviderBadge(context, song),
+                        const SizedBox(width: 6),
+                        Expanded(child: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12))),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: Text(song.album, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13)),
+              ),
+              SizedBox(
+                width: 60,
+                child: Text(formatDuration(song.duration), style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13)),
+              ),
+              SizedBox(
+                width: 32,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(Icons.more_horiz, color: context.themeMutedTextColor, size: 20),
+                  onPressed: () => SongOptionsSheet.show(context, song, playlistContext: playlistContext),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopTopSection(BuildContext context, dynamic state, List<Song> songs) {
+    // If we have an exact match artist, it will be at the top of artists
+    final bestArtist = state.artists.isNotEmpty ? state.artists.first : null;
+    
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 360,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Top Result", style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w800, color: context.themeTextColor)),
+              const SizedBox(height: 16),
+              if (bestArtist != null)
+                _buildTopResultCard(context, bestArtist, isDesktop: true)
+              else if (songs.isNotEmpty)
+                _buildDesktopTopSongCard(context, songs.first, songs),
+            ],
+          ),
+        ),
+        const SizedBox(width: 32),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Top Songs", style: GoogleFonts.outfit(fontSize: 32, fontWeight: FontWeight.w800, color: context.themeTextColor)),
+              const SizedBox(height: 16),
+              ...songs.take(5).map((song) => _buildDesktopTrackRow(context, song, songs)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopTopSongCard(BuildContext context, Song song, List<Song> contextList) {
+    return Material(
+      color: context.themeCardColor.withValues(alpha: 0.5),
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        hoverColor: Colors.white.withValues(alpha: 0.05),
+        onTap: () => ref.read(audioPlayerProvider.notifier).playSong(song, queue: [song], index: 0),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(song.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold, color: context.themeTextColor)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: context.themeTextColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                    child: Text("SONG", style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: context.themeTextColor, letterSpacing: 1)),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 14, color: context.themeMutedTextColor))),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
   Widget _buildProviderBadge(BuildContext context, Song song) {
+
     String label = 'SAAVN';
     Color badgeColor = const Color(0xFF00B0FF); // Cool Saavn Blue
 
@@ -776,7 +855,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 220,
-              childAspectRatio: 1.6,
+              childAspectRatio: 1.8,
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
             ),
@@ -859,14 +938,14 @@ SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + Media
     );
   }
 
-  Widget _buildTopResultCard(BuildContext context, Map<String, dynamic> artist) {
+  Widget _buildTopResultCard(BuildContext context, Map<String, dynamic> artist, {bool isDesktop = false}) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (_) => ArtistDetailScreen(
-              artistName: artist['title'] ?? _searchController.text,
+              artistName: artist['title'] ?? ref.read(searchProvider).query,
               artistImage: artist['image'],
               artistId: artist['id']?.toString(),
             ),
@@ -874,7 +953,7 @@ SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + Media
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: EdgeInsets.all(isDesktop ? 32 : 20),
         decoration: BoxDecoration(
           color: context.themeCardColor.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(16),
@@ -895,7 +974,7 @@ SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + Media
             ),
             const SizedBox(height: 16),
             Text(
-              artist['title'] ?? _searchController.text,
+              artist['title'] ?? ref.read(searchProvider).query,
               style: GoogleFonts.outfit(
                 color: context.themeTextColor,
                 fontWeight: FontWeight.w800,
@@ -998,11 +1077,12 @@ SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + Media
             );
         context.push('/video_player');
       },
-      child: Material(
-        color: context.themeCardColor.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(16),
-        clipBehavior: Clip.hardEdge,
-        child: Column(
+      child: HoverZoomCard(
+        child: Material(
+          color: context.themeCardColor.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.hardEdge,
+          child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AspectRatio(
@@ -1032,22 +1112,19 @@ SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + Media
                     const Spacer(), // Replaces fixed SizedBox to soak up remaining space naturally
                     Row(
                       children: [
-                      Icon(Icons.person, size: 14, color: context.themeMutedTextColor),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          vid['uploader'] ?? 'YouTube',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.inter(
-                            color: context.themeMutedTextColor,
-                            fontSize: 12,
+                        Expanded(
+                          child: Text(
+                            vid['uploader'] ?? 'YouTube',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: context.themeMutedTextColor,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
-                      ),
-                      const Icon(Icons.play_circle_fill_rounded, color: Colors.red, size: 20),
-                    ],
-                  ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -1055,6 +1132,78 @@ SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + Media
           ],
         ),
       ),
+      ),
     );
   }
+
+  Widget _buildAlbumGridCard(BuildContext context, dynamic album) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PlaylistDetailScreen(playlist: album),
+          ),
+        );
+      },
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: album.coverArt.isNotEmpty
+                    ? CustomImageWidget(imageUrl: album.coverArt, fit: BoxFit.cover)
+                    : Container(color: context.themeCardColor, child: Icon(Icons.album, color: context.themeTextColor)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              album.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w700, fontSize: 14),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              album is Playlist ? (album.type == 'playlist' ? 'Playlist' : 'Album') : 'Album',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class HoverZoomCard extends StatefulWidget {
+  final Widget child;
+  const HoverZoomCard({super.key, required this.child});
+
+  @override
+  State<HoverZoomCard> createState() => _HoverZoomCardState();
+}
+
+class _HoverZoomCardState extends State<HoverZoomCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.05 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+
 }

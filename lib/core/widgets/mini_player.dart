@@ -190,6 +190,17 @@ class MiniPlayer extends ConsumerWidget {
                                 size: 24,
                               ),
                             ),
+                            const SizedBox(width: 8),
+
+                            // Close Player Button
+                            IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 20),
+                              color: context.themeMutedTextColor,
+                              onPressed: () {
+                                ref.read(audioPlayerProvider.notifier).closePlayer();
+                              },
+                              tooltip: 'Close Player',
+                            ),
                           ],
                         ),
                       ),

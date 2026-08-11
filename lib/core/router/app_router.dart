@@ -12,6 +12,7 @@ import 'package:it_feels_music/features/social/social_screen.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
 import 'package:it_feels_music/features/social/room_deep_link_screen.dart';
 import 'package:it_feels_music/features/player/desktop_miniplayer_screen.dart';
+import 'package:it_feels_music/features/player/fullscreen_music_screen.dart';
 import 'package:it_feels_music/features/search/raycast_search_overlay.dart';
 import 'main_navigation_wrapper.dart';
 
@@ -123,6 +124,18 @@ final GoRouter appRouter = GoRouter(
               )),
               child: child,
             );
+          },
+        );
+      },
+    ),
+    GoRoute(
+      path: '/fullscreen_music',
+      parentNavigatorKey: rootNavigatorKey,
+      pageBuilder: (context, state) {
+        return CustomTransitionPage(
+          child: const FullscreenMusicScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
           },
         );
       },

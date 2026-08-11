@@ -142,13 +142,29 @@ class _SocialScreenState extends ConsumerState<SocialScreen> with SingleTickerPr
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "Social",
-                    style: GoogleFonts.outfit(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w900,
-                      color: context.themeTextColor,
-                    ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.arrow_back, color: context.themeTextColor),
+                        onPressed: () {
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/');
+                          }
+                        },
+                        padding: EdgeInsets.zero,
+                        alignment: Alignment.centerLeft,
+                      ),
+                      Text(
+                        "Social",
+                        style: GoogleFonts.outfit(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w900,
+                          color: context.themeTextColor,
+                        ),
+                      ),
+                    ],
                   ),
                   IconButton(
                     icon: Icon(Icons.person_add_rounded, color: context.themeTextColor),

@@ -634,6 +634,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                       song: currentSong,
                       surfaceColor: surfaceColor,
                       accentColor: accentColor,
+                      isWide: isWide,
                     );
 
                     if (isWide) {

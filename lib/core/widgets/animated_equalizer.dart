@@ -25,18 +25,20 @@ class _AnimatedEqualizerState extends State<AnimatedEqualizer> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 24,
-      height: 24,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          _buildBar(0.3, 0.9),
-          _buildBar(0.6, 1.0),
-          _buildBar(0.2, 0.7),
-          _buildBar(0.7, 0.9),
-        ],
+    return ExcludeSemantics(
+      child: SizedBox(
+        width: 24,
+        height: 24,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            _buildBar(0.3, 0.9),
+            _buildBar(0.6, 1.0),
+            _buildBar(0.2, 0.7),
+            _buildBar(0.7, 0.9),
+          ],
+        ),
       ),
     );
   }

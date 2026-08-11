@@ -933,6 +933,11 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     _saveCurrentPosition();
   }
 
+  Future<void> closePlayer() async {
+    await stop();
+    state = state.copyWith(clearCurrentSong: true);
+  }
+
   Future<void> _saveCurrentPosition() async {
     final song = state.currentSong;
     if (song != null) {
