@@ -48,6 +48,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="app.itfeelsmusic.com" />
+                <data android:scheme="https" android:host="itfeelsmusic.app" />
             </intent-filter>
         </activity>
         <service android:name="com.ryanheise.audioservice.AudioService"
