@@ -344,7 +344,9 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
                   final uri = GoRouterState.of(context).uri.toString();
                   if (uri != '/search') {
                     context.go('/search');
-                    Future.microtask(() => _searchFocusNode.requestFocus());
+                    Future.delayed(const Duration(milliseconds: 300), () {
+                      if (mounted) _searchFocusNode.requestFocus();
+                    });
                   }
                   ref.read(searchProvider.notifier).search(val);
                 },

@@ -20,12 +20,38 @@ class NowPlayingProgress extends ConsumerWidget {
   String _formatDuration(Duration d) {
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    if (d.inHours > 0) {
+      return '${d.inHours}:$minutes:$seconds';
+    }
     return '$minutes:$seconds';
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final videoProvider = ref.watch(videoPlayerProvider);
+    final audioProv = ref.watch(audioPlayerProvider);
+    final isRadio = audioProv.currentSong?.id.startsWith('radio:') ?? false;
+    
+    if (isRadio) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: Colors.red,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text("LIVE BROADCAST", style: AppTypography.interBold.copyWith(color: Colors.red, letterSpacing: 1.5, fontSize: 12)),
+          ],
+        ),
+      );
+    }
 
     if (isVideoMode && videoProvider.videoController != null) {
       return ExcludeSemantics(

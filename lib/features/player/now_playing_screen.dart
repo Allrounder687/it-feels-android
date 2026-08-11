@@ -168,6 +168,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
   String _formatDuration(Duration d) {
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    if (d.inHours > 0) {
+      return '${d.inHours}:$minutes:$seconds';
+    }
     return '$minutes:$seconds';
   }
 
@@ -480,34 +483,47 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
           );
         }
 
-        if (_isVideoMode && currentSong.id != _lastPlayedSongId) {
+        if (currentSong.id != _lastPlayedSongId) {
+          final isPodcast = currentSong.album == 'YouTube Podcast';
           _lastPlayedSongId = currentSong.id;
           _hasViewedVideoForCurrentSong = false;
+          
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               setState(() {
-                _isVideoMode = false;
+                _isVideoMode = isPodcast;
               });
+              
               final settingsProv = ref.read(settingsProvider);
-              ref
-                  .read(videoPlayerProvider.notifier)
-                  .playVideo(
-                    currentSong.id.contains(':')
-                        ? currentSong.id
-                        : 'search:${currentSong.id}',
-                    currentSong.title,
-                    currentSong.artist,
-                    query: BackendApiService.cleanSearchQuery(
-                      currentSong.title,
-                      currentSong.artist,
-                    ),
-                    startPosition: ref.read(audioPlayerProvider).position,
-                  );
+              
+              if (isPodcast) {
+                if (settingsProv.useVideoAudioSource) {
+                  ref.read(videoPlayerProvider.notifier).setMuted(false);
+                } else {
+                  ref.read(videoPlayerProvider.notifier).setMuted(true);
+                }
+                
+                ref.read(videoPlayerProvider.notifier).setOnVideoStarted(() {
+                  if (_isVideoMode && settingsProv.useVideoAudioSource) {
+                    ref.read(audioPlayerProvider.notifier).pause();
+                  }
+                });
+              }
+
+              ref.read(videoPlayerProvider.notifier).playVideo(
+                currentSong.id.contains(':')
+                    ? currentSong.id
+                    : 'search:${currentSong.id}',
+                currentSong.title,
+                currentSong.artist,
+                query: BackendApiService.cleanSearchQuery(
+                  currentSong.title,
+                  currentSong.artist,
+                ),
+                startPosition: ref.read(audioPlayerProvider).position,
+              );
             }
           });
-        } else if (currentSong.id != _lastPlayedSongId) {
-          _lastPlayedSongId = currentSong.id;
-          _hasViewedVideoForCurrentSong = false;
         }
 
         final isFav = playerProvider.isFavorite(currentSong.id);
