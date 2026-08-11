@@ -110,16 +110,17 @@ class VideoPlayerState {
 }
 
 class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
+  Timer? _hostSyncTimer;
+  StreamSubscription? _roomSubscription;
+  StreamSubscription? _positionSubscription;
+  StreamSubscription? _trackerSubscription;
+  bool _isRecovering = false;
+  int _recoveryAttempts = 0;
+  Duration _lastKnownPosition = Duration.zero;
+
   void setOnVideoStarted(VoidCallback? callback) {
     state = state.copyWith(onVideoStarted: callback);
   }
-
-  bool _isRecovering = false;
-  int _recoveryAttempts = 0;
-  
-  Timer? _hostSyncTimer;
-  StreamSubscription<DatabaseEvent>? _roomSubscription;
-  StreamSubscription<Duration>? _positionSubscription;
 
   @override
   VideoPlayerState build() {
@@ -487,10 +488,18 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       }
     }
 
+    _trackerSubscription?.cancel();
+    _trackerSubscription = player.stream.position.listen((pos) {
+      if (pos > Duration.zero) {
+        _lastKnownPosition = pos;
+      }
+    });
+
     player.stream.error.listen((event) {
       final err = event.toString();
       if (err.contains('403') || err.contains('Response code: 403')) {
-        _handleVideoPlaybackError(player.state.position, player.state.playing);
+        final posToResume = player.state.position > Duration.zero ? player.state.position : _lastKnownPosition;
+        _handleVideoPlaybackError(posToResume, player.state.playing);
       }
     });
 
@@ -662,6 +671,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     _hostSyncTimer?.cancel();
     _roomSubscription?.cancel();
     _positionSubscription?.cancel();
+    _trackerSubscription?.cancel();
     if (state.isHost && state.currentRoomId != null) {
       locator<RoomService>().endRoom(state.currentRoomId!);
     }
