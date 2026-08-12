@@ -424,7 +424,10 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     var selectedStream = state.streams.firstWhere(
       (s) => s['quality'] == targetQuality,
       orElse: () {
-        int parseQ(String q) => int.tryParse(q.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+        int parseQ(String q) {
+          if (q.toLowerCase().contains('hls')) return 1080;
+          return int.tryParse(q.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+        }
         final target = parseQ(targetQuality);
         var best = state.streams.first;
         var minDiff = 999999;

@@ -16,6 +16,8 @@ import 'package:it_feels_music/features/social/download_deep_link_screen.dart';
 import 'package:it_feels_music/features/player/desktop_miniplayer_screen.dart';
 import 'package:it_feels_music/features/player/fullscreen_music_screen.dart';
 import 'package:it_feels_music/features/search/raycast_search_overlay.dart';
+import 'package:it_feels_music/features/onboarding/onboarding_screen.dart';
+import 'package:it_feels_music/services/storage_service.dart';
 import 'main_navigation_wrapper.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -26,11 +28,22 @@ final GlobalKey<NavigatorState> _shellNavigatorVideosKey = GlobalKey<NavigatorSt
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
-  initialLocation: '/home',
+  initialLocation: '/',
   routes: [
     GoRoute(
       path: '/',
-      redirect: (_, __) => '/home',
+      redirect: (context, state) async {
+        final hasSeen = await StorageService.getHasSeenOnboarding();
+        if (!hasSeen) return '/onboarding';
+        return '/home';
+      },
+    ),
+    GoRoute(
+      path: '/onboarding',
+      parentNavigatorKey: rootNavigatorKey,
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: OnboardingScreen(),
+      ),
     ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
@@ -172,8 +185,9 @@ final GoRouter appRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       pageBuilder: (context, state) {
         final roomId = state.pathParameters['roomId'] ?? '';
+        final expStr = state.uri.queryParameters['exp'];
         return NoTransitionPage(
-          child: RoomDeepLinkScreen(roomId: roomId),
+          child: RoomDeepLinkScreen(roomId: roomId, expStr: expStr),
         );
       },
     ),

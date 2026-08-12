@@ -489,28 +489,11 @@ class BackendApiService {
 
         final List<Map<String, dynamic>> streams = [];
         
-        // Get all available video-only streams (from 144p up to 4K/8K)
-        if (manifest.videoOnly.isNotEmpty) {
-          final uniqueQualities = <String>{};
-          final sortedStreams = manifest.videoOnly.sortByVideoQuality();
-          
-          for (final stream in sortedStreams) {
-            final quality = stream.videoQuality.name.replaceAll(RegExp(r'[^0-9p]'), ''); // Extract just '1080p', etc.
-            final cleanQuality = quality.isNotEmpty ? quality : stream.videoQuality.name;
-            
-            if (!uniqueQualities.contains(cleanQuality)) {
-              uniqueQualities.add(cleanQuality);
-              streams.add({
-                'quality': cleanQuality,
-                'url': stream.url.toString(),
-                'mimeType': stream.container.name,
-                'videoOnly': true,
-              });
-            }
-          }
-        }
-
-        // Fallback: adaptive HLS manifest
+        // Get all available streams (HLS Adaptive or Muxed)
+        // We intentionally bypass `videoOnly` streams because `media_kit` handles 
+        // separate audio/video streams poorly on Windows, causing infinite buffering or 360p fallbacks.
+        
+        // Fallback: adaptive HLS manifest (which automatically scales to 1080p)
         if (manifest.hls.isNotEmpty) {
           final highestHls = manifest.hls.withHighestBitrate();
           streams.add({

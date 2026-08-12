@@ -6,6 +6,7 @@ import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:it_feels_music/services/notification_service.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
@@ -18,13 +19,24 @@ class ListenTogetherService {
   
   StreamSubscription? _roomSubscription;
   StreamSubscription? _joinRequestSubscription;
+  StreamSubscription? _offsetSubscription;
   
   String? currentRoomId;
   bool isHost = false;
+  int _serverTimeOffset = 0;
+
+  ListenTogetherService() {
+    _offsetSubscription = FirebaseDatabase.instance.ref('.info/serverTimeOffset').onValue.listen((event) {
+      _serverTimeOffset = (event.snapshot.value as int?) ?? 0;
+    });
+  }
+
+  int get estimatedServerTime => DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;
 
   void dispose() {
     _roomSubscription?.cancel();
     _joinRequestSubscription?.cancel();
+    _offsetSubscription?.cancel();
   }
 
   Future<String?> startBroadcasting(String uid, Song currentSong, Duration position, bool isPlaying, bool isPremium, {String? streamUrl}) async {
@@ -35,7 +47,8 @@ class ListenTogetherService {
       isPlaying, 
       isPublic: isPremium, 
       allowGuestControl: true,
-      streamUrl: streamUrl
+      streamUrl: streamUrl,
+      timestamp: estimatedServerTime,
     );
     
     currentRoomId = roomId;
@@ -127,9 +140,15 @@ class ListenTogetherService {
         appProviderContainer.read(audioPlayerProvider.notifier).playSong(dummy, predefinedStreamUrl: data['streamUrl']); 
       }
       
-      final diff = (engine.position.inMilliseconds - positionMs).abs();
-      if (diff > 2000) {
-        await engine.seek(Duration(milliseconds: positionMs));
+      final timestamp = data['timestamp'] as int? ?? DateTime.now().millisecondsSinceEpoch;
+      final elapsedMs = isPlaying ? (estimatedServerTime - timestamp) : 0;
+      // Clamp elapsed time to a reasonable bounds (e.g. max 10 seconds latency compensation)
+      final safeElapsedMs = elapsedMs > 0 && elapsedMs < 10000 ? elapsedMs : 0;
+      final targetPositionMs = positionMs + safeElapsedMs;
+      
+      final diff = (engine.position.inMilliseconds - targetPositionMs).abs();
+      if (diff > 500) {
+        await engine.seek(Duration(milliseconds: targetPositionMs));
       }
       
       if (isPlaying != engine.isPlaying) {
@@ -158,7 +177,7 @@ class ListenTogetherService {
   
   void updateRoomState(Song song, Duration position, bool isPlaying, {String? streamUrl}) {
     if (currentRoomId != null && isHost) {
-      _roomService.updateRoomState(currentRoomId!, song, position, isPlaying, streamUrl: streamUrl);
+      _roomService.updateRoomState(currentRoomId!, song, position, isPlaying, streamUrl: streamUrl, timestamp: estimatedServerTime);
     }
   }
 }

@@ -7,7 +7,8 @@ import 'package:it_feels_music/core/theme/theme_ext.dart';
 
 class RoomDeepLinkScreen extends ConsumerStatefulWidget {
   final String roomId;
-  const RoomDeepLinkScreen({super.key, required this.roomId});
+  final String? expStr;
+  const RoomDeepLinkScreen({super.key, required this.roomId, this.expStr});
 
   @override
   ConsumerState<RoomDeepLinkScreen> createState() => _RoomDeepLinkScreenState();
@@ -24,6 +25,19 @@ class _RoomDeepLinkScreenState extends ConsumerState<RoomDeepLinkScreen> {
 
   Future<void> _joinAndRedirect() async {
     try {
+      if (widget.expStr != null) {
+        final exp = int.tryParse(widget.expStr!);
+        if (exp != null && DateTime.now().millisecondsSinceEpoch > exp) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('This room invite link has expired.')),
+            );
+            context.go('/home');
+          }
+          return;
+        }
+      }
+
       await ref.read(audioPlayerProvider.notifier).joinSession(widget.roomId);
       if (mounted) {
         // Navigate to home and open full player or bottom sheet

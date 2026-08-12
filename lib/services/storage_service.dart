@@ -19,11 +19,23 @@ class StorageService {
   static const String _audioSpeedKey = 'audio_speed_v1';
   static const String _audioPitchKey = 'audio_pitch_v1';
   static const String _customVideoLinksKey = 'custom_video_links_v1';
+  static const String _hasSeenOnboardingKey = 'has_seen_onboarding_v1';
 
   /// Learning Engine: Artist History
   static Future<void> saveListeningHistory(Map<String, int> artistCounts) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_artistHistoryKey, json.encode(artistCounts));
+  }
+
+  /// Onboarding State
+  static Future<void> setHasSeenOnboarding(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_hasSeenOnboardingKey, value);
+  }
+
+  static Future<bool> getHasSeenOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_hasSeenOnboardingKey) ?? false;
   }
 
   static Future<Map<String, int>> loadListeningHistory() async {

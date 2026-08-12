@@ -65,7 +65,9 @@ Future<void> main(List<String> args) async {
               if (uri.host == 'room') {
                 final roomId = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
                 if (roomId != null && roomId.isNotEmpty) {
-                  appRouter.go('/room/$roomId');
+                  final exp = uri.queryParameters['exp'];
+                  final route = exp != null ? '/room/$roomId?exp=$exp' : '/room/$roomId';
+                  appRouter.go(route);
                 }
               } else if (uri.host == 'song') {
                 final songId = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
@@ -315,7 +317,9 @@ Future<void> main(List<String> args) async {
         if (uri.host == 'room') {
           final roomId = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
           if (roomId != null && roomId.isNotEmpty) {
-            appRouter.go('/room/$roomId');
+            final exp = uri.queryParameters['exp'];
+            final route = exp != null ? '/room/$roomId?exp=$exp' : '/room/$roomId';
+            appRouter.go(route);
             await windowManager.show();
             await windowManager.focus();
           }

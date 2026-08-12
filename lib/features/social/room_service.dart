@@ -14,7 +14,7 @@ class RoomService {
   );
   
   // Create a new Listen Together Room (Audio)
-  Future<String> createRoom(String hostId, Song currentSong, Duration position, bool isPlaying, {bool isPublic = false, bool allowGuestControl = false, String? streamUrl}) async {
+  Future<String> createRoom(String hostId, Song currentSong, Duration position, bool isPlaying, {bool isPublic = false, bool allowGuestControl = false, String? streamUrl, int? timestamp}) async {
     final roomId = _generateRoomCode();
     final roomRef = _rtdb.ref('rooms/$roomId');
     await roomRef.keepSynced(true);
@@ -32,7 +32,7 @@ class RoomService {
       'streamUrl': streamUrl,
       'positionMs': position.inMilliseconds,
       'isPlaying': isPlaying,
-      'timestamp': ServerValue.timestamp,
+      'timestamp': timestamp ?? ServerValue.timestamp,
     }).timeout(const Duration(seconds: 10));
     
     // Auto-cleanup on disconnect
@@ -41,7 +41,7 @@ class RoomService {
   }
 
   // Update room state (only called by host)
-  Future<void> updateRoomState(String roomId, Song currentSong, Duration position, bool isPlaying, {String? streamUrl}) async {
+  Future<void> updateRoomState(String roomId, Song currentSong, Duration position, bool isPlaying, {String? streamUrl, int? timestamp}) async {
     final roomRef = _rtdb.ref('rooms/$roomId');
     await roomRef.update({
       'type': 'audio',
@@ -53,7 +53,7 @@ class RoomService {
       'streamUrl': streamUrl,
       'positionMs': position.inMilliseconds,
       'isPlaying': isPlaying,
-      'timestamp': ServerValue.timestamp,
+      'timestamp': timestamp ?? ServerValue.timestamp,
     }).timeout(const Duration(seconds: 10));
   }
 

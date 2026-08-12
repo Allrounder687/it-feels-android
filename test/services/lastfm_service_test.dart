@@ -41,9 +41,9 @@ void main() {
     });
 
     test('authenticate sets preferences on success', () async {
-      when(() => mockClient.post(any(), body: any(named: 'body'))).thenAnswer(
+      when(() => mockClient.post(any(), headers: any(named: 'headers'), body: any(named: 'body'))).thenAnswer(
         (_) async => http.Response(json.encode({
-          'session': {'name': 'testuser', 'key': 'testsessionkey'}
+          'name': 'testuser', 'sessionKey': 'testsessionkey'
         }), 200),
       );
 
@@ -59,26 +59,26 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('lastfm_session_key_v1', 'testsessionkey');
 
-      when(() => mockClient.post(any(), body: any(named: 'body'))).thenAnswer(
+      when(() => mockClient.post(any(), headers: any(named: 'headers'), body: any(named: 'body'))).thenAnswer(
         (_) async => http.Response('{}', 200),
       );
 
       await lastfmService.updateNowPlaying(dummySong);
 
-      verify(() => mockClient.post(any(), body: any(named: 'body'))).called(1);
+      verify(() => mockClient.post(any(), headers: any(named: 'headers'), body: any(named: 'body'))).called(1);
     });
 
     test('scrobble sends request if authenticated', () async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('lastfm_session_key_v1', 'testsessionkey');
 
-      when(() => mockClient.post(any(), body: any(named: 'body'))).thenAnswer(
+      when(() => mockClient.post(any(), headers: any(named: 'headers'), body: any(named: 'body'))).thenAnswer(
         (_) async => http.Response('{}', 200),
       );
 
       await lastfmService.scrobble(dummySong, DateTime.now());
 
-      verify(() => mockClient.post(any(), body: any(named: 'body'))).called(1);
+      verify(() => mockClient.post(any(), headers: any(named: 'headers'), body: any(named: 'body'))).called(1);
     });
   });
 }

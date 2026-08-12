@@ -172,6 +172,7 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
                 onExit: (_) => setState(() => _isLogoHovered = false),
                 cursor: SystemMouseCursors.click,
                 child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () {
                     // We need to import bottom_ui_provider.dart at the top to access sidebarPinnedProvider
                     final current = ref.read(sidebarPinnedProvider);

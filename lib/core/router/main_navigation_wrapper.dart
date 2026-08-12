@@ -518,7 +518,22 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                             child: Stack(
                               children: [
                                 // Active Shell Route
-                                widget.navigationShell,
+                                Consumer(
+                                  builder: (context, ref, _) {
+                                    final bottomUiHeight = ref.watch(bottomUiProvider);
+                                    return MediaQuery(
+                                      data: MediaQuery.of(context).copyWith(
+                                        padding: MediaQuery.of(context).padding.copyWith(
+                                              bottom: MediaQuery.of(context).padding.bottom + bottomUiHeight,
+                                            ),
+                                        viewPadding: MediaQuery.of(context).viewPadding.copyWith(
+                                              bottom: MediaQuery.of(context).viewPadding.bottom + bottomUiHeight,
+                                            ),
+                                      ),
+                                      child: widget.navigationShell,
+                                    );
+                                  },
+                                ),
 
                                 // Video Miniplayer Overlay (PiP)
                                 if (showVideoPiP)
@@ -567,7 +582,22 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                   return Stack(
                     children: [
                       // Active Shell Route
-                      widget.navigationShell,
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final bottomUiHeight = ref.watch(bottomUiProvider);
+                          return MediaQuery(
+                            data: MediaQuery.of(context).copyWith(
+                              padding: MediaQuery.of(context).padding.copyWith(
+                                    bottom: MediaQuery.of(context).padding.bottom + bottomUiHeight,
+                                  ),
+                              viewPadding: MediaQuery.of(context).viewPadding.copyWith(
+                                    bottom: MediaQuery.of(context).viewPadding.bottom + bottomUiHeight,
+                                  ),
+                            ),
+                            child: widget.navigationShell,
+                          );
+                        },
+                      ),
 
                       // Floating MiniPlayer + Bottom Navigation Bar Overlay
                       if (MediaQuery.of(context).orientation ==

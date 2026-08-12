@@ -15,9 +15,11 @@ class SubscriptionService {
   static const entitlementId = 'premium';
 
   final FirebaseFirestore _firestore;
+  final FirebaseAuth _auth;
 
-  SubscriptionService({FirebaseFirestore? firestore}) 
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  SubscriptionService({FirebaseFirestore? firestore, FirebaseAuth? auth}) 
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _auth = auth ?? FirebaseAuth.instance;
 
   Future<void> initialize(String? currentUserId) async {
     if (kIsWeb) return; // Purchases not supported on web
@@ -75,7 +77,7 @@ class SubscriptionService {
 
     // 2. Check via Cloudflare Worker (Bypasses unreliable local Firestore cache)
     try {
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _auth.currentUser;
       if (user == null) return false;
       
       final token = await user.getIdToken(true); // Force refresh to get latest claims if any

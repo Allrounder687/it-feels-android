@@ -57,9 +57,10 @@ class _NowPlayingActionsState extends ConsumerState<NowPlayingActions> {
       final file = File('${dir.path}/story_${widget.currentSong.id}.png');
       await file.writeAsBytes(byteData.buffer.asUint8List());
       
+      final exp = DateTime.now().add(const Duration(hours: 24)).millisecondsSinceEpoch;
       await Share.shareXFiles(
         [XFile(file.path)],
-        text: 'Listening to "${widget.currentSong.title}" by ${widget.currentSong.artist} on It Feels Music! 🎶\nhttps://allrounder687.github.io/room/${widget.currentSong.id}', // Fake room link for now to test deep links later
+        text: 'Listening to "${widget.currentSong.title}" by ${widget.currentSong.artist} on It Feels Music! 🎧\nhttps://allrounder687.github.io/room/${widget.currentSong.id}?exp=$exp', // Fake room link for now to test deep links later
       );
     } catch (e) {
       debugPrint("Share error: $e");

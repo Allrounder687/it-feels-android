@@ -165,12 +165,14 @@ class HomeState {
 }
 
 class HomeNotifier extends Notifier<HomeState> {
-  final saavnApi = MusicApiService();
-  final deezerApi = DeezerApiService();
+  late final MusicApiService saavnApi;
+  late final DeezerApiService deezerApi;
   late final LastfmService lastfmService;
 
   @override
   HomeState build() {
+    saavnApi = locator.isRegistered<MusicApiService>() ? locator<MusicApiService>() : MusicApiService();
+    deezerApi = locator.isRegistered<DeezerApiService>() ? locator<DeezerApiService>() : DeezerApiService();
     lastfmService = locator<LastfmService>();
     Future.microtask(() {
       _initCategory();
