@@ -251,6 +251,22 @@ Future<void> main(List<String> args) async {
     );
 
     await windowManager.ensureInitialized();
+    
+    // Layer 1: Native OS Compositor Material
+    await Window.initialize();
+    if (Platform.isWindows) {
+      await Window.setEffect(
+        effect: WindowEffect.acrylic,
+        dark: true,
+        color: const Color(0x00000000), // Fully transparent base
+      );
+    } else if (Platform.isMacOS) {
+      await Window.setEffect(
+        effect: WindowEffect.sidebar, // NSVisualEffectView sidebar material
+        dark: true,
+      );
+    }
+
     const windowOptions = WindowOptions(
       size: Size(1280, 720),
       minimumSize: Size(800, 600),
@@ -261,21 +277,6 @@ Future<void> main(List<String> args) async {
     );
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.setTitleBarStyle(TitleBarStyle.hidden, windowButtonVisibility: false);
-      
-      // Layer 1: Native OS Compositor Material
-      await Window.initialize();
-      if (Platform.isWindows) {
-        await Window.setEffect(
-          effect: WindowEffect.acrylic,
-          dark: true,
-          color: const Color(0x00000000), // Fully transparent base
-        );
-      } else if (Platform.isMacOS) {
-        await Window.setEffect(
-          effect: WindowEffect.sidebar, // NSVisualEffectView sidebar material
-          dark: true,
-        );
-      }
 
       await windowManager.show();
       await windowManager.focus();

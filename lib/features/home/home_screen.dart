@@ -272,11 +272,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              mainAxisSpacing: 12,
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 350,
+              mainAxisExtent: 64,
               crossAxisSpacing: 16,
-              mainAxisExtent: 64, // Increased from 56 to prevent text overflow
+              mainAxisSpacing: 12,
             ),
             itemCount: gridSongs.length,
             itemBuilder: (context, index) {
@@ -881,19 +881,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               final crossAxisCount = isWide ? 2 : 3;
               final carouselHeight = isWide ? 150.0 : 220.0;
 
-              // In a horizontal GridView:
-              // crossAxis is vertical (height), mainAxis is horizontal (width).
               // We want each item to be wide enough to take up most of the screen on mobile,
               // but constrained to a reasonable max width on tablets so they don't stretch into strips.
-              final itemWidth = isWide ? (screenWidth > 1200 ? 380.0 : 320.0) : (screenWidth * 0.85);
-
-              // Calculate effective row height
-              // crossAxisSpacing is the vertical spacing between rows (12.0)
-              final rowHeight =
-                  (carouselHeight - (crossAxisCount - 1) * 12.0) /
-                  crossAxisCount;
-              final aspectRatio = rowHeight / itemWidth;
-
               return SizedBox(
                 height: carouselHeight,
                 child: GridView.builder(
@@ -902,7 +891,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
-                    childAspectRatio: aspectRatio,
+                    mainAxisExtent: 350, // Constrain item width to 350px
                     mainAxisSpacing: 16, // Horizontal spacing between items
                     crossAxisSpacing: 12, // Vertical spacing between rows
                   ),
@@ -1812,7 +1801,7 @@ class _GlassmorphicChipState extends State<_GlassmorphicChip> {
                   widget.label,
                   style: GoogleFonts.inter(
                     color: widget.isSelected
-                        ? context.themeBackgroundColor
+                        ? (context.themeBackgroundColor == Colors.transparent ? Colors.black87 : context.themeBackgroundColor)
                         : context.themeTextColor,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,

@@ -395,11 +395,11 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
           }
         }
       },
-      child: _GlassShieldWrapper(
-        isGlassMode: context.isGlassTheme,
-        child: Scaffold(
-        backgroundColor: context.themeBackgroundColor,
-        body: FocusTraversalGroup(
+      child: Scaffold(
+        backgroundColor: Colors.transparent, // Must be transparent to let OS blur through
+        body: _GlassShieldWrapper(
+          isGlassMode: context.isGlassTheme,
+          child: FocusTraversalGroup(
           policy: OrderedTraversalPolicy(),
           child: Consumer(
             builder: (context, ref, _) {
