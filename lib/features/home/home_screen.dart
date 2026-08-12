@@ -1100,6 +1100,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         fontWeight: FontWeight.w900,
                                         color: context.themeTextColor,
                                         letterSpacing: -0.5,
+                                        shadows: [
+                                          Shadow(
+                                            offset: const Offset(0, 2),
+                                            blurRadius: 4,
+                                            color: Colors.black.withValues(alpha: 0.5),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -1779,44 +1786,23 @@ class _GlassmorphicChipState extends State<_GlassmorphicChip> {
         focusedScale: 1.1,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
             color: widget.isSelected
-                ? context.themeAccentColor
-                : context.themeSurfaceColor.withValues(alpha: _isHovered ? 0.3 : 0.1),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: widget.isSelected
-                  ? Colors.transparent
-                  : Colors.white.withValues(alpha: _isHovered ? 0.2 : 0.1),
-              width: 1,
-            ),
-            boxShadow: widget.isSelected || _isHovered
-                ? [
-                    BoxShadow(
-                      color: (widget.isSelected ? context.themeAccentColor : Colors.white).withValues(alpha: 0.2),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
+                ? Colors.white
+                : (_isHovered
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.transparent),
+            borderRadius: BorderRadius.circular(20),
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                child: Text(
-                  widget.label,
-                  style: GoogleFonts.inter(
-                    color: widget.isSelected
-                        ? (context.themeBackgroundColor == Colors.transparent ? Colors.black87 : context.themeBackgroundColor)
-                        : context.themeTextColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+          child: Text(
+            widget.label,
+            style: GoogleFonts.inter(
+              color: widget.isSelected
+                  ? Colors.black
+                  : Colors.white.withValues(alpha: 0.7),
+              fontSize: 14,
+              fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
             ),
           ),
         ),
