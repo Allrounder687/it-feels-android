@@ -77,42 +77,54 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
       return const SizedBox.shrink();
     }
 
+    final isGlass = context.isGlassTheme;
     final surfaceColor = context.themeSurfaceColor;
     final backgroundColor = context.themeBackgroundColor;
 
     // Simulate Mica with a vertical gradient + blur
-    final gradient = widget.isSolid
-        ? LinearGradient(
+    final gradient = isGlass
+        ? const LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [surfaceColor, backgroundColor],
+            colors: [Color(0x0DFFFFFF), Colors.transparent], // 5% white to transparent
           )
-        : LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              surfaceColor.withValues(alpha: _isFocused ? 0.3 : 0.1),
-              backgroundColor.withValues(alpha: _isFocused ? 0.4 : 0.2),
-            ],
-          );
+        : (widget.isSolid
+            ? LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [surfaceColor, backgroundColor],
+              )
+            : LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  surfaceColor.withValues(alpha: _isFocused ? 0.3 : 0.1),
+                  backgroundColor.withValues(alpha: _isFocused ? 0.4 : 0.2),
+                ],
+              ));
 
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        boxShadow: [
-          // Subtle inner bottom shadow to create a glass edge
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.05),
-            offset: const Offset(0, 1),
-            blurRadius: 0,
-          ),
-        ],
+        border: isGlass
+            ? const Border(bottom: BorderSide(color: Color(0x1FFFFFFF), width: 1.0))
+            : null,
+        boxShadow: !isGlass
+            ? [
+                // Subtle inner bottom shadow to create a glass edge
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  offset: const Offset(0, 1),
+                  blurRadius: 0,
+                ),
+              ]
+            : null,
       ),
       child: ClipRRect(
         child: BackdropFilter(
           filter: ImageFilter.blur(
-            sigmaX: widget.isSolid ? 0.0 : 25.0,
-            sigmaY: widget.isSolid ? 0.0 : 25.0,
+            sigmaX: (widget.isSolid || isGlass) ? 0.0 : 25.0,
+            sigmaY: (widget.isSolid || isGlass) ? 0.0 : 25.0,
           ),
           child: Container(
             decoration: BoxDecoration(gradient: gradient),
