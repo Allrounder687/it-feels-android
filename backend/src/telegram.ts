@@ -7,7 +7,7 @@ export const telegram = new Hono<{ Bindings: any }>();
 const getSmartAdvert = () => `
 🚀 **Want the full experience?** Stop downloading individual tracks! Get our app for Ad-Free High-Quality Streaming, Live Rooms, Synced Lyrics, and Background Video Playback.
 
-⬇️ [Download for Windows](https://github.com/Allrounder687/IT-Feels-App/releases/latest) | ⬇️ [Download for Android](https://github.com/Allrounder687/IT-Feels-App/releases/latest)
+⬇️ [Download for Windows](https://github.com/Allrounder687/it-feels-android/releases/latest) | ⬇️ [Download for Android](https://github.com/Allrounder687/it-feels-android/releases/latest)
 `;
 
 telegram.post('/webhook', async (c) => {
@@ -335,7 +335,7 @@ telegram.get('/player', (c) => {
         <div class="advert">
           🚀 <strong>Tired of bots?</strong><br>
           Get the full IT-Feels Music app for ad-free high-quality streaming, synced lyrics, and offline downloads!
-          <a href="https://github.com/Allrounder687/IT-Feels-App/releases/latest" class="btn" target="_blank">Download App</a>
+          <a href="https://github.com/Allrounder687/it-feels-android/releases/latest" class="btn" target="_blank">Download App</a>
         </div>
       </div>
       <script>

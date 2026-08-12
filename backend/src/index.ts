@@ -64,7 +64,7 @@ app.get('/', (c) => {
       <div class="container">
         <h1>IT Feels Music</h1>
         <p>The ultimate ad-free, high-res music streaming experience. Sync your vibes, connect with friends, and discover new tracks daily.</p>
-        <a href="https://github.com/Allrounder687/IT-Feels-App/releases/latest" class="download-btn" target="_blank">Download for Android</a>
+        <a href="https://github.com/Allrounder687/it-feels-android/releases/latest" class="download-btn" target="_blank">Download for Android</a>
         
         <div class="footer">
           <p>© 2026 IT Feels Music. All rights reserved.</p>
