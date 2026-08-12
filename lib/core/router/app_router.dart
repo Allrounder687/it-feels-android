@@ -28,6 +28,10 @@ final GoRouter appRouter = GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: '/home',
   routes: [
+    GoRoute(
+      path: '/',
+      redirect: (_, __) => '/home',
+    ),
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return MainNavigationWrapper(navigationShell: navigationShell);

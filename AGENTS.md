@@ -2,6 +2,13 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Android Auto & UI Layout Polish (v3.6.2+72):**
+  - **Android Auto Default**: Enabled the native `com.google.android.gms.car.application` metadata and toggled `enableAndroidAuto` on by default in `settings_provider.dart` to expose "Recently Played" and "Favorites" folders directly to vehicle dashboard arrays.
+  - **Layout Overflow Resilience**: Fixed critical `RenderFlex` constraint violations by wrapping the `PremiumEmptyState` layout in a `SingleChildScrollView` (resolving vertical overflow during on-screen keyboard expansion) and binding the top app bar's greeting text `Column` to an `Expanded` widget (preventing horizontal displacement of trailing action icons on narrow mobile screens).
+  - **Navigation Aesthetics**: Perfected the desktop navigation rail's hover states by injecting strictly symmetrical `12px` padding and dynamically calculating a circular `borderRadius: 100` when labels are hidden, neutralizing the "squircle shadow" effect. Migrated the shadow to a premium floating Apple-like glow (`blurRadius: 16`, `spreadRadius: -2`, `offset: 6`). Additionally, patched the mobile bottom navigation bar by binding `mainAxisSize: MainAxisSize.min` to its core `Row`, stripping out aggressive pill stretching.
+  - **GoRouter Settings Fix**: Handled a fatal `Navigator.pop` assertion (`You have popped the last page off of the stack`) by injecting a conditional `context.canPop()` gate into the Settings tab's app bar, preventing the back button from executing on root-level shell routes.
+  - **Real-Time AV Seek Logic**: Discovered a desync in the skip controls where `+15s` and `-15s` buttons relied on a stagnant `state.position` snapshot captured at widget build. Rewrote `audioPlayerProvider`'s `seekForward` and `seekBackward` hooks to dynamically poll the native `engine.position` at runtime, perfectly synchronizing UI skips with the underlying `just_audio` pipeline.
+
 - **Search Engine UI & Routing Polish (v3.6.1+71):**
   - **Relevance & Ranking Engine**: Completely replaced the blind `artists.first` string matching implementation in `search_provider.dart` with a weighted mathematical scoring system. Exact query matches now receive +100 points, Artist queries receive +50, and multi-token queries calculate partial overlap. 
   - **Desktop Widescreen Layout**: Replaced the narrow mobile layout in `search_screen.dart` with a massive Apple Music-style split view on desktop (>800px). Added a 360px "Top Result" hero card on the left, with the top 5 matching tracks stacked vertically on the right with transparent hover states.

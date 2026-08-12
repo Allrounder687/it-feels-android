@@ -44,7 +44,7 @@ class NowPlayingPrimaryControls extends ConsumerWidget {
                   ref.read(audioPlayerProvider.notifier).seek(newPos);
                 }
               } else {
-                final pos = playerProvider.position;
+                final pos = ref.read(audioPlayerProvider.notifier).engine.position;
                 final newPos = pos - const Duration(seconds: 15);
                 ref.read(audioPlayerProvider.notifier).seek(newPos);
               }
@@ -138,7 +138,7 @@ class NowPlayingPrimaryControls extends ConsumerWidget {
                   ref.read(audioPlayerProvider.notifier).seek(newPos);
                 }
               } else {
-                final pos = playerProvider.position;
+                final pos = ref.read(audioPlayerProvider.notifier).engine.position;
                 final newPos = pos + const Duration(seconds: 15);
                 ref.read(audioPlayerProvider.notifier).seek(newPos);
               }

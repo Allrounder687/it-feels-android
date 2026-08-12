@@ -3,6 +3,17 @@
 - **Deep Linking & Telegram**: Integrated native URL protocol registry for deep links, introduced `download` and `song` deep link screens, and integrated the Telegram bot webhook.
 - **UI & Player Polish**: Restored the dynamic `SliverGrid` layout in the Charts tab on the home screen. Fixed a RenderFlex overflow issue in `NowPlayingSecondaryControls` by optimizing padding on narrow screens.
 
+## v3.6.2+72
+- **Android Auto Default**: Enabled Android Auto integration by default for all users, seamlessly exposing "Recently Played" and "Favorites" folders to the car dashboard.
+- **UI & Layout Polish**:
+  - **Premium Empty State Fix**: Resolved a critical RenderFlex overflow crash in `PremiumEmptyState` by wrapping the layout in a shrinkable `SingleChildScrollView`, preventing crashes when the on-screen keyboard shrinks the viewport.
+  - **Mobile Top App Bar Fix**: Fixed a horizontal overflow crash in `home_screen.dart` on narrow screens by wrapping the greeting title column in an `Expanded` widget, preventing it from pushing trailing action icons off-screen.
+  - **Desktop Navigation Rail Hover Glow**: Fixed the desktop sidebar hover states. When collapsed, icons now feature perfectly symmetrical circular padding and a sleek, premium Apple-style drop shadow (increased blur, negative spread, adjusted offset).
+  - **Mobile Bottom Navigation Pill**: Fixed the horizontal stretching of the selected "Home" tab pill by explicitly adding `mainAxisSize: MainAxisSize.min` to the missing layout `Row`, forcing the pill to tightly wrap the icon as a perfect circle.
+  - **GoRouter Settings Exception**: Fixed a fatal assertion error (`You have popped the last page off of the stack`) when tapping the back button in the root Settings tab. Intelligently checks `context.canPop()` to hide the back button when accessed via the bottom navigation bar.
+- **Player Sync Enhancements**:
+  - **Real-Time Seek Correction**: Fixed the `+15s` and `-15s` skip buttons incorrectly jumping to the absolute 15-second mark instead of advancing relatively. Rewired the UI controls and `audioPlayerProvider`'s `seekForward` methods to bypass the stagnant `state.position` snapshot and dynamically poll the true, real-time native `engine.position`.
+
 ## v3.6.1+71
 - **Search Engine UI & Routing Polish**:
   - **Relevance & Ranking Engine**: Completely replaced the blind `artists.first` string matching implementation in `search_provider.dart` with a weighted mathematical scoring system. Exact query matches now receive +100 points, Artist queries receive +50, and multi-token queries calculate partial overlap. 

@@ -99,6 +99,12 @@ class SearchNotifier extends Notifier<SearchState> {
     return const SearchState();
   }
 
+  void clear() {
+    _debounceTimer?.cancel();
+    state = const SearchState();
+    _loadRecentSearches();
+  }
+
   Future<void> _loadRecentSearches() async {
     final prefs = await SharedPreferences.getInstance();
     final recent = prefs.getStringList('recent_searches') ?? [];

@@ -1105,13 +1105,13 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> seekForward({int seconds = 10}) async {
-    final target = state.position + Duration(seconds: seconds);
+    final target = engine.position + Duration(seconds: seconds);
     final clamped = target > state.duration ? state.duration : target;
     await seek(clamped);
   }
 
   Future<void> seekBackward({int seconds = 10}) async {
-    final target = state.position - Duration(seconds: seconds);
+    final target = engine.position - Duration(seconds: seconds);
     final clamped = target < Duration.zero ? Duration.zero : target;
     await seek(clamped);
   }

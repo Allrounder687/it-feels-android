@@ -9,6 +9,8 @@ import 'package:it_feels_music/core/widgets/skeleton_loading_list.dart';
 import 'package:go_router/go_router.dart';
 import 'package:it_feels_music/features/library/artist_detail_screen.dart';
 import 'package:it_feels_music/features/library/playlist_detail_screen.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 
 
@@ -60,6 +62,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     return Builder(
       builder: (context) {
+        final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
         final searchProviderObj = ref.watch(searchProvider);
         final hiddenProviderObj = ref.watch(hiddenSongsProvider);
         final settingsProviderObj = ref.watch(settingsProvider);
@@ -129,6 +132,46 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ],
                   ),
                 ),
+
+                if (!isDesktop)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: TextField(
+                      controller: _searchController,
+                      style: GoogleFonts.inter(color: context.themeTextColor),
+                      autofocus: widget.initialQuery == null,
+                      decoration: InputDecoration(
+                        hintText: "What do you want to listen to?",
+                        hintStyle: GoogleFonts.inter(color: context.themeMutedTextColor),
+                        prefixIcon: Icon(Icons.search, color: context.themeMutedTextColor),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(Icons.clear, color: context.themeMutedTextColor),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  ref.read(searchProvider.notifier).clear();
+                                  setState(() {});
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                      onChanged: (val) {
+                        setState(() {});
+                        if (val.isNotEmpty) {
+                          ref.read(searchProvider.notifier).search(val);
+                        } else {
+                          ref.read(searchProvider.notifier).clear();
+                        }
+                      },
+                    ),
+                  ),
 
                 // Category Filter Pills (ALL, SONGS, ARTISTS, ALBUMS, PLAYLISTS)
                 SizedBox(

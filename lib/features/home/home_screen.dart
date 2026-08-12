@@ -276,7 +276,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               crossAxisCount: crossAxisCount,
               mainAxisSpacing: 12,
               crossAxisSpacing: 16,
-              mainAxisExtent: 56, // Fixed height for 48x48 square + padding
+              mainAxisExtent: 64, // Increased from 56 to prevent text overflow
             ),
             itemCount: gridSongs.length,
             itemBuilder: (context, index) {
@@ -1083,27 +1083,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    ref.watch(profileProvider).getGreeting(),
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: context.themeMutedTextColor,
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      ref.watch(profileProvider).getGreeting(),
+                                      style: GoogleFonts.inter(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: context.themeMutedTextColor,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    "It Feels",
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w900,
-                                      color: context.themeTextColor,
-                                      letterSpacing: -0.5,
+                                    Text(
+                                      "It Feels",
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 26,
+                                        fontWeight: FontWeight.w900,
+                                        color: context.themeTextColor,
+                                        letterSpacing: -0.5,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                               Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -1226,7 +1228,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       // Category Filter Chips Bar
                       SliverToBoxAdapter(
                         child: SizedBox(
-                          height: 40,
+                          height: 52,
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             clipBehavior: Clip.none,

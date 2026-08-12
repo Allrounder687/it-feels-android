@@ -654,13 +654,13 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                                                   hideLabel: isNarrowScreen,
                                                 )),
                                               Expanded(child: _buildNavItem(
-                                                enableVideos ? 4 : 3,
+                                                4,
                                                 Icons.people_rounded,
                                                 "Social",
                                                 hideLabel: isNarrowScreen,
                                               )),
                                               Expanded(child: _buildNavItem(
-                                                enableVideos ? 5 : 4,
+                                                5,
                                                 Icons.settings_outlined,
                                                 "Settings",
                                                 hideLabel: isNarrowScreen,
@@ -805,6 +805,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                           ],
                         )
                       : Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             label == "Social"
                                 ? Consumer(
@@ -921,20 +922,21 @@ class _HoverNavItemState extends State<_HoverNavItem> {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 250),
             padding: EdgeInsets.symmetric(
-              horizontal: widget.isVertical ? 12 : (widget.hideLabel ? 12 : 14),
-              vertical: widget.isVertical ? 16 : 14,
+              horizontal: widget.hideLabel ? 12 : (widget.isVertical ? 12 : 16),
+              vertical: widget.hideLabel ? 12 : (widget.isVertical ? 12 : 14),
             ),
             decoration: BoxDecoration(
               color: widget.isSelected
                   ? context.themeNavPillColor
                   : (_isHovered ? context.themeAccentColor.withValues(alpha: 0.1) : Colors.transparent),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(widget.hideLabel ? 100 : 20),
               boxShadow: _isHovered || widget.isSelected
                   ? [
                       BoxShadow(
-                        color: (widget.isSelected ? context.themeNavPillColor : context.themeAccentColor).withValues(alpha: 0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                        color: (widget.isSelected ? context.themeNavPillColor : context.themeAccentColor).withValues(alpha: 0.25),
+                        blurRadius: 16,
+                        spreadRadius: -2,
+                        offset: const Offset(0, 6),
                       ),
                     ]
                   : null,
