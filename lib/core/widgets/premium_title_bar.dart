@@ -179,51 +179,36 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 150),
-                    width: 28,
-                    height: 28,
+                    width: 32,
+                    height: 32,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: context.themeAccentColor.withValues(alpha: _isFocused ? 0.15 : 0.05),
+                      color: _isLogoHovered
+                          ? context.themeAccentColor.withValues(alpha: 0.2)
+                          : const Color(0xFF2A3441),
                       borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        if (_isLogoHovered)
-                          BoxShadow(
-                            color: context.themeAccentColor.withValues(alpha: 0.3),
-                            blurRadius: 12,
-                            offset: const Offset(0, 2),
-                          )
-                        else
-                          BoxShadow(
-                            color: context.themeAccentColor.withValues(alpha: _isFocused ? 0.2 : 0.0),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                      ],
-                    ),
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 200),
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: ScaleTransition(scale: animation, child: child),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        width: 1,
                       ),
-                      child: _isLogoHovered
-                          ? Icon(
-                              Icons.menu_rounded,
-                              key: const ValueKey('menu_icon'),
-                              size: 18,
-                              color: context.themeAccentColor,
-                            )
-                          : Text(
-                              "IF",
-                              key: const ValueKey('text_icon'),
-                              style: GoogleFonts.outfit(
-                                color: _isFocused ? context.themeAccentColor : context.themeMutedTextColor,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 15,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
                     ),
+                    child: _isLogoHovered
+                        ? Icon(
+                            Icons.menu_rounded,
+                            key: const ValueKey('menu_icon'),
+                            size: 18,
+                            color: context.themeAccentColor,
+                          )
+                        : Text(
+                            "IF",
+                            key: const ValueKey('text_icon'),
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
                   ),
                 ),
               ),
