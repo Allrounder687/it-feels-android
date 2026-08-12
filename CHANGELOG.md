@@ -1,3 +1,8 @@
+## Unreleased / Hotfixes
+- **Video & Network Resiliency**: Fixed Saavn CDN 404 errors by strictly enforcing valid CDN resolutions (50, 150, 500). Resolved `_directInnerTubeVideoSearch` compilation bugs.
+- **Deep Linking & Telegram**: Integrated native URL protocol registry for deep links, introduced `download` and `song` deep link screens, and integrated the Telegram bot webhook.
+- **UI & Player Polish**: Restored the dynamic `SliverGrid` layout in the Charts tab on the home screen. Fixed a RenderFlex overflow issue in `NowPlayingSecondaryControls` by optimizing padding on narrow screens.
+
 ## v3.6.1+71
 - **Search Engine UI & Routing Polish**:
   - **Relevance & Ranking Engine**: Completely replaced the blind `artists.first` string matching implementation in `search_provider.dart` with a weighted mathematical scoring system. Exact query matches now receive +100 points, Artist queries receive +50, and multi-token queries calculate partial overlap. 

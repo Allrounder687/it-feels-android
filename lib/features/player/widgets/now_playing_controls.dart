@@ -165,7 +165,7 @@ class NowPlayingSecondaryControls extends ConsumerWidget {
     final playerProvider = ref.watch(audioPlayerProvider);
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: isWide ? 20 : 36),
+      padding: EdgeInsets.symmetric(horizontal: isWide ? 20 : 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

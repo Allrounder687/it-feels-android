@@ -201,7 +201,7 @@ class BackendApiService {
     // Zero-Lag Isolate YoutubeExplode Fallback
     try {
       debugPrint('[BackendApiService] Attempting direct YoutubeExplode fallback for ${song.title}');
-      final searchResults = await _directInnerTubeVideoSearch('${song.title} ${song.artist}', limit: 1);
+      final searchResults = await directInnerTubeVideoSearch('${song.title} ${song.artist}', limit: 1);
       if (searchResults.isNotEmpty) {
         final videoId = searchResults[0]['id'] as String;
         final streamData = await _directYoutubeExplodeStreamFallback(videoId);
@@ -332,7 +332,7 @@ class BackendApiService {
     if (actualVideoId.startsWith('search:') || (query != null && query.isNotEmpty && cleanId.length != 11)) {
       try {
         final searchQuery = query ?? actualVideoId.replaceFirst('search:', '');
-        final searchResults = await _directInnerTubeVideoSearch(searchQuery, limit: 1);
+        final searchResults = await directInnerTubeVideoSearch(searchQuery, limit: 1);
         if (searchResults.isNotEmpty) {
           actualVideoId = searchResults.first['id'] as String;
           cleanId = actualVideoId.split(':').last;

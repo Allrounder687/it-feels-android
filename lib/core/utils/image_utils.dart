@@ -25,8 +25,14 @@ class ImageUtils {
     // We attempt to replace these with the requested size.
     // NOTE: JioSaavn CDN (saavncdn.com) maxes out at 500x500. 1000x1000 returns 404.
     int safeSize = size;
-    if (url.contains('saavncdn.com') && safeSize > 500) {
-      safeSize = 500;
+    if (url.contains('saavncdn.com')) {
+      if (safeSize <= 50) {
+        safeSize = 50;
+      } else if (safeSize <= 150) {
+        safeSize = 150;
+      } else {
+        safeSize = 500;
+      }
     }
     String transformedUrl = url.replaceAll(_sizeRegExp, '${safeSize}x$safeSize');
 

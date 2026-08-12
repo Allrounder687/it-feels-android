@@ -28,6 +28,7 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:app_links/app_links.dart';
+import 'package:protocol_registry/protocol_registry.dart';
 import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
 
 import 'dart:ui';
@@ -53,6 +54,37 @@ Future<void> main(List<String> args) async {
       onSecondWindow: (args) async {
         await windowManager.show();
         await windowManager.focus();
+        
+        // Handle deep link passed to the second instance
+        if (args.isNotEmpty) {
+          final uriStr = args.firstWhere((arg) => arg.startsWith('itfeels'), orElse: () => '');
+          if (uriStr.isNotEmpty) {
+            final uri = Uri.parse(uriStr);
+            if (uri.scheme == 'itfeelsmusic') {
+              if (uri.host == 'room') {
+                final roomId = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+                if (roomId != null && roomId.isNotEmpty) {
+                  appRouter.go('/room/$roomId');
+                }
+              } else if (uri.host == 'song') {
+                final songId = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+                if (songId != null && songId.isNotEmpty) {
+                  appRouter.go('/song/$songId');
+                }
+              } else if (uri.host == 'download') {
+                final songId = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+                if (songId != null && songId.isNotEmpty) {
+                  appRouter.go('/download/$songId');
+                }
+              }
+            } else if (uri.scheme == 'itfeels' && uri.host == 'search') {
+              final query = uri.queryParameters['q'];
+              if (query != null && query.isNotEmpty) {
+                appRouter.go('/search?q=${Uri.encodeComponent(query)}');
+              }
+            }
+          }
+        }
       },
     );
   }
@@ -261,7 +293,30 @@ Future<void> main(List<String> args) async {
   if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
     final appLinks = AppLinks();
     appLinks.uriLinkStream.listen((uri) async {
-      if (uri.scheme == 'itfeels') {
+      if (uri.scheme == 'itfeelsmusic') {
+        if (uri.host == 'room') {
+          final roomId = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+          if (roomId != null && roomId.isNotEmpty) {
+            appRouter.go('/room/$roomId');
+            await windowManager.show();
+            await windowManager.focus();
+          }
+        } else if (uri.host == 'song') {
+          final songId = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+          if (songId != null && songId.isNotEmpty) {
+            appRouter.go('/song/$songId');
+            await windowManager.show();
+            await windowManager.focus();
+          }
+        } else if (uri.host == 'download') {
+          final songId = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+          if (songId != null && songId.isNotEmpty) {
+            appRouter.go('/download/$songId');
+            await windowManager.show();
+            await windowManager.focus();
+          }
+        }
+      } else if (uri.scheme == 'itfeels') {
         if (uri.host == 'search') {
           final query = uri.queryParameters['q'];
           if (query != null && query.isNotEmpty) {
@@ -272,6 +327,24 @@ Future<void> main(List<String> args) async {
         }
       }
     });
+    
+    // Register custom URL protocol to ensure deep links work natively on Windows
+    try {
+      if (Platform.isWindows) {
+        final registry = getRegistry();
+        final appPath = Platform.resolvedExecutable;
+        await registry.add(ProtocolScheme(
+          scheme: 'itfeelsmusic',
+          appName: 'IT Feels',
+          appPath: appPath,
+        ));
+        await registry.add(ProtocolScheme(
+          scheme: 'itfeels',
+          appName: 'IT Feels',
+          appPath: appPath,
+        ));
+      }
+    } catch (_) {}
   }
 
   runApp(UncontrolledProviderScope(

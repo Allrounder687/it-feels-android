@@ -422,6 +422,27 @@ class MusicApiService {
     }
   }
 
+  /// Fetch a single song's details by its ID
+  Future<Song?> fetchSongDetails(String songId) async {
+    try {
+      final url = Uri.parse(
+          '$_baseUrl?__call=song.getDetails&_format=json&cc=in&_marker=0&pids=$songId');
+      final response = await http.get(url, headers: _headers);
+
+      if (response.statusCode == 200) {
+        final data = await compute(jsonDecode, response.body);
+        if (data['songs'] is List && (data['songs'] as List).isNotEmpty) {
+          return Song.fromJson(data['songs'][0]);
+        } else if (data[songId] != null) {
+          return Song.fromJson(data[songId]);
+        }
+      }
+    } catch (e) {
+      debugPrint('[MusicApiService] fetchSongDetails error for ID $songId: $e');
+    }
+    return null;
+  }
+
   /// Preload stream URL into cache asynchronously
   Future<void> preloadStreamUrl(Song song) async {
     if (song.id.isEmpty || _streamUrlCache.containsKey(song.id)) return;

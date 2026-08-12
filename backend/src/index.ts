@@ -9,6 +9,7 @@ import { MusixmatchProvider } from './providers/musixmatch';
 import { LastfmProvider } from './providers/lastfm';
 import { DeezerProvider } from './providers/deezer';
 import { ListenBrainzProvider } from './providers/listenbrainz';
+import { telegram } from './telegram';
 
 type Bindings = {
   SEARCH_CACHE: KVNamespace;
@@ -35,6 +36,9 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Enable CORS for mobile app access
 app.use('*', cors());
 
+// Mount Telegram Webhook (outside API security checks)
+app.route('/telegram', telegram);
+
 // Root Landing Page (Satisfies Razorpay "Business Website" requirement)
 app.get('/', (c) => {
   return c.html(`
@@ -60,7 +64,7 @@ app.get('/', (c) => {
       <div class="container">
         <h1>IT Feels Music</h1>
         <p>The ultimate ad-free, high-res music streaming experience. Sync your vibes, connect with friends, and discover new tracks daily.</p>
-        <a href="https://drive.google.com/file/d/16vBse2q81ZKg_YY50Dw7IDUeNSnMpRao/view" class="download-btn" target="_blank">Download for Android</a>
+        <a href="https://github.com/Allrounder687/IT-Feels-App/releases/latest" class="download-btn" target="_blank">Download for Android</a>
         
         <div class="footer">
           <p>© 2026 IT Feels Music. All rights reserved.</p>
