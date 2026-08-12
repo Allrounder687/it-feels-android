@@ -428,27 +428,24 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                           // Floating Side Navigation Pill for Wide Screens
                           SafeArea(
                             right: false,
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.horizontal(right: Radius.circular(16)),
-                              child: Consumer(
-                                builder: (context, ref, child) {
-                                  final isSidebarPinned = ref.watch(sidebarPinnedProvider);
-                                  
-                                  return AnimatedContainer(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeOutCubic,
-                                    width: isSidebarPinned ? 90 : 0,
-                                    decoration: BoxDecoration(
-                                      color: Colors.transparent,
-                                      borderRadius: const BorderRadius.horizontal(right: Radius.circular(16)),
-                                      border: Border(
-                                        right: BorderSide(
-                                          color: context.themeTextColor.withValues(alpha: 0.05),
-                                          width: 1,
-                                        ),
+                            child: Consumer(
+                              builder: (context, ref, child) {
+                                final isSidebarPinned = ref.watch(sidebarPinnedProvider);
+                                
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOutCubic,
+                                  width: isSidebarPinned ? 90 : 0,
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    border: Border(
+                                      right: BorderSide(
+                                        color: Colors.white.withValues(alpha: 0.08),
+                                        width: 1,
                                       ),
                                     ),
-                                    child: Center(
+                                  ),
+                                  child: Center(
                                       child: SingleChildScrollView(
                                         physics: const BouncingScrollPhysics(),
                                         child: Column(
@@ -515,7 +512,6 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                                 },
                               ),
                             ),
-                          ),
                           // Main Content
                           Expanded(
                             child: Stack(

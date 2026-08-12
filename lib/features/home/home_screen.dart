@@ -242,13 +242,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildCompactTrackGrid(
     BuildContext context,
     List<Song> songs,
-    AudioPlayerState playerProvider,
-  ) {
+    AudioPlayerState playerProvider, {
+    String? title,
+  }) {
     if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
-
-    // Skip the first 5 songs if they're already shown in the hero banner
-    final recentSongs = songs.skip(5).toList();
-    if (recentSongs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
 
     final screenWidth = MediaQuery.of(context).size.width;
     // Calculate how many columns we can fit: 1 on small screens, 2 on medium, 3 on large
@@ -259,24 +256,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       crossAxisCount = 2;
     }
 
-    // Limit to 9 songs max for the grid
-    final gridSongs = recentSongs.take(9).toList();
+    final gridSongs = songs;
 
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 32, right: 32, top: 24, bottom: 16),
-            child: Text(
-              "Best New Songs",
-              style: AppTypography.outfitExtraBold.copyWith(
-                fontSize: 22,
-                color: context.themeTextColor,
-                letterSpacing: -0.5,
+          if (title != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 32, right: 32, top: 48, bottom: 16),
+              child: Text(
+                title,
+                style: GoogleFonts.outfit(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800, // Premium bold
+                  color: context.themeTextColor,
+                  letterSpacing: -0.5,
+                ),
               ),
             ),
-          ),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -718,7 +716,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            padding: const EdgeInsets.only(left: 32, right: 32, top: 48, bottom: 16),
             child: Row(
               children: [
                 Icon(
@@ -1087,26 +1085,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   children: [
                                     Text(
                                       ref.watch(profileProvider).getGreeting(),
-                                      style: GoogleFonts.inter(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: context.themeMutedTextColor,
-                                      ),
-                                    ),
-                                    Text(
-                                      "It Feels",
                                       style: GoogleFonts.outfit(
-                                        fontSize: 26,
-                                        fontWeight: FontWeight.w900,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w800,
                                         color: context.themeTextColor,
                                         letterSpacing: -0.5,
-                                        shadows: [
-                                          Shadow(
-                                            offset: const Offset(0, 2),
-                                            blurRadius: 4,
-                                            color: Colors.black.withValues(alpha: 0.5),
-                                          ),
-                                        ],
                                       ),
                                     ),
                                   ],
@@ -1427,34 +1410,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ? "Jump Back In"
                                   : "Trending Picks";
                               if (gridSongs.length > 1) {
-                                return SliverMainAxisGroup(
-                                  slivers: [
-                                    const SliverToBoxAdapter(
-                                      child: SizedBox(height: 16),
-                                    ),
-                                    SliverToBoxAdapter(
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 20,
-                                          vertical: 4,
-                                        ),
-                                        child: Text(
-                                          gridTitle,
-                                          style: GoogleFonts.outfit(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.w900,
-                                            color: context.themeTextColor,
-                                            letterSpacing: -0.5,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    _buildCompactTrackGrid(
-                                      context,
-                                      gridSongs,
-                                      playerProvider,
-                                    ),
-                                  ],
+                                return _buildCompactTrackGrid(
+                                  context,
+                                  gridSongs,
+                                  playerProvider,
+                                  title: gridTitle,
                                 );
                               }
                               return const SliverToBoxAdapter(
@@ -1481,34 +1441,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ],
                       ] else if (selectedCat == "Music") ...[
-                        if (activeSongs.length > 1 ||
-                            homeProv.trendingSongs.isNotEmpty) ...[
-                          const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                          SliverToBoxAdapter(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 4,
-                              ),
-                              child: Text(
-                                "Quick Picks",
-                                style: GoogleFonts.outfit(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w900,
-                                  color: context.themeTextColor,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                            ),
-                          ),
                           _buildCompactTrackGrid(
                             context,
                             activeSongs.length > 1
-                                ? activeSongs
+                                ? activeSongs.take(18).toList()
                                 : homeProv.trendingSongs.take(18).toList(),
                             playerProvider,
+                            title: "Quick Picks",
                           ),
-                        ],
                         // Render Horizontal Swipeable Song Grid Carousels for Genres
                         _buildSongCarousel(
                           context,
