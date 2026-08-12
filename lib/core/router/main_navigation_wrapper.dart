@@ -395,7 +395,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
           }
         }
       },
-      child: Scaffold(
+      child: _GlassShieldWrapper(
+        isGlassMode: context.isGlassTheme,
+        child: Scaffold(
         backgroundColor: context.themeBackgroundColor,
         body: FocusTraversalGroup(
           policy: OrderedTraversalPolicy(),
@@ -726,6 +728,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
             },
           ),
         ),
+        ),
       ),
     );
   }
@@ -948,3 +951,24 @@ class _HoverNavItemState extends State<_HoverNavItem> {
     );
   }
 }
+
+/// Layer 2: Adaptive Dark Shield — only active on desktop + Glass theme
+class _GlassShieldWrapper extends StatelessWidget {
+  final Widget child;
+  final bool isGlassMode;
+
+  const _GlassShieldWrapper({required this.child, required this.isGlassMode});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isGlassMode) return child;
+    return Container(
+      color: const Color(0xA60C0F16), // 65% dark midnight tint
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 30.0, sigmaY: 30.0),
+        child: child,
+      ),
+    );
+  }
+}
+

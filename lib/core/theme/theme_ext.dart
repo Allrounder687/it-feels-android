@@ -1,6 +1,9 @@
-import 'package:it_feels_music/main.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:it_feels_music/main.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
+import 'package:it_feels_music/features/player/audio_player_provider.dart';
 
 extension ThemeContext on BuildContext {
   Color get themeTextColor => appProviderContainer.read(audioPlayerProvider).themeTextColor;
@@ -18,4 +21,18 @@ extension ThemeContext on BuildContext {
   Color get themeUnselectedPillTextColor => appProviderContainer.read(audioPlayerProvider).themeUnselectedPillTextColor;
   Color get themeNavPillColor => appProviderContainer.read(audioPlayerProvider).themeNavPillColor;
   Color get themeNavPillTextColor => appProviderContainer.read(audioPlayerProvider).themeNavPillTextColor;
+
+  /// True when Glass theme is selected AND running on a desktop platform.
+  bool get isGlassTheme {
+    final mode = appProviderContainer.read(audioPlayerProvider).appThemeMode;
+    if (mode != AppThemeMode.glass) return false;
+    if (kIsWeb) return false;
+    return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+  }
+
+  /// Returns contrast-guard text shadows when Glass theme is active.
+  /// Use with TextStyle: `shadows: context.themeTextShadow`
+  List<Shadow> get themeTextShadow => isGlassTheme
+      ? const [Shadow(offset: Offset(0, 1), blurRadius: 4.0, color: Color(0xCC000000))]
+      : const [];
 }

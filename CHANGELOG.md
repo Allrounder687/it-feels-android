@@ -1,4 +1,5 @@
 ## Unreleased / Hotfixes
+- **3-Layer Adaptive Glassmorphism Desktop UI**: Engineered a strictly platform-gated 3-layer architecture for desktop transparency. Added `flutter_acrylic` to establish a native OS material base (Layer 1). Developed an adaptive dark shield `_GlassShieldWrapper` (Layer 2) that guarantees 100% text readability over any wallpaper. Built a generic `GlassContainer` with 12% white borders and 5% white fills (Layer 3) to render premium glass components on top, entirely bypassing mobile render trees.
 - **Video & Network Resiliency**: Fixed Saavn CDN 404 errors by strictly enforcing valid CDN resolutions (50, 150, 500). Resolved `_directInnerTubeVideoSearch` compilation bugs.
 - **Deep Linking & Telegram**: Integrated native URL protocol registry for deep links, introduced `download` and `song` deep link screens, and integrated the Telegram bot webhook.
 - **UI & Player Polish**: Restored the dynamic `SliverGrid` layout in the Charts tab on the home screen. Fixed a RenderFlex overflow issue in `NowPlayingSecondaryControls` by optimizing padding on narrow screens.

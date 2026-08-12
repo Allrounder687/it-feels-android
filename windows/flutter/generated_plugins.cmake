@@ -11,6 +11,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_auth
   firebase_core
   firebase_database
+  flutter_acrylic
   hotkey_manager_windows
   isar_flutter_libs
   just_audio_windows

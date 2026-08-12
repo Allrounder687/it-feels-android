@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   dynamic_color
+  flutter_acrylic
   gtk
   hotkey_manager_linux
   isar_flutter_libs

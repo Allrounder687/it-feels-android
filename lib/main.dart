@@ -30,6 +30,7 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:app_links/app_links.dart';
 import 'package:protocol_registry/protocol_registry.dart';
 import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
+import 'package:flutter_acrylic/flutter_acrylic.dart';
 
 import 'dart:ui';
 import 'dart:io';
@@ -260,6 +261,22 @@ Future<void> main(List<String> args) async {
     );
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.setTitleBarStyle(TitleBarStyle.hidden, windowButtonVisibility: false);
+      
+      // Layer 1: Native OS Compositor Material
+      await Window.initialize();
+      if (Platform.isWindows) {
+        await Window.setEffect(
+          effect: WindowEffect.acrylic,
+          dark: true,
+          color: const Color(0x00000000), // Fully transparent base
+        );
+      } else if (Platform.isMacOS) {
+        await Window.setEffect(
+          effect: WindowEffect.sidebar, // NSVisualEffectView sidebar material
+          dark: true,
+        );
+      }
+
       await windowManager.show();
       await windowManager.focus();
     });

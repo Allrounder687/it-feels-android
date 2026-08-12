@@ -29,7 +29,7 @@ import 'package:it_feels_music/features/player/palette_extractor_service.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/features/social/listen_together_service.dart';
 
-enum AppThemeMode { dynamic, midnight, burgundy, amoled, materialYou, light }
+enum AppThemeMode { dynamic, midnight, burgundy, amoled, materialYou, light, glass }
 
 @immutable
 class AudioPlayerState {
@@ -131,6 +131,7 @@ class AudioPlayerState {
         return Colors.black;
       case AppThemeMode.light:
         return const Color(0xFFF0F2F5);
+      case AppThemeMode.glass: return Colors.transparent;
     }
   }
 
@@ -148,6 +149,7 @@ class AudioPlayerState {
         return const Color(0xFF121212);
       case AppThemeMode.light:
         return Colors.white;
+      case AppThemeMode.glass: return const Color(0x0DFFFFFF);
     }
   }
 
@@ -165,6 +167,7 @@ class AudioPlayerState {
         return Colors.white;
       case AppThemeMode.light:
         return const Color(0xFF3B82F6);
+      case AppThemeMode.glass: return AppColors.midnightAccent;
     }
   }
 
@@ -173,7 +176,7 @@ class AudioPlayerState {
   }
 
   Color get themeMutedTextColor {
-    return appThemeMode == AppThemeMode.light ? Colors.black54 : Colors.white54;
+    return appThemeMode == AppThemeMode.light ? Colors.black54 : (appThemeMode == AppThemeMode.glass ? const Color(0xB3FFFFFF) : Colors.white54);
   }
 
   Color get themeInvertedTextColor {
@@ -188,6 +191,7 @@ class AudioPlayerState {
         return const Color(0xFF1A1A1A);
       case AppThemeMode.burgundy:
         return AppColors.burgundyCard;
+      case AppThemeMode.glass: return const Color(0x0DFFFFFF);
       default:
         return AppColors.midnightCard;
     }
@@ -199,6 +203,7 @@ class AudioPlayerState {
         return const Color(0xFF2563EB);
       case AppThemeMode.burgundy:
         return AppColors.burgundyPill;
+      case AppThemeMode.glass: return const Color(0x1AFFFFFF);
       default:
         return AppColors.midnightPill;
     }
@@ -210,6 +215,7 @@ class AudioPlayerState {
         return const Color(0xFFE2E8F0);
       case AppThemeMode.burgundy:
         return AppColors.burgundyPill.withValues(alpha: 0.5);
+      case AppThemeMode.glass: return const Color(0x0DFFFFFF);
       default:
         return AppColors.midnightPill.withValues(alpha: 0.5);
     }
@@ -219,6 +225,7 @@ class AudioPlayerState {
     switch (appThemeMode) {
       case AppThemeMode.light:
         return const Color(0xFF334155);
+      case AppThemeMode.glass: return const Color(0xB3FFFFFF);
       default:
         return Colors.white70;
     }
@@ -230,6 +237,7 @@ class AudioPlayerState {
         return const Color(0xFF2563EB);
       case AppThemeMode.burgundy:
         return AppColors.burgundyPrimary;
+      case AppThemeMode.glass: return const Color(0x33FFFFFF);
       default:
         return AppColors.midnightPrimary;
     }
@@ -239,6 +247,7 @@ class AudioPlayerState {
     switch (appThemeMode) {
       case AppThemeMode.light:
         return Colors.white;
+      case AppThemeMode.glass: return Colors.white;
       default:
         return Colors.black;
     }
@@ -378,6 +387,8 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         return AppThemeMode.amoled;
       case 'Light Theme':
         return AppThemeMode.light;
+      case 'Glass (Desktop)':
+        return AppThemeMode.glass;
       default:
         return AppThemeMode.materialYou;
     }

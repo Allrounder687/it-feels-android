@@ -264,7 +264,7 @@ class SettingsScreen extends ConsumerWidget {
                 context: context,
                 title: "App Theme",
                 subtitle: settings.theme,
-                options: ["System (Material You)", "Dynamic (Album Art)", "Light Mode", "Midnight Dark", "Burgundy Dark", "Pitch Black (AMOLED)"],
+                options: ["System (Material You)", "Dynamic (Album Art)", "Light Mode", "Midnight Dark", "Burgundy Dark", "Pitch Black (AMOLED)", "Glass (Desktop)"],
                 currentValue: settings.theme,
                 onSelected: (val) {
                   ref.read(settingsProvider.notifier).setTheme(val);
@@ -274,6 +274,7 @@ class SettingsScreen extends ConsumerWidget {
                   if (val == "Burgundy Dark") mode = AppThemeMode.burgundy;
                   if (val == "Pitch Black (AMOLED)") mode = AppThemeMode.amoled;
                   if (val == "Light Mode") mode = AppThemeMode.light;
+                  if (val == "Glass (Desktop)") mode = AppThemeMode.glass;
                   ref.read(audioPlayerProvider.notifier).setAppThemeMode(mode);
                 },
               ),
