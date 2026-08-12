@@ -9,6 +9,7 @@ import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/social/social_service.dart' as it_feels_music_social_service;
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' as it_feels_music_firestore;
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:shimmer/shimmer.dart';
@@ -347,6 +348,7 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                           childCount: songs.length,
                         ),
                       ),
+                  SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom)),
               ],
             ),
           ),

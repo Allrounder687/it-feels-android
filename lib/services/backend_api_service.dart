@@ -479,7 +479,7 @@ class BackendApiService {
         final manifest = await yt.videos.streamsClient.getManifest(
           cleanId,
           ytClients: [
-            YoutubeApiClient.androidVr,
+            YoutubeApiClient.android,
             YoutubeApiClient.ios,
           ],
         );
@@ -757,17 +757,35 @@ class BackendApiService {
         }
 
         final targetVideo = await yt.videos.get(VideoId(cleanId));
-        final related = await yt.videos.getRelatedVideos(targetVideo);
-        if (related != null) {
-          for (final video in related) {
+        
+        try {
+          final related = await yt.videos.getRelatedVideos(targetVideo);
+          if (related != null) {
+            for (final video in related) {
+              videos.add({
+                'id': 'youtube:${video.id.value}',
+                'title': video.title,
+                'uploader': video.author,
+                'duration': video.duration?.inSeconds ?? 0,
+                'thumbnail': video.thumbnails.highResUrl,
+                'views': '${_formatViews(video.engagement.viewCount)} views',
+                'uploadedAt': '', // Not always provided by related API
+              });
+            }
+          }
+        } catch (e) {
+          debugPrint('[BackendApiService] getRelatedVideos parsing failed, falling back to search: $e');
+          final fallbackQuery = "${targetVideo.title} ${targetVideo.author}";
+          final searchResults = await yt.search.search(fallbackQuery);
+          for (final video in searchResults.skip(1).take(15)) {
             videos.add({
               'id': 'youtube:${video.id.value}',
               'title': video.title,
               'uploader': video.author,
               'duration': video.duration?.inSeconds ?? 0,
               'thumbnail': video.thumbnails.highResUrl,
-              'views': '${_formatViews(video.engagement.viewCount)} views',
-              'uploadedAt': '', // Not always provided by related API
+              'views': '',
+              'uploadedAt': '',
             });
           }
         }

@@ -1,10 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:window_manager/window_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/widgets/glass_shield_wrapper.dart';
 import 'package:it_feels_music/core/theme/app_dimensions.dart';
 import 'package:it_feels_music/features/settings/lastfm_provider.dart';
 
@@ -54,8 +55,10 @@ class _LastfmSettingsScreenState extends ConsumerState<LastfmSettingsScreen> {
     final state = ref.watch(lastfmProvider);
     final notifier = ref.read(lastfmProvider.notifier);
 
-    return Scaffold(
-      backgroundColor: context.themeBackgroundColor,
+    return GlassShieldWrapper(
+      isGlassMode: context.isGlassTheme,
+      child: Scaffold(
+        backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
         flexibleSpace: kIsWeb ? null : (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux ? null : const DragToMoveArea(child: SizedBox.expand())),
         backgroundColor: Colors.transparent,
@@ -196,7 +199,7 @@ class _LastfmSettingsScreenState extends ConsumerState<LastfmSettingsScreen> {
                 ],
               ),
             ),
-    );
+    ));
   }
 }
 

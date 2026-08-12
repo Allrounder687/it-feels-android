@@ -16,6 +16,7 @@ import 'package:it_feels_music/data/models/song_model.dart';
 
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/widgets/glass_shield_wrapper.dart';
 import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -92,8 +93,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             videos.isEmpty &&
             podcasts.isEmpty;
 
-        return Scaffold(
-          backgroundColor: context.themeBackgroundColor,
+        return GlassShieldWrapper(
+          isGlassMode: context.isGlassTheme,
+          child: Scaffold(
+            backgroundColor: context.themeBackgroundColor,
           body: SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -501,7 +504,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ],
             ),
           ),
-        );
+        ));
       },
     );
   }

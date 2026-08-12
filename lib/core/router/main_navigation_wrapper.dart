@@ -18,6 +18,7 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/services/playlist_import_service.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
+import 'package:it_feels_music/core/widgets/glass_shield_wrapper.dart';
 import 'package:it_feels_music/core/widgets/premium_title_bar.dart';
 import 'package:it_feels_music/core/widgets/mini_player.dart';
 import 'package:it_feels_music/features/player/video_miniplayer.dart';
@@ -395,7 +396,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
           }
         }
       },
-      child: _GlassShieldWrapper(
+      child: GlassShieldWrapper(
         isGlassMode: context.isGlassTheme,
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -949,23 +950,4 @@ class _HoverNavItemState extends State<_HoverNavItem> {
   }
 }
 
-/// Layer 2: Adaptive Dark Shield — only active on desktop + Glass theme
-class _GlassShieldWrapper extends StatelessWidget {
-  final Widget child;
-  final bool isGlassMode;
-
-  const _GlassShieldWrapper({required this.child, required this.isGlassMode});
-
-  @override
-  Widget build(BuildContext context) {
-    if (!isGlassMode) return child;
-    return Container(
-      color: const Color(0xA60C0F16), // 65% dark midnight tint
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 30.0, sigmaY: 30.0),
-        child: child,
-      ),
-    );
-  }
-}
 

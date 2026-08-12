@@ -23,6 +23,7 @@ import 'package:it_feels_music/features/ai/ai_settings_screen.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/services/download_service.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/widgets/glass_shield_wrapper.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -33,8 +34,10 @@ class SettingsScreen extends ConsumerWidget {
     final downloader = ref.watch(downloadProvider);
     final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
-    return Scaffold(
-      backgroundColor: context.themeBackgroundColor,
+    return GlassShieldWrapper(
+      isGlassMode: context.isGlassTheme,
+      child: Scaffold(
+        backgroundColor: context.themeBackgroundColor,
       appBar: AppBar(
         flexibleSpace: kIsWeb
             ? null
@@ -583,7 +586,7 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 40),
         ],
       ),
-    );
+    ));
   }
 
   // ═══════════════════════════════════════════════

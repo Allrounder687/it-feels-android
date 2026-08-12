@@ -11,6 +11,7 @@ import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/widgets/animated_equalizer.dart';
 import 'package:it_feels_music/core/widgets/hoverable_link.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class ArtistDetailScreen extends ConsumerStatefulWidget {
   final String artistName;
@@ -367,26 +368,28 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                               ),
                               const SizedBox(width: 24),
                               Expanded(
-                                flex: 6,
+                                flex: isWide ? 6 : 1,
                                 child: Text(
                                   "Title",
                                   style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
                                 ),
                               ),
-                              Expanded(
-                                flex: 4,
-                                child: Text(
-                                  "Artist",
-                                  style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                              if (isWide)
+                                Expanded(
+                                  flex: 4,
+                                  child: Text(
+                                    "Artist",
+                                    style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                                  ),
                                 ),
-                              ),
-                              Expanded(
-                                flex: 3,
-                                child: Text(
-                                  "Album",
-                                  style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                              if (isWide)
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(
+                                    "Album",
+                                    style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                                  ),
                                 ),
-                              ),
                               SizedBox(
                                 width: 60,
                                 child: Icon(Icons.access_time_rounded, size: 16, color: context.themeMutedTextColor),
@@ -465,7 +468,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                                       const SizedBox(width: 8),
                                       // Title Column
                                       Expanded(
-                                        flex: 6,
+                                        flex: isWide ? 6 : 1,
                                         child: Row(
                                           children: [
                                             // Optional mini thumbnail
@@ -481,23 +484,42 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                                             ),
                                             const SizedBox(width: 16),
                                             Expanded(
-                                              child: Text(
-                                                song.title,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: GoogleFonts.inter(
-                                                  color: isCurrentSong ? context.themeAccentColor : context.themeTextColor,
-                                                  fontWeight: isCurrentSong ? FontWeight.w700 : FontWeight.w500,
-                                                  fontSize: 15,
-                                                ),
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    song.title,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: GoogleFonts.inter(
+                                                      color: isCurrentSong ? context.themeAccentColor : context.themeTextColor,
+                                                      fontWeight: isCurrentSong ? FontWeight.w700 : FontWeight.w500,
+                                                      fontSize: 15,
+                                                    ),
+                                                  ),
+                                                  if (!isWide) ...[
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      song.artist,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: GoogleFonts.inter(
+                                                        color: context.themeMutedTextColor,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
                                               ),
                                             ),
                                           ],
                                         ),
                                       ),
                                       // Artist Column
-                                      Expanded(
-                                        flex: 4,
+                                      if (isWide)
+                                        Expanded(
+                                          flex: 4,
                                         child: artists.isEmpty
                                           ? Text(
                                               song.artist,
@@ -536,8 +558,9 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                                             ),
                                       ),
                                       // Album Column
-                                      Expanded(
-                                        flex: 3,
+                                      if (isWide)
+                                        Expanded(
+                                          flex: 3,
                                         child: song.album.isNotEmpty 
                                           ? HoverableLink(
                                               text: song.album,
@@ -677,7 +700,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                     ),
                   ],
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 48)),
+                  SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom)),
                 ],
               ),
       ),

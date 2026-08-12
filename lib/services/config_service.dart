@@ -43,13 +43,21 @@ class ConfigService {
   }
 
   static Future<AppConfig?> fetchRemoteConfig() async {
-    try {
-      final doc = await FirebaseFirestore.instance.collection('client_config').doc(_platformConfigDoc).get();
-      if (doc.exists && doc.data() != null) {
-        return AppConfig.fromMap(doc.data()!);
+    for (int i = 0; i < 3; i++) {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('client_config')
+            .doc(_platformConfigDoc)
+            .get(const GetOptions(source: Source.server))
+            .timeout(const Duration(seconds: 5));
+        if (doc.exists && doc.data() != null) {
+          return AppConfig.fromMap(doc.data()!);
+        }
+      } catch (e) {
+        debugPrint('[ConfigService] Error fetching remote config (attempt ${i + 1}): $e');
+        if (i == 2) return null;
+        await Future.delayed(const Duration(seconds: 1));
       }
-    } catch (e) {
-      debugPrint('[ConfigService] Error fetching remote config: $e');
     }
     return null;
   }

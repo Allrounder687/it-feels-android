@@ -256,6 +256,7 @@ class StorageService {
     bool? enableSmartDownloads,
     bool? useSolidTitleBar,
     bool? launchAtStartup,
+    bool? adaptiveGlassTint,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_wifiQualityKey, wifiQuality);
@@ -276,6 +277,7 @@ class StorageService {
     if (enableSmartDownloads != null) await prefs.setBool('enable_smart_downloads_v1', enableSmartDownloads);
     if (useSolidTitleBar != null) await prefs.setBool('use_solid_title_bar', useSolidTitleBar);
     if (launchAtStartup != null) await prefs.setBool('launch_at_startup', launchAtStartup);
+    if (adaptiveGlassTint != null) await prefs.setBool('adaptive_glass_tint', adaptiveGlassTint);
   }
 
   static Future<Map<String, dynamic>> loadSettings() async {
@@ -299,6 +301,7 @@ class StorageService {
       'enableSmartDownloads': prefs.getBool('enable_smart_downloads_v1') ?? true,
       'useSolidTitleBar': prefs.getBool('use_solid_title_bar') ?? false,
       'launchAtStartup': prefs.getBool('launch_at_startup') ?? false,
+      'adaptiveGlassTint': prefs.getBool('adaptive_glass_tint') ?? true,
     };
   }
 

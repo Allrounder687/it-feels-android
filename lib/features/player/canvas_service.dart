@@ -89,7 +89,13 @@ Future<String?> _fetchCanvasUrl(String query) async {
       return null;
     }
 
-    final manifest = await yt.videos.streamsClient.getManifest(targetVideo.id);
+    final manifest = await yt.videos.streamsClient.getManifest(
+      targetVideo.id,
+      ytClients: [
+        YoutubeApiClient.android,
+        YoutubeApiClient.ios,
+      ],
+    );
     final streamInfo = manifest.muxed.sortByVideoQuality().last;
     yt.close();
     return streamInfo.url.toString();

@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter/services.dart';
 
+import 'package:it_feels_music/features/player/widgets/live_lyrics_preview_card.dart';
+import 'package:it_feels_music/core/widgets/glass_shield_wrapper.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/features/player/widgets/now_playing_art.dart';
@@ -57,12 +59,15 @@ class _FullscreenMusicScreenState extends ConsumerState<FullscreenMusicScreen> w
     final currentSong = playerProvider.currentSong;
 
     if (currentSong == null) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: Text(
-            "No song selected",
-            style: GoogleFonts.inter(color: Colors.white70),
+      return GlassShieldWrapper(
+        isGlassMode: context.isGlassTheme,
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: Center(
+            child: Text(
+              "No song selected",
+              style: GoogleFonts.inter(color: Colors.white70),
+            ),
           ),
         ),
       );
@@ -72,12 +77,14 @@ class _FullscreenMusicScreenState extends ConsumerState<FullscreenMusicScreen> w
     final surfaceColor = playerProvider.themeSurfaceColor;
     final bgColor = playerProvider.themeBackgroundColor;
 
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: Stack(
-        children: [
-          // Hardware-accelerated Glowing Background
-          Positioned.fill(
+    return GlassShieldWrapper(
+      isGlassMode: context.isGlassTheme,
+      child: Scaffold(
+        backgroundColor: bgColor,
+        body: Stack(
+          children: [
+            // Hardware-accelerated Glowing Background
+            Positioned.fill(
             child: AnimatedBuilder(
               animation: _glowController,
               builder: (context, child) {
@@ -242,6 +249,6 @@ class _FullscreenMusicScreenState extends ConsumerState<FullscreenMusicScreen> w
           ),
         ],
       ),
-    );
+    ));
   }
 }

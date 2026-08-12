@@ -13,6 +13,7 @@ import 'package:it_feels_music/features/player/queue_bottom_sheet.dart';
 import 'package:it_feels_music/features/player/sleep_timer_sheet.dart';
 import 'package:it_feels_music/features/home/driving_mode_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/widgets/glass_shield_wrapper.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart'
     as it_feels_music_cast_service;
 import 'package:it_feels_music/features/cast/cast_bottom_sheet.dart';
@@ -472,15 +473,17 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         final accentColor = playerProvider.themeAccentColor;
 
         if (currentSong == null) {
-          return Scaffold(
-            backgroundColor: context.themeBackgroundColor,
-            body: Center(
+          return GlassShieldWrapper(
+            isGlassMode: context.isGlassTheme,
+            child: Scaffold(
+              backgroundColor: context.themeBackgroundColor,
+              body: Center(
               child: Text(
                 "No song selected",
                 style: GoogleFonts.inter(color: context.themeMutedTextColor),
               ),
             ),
-          );
+          ));
         }
 
         if (currentSong.id != _lastPlayedSongId) {
@@ -538,9 +541,11 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
             ? queue[currentIndex + 1]
             : null;
 
-        return Scaffold(
-          backgroundColor: bgColor,
-          body: SafeArea(
+        return GlassShieldWrapper(
+          isGlassMode: context.isGlassTheme,
+          child: Scaffold(
+            backgroundColor: bgColor,
+            body: SafeArea(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onVerticalDragEnd: (details) {
@@ -739,7 +744,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
               ),
             ),
           ),
-        );
+        ));
       },
     );
   }

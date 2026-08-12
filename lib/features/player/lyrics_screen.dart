@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/player/lyrics_provider.dart';
+import 'package:it_feels_music/core/widgets/glass_shield_wrapper.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/core/widgets/wavy_seek_bar.dart';
@@ -50,9 +51,11 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
           }
         });
 
-        return Scaffold(
-          backgroundColor: context.themeBackgroundColor,
-          body: SafeArea(
+        return GlassShieldWrapper(
+          isGlassMode: context.isGlassTheme,
+          child: Scaffold(
+            backgroundColor: context.themeBackgroundColor,
+            body: SafeArea(
             child: Column(
               children: [
                 // Top Navigation Bar (Back Arrow, Title, Options)
@@ -446,7 +449,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
               ],
             ),
           ),
-        );
+        ));
       },
     );
   }

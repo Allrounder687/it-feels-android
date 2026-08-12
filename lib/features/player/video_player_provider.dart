@@ -334,9 +334,6 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     });
     
     if (streamList.isNotEmpty) {
-      if (isBackgroundHandoff) {
-        state = state.copyWith(selectedQuality: '360p');
-      }
       _initializeStreamForQuality(
         state.selectedQuality, 
         startPosition: startPosition, 

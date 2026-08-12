@@ -30,6 +30,7 @@ class SettingsState {
   final bool enableSmartDownloads;
   final bool useSolidTitleBar;
   final bool launchAtStartup;
+  final bool adaptiveGlassTint;
 
   const SettingsState({
     this.wifiQuality = '320 kbps (Very High)',
@@ -51,6 +52,7 @@ class SettingsState {
     this.enableSmartDownloads = true,
     this.useSolidTitleBar = false,
     this.launchAtStartup = false,
+    this.adaptiveGlassTint = true,
   });
 
   SettingsState copyWith({
@@ -73,6 +75,7 @@ class SettingsState {
     bool? enableSmartDownloads,
     bool? useSolidTitleBar,
     bool? launchAtStartup,
+    bool? adaptiveGlassTint,
   }) {
     return SettingsState(
       wifiQuality: wifiQuality ?? this.wifiQuality,
@@ -94,6 +97,7 @@ class SettingsState {
       enableSmartDownloads: enableSmartDownloads ?? this.enableSmartDownloads,
       useSolidTitleBar: useSolidTitleBar ?? this.useSolidTitleBar,
       launchAtStartup: launchAtStartup ?? this.launchAtStartup,
+      adaptiveGlassTint: adaptiveGlassTint ?? this.adaptiveGlassTint,
     );
   }
 }
@@ -139,6 +143,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       enableSmartDownloads: settings['enableSmartDownloads'] ?? true,
       useSolidTitleBar: settings['useSolidTitleBar'] ?? false,
       launchAtStartup: settings['launchAtStartup'] ?? false,
+      adaptiveGlassTint: settings['adaptiveGlassTint'] ?? true,
       defaultCategory: defaultCat,
     );
 
@@ -246,6 +251,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
     _save();
   }
 
+  void setAdaptiveGlassTint(bool value) {
+    state = state.copyWith(adaptiveGlassTint: value);
+    _save();
+  }
+
   void setDataSaverEnabled(bool value) {
     if (value) {
       state = state.copyWith(
@@ -279,6 +289,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       enableSmartDownloads: state.enableSmartDownloads,
       useSolidTitleBar: state.useSolidTitleBar,
       launchAtStartup: state.launchAtStartup,
+      adaptiveGlassTint: state.adaptiveGlassTint,
     );
   }
 
