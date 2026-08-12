@@ -183,6 +183,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 1.5,
                                     fontSize: 12,
+                                    shadows: const [
+                                      Shadow(offset: Offset(0, 2), blurRadius: 6.0, color: Color(0xD9000000)),
+                                    ],
                                   ),
                                 ),
                                 
@@ -197,6 +200,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         color: Colors.white,
                                         fontSize: 28,
                                         fontWeight: FontWeight.w800,
+                                        shadows: const [
+                                          Shadow(offset: Offset(0, 2), blurRadius: 6.0, color: Color(0xD9000000)),
+                                        ],
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -208,6 +214,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         color: Colors.white70,
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
+                                        shadows: const [
+                                          Shadow(offset: Offset(0, 2), blurRadius: 6.0, color: Color(0xD9000000)),
+                                        ],
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -312,7 +321,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
+                      Flexible(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -940,7 +949,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          Expanded(
+                          Flexible(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
