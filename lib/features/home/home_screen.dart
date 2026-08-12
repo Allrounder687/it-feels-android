@@ -102,7 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Determine card dimensions
     final screenWidth = MediaQuery.of(context).size.width;
     // clamp(350px, 30vw, 600px) translates to:
-    final double cardWidth = (screenWidth * 0.4).clamp(350.0, 600.0);
+    final double cardWidth = (screenWidth * 0.32).clamp(300.0, 420.0);
     // 16:9 Aspect Ratio
     final double cardHeight = cardWidth * (9 / 16);
 
@@ -113,7 +113,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 32),
           itemCount: carouselSongs.length,
           itemBuilder: (context, index) {
             final heroSong = carouselSongs[index];
@@ -267,7 +267,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 20, right: 20, top: 24, bottom: 16),
+            padding: const EdgeInsets.only(left: 32, right: 32, top: 24, bottom: 16),
             child: Text(
               "Best New Songs",
               style: AppTypography.outfitExtraBold.copyWith(
@@ -280,7 +280,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 32),
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 350,
               mainAxisExtent: 64,
@@ -321,7 +321,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Flexible(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -949,7 +949,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          Flexible(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -1075,7 +1075,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       SliverToBoxAdapter(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
+                            horizontal: 32,
                             vertical: 12,
                           ),
                           child: Row(
@@ -1237,7 +1237,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             clipBehavior: Clip.none,
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
                             itemCount: _filters.length,
                             itemBuilder: (context, index) {
                               final isSelected = index == _selectedFilterIndex;
