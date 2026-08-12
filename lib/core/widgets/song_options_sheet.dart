@@ -13,6 +13,7 @@ import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:flutter/services.dart';
 
 class SongOptionsSheet extends ConsumerWidget {
   final Song song;
@@ -161,6 +162,24 @@ class SongOptionsSheet extends ConsumerWidget {
             onTap: () {
               Navigator.pop(context);
               _showSendToFriendDialog(context);
+            },
+          ),
+
+          // Action: Copy Magic Download Link
+          _buildOptionTile(context,
+            icon: Icons.link_rounded,
+            iconColor: Colors.greenAccent,
+            title: "Copy Magic Download Link",
+            onTap: () {
+              Navigator.pop(context);
+              final link = 'https://allrounder687.github.io/download/${song.saavnId}';
+              Clipboard.setData(ClipboardData(text: link));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Magic Download Link copied to clipboard!"),
+                  duration: Duration(seconds: 2),
+                ),
+              );
             },
           ),
 

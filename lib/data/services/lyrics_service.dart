@@ -230,7 +230,7 @@ class LyricsService {
         final data = await compute(jsonDecode, searchRes.body);
         final macroCalls = data['message']?['body']?['macro_calls'];
         
-        if (macroCalls != null) {
+        if (macroCalls != null && macroCalls is Map) {
           final subtitles = macroCalls['track.subtitles.get']?['message']?['body']?['subtitle_list'];
           if (subtitles != null && subtitles is List && subtitles.isNotEmpty) {
             final rawSynced = subtitles[0]['subtitle']?['subtitle_body'];

@@ -8,6 +8,11 @@
 
 ## v3.6.0+70
 - **Accessibility Flood Fix (Windows):** Wrapped `AnimatedEqualizer` and `_PulsingAudioVisualizer` inside `ExcludeSemantics`. This eliminates continuous `ui::AXTree` layout recalculations at 60fps on Windows, fixing a severe core crash that occurred sporadically when a song or radio stream was playing.
+- **Video Canvas Hardware Decoding:** Disabled `hwdec: auto-copy` for Windows devices in `media_kit` to prevent `0x0` texture initialization errors natively.
+- **Piped API Muxing Bypass:** Prevented `libmpv` from injecting empty HTTP headers when extracting HLS and DASH streams from `pipedproxy` to eliminate native 400 Bad Request drops.
+- **Stream Engine Concurrency:** Adjusted racing timeouts to heavily favor native `youtube_explode_dart` extraction up to 4K, completely sidestepping 360p bandwidth caps imposed by proxy fallbacks.
+- **UI Player Synchronization:** Hardened video handoff state machine to prevent `Null check operator` crashes when users rapidly toggle PiP or Fullscreen modes before the texture ID is securely mounted.
+- **Up Next Fallback:** Isolated `youtube_explode_dart` parser exceptions when fetching related videos containing Live Streams, seamlessly routing to our native query engine instead.
 
 ## v3.5.35+69
 - **Stream Engine Resilience**:

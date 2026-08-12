@@ -59,7 +59,7 @@ class _NowPlayingActionsState extends ConsumerState<NowPlayingActions> {
       
       await Share.shareXFiles(
         [XFile(file.path)],
-        text: 'Listening to "${widget.currentSong.title}" by ${widget.currentSong.artist} on It Feels Music! 🎶\nhttps://allrounder687.github.io/room/${widget.currentSong.id}', // Fake room link for now to test deep links later
+        text: 'Listening to "${widget.currentSong.title}" by ${widget.currentSong.artist} on It Feels Music! 🎶\nhttps://allrounder687.github.io/song/${widget.currentSong.saavnId}', 
       );
     } catch (e) {
       debugPrint("Share error: $e");

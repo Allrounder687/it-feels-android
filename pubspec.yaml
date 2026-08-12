@@ -109,6 +109,7 @@ dependencies:
   sqflite_common_ffi: ^2.4.2
   windows_taskbar: ^1.1.2
   launch_at_startup: ^0.0.1
+  protocol_registry: ^0.0.5
 dev_dependencies:
   flutter_test:
     sdk: flutter

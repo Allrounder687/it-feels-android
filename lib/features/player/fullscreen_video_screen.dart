@@ -357,7 +357,7 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                       final newPos =
                                           player.state.position -
                                           const Duration(seconds: 10);
-                                      player.seek(newPos);
+                                      ref.read(videoPlayerProvider.notifier).seekToPosition(newPos);
                                       if (!settingsProviderLocal
                                           .useVideoAudioSource) {
                                         ref
@@ -444,7 +444,7 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                       final newPos =
                                           player.state.position +
                                           const Duration(seconds: 10);
-                                      player.seek(newPos);
+                                      ref.read(videoPlayerProvider.notifier).seekToPosition(newPos);
                                       if (!settingsProviderLocal
                                           .useVideoAudioSource) {
                                         ref
@@ -488,8 +488,9 @@ class _FullscreenVideoScreenState extends ConsumerState<FullscreenVideoScreen> {
                                                 context.themeAccentColor,
                                             inactiveColor: Colors.white24,
                                             onSeek: (newPos) {
+                                              debugPrint('[WavySeekBar] FULLSCREEN Seek requested: ${newPos.inMilliseconds}ms');
                                               _startHideControlsTimer();
-                                              videoProvider.player?.seek(newPos);
+                                              ref.read(videoPlayerProvider.notifier).seekToPosition(newPos);
                                               if (!settingsProviderLocal.useVideoAudioSource) {
                                                 ref.read(audioPlayerProvider.notifier).seek(newPos);
                                               }

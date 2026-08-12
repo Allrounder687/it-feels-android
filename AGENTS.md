@@ -9,7 +9,12 @@ This file tracks major technical decisions, features implemented, and architectu
   - **Home Screen Discoverability**: Overhauled `home_provider.dart` to fully strip Deezer/Saavn dependencies from the Podcasts feed. Podcasts are now fetched exclusively natively via `youtube_explode_dart`. Updated Charts feed pagination to use premium curated titles (e.g. "The Global Soundscape", "Stateside Supremacy").
   - **Timeout Resiliency**: Lowered the `BackendApiService` video proxy timeout from 6.0 seconds to 2.5 seconds, ensuring a blazing fast fallback to native InnerTube engine without hanging the UI.
 - **Accessibility Flood Fix (Windows) (v3.6.0+70):** Wrapped `AnimatedEqualizer` and `_PulsingAudioVisualizer` inside `ExcludeSemantics`. This eliminates continuous `ui::AXTree` layout recalculations at 60fps on Windows, fixing a severe core crash that occurred sporadically when a song or radio stream was playing.
-- **Stream Resilience & Discovery Discovery Engine (v3.5.35+69):**
+- **Video Canvas Hardware Decoding & Engine Synchronization (v3.6.0+70 Hotfix):** 
+  - Disabled `hwdec: auto-copy` for Windows devices in `media_kit` to prevent `0x0` texture initialization errors natively.
+  - Prevented `libmpv` from injecting empty HTTP headers when extracting HLS and DASH streams from `pipedproxy` to eliminate native 400 Bad Request drops.
+  - Adjusted racing timeouts to heavily favor native `youtube_explode_dart` extraction up to 4K, completely sidestepping 360p bandwidth caps imposed by proxy fallbacks.
+  - Hardened video handoff state machine to prevent `Null check operator` crashes when users rapidly toggle PiP or Fullscreen modes before the texture ID is securely mounted.
+  - Isolated `youtube_explode_dart` parser exceptions when fetching related videos containing Live Streams, seamlessly routing to our native query engine instead.- **Stream Resilience & Discovery Discovery Engine (v3.5.35+69):**
   - **Zero-Lag YoutubeExplode Fallback**: Engineered a completely native, client-side fallback engine in `BackendApiService.getStreamUrl` using a background isolate. If the Cloudflare proxy fails to resolve an audio stream (e.g. dead Piped nodes or sleeping Render instances), the app instantly searches YouTube natively via `youtube_explode_dart` to seamlessly extract the Opus audio URL.
   - **Strict Stream Title Matching**: Hardened the Cloudflare proxy's Saavn fallback loop. It now strictly rejects fuzzy matches if Saavn tries to serve a random track, properly deferring to YouTube for perfect audio extraction.
   - **Deezer Playlist Native Resolution**: Added a robust interceptor in `PlaylistDetailScreen` to natively load full tracklists for Deezer playlists instead of returning 0 tracks via Saavn.

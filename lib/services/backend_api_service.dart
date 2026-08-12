@@ -187,7 +187,7 @@ class BackendApiService {
         });
       }
 
-      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 5));
+      final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final data = await compute<String, dynamic>(jsonDecode, response.body);
         if (data['success'] == true && data['streamUrl'] != null) {
@@ -201,7 +201,7 @@ class BackendApiService {
     // Zero-Lag Isolate YoutubeExplode Fallback
     try {
       debugPrint('[BackendApiService] Attempting direct YoutubeExplode fallback for ${song.title}');
-      final searchResults = await _directInnerTubeVideoSearch('${song.title} ${song.artist}', limit: 1);
+      final searchResults = await directInnerTubeVideoSearch('${song.title} ${song.artist}', limit: 1);
       if (searchResults.isNotEmpty) {
         final videoId = searchResults[0]['id'] as String;
         final streamData = await _directYoutubeExplodeStreamFallback(videoId);
@@ -215,6 +215,24 @@ class BackendApiService {
 
     if (song.encryptedMediaUrl != null) {
       return DesDecryptor.decrypt(song.encryptedMediaUrl!);
+    }
+    return null;
+  }
+
+  /// Emergency fallback that forces client-side extraction, bypassing all proxies.
+  static Future<String?> getDirectFallbackStreamUrl(Song song) async {
+    try {
+      debugPrint('[BackendApiService] EMERGENCY FALLBACK: Direct YoutubeExplode for ${song.title}');
+      final searchResults = await directInnerTubeVideoSearch('${song.title} ${song.artist}', limit: 1);
+      if (searchResults.isNotEmpty) {
+        final videoId = searchResults[0]['id'] as String;
+        final streamData = await _directYoutubeExplodeStreamFallback(videoId);
+        if (streamData['audioUrl'] != null && streamData['audioUrl'].toString().isNotEmpty) {
+          return streamData['audioUrl'].toString();
+        }
+      }
+    } catch (e) {
+      debugPrint('[BackendApiService] Emergency fallback failed: $e');
     }
     return null;
   }
@@ -322,7 +340,6 @@ class BackendApiService {
     // Handled by StreamResolver.clearCache now
   }
 
-  /// Get Video Streams directly from network without caching (Caching is handled by StreamResolver)
   static Future<Map<String, dynamic>> getVideoStreams(String videoId, {String? query, bool bypassCache = false}) async {
     debugPrint('[BackendApiService] getVideoStreams called with videoId=$videoId, query=$query');
     String actualVideoId = videoId;
@@ -332,7 +349,7 @@ class BackendApiService {
     if (actualVideoId.startsWith('search:') || (query != null && query.isNotEmpty && cleanId.length != 11)) {
       try {
         final searchQuery = query ?? actualVideoId.replaceFirst('search:', '');
-        final searchResults = await _directInnerTubeVideoSearch(searchQuery, limit: 1);
+        final searchResults = await directInnerTubeVideoSearch(searchQuery, limit: 1);
         if (searchResults.isNotEmpty) {
           actualVideoId = searchResults.first['id'] as String;
           cleanId = actualVideoId.split(':').last;
@@ -342,6 +359,27 @@ class BackendApiService {
       }
     }
 
+    // --- TIER 1: EDGE PROXY (Cloudflare Worker) ---
+    if (useProxyBackend) {
+      try {
+        final uri = Uri.parse('$baseUrl/api/v1/video').replace(queryParameters: {
+          'id': cleanId,
+        });
+        
+        final response = await httpClient.get(uri, headers: _proxyHeaders).timeout(const Duration(milliseconds: 4500));
+        if (response.statusCode == 200) {
+          final data = await compute<String, dynamic>(jsonDecode, response.body);
+          if (data['success'] == true && data['streams'] != null && (data['streams'] as List).isNotEmpty) {
+            debugPrint('[BackendApiService] Resolved streams via Edge Proxy');
+            return data;
+          }
+        }
+      } catch (e) {
+        debugPrint('[BackendApiService] Edge Proxy stream resolution failed: $e, falling back to local extraction.');
+      }
+    }
+
+    // --- TIER 2: LOCAL CLIENT FALLBACK RACING ---
     // Concurrent Network Racing: Race Native (youtube_explode) vs Piped Proxy
     final completer = Completer<Map<String, dynamic>>();
     int errors = 0;
@@ -414,6 +452,15 @@ class BackendApiService {
           final videoStreams = data['videoStreams'] as List? ?? [];
           final audioStreams = data['audioStreams'] as List? ?? [];
 
+          // Sort video streams to prioritize MP4 for better hardware decoding compatibility on Windows
+          videoStreams.sort((a, b) {
+            final aMime = a['mimeType']?.toString() ?? '';
+            final bMime = b['mimeType']?.toString() ?? '';
+            if (aMime.contains('mp4') && !bMime.contains('mp4')) return -1;
+            if (!aMime.contains('mp4') && bMime.contains('mp4')) return 1;
+            return 0;
+          });
+
           final Map<String, Map<String, dynamic>> uniqueQualities = {};
           for (var stream in videoStreams) {
             var qualityLabel = stream['quality']?.toString() ?? (stream['height'] != null ? '${stream['height']}p' : null);
@@ -476,13 +523,7 @@ class BackendApiService {
         }
         
         // Extract streams natively using TV/VR clients to bypass signature throttling
-        final manifest = await yt.videos.streamsClient.getManifest(
-          cleanId,
-          ytClients: [
-            YoutubeApiClient.androidVr,
-            YoutubeApiClient.ios,
-          ],
-        );
+        final manifest = await yt.videos.streamsClient.getManifest(cleanId);
         final video = await yt.videos.get(cleanId);
         final videoTitle = video.title;
         final durationMs = video.duration?.inMilliseconds ?? 0;
@@ -760,19 +801,31 @@ class BackendApiService {
         final related = await yt.videos.getRelatedVideos(targetVideo);
         if (related != null) {
           for (final video in related) {
-            videos.add({
-              'id': 'youtube:${video.id.value}',
-              'title': video.title,
-              'uploader': video.author,
-              'duration': video.duration?.inSeconds ?? 0,
-              'thumbnail': video.thumbnails.highResUrl,
-              'views': '${_formatViews(video.engagement.viewCount)} views',
-              'uploadedAt': '', // Not always provided by related API
-            });
+            try {
+              videos.add({
+                'id': 'youtube:${video.id.value}',
+                'title': video.title,
+                'uploader': video.author,
+                'duration': video.duration?.inSeconds ?? 0,
+                'thumbnail': video.thumbnails.highResUrl,
+                'views': '${_formatViews(video.engagement.viewCount)} views',
+                'uploadedAt': '', // Not always provided by related API
+              });
+            } catch (e) {
+              // Ignore this single related video if parsing fails (e.g. "Streamed 1 month ago" instead of a number)
+            }
           }
         }
       } catch (e) {
         debugPrint('[BackendApiService] getRelatedVideos error: $e');
+        try {
+          if (query != null && query.isNotEmpty) {
+            return await directInnerTubeVideoSearch(query, limit: 10);
+          } else {
+            final targetVideo = await yt.videos.get(VideoId(cleanId));
+            return await directInnerTubeVideoSearch('${targetVideo.author} ${targetVideo.title}', limit: 10);
+          }
+        } catch (_) {}
       } finally {
         yt.close();
       }

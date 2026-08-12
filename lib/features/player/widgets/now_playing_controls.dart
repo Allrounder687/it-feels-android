@@ -166,72 +166,75 @@ class NowPlayingSecondaryControls extends ConsumerWidget {
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: isWide ? 20 : 36),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          BouncyIconButton(
-            child: Icon(
-              Icons.shuffle_rounded, 
-              color: playerProvider.isShuffle ? accentColor : context.themeMutedTextColor, 
-              size: 24,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            BouncyIconButton(
+              child: Icon(
+                Icons.shuffle_rounded, 
+                color: playerProvider.isShuffle ? accentColor : context.themeMutedTextColor, 
+                size: 24,
+              ),
+              onPressed: () {
+                ref.read(audioPlayerProvider.notifier).toggleShuffle();
+              },
             ),
-            onPressed: () {
-              ref.read(audioPlayerProvider.notifier).toggleShuffle();
-            },
-          ),
-          BouncyIconButton(
-            child: Icon(
-              Icons.cell_tower_rounded, 
-              color: playerProvider.isInRoom ? Colors.greenAccent : context.themeMutedTextColor, 
-              size: 24,
+            BouncyIconButton(
+              child: Icon(
+                Icons.cell_tower_rounded, 
+                color: playerProvider.isInRoom ? Colors.greenAccent : context.themeMutedTextColor, 
+                size: 24,
+              ),
+              onPressed: () {
+                if (playerProvider.isInRoom && playerProvider.isHost) {
+                  RoomBottomSheet.show(context, isHost: true);
+                } else if (!playerProvider.isInRoom) {
+                  RoomBottomSheet.show(context, isHost: true);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('You are already listening to a broadcast.'))
+                  );
+                }
+              },
             ),
-            onPressed: () {
-              if (playerProvider.isInRoom && playerProvider.isHost) {
-                RoomBottomSheet.show(context, isHost: true);
-              } else if (!playerProvider.isInRoom) {
-                RoomBottomSheet.show(context, isHost: true);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('You are already listening to a broadcast.'))
+            PopupMenuButton<double>(
+              icon: Icon(Icons.speed_rounded, color: context.themeMutedTextColor, size: 24),
+              initialValue: playerProvider.playbackSpeed,
+              onSelected: (speed) => ref.read(audioPlayerProvider.notifier).setPlaybackSpeed(speed),
+              itemBuilder: (context) {
+                return [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0].map((s) {
+                  return PopupMenuItem<double>(
+                    value: s,
+                    child: Text('${s}x', style: TextStyle(fontWeight: s == playerProvider.playbackSpeed ? FontWeight.bold : FontWeight.w500, fontSize: 14)),
+                  );
+                }).toList();
+              },
+            ),
+            BouncyIconButton(
+              child: Icon(Icons.queue_music_rounded, color: context.themeMutedTextColor, size: 24),
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => const QueueBottomSheet(),
                 );
-              }
-            },
-          ),
-          PopupMenuButton<double>(
-            icon: Icon(Icons.speed_rounded, color: context.themeMutedTextColor, size: 24),
-            initialValue: playerProvider.playbackSpeed,
-            onSelected: (speed) => ref.read(audioPlayerProvider.notifier).setPlaybackSpeed(speed),
-            itemBuilder: (context) {
-              return [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0].map((s) {
-                return PopupMenuItem<double>(
-                  value: s,
-                  child: Text('${s}x', style: TextStyle(fontWeight: s == playerProvider.playbackSpeed ? FontWeight.bold : FontWeight.w500, fontSize: 14)),
-                );
-              }).toList();
-            },
-          ),
-          BouncyIconButton(
-            child: Icon(Icons.queue_music_rounded, color: context.themeMutedTextColor, size: 24),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => const QueueBottomSheet(),
-              );
-            },
-          ),
-          BouncyIconButton(
-            child: Icon(
-              playerProvider.isRepeat ? Icons.repeat_one_rounded : Icons.repeat_rounded, 
-              color: playerProvider.isRepeat ? accentColor : context.themeMutedTextColor, 
-              size: 24,
+              },
             ),
-            onPressed: () {
-              ref.read(audioPlayerProvider.notifier).toggleRepeat();
-            },
-          ),
-        ],
+            BouncyIconButton(
+              child: Icon(
+                playerProvider.isRepeat ? Icons.repeat_one_rounded : Icons.repeat_rounded, 
+                color: playerProvider.isRepeat ? accentColor : context.themeMutedTextColor, 
+                size: 24,
+              ),
+              onPressed: () {
+                ref.read(audioPlayerProvider.notifier).toggleRepeat();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

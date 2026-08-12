@@ -677,7 +677,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                     ),
                   ],
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 48)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 120)),
                 ],
               ),
       ),

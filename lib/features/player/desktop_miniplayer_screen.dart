@@ -84,7 +84,7 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
             children: [
               // Background Canvas (Video or Artwork)
               if (hasVideo)
-                Video(controller: videoState.videoController!, fit: BoxFit.cover, controls: NoVideoControls)
+                ExcludeSemantics(child: Video(controller: videoState.videoController!, fit: BoxFit.cover, controls: NoVideoControls))
               else
                 _PiPLyricsView(
                   song: currentSong,

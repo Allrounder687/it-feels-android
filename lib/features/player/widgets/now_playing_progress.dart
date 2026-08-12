@@ -68,7 +68,8 @@ class NowPlayingProgress extends ConsumerWidget {
                 activeColor: accentColor,
                 inactiveColor: context.themeTextColor24,
                 onSeek: (newPos) {
-                  videoProvider.player?.seek(newPos);
+                  debugPrint('[WavySeekBar] VIDEO Seek requested: ${newPos.inMilliseconds}ms');
+                  ref.read(videoPlayerProvider.notifier).seekToPosition(newPos);
                   final settingsProv = ref.read(settingsProvider);
                   if (!settingsProv.useVideoAudioSource) {
                     ref.read(audioPlayerProvider.notifier).seek(newPos);
@@ -114,7 +115,10 @@ class NowPlayingProgress extends ConsumerWidget {
                 duration: duration,
                 activeColor: accentColor,
                 inactiveColor: context.themeTextColor24,
-                onSeek: (newPos) => ref.read(audioPlayerProvider.notifier).seek(newPos),
+                onSeek: (newPos) {
+                  debugPrint('[WavySeekBar] AUDIO Seek requested: ${newPos.inMilliseconds}ms');
+                  ref.read(audioPlayerProvider.notifier).seek(newPos);
+                },
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),

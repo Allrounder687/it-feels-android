@@ -171,25 +171,33 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
           }
         } else {
           // Continuous Drift Correction
-          final videoPosition = state.player!.state.position;
-          final audioPosition = current.position;
-          final drift = (videoPosition - audioPosition).inMilliseconds;
-          
-          if (drift.abs() > 800) {
-            // Aggressive correction for huge random drifts not caught by diff > 2000
-            // DO NOT seek here if diff is small, just let it drift correct, or only seek if drift is VERY large
-            if (drift.abs() > 2000) {
-              state.player!.seek(audioPosition);
+          // ONLY run if the video has actually loaded a duration, preventing seek-bombardment during initialization
+          if (state.player!.state.duration > Duration.zero && !state.isLoading) {
+            final videoPosition = state.player!.state.position;
+            final audioPosition = current.position;
+            final drift = (videoPosition - audioPosition).inMilliseconds;
+            
+            if (drift.abs() > 800) {
+              // Aggressive correction for huge random drifts not caught by diff > 2000
+              if (drift.abs() > 2000) {
+                // Prevent sending a seek command every 200ms! Only seek if we haven't just seeked.
+                if (!_isRecovering) {
+                  _isRecovering = true;
+                  state.player!.seek(audioPosition).then((_) {
+                    Future.delayed(const Duration(milliseconds: 1500), () => _isRecovering = false);
+                  });
+                }
+              }
+            } else if (drift > 100) {
+              // Video is ahead, slow down
+              if (state.player!.state.rate != 0.95) state.player!.setRate(0.95);
+            } else if (drift < -100) {
+              // Video is behind, speed up
+              if (state.player!.state.rate != 1.05) state.player!.setRate(1.05);
+            } else {
+              // In sync
+              if (state.player!.state.rate != 1.0) state.player!.setRate(1.0);
             }
-          } else if (drift > 100) {
-            // Video is ahead, slow down
-            if (state.player!.state.rate != 0.95) state.player!.setRate(0.95);
-          } else if (drift < -100) {
-            // Video is behind, speed up
-            if (state.player!.state.rate != 1.05) state.player!.setRate(1.05);
-          } else {
-            // In sync
-            if (state.player!.state.rate != 1.0) state.player!.setRate(1.0);
           }
         }
       }
@@ -255,13 +263,14 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     final effectiveVideoId = customVideoId ?? videoId;
     videoId = effectiveVideoId;
 
-    if (!forceReload && state.currentVideoId == effectiveVideoId && state.player != null) {
+    if (!forceReload && state.currentVideoId == effectiveVideoId && (state.player != null || state.isLoading)) {
       state = state.copyWith(isVideoActive: true);
-      if (startPosition != null) {
+      if (startPosition != null && state.player != null) {
         await state.player!.seek(startPosition);
       }
-      await state.player!.play();
-      
+      if (state.player != null) {
+        await state.player!.play();
+      }
       
       // Notify UI that video is ready, allowing UI to pause audio perfectly on time
       state.onVideoStarted?.call();
@@ -362,7 +371,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
         localPath,
         extras: {
           'vd-lavc-threads': Platform.numberOfProcessors.toString(),
-          'hwdec': Platform.isWindows ? 'auto-copy' : 'auto',
+          'hwdec': 'auto',
         },
       );
       
@@ -457,16 +466,19 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     final controller = VideoController(player);
     
     try {
-      final media = Media(
-        streamUrl,
-        extras: {
-          'start': (previousPosition.inMilliseconds / 1000).toString(),
-          'demuxer-max-bytes': '128000000',
-          'cache-pause': 'no',
-          'hwdec': Platform.isWindows ? 'auto-copy' : 'auto', // Force Hardware Decoding via GPU
-          'vd-lavc-threads': Platform.numberOfProcessors.toString(), // Utilize all available CPU cores
-        },
-      );
+      final Map<String, String> extras = {
+        'start': (previousPosition.inMilliseconds / 1000).toString(),
+        'demuxer-max-bytes': '128000000',
+        'cache-pause': 'no',
+        'hwdec': 'auto', 
+        'vd-lavc-threads': Platform.numberOfProcessors.toString(),
+      };
+      
+      if (streamUrl.contains('googlevideo.com')) {
+        extras['http-header-fields'] = 'User-Agent: com.google.android.youtube/19.09.37 (Linux; U; Android 11; US),Referer: https://www.youtube.com/,Origin: https://www.youtube.com';
+      }
+
+      final media = Media(streamUrl, extras: extras);
       
       await player.open(media, play: false);
       
@@ -517,15 +529,28 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     }
     
     if (previousPosition != Duration.zero) {
-      if (Platform.isAndroid || Platform.isIOS) {
-        try {
-          await player.stream.duration.firstWhere((d) => d > Duration.zero).timeout(const Duration(seconds: 3));
-        } catch (_) {} // ignore timeout
-      }
-      // Execute the seek immediately after play. Modern media_kit natively queues the seek
-      // if the demuxer isn't ready. This removes the catastrophic 4-second blocking delay 
-      // that was destroying the audio-video crossfade sync.
+      // Aggressive Seek Guarantee for media_kit
+      // Some streams (especially HLS/Muxed on Windows) will completely ignore the initial seek 
+      // if the demuxer or video buffer isn't perfectly ready. 
+      try {
+        await player.stream.buffer.firstWhere((b) => b > Duration.zero).timeout(const Duration(seconds: 2));
+      } catch (_) {}
+      
       await player.seek(previousPosition);
+      
+      // Safety net: If the player stubbornly starts at 0:00 (drift > 2000ms), force it again once it starts playing
+      StreamSubscription? safetySub;
+      safetySub = player.stream.position.listen((pos) {
+        if (pos > Duration.zero && (pos - previousPosition).inMilliseconds.abs() > 2000) {
+          player.seek(previousPosition);
+          safetySub?.cancel();
+        } else if (pos > Duration.zero && (pos - previousPosition).inMilliseconds.abs() <= 2000) {
+          safetySub?.cancel(); // It successfully seeked
+        }
+      });
+      
+      // Cleanup safety net after 5 seconds to prevent infinite seeking if user scrubs manually
+      Future.delayed(const Duration(seconds: 5), () => safetySub?.cancel());
     }
 
     state = state.copyWith(
@@ -627,6 +652,20 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     } finally {
       _isRecovering = false;
     }
+  }
+
+  Future<void> seekToPosition(Duration position) async {
+    // Lock the drift corrector!
+    // When the UI scrubs, the audio player takes a fraction of a second to catch up.
+    // If we don't lock the drift corrector, it will see the video instantly jump ahead,
+    // assume it's a massive drift, and aggressively pull the video back to the audio's old position!
+    _isRecovering = true;
+    await state.player?.seek(position);
+    
+    // Unlock after 2 seconds, giving both audio and video players time to settle at the new position
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      _isRecovering = false;
+    });
   }
 
   Future<void> changeQuality(String quality) async {

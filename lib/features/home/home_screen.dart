@@ -1557,26 +1557,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           playerProvider,
                         ),
                       ] else if (selectedCat == "Charts") ...[
-                        _buildPlaylistCarousel(
-                          context,
-                          "Global Charts",
-                          homeProv.chartPlaylists.take(5).toList(),
-                        ),
-                        _buildPlaylistCarousel(
-                          context,
-                          "Billboard Hot 100",
-                          homeProv.chartPlaylists.skip(5).take(5).toList(),
-                        ),
-                        _buildPlaylistCarousel(
-                          context,
-                          "Viral 50",
-                          homeProv.chartPlaylists.skip(10).take(5).toList(),
-                        ),
-                        _buildPlaylistCarousel(
-                          context,
-                          "Top 50",
-                          homeProv.chartPlaylists.skip(15).take(5).toList(),
-                        ),
+                        if (homeProv.chartPlaylists.isNotEmpty)
+                          ..._buildChartGrid(context, "Global Charts", homeProv.chartPlaylists),
                       ],
 
                       // Infinite Dynamic Feeds
@@ -1652,6 +1634,95 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
       },
     );
+  }
+
+  List<Widget> _buildChartGrid(
+    BuildContext context,
+    String title,
+    List<Playlist> playlists,
+  ) {
+    return [
+      SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 48, right: 48, top: 40, bottom: 24),
+            child: Text(
+              title,
+              style: AppTypography.outfitExtraBold.copyWith(
+                fontSize: 24,
+                color: context.themeTextColor,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 48),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 240.0,
+              mainAxisSpacing: 24.0,
+              crossAxisSpacing: 24.0,
+              childAspectRatio: 0.8, // Accommodate image + title text
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final pl = playlists[index];
+                String displayTitle = pl.title;
+                if (displayTitle.startsWith("Daily Mix: ")) {
+                  displayTitle = "${displayTitle.replaceFirst("Daily Mix: ", "")} Mix";
+                }
+
+                return TVFocusableCard(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PlaylistDetailScreen(playlist: pl),
+                    ),
+                  ),
+                  focusedScale: 1.03,
+                  borderRadius: 12.0,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AspectRatio(
+                        aspectRatio: 1.0,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12.0),
+                          child: pl.coverArt.isNotEmpty
+                              ? CustomImageWidget(
+                                  imageUrl: pl.coverArt,
+                                  fit: BoxFit.cover,
+                                  size: 240,
+                                )
+                              : Container(
+                                  color: const Color(0xFF181818),
+                                  child: const Icon(
+                                    Icons.music_note,
+                                    color: Colors.white54,
+                                    size: 40,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                         displayTitle,
+                         maxLines: 1,
+                         overflow: TextOverflow.ellipsis,
+                         style: AppTypography.interSemiBold.copyWith(
+                           color: context.themeTextColor,
+                           fontSize: 14,
+                         ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              childCount: playlists.length,
+            ),
+          ),
+        ),
+    ];
   }
 
   Widget _buildDynamicShelf(

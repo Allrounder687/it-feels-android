@@ -9,6 +9,7 @@ import { MusixmatchProvider } from './providers/musixmatch';
 import { LastfmProvider } from './providers/lastfm';
 import { DeezerProvider } from './providers/deezer';
 import { ListenBrainzProvider } from './providers/listenbrainz';
+import { telegram } from './telegram';
 
 type Bindings = {
   SEARCH_CACHE: KVNamespace;
@@ -35,6 +36,9 @@ const app = new Hono<{ Bindings: Bindings }>();
 // Enable CORS for mobile app access
 app.use('*', cors());
 
+// Mount Telegram Webhook (outside API security checks)
+app.route('/telegram', telegram);
+
 // Root Landing Page (Satisfies Razorpay "Business Website" requirement)
 app.get('/', (c) => {
   return c.html(`
@@ -60,7 +64,7 @@ app.get('/', (c) => {
       <div class="container">
         <h1>IT Feels Music</h1>
         <p>The ultimate ad-free, high-res music streaming experience. Sync your vibes, connect with friends, and discover new tracks daily.</p>
-        <a href="https://drive.google.com/file/d/16vBse2q81ZKg_YY50Dw7IDUeNSnMpRao/view" class="download-btn" target="_blank">Download for Android</a>
+        <a href="https://github.com/Allrounder687/IT-Feels-App/releases/latest" class="download-btn" target="_blank">Download for Android</a>
         
         <div class="footer">
           <p>© 2026 IT Feels Music. All rights reserved.</p>
@@ -491,6 +495,13 @@ app.get('/api/v1/video', async (c) => {
       return c.json({ error: 'Video not found' }, 404);
     }
 
+    // --- NEW KV CACHING LOGIC ---
+    const cacheKey = `stream_${videoId}`;
+    const cached = await c.env.SEARCH_CACHE.get(cacheKey, 'json');
+    if (cached) {
+      return c.json(cached);
+    }
+
     // PRIORITY 1: Try Render yt-dlp backend first for high-quality 4K/muxed MP4 streams
     if (ytDlpUrl && ytDlpUrl !== '') {
       try {
@@ -505,13 +516,16 @@ app.get('/api/v1/video', async (c) => {
           const ytData = await ytRes.json() as any;
           if (ytData['streams'] && (ytData['streams'] as Array<any>).length > 0) {
             console.log('[Cloudflare] Render yt-dlp proxy returned high-quality streams - using this');
-            return c.json({
+            const res = {
               success: true,
+              fromCache: false,
               id: videoId,
               title: ytData['title'] || 'Music Video',
               streams: ytData['streams'],
               audioUrl: ytData['audioUrl'] || '',
-            });
+            };
+            c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 10800 }));
+            return c.json(res);
           }
         }
       } catch (e) {
@@ -521,13 +535,21 @@ app.get('/api/v1/video', async (c) => {
 
     // PRIORITY 2: Use Cloudflare worker-local YouTube provider (Piped, Invidious, InnerTube)
     const videoData = await YoutubeProvider.getVideoStreams(videoId);
-    return c.json({
-      success: true,
-      id: videoId,
-      title: videoData.title,
-      streams: videoData.streams,
-      audioUrl: videoData.audioUrl || '',
-    });
+    if (videoData.streams && videoData.streams.length > 0) {
+      const res = {
+        success: true,
+        fromCache: false,
+        id: videoId,
+        title: videoData.title,
+        streams: videoData.streams,
+        audioUrl: videoData.audioUrl || '',
+      };
+      // Cache the raw URLs for 3 hours to prevent IP blocks and guarantee 50ms resolve times
+      c.executionCtx.waitUntil(c.env.SEARCH_CACHE.put(cacheKey, JSON.stringify(res), { expirationTtl: 10800 }));
+      return c.json(res);
+    }
+    
+    return c.json({ error: 'Video stream resolution failed', details: 'No streams found' }, 500);
   } catch (e: any) {
     return c.json({ error: 'Video stream resolution failed', details: e.message }, 500);
   }

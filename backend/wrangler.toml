@@ -7,6 +7,7 @@ ENVIRONMENT = "production"
 DEFAULT_AUDIO_QUALITY = "320kbps"
 API_SECRET = "development_secret_123"
 YT_DLP_BASE_URL = "https://it-feels-android.onrender.com"
+TELEGRAM_BOT_TOKEN = "8876729145:AAEr_vV4ZQYPKBBdLYWw2dqnSjrDGHwdU9w"
 
 [[kv_namespaces]]
 binding = "SEARCH_CACHE"

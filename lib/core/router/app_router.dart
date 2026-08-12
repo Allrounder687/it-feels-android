@@ -11,6 +11,8 @@ import 'package:it_feels_music/features/player/video_player_screen.dart';
 import 'package:it_feels_music/features/social/social_screen.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
 import 'package:it_feels_music/features/social/room_deep_link_screen.dart';
+import 'package:it_feels_music/features/social/song_deep_link_screen.dart';
+import 'package:it_feels_music/features/social/download_deep_link_screen.dart';
 import 'package:it_feels_music/features/player/desktop_miniplayer_screen.dart';
 import 'package:it_feels_music/features/player/fullscreen_music_screen.dart';
 import 'package:it_feels_music/features/search/raycast_search_overlay.dart';
@@ -168,6 +170,26 @@ final GoRouter appRouter = GoRouter(
         final roomId = state.pathParameters['roomId'] ?? '';
         return NoTransitionPage(
           child: RoomDeepLinkScreen(roomId: roomId),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/song/:songId',
+      parentNavigatorKey: rootNavigatorKey,
+      pageBuilder: (context, state) {
+        final songId = state.pathParameters['songId'] ?? '';
+        return NoTransitionPage(
+          child: SongDeepLinkScreen(songId: songId),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/download/:songId',
+      parentNavigatorKey: rootNavigatorKey,
+      pageBuilder: (context, state) {
+        final songId = state.pathParameters['songId'] ?? '';
+        return NoTransitionPage(
+          child: DownloadDeepLinkScreen(songId: songId),
         );
       },
     ),
