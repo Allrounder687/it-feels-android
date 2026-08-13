@@ -312,28 +312,40 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                                       );
                                     }
                                   },
-                                  child: Text(line.text),
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: Text(
+                                      line.text,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
                                 ),
                               ),
                             );
                           },
                         )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 28,
-                            vertical: 36,
-                          ),
-                          child: Text(
-                            !settings.useProxyBackend
-                                ? "⚠️ Please turn on the 'Use Serverless Proxy Backend' option in Advanced Server Settings for better lyrics extraction.\n\n${lyricsProvLocal.result.staticLyrics ?? "Oopsies! 🙈 The lyrics for this track are playing hide and seek."}"
-                                : (lyricsProvLocal.result.staticLyrics ??
-                                      "Oopsies! 🙈 The lyrics for this track are playing hide and seek."),
-                            style: _getLyricsTextStyle(
-                              lyricsProvLocal.fontFamily,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w600,
-                              color: context.themeMutedTextColor,
-                              height: 1.6,
+                      : Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 800),
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 28,
+                                vertical: 36,
+                              ),
+                              child: Text(
+                                !settings.useProxyBackend
+                                    ? "⚠️ Please turn on the 'Use Serverless Proxy Backend' option in Advanced Server Settings for better lyrics extraction.\n\n${lyricsProvLocal.result.staticLyrics ?? "Oopsies! 🙈 The lyrics for this track are playing hide and seek."}"
+                                    : (lyricsProvLocal.result.staticLyrics ??
+                                          "Oopsies! 🙈 The lyrics for this track are playing hide and seek."),
+                                textAlign: TextAlign.center,
+                                style: _getLyricsTextStyle(
+                                  lyricsProvLocal.fontFamily,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.themeMutedTextColor,
+                                  height: 1.6,
+                                ),
+                              ),
                             ),
                           ),
                         ),

@@ -50,248 +50,54 @@ class WavySeekBar extends ConsumerStatefulWidget {
   ConsumerState<WavySeekBar> createState() => _WavySeekBarState();
 }
 
-class _WavySeekBarState extends ConsumerState<WavySeekBar> with SingleTickerProviderStateMixin {
-  /// Controller for the continuous wave animation.
-  late AnimationController _waveController;
-  
-  // Reusable paint and path objects to prevent GC churn at 60fps
-  late final Paint _activePaint;
-  late final Paint _inactivePaint;
-  late final Paint _thumbPaint;
-  final Path _wavePath = Path();
-  final Path _inactivePath = Path();
-
+class _WavySeekBarState extends ConsumerState<WavySeekBar> {
   bool _isDragging = false;
   double _dragFraction = 0.0;
 
   @override
-  void initState() {
-    super.initState();
-    _activePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..isAntiAlias = true
-      ..filterQuality = FilterQuality.high;
-      
-    _inactivePaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..isAntiAlias = true
-      ..filterQuality = FilterQuality.high;
-      
-    _thumbPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true
-      ..filterQuality = FilterQuality.high;
-    
-    _waveController = AnimationController(
-      vsync: this, // Provides the ticker for the animation
-      duration: const Duration(seconds: 3), // Duration of one full wave cycle
-    )..repeat(); // Makes the wave animation loop indefinitely
-  }
-
-  @override
-  void dispose() {
-    _waveController.dispose(); // Release resources when the widget is removed
-    super.dispose();
-  }
-
-  void _handleDragStart(Offset localPosition, double width) {
-    if (widget.duration.inMilliseconds == 0 || widget.onSeek == null) return;
-    setState(() {
-      _isDragging = true;
-      _dragFraction = localPosition.dx.clamp(0.0, width) / width;
-    });
-  }
-
-  void _handleDragUpdate(Offset localPosition, double width) {
-    if (!_isDragging) return;
-    setState(() {
-      _dragFraction = localPosition.dx.clamp(0.0, width) / width;
-    });
-  }
-
-  void _handleDragEnd(double width) {
-    if (!_isDragging) return;
-    setState(() {
-      _isDragging = false;
-    });
-    final newPos = Duration(milliseconds: (widget.duration.inMilliseconds * _dragFraction).round());
-    widget.onSeek!(newPos);
-  }
-
-  void _handleTap(Offset localPosition, double width) {
-    if (widget.duration.inMilliseconds == 0 || widget.onSeek == null) return;
-    double fraction = localPosition.dx.clamp(0.0, width) / width;
-    final newPos = Duration(milliseconds: (widget.duration.inMilliseconds * fraction).round());
-    widget.onSeek!(newPos);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    // Update paint colors dynamically
-    _activePaint.color = widget.activeColor;
-    _inactivePaint.color = widget.inactiveColor;
-    _thumbPaint.color = widget.activeColor;
-
     final maxMs = math.max(1, widget.duration.inMilliseconds);
     final posMs = widget.position.inMilliseconds.clamp(0, maxMs);
-    final fraction = _isDragging ? _dragFraction : posMs / maxMs; 
-
-    final settings = ref.watch(settingsProvider);
-    if (settings.graphicsQuality == GraphicsQuality.low) {
-      if (_waveController.isAnimating) _waveController.stop();
-      return ExcludeSemantics(
-        child: SizedBox(
-          height: 36,
-          child: SliderTheme(
-            data: SliderThemeData(
-              trackHeight: 3.5,
-              activeTrackColor: widget.activeColor,
-              inactiveTrackColor: widget.inactiveColor,
-              thumbColor: widget.activeColor,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7.0),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
-              trackShape: const RoundedRectSliderTrackShape(),
-            ),
-            child: Slider(
-              value: _isDragging ? _dragFraction : fraction,
-              onChangeStart: (val) {
-                setState(() {
-                  _isDragging = true;
-                  _dragFraction = val;
-                });
-              },
-              onChanged: (val) {
-                setState(() {
-                  _dragFraction = val;
-                });
-              },
-              onChangeEnd: (val) {
-                setState(() {
-                  _isDragging = false;
-                });
-                if (widget.onSeek != null) {
-                  final newPos = Duration(milliseconds: (maxMs * val).round());
-                  widget.onSeek!(newPos);
-                }
-              },
-            ),
-          ),
-        ),
-      );
-    } else {
-      if (!_waveController.isAnimating) _waveController.repeat();
-      
-      final isHighQuality = settings.graphicsQuality == GraphicsQuality.high;
-      final filterQuality = isHighQuality ? FilterQuality.high : FilterQuality.low;
-      
-      _activePaint
-        ..isAntiAlias = isHighQuality
-        ..filterQuality = filterQuality;
-        
-      _inactivePaint
-        ..isAntiAlias = isHighQuality
-        ..filterQuality = filterQuality;
-        
-      _thumbPaint
-        ..isAntiAlias = isHighQuality
-        ..filterQuality = filterQuality;
-    }
+    final fraction = _isDragging ? _dragFraction : posMs / maxMs;
 
     return ExcludeSemantics(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth; 
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque, 
-            onHorizontalDragStart: (details) => _handleDragStart(details.localPosition, width),
-            onHorizontalDragUpdate: (details) => _handleDragUpdate(details.localPosition, width),
-            onHorizontalDragEnd: (details) => _handleDragEnd(width),
-            onTapDown: (details) => _handleTap(details.localPosition, width),
-            child: AnimatedBuilder(
-              animation: _waveController, 
-              builder: (context, child) {
-                return RepaintBoundary(
-                  child: CustomPaint(
-                    size: Size(width, 36), 
-                    painter: _WavySeekBarPainter(
-                      fraction: fraction, 
-                      wavePhase: _waveController.value * 2 * math.pi, 
-                      activePaint: _activePaint,
-                      inactivePaint: _inactivePaint,
-                      thumbPaint: _thumbPaint,
-                      wavePath: _wavePath,
-                      inactivePath: _inactivePath,
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+      child: SizedBox(
+        height: 36,
+        child: SliderTheme(
+          data: SliderThemeData(
+            trackHeight: 3.5,
+            activeTrackColor: widget.activeColor,
+            inactiveTrackColor: widget.inactiveColor,
+            thumbColor: widget.activeColor,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
+            trackShape: const RoundedRectSliderTrackShape(),
+          ),
+          child: Slider(
+            value: _isDragging ? _dragFraction : fraction,
+            onChangeStart: (val) {
+              setState(() {
+                _isDragging = true;
+                _dragFraction = val;
+              });
+            },
+            onChanged: (val) {
+              setState(() {
+                _dragFraction = val;
+              });
+            },
+            onChangeEnd: (val) {
+              setState(() {
+                _isDragging = false;
+              });
+              if (widget.onSeek != null) {
+                final newPos = Duration(milliseconds: (maxMs * val).round());
+                widget.onSeek!(newPos);
+              }
+            },
+          ),
+        ),
       ),
     );
   }
-}
-
-/// A [CustomPainter] responsible for drawing the wavy seek bar.
-class _WavySeekBarPainter extends CustomPainter {
-  final double fraction;
-  final double wavePhase;
-  
-  // Passed-in cached objects
-  final Paint activePaint;
-  final Paint inactivePaint;
-  final Paint thumbPaint;
-  final Path wavePath;
-  final Path inactivePath;
-
-  _WavySeekBarPainter({
-    required this.fraction,
-    required this.wavePhase,
-    required this.activePaint,
-    required this.inactivePaint,
-    required this.thumbPaint,
-    required this.wavePath,
-    required this.inactivePath,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final midY = size.height / 2; 
-    final activeWidth = size.width * fraction; 
-
-    // 1. Draw Active Wavy Path
-    if (activeWidth > 0) {
-      wavePath.reset();
-      const amplitude = 3.5; 
-      const wavelength = 18.0; 
-
-      wavePath.moveTo(0, midY); 
-      for (double x = 0; x <= activeWidth; x += 1.0) {
-        final y = midY + amplitude * math.sin((x / wavelength) * 2 * math.pi - wavePhase);
-        wavePath.lineTo(x, y);
-      }
-      canvas.drawPath(wavePath, activePaint); 
-    }
-
-    // 2. Draw Inactive Straight Path
-    if (activeWidth < size.width) {
-      inactivePath.reset();
-      inactivePath.moveTo(activeWidth, midY); 
-      inactivePath.lineTo(size.width, midY); 
-      canvas.drawPath(inactivePath, inactivePaint);
-    }
-
-    // 3. Draw Thumb Indicator
-    canvas.drawCircle(Offset(activeWidth, midY), 7.0, thumbPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _WavySeekBarPainter oldDelegate) => true;
 }

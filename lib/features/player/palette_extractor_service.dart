@@ -18,11 +18,19 @@ class PaletteExtractorResult {
 }
 
 class PaletteExtractorService {
-  int _adjustBrightness(Color color, double factor) {
-    int r = (color.r * 255 * factor).clamp(0, 255).toInt();
-    int g = (color.g * 255 * factor).clamp(0, 255).toInt();
-    int b = (color.b * 255 * factor).clamp(0, 255).toInt();
-    return (0xff << 24) | (r << 16) | (g << 8) | b;
+  Color _adjustBackgroundColor(Color color) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl.withLightness(hsl.lightness.clamp(0.01, 0.08)).toColor();
+  }
+
+  Color _adjustSurfaceColor(Color color) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl.withLightness(hsl.lightness.clamp(0.03, 0.12)).toColor();
+  }
+
+  Color _adjustAccentColor(Color color) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl.withLightness(hsl.lightness.clamp(0.4, 0.8)).toColor();
   }
 
   Future<PaletteExtractorResult?> extract(String? imageUrl) async {
@@ -37,9 +45,9 @@ class PaletteExtractorService {
         final res = await PaletteExtractor.extractPalette(imageUrl);
         if (res != null) {
           return PaletteExtractorResult(
-            backgroundColor: Color(_adjustBrightness(Color(res.background), 0.4)),
-            surfaceColor: Color(_adjustBrightness(Color(res.surface), 0.6)),
-            accentColor: Color(_adjustBrightness(Color(res.accent), 1.5)),
+            backgroundColor: _adjustBackgroundColor(Color(res.background)),
+            surfaceColor: _adjustSurfaceColor(Color(res.surface)),
+            accentColor: _adjustAccentColor(Color(res.accent)),
           );
         }
       } else {
@@ -53,9 +61,9 @@ class PaletteExtractorService {
         final dominantColor = palette.dominantColor?.color ?? AppColors.midnightBackground;
         
         return PaletteExtractorResult(
-          backgroundColor: Color(_adjustBrightness(dominantColor, 0.4)),
-          surfaceColor: Color(_adjustBrightness(dominantColor, 0.6)),
-          accentColor: Color(_adjustBrightness(dominantColor, 1.5)),
+          backgroundColor: _adjustBackgroundColor(dominantColor),
+          surfaceColor: _adjustSurfaceColor(dominantColor),
+          accentColor: _adjustAccentColor(dominantColor),
         );
       }
     } catch (e) {
