@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/features/player/canvas_service.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 class FakeAudioPlayerNotifier extends AudioPlayerNotifier {
   @override
