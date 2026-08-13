@@ -48,7 +48,7 @@ jobs:
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
         run: |
-          if ! shorebird patch android --allow-native-diffs; then
+          if ! shorebird patch android --allow-native-diffs --allow-asset-diffs; then
             echo "Patch failed (likely release not found), creating a new release instead..."
             shorebird release android
           fi
@@ -107,7 +107,7 @@ jobs:
           find ios .symlinks -name "Package.swift" -type f -exec sed -i '' 's/"13\.0"/"15\.0"/g' {} + || true
           find ios .symlinks -name "Package.swift" -type f -exec sed -i '' 's/"14\.0"/"15\.0"/g' {} + || true
           
-          if ! shorebird patch ios --no-codesign --allow-native-diffs; then
+          if ! shorebird patch ios --no-codesign --allow-native-diffs --allow-asset-diffs; then
             echo "Patch failed (likely release not found), creating a new release instead..."
             shorebird release ios --no-codesign
           fi
