@@ -25,5 +25,8 @@ jobs:
       - name: Strict Static Analysis (Detects Leaks & Race Conditions)
         run: dart analyze --fatal-warnings
 
+      - name: Create dummy .env for tests
+        run: touch .env
+
       - name: Check for Widget Tests (Performance Regressions)
         run: flutter test --no-pub
