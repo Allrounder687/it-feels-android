@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/features/player/lyrics_provider.dart';
+import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:it_feels_music/core/widgets/glass_shield_wrapper.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
@@ -37,7 +38,15 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, child) {
-        final lyricsProvLocal = ref.watch(lyricsProvider);
+        final lyricsProvLocal = ref.watch(lyricsProvider.select((s) => (
+          isLoading: s.isLoading,
+          mode: s.mode,
+          result: s.result,
+          syncOffsetMs: s.syncOffsetMs,
+          fontFamily: s.fontFamily,
+          activeProvider: s.activeProvider,
+          availableLyrics: s.availableLyrics,
+        )));
         final playerProvLocal = ref.watch(audioPlayerProvider);
         final settings = ref.watch(settingsProvider);
         final currentSong = playerProvLocal.currentSong;
@@ -158,7 +167,12 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
 
                       if (lyricsProvLocal.activeProvider != null &&
                           lyricsProvLocal.activeProvider!.isNotEmpty)
-                        _buildProviderSwitcher(context, ref, lyricsProvLocal),
+                        _buildProviderSwitcher(
+                          context,
+                          ref,
+                          lyricsProvLocal.activeProvider,
+                          lyricsProvLocal.availableLyrics,
+                        ),
 
                       // Font Selector Button (Cycle Fonts directly upon pressing without popups or toasts)
                       IconButton(
@@ -271,65 +285,70 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                             itemBuilder: (context, index) {
                               final line =
                                   lyricsProvLocal.result.syncedLyrics[index];
-                            final isActive =
-                                index == lyricsProvLocal.activeIndex;
 
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              child: AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeOutCubic,
-                                style: _getLyricsTextStyle(
-                                  lyricsProvLocal.fontFamily,
-                                  fontSize: isActive ? 28 : 21,
-                                  fontWeight: isActive
-                                      ? FontWeight.w900
-                                      : FontWeight.w500,
-                                  color: isActive
-                                      ? context.themeTextColor
-                                      : context.themeTextColor.withValues(
-                                          alpha: 0.35,
-                                        ),
-                                  height: 1.35,
-                                  shadows: isActive
-                                      ? [
-                                          BoxShadow(
-                                            color: AppColors.midnightAccent
-                                                .withValues(alpha: 0.5),
-                                            blurRadius: 18,
-                                            offset: const Offset(0, 4),
+                              return Consumer(
+                                builder: (context, ref, child) {
+                                  final isActive = ref.watch(lyricsProvider
+                                      .select((s) => s.activeIndex == index));
+
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    child: AnimatedDefaultTextStyle(
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeOutCubic,
+                                      style: _getLyricsTextStyle(
+                                        lyricsProvLocal.fontFamily,
+                                        fontSize: isActive ? 28 : 21,
+                                        fontWeight: isActive
+                                            ? FontWeight.w900
+                                            : FontWeight.w500,
+                                        color: isActive
+                                            ? context.themeTextColor
+                                            : context.themeTextColor.withValues(
+                                                alpha: 0.35,
+                                              ),
+                                        height: 1.35,
+                                        shadows: isActive
+                                            ? [
+                                                BoxShadow(
+                                                  color: AppColors.midnightAccent
+                                                      .withValues(alpha: 0.5),
+                                                  blurRadius: 18,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ]
+                                            : null,
+                                      ),
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          ref
+                                              .read(audioPlayerProvider.notifier)
+                                              .seek(line.time);
+                                        },
+                                        onLongPress: () {
+                                          if (currentSong != null) {
+                                            showDialog(
+                                              context: context,
+                                              builder: (_) => LyricsShareDialog(
+                                                song: currentSong,
+                                                lyricText: line.text,
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: SizedBox(
+                                          width: double.infinity,
+                                          child: Text(
+                                            line.text,
+                                            textAlign: TextAlign.center,
                                           ),
-                                        ]
-                                      : null,
-                                ),
-                                child: GestureDetector(
-                                  onTap: () {
-                                    ref
-                                        .read(audioPlayerProvider.notifier)
-                                        .seek(line.time);
-                                  },
-                                  onLongPress: () {
-                                    if (currentSong != null) {
-                                      showDialog(
-                                        context: context,
-                                        builder: (_) => LyricsShareDialog(
-                                          song: currentSong,
-                                          lyricText: line.text,
                                         ),
-                                      );
-                                    }
-                                  },
-                                  child: SizedBox(
-                                    width: double.infinity,
-                                    child: Text(
-                                      line.text,
-                                      textAlign: TextAlign.center,
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
+                                  );
+                                },
+                              );
+                            },
                         ),
                       )
                       : Center(
@@ -522,9 +541,10 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
   Widget _buildProviderSwitcher(
     BuildContext context,
     WidgetRef ref,
-    LyricsState state,
+    String? activeProvider,
+    Map<String, LyricsResult> availableLyrics,
   ) {
-    final providers = state.availableLyrics.keys.toList();
+    final providers = availableLyrics.keys.toList();
     if (providers.length <= 1) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -533,7 +553,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
-          state.activeProvider ?? '',
+          activeProvider ?? '',
           style: GoogleFonts.inter(
             color: context.themeMutedTextColor,
             fontSize: 11,
@@ -544,7 +564,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
     }
 
     return PopupMenuButton<String>(
-      initialValue: state.activeProvider,
+      initialValue: activeProvider,
       onSelected: (String provider) {
         ref.read(lyricsProvider.notifier).switchProvider(provider);
       },
@@ -561,7 +581,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              state.activeProvider ?? '',
+              activeProvider ?? '',
               style: GoogleFonts.inter(
                 color: context.themeTextColor,
                 fontSize: 11,
@@ -579,7 +599,7 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
       ),
       itemBuilder: (BuildContext context) {
         return providers.map((String provider) {
-          final isSelected = provider == state.activeProvider;
+          final isSelected = provider == activeProvider;
           return PopupMenuItem<String>(
             value: provider,
             child: Text(

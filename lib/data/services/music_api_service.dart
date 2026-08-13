@@ -6,6 +6,7 @@ import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 
 class MusicApiService {
+  static http.Client httpClient = http.Client();
   static const String _baseUrl = 'https://www.jiosaavn.com/api.php';
   static final Map<String, String> _headers = {
     'User-Agent':
@@ -53,7 +54,7 @@ class MusicApiService {
       final url = Uri.parse(
           '$_baseUrl?__call=autocomplete.get&_format=json&_marker=0&api_version=4&ctx=web6dot0&query=${Uri.encodeComponent(query)}');
 
-      final response = await http.get(url, headers: _headers).timeout(const Duration(seconds: 5));
+      final response = await httpClient.get(url, headers: _headers).timeout(const Duration(seconds: 5));
       if (response.statusCode != 200) {
         throw Exception('Direct Saavn request failed');
       }
@@ -140,7 +141,7 @@ class MusicApiService {
       final url = Uri.parse(
           '$_baseUrl?__call=search.getResults&_format=json&p=$page&n=$count&api_version=4&ctx=web6dot0&q=${Uri.encodeComponent(query)}');
 
-      final response = await http.get(url, headers: _headers).timeout(const Duration(seconds: 5));
+      final response = await httpClient.get(url, headers: _headers).timeout(const Duration(seconds: 5));
       if (response.statusCode != 200) {
         throw Exception('Direct Saavn request failed');
       }
@@ -173,7 +174,7 @@ class MusicApiService {
     try {
       final url = Uri.parse(
           '$_baseUrl?__call=search.getPlaylistResults&_format=json&p=$page&n=$count&api_version=4&ctx=web6dot0&q=${Uri.encodeComponent(query)}');
-      final response = await http.get(url, headers: _headers);
+      final response = await httpClient.get(url, headers: _headers);
       if (response.statusCode == 200) {
         final data = await compute(jsonDecode, response.body);
         final rawResults = data['results'] ?? data['playlists'] ?? [];
@@ -197,7 +198,7 @@ class MusicApiService {
     try {
       final url = Uri.parse(
           '$_baseUrl?__call=search.getAlbumResults&_format=json&p=$page&n=$count&api_version=4&ctx=web6dot0&q=${Uri.encodeComponent(query)}');
-      final response = await http.get(url, headers: _headers);
+      final response = await httpClient.get(url, headers: _headers);
       if (response.statusCode == 200) {
         final data = await compute(jsonDecode, response.body);
         final rawResults = data['results'] ?? data['albums'] ?? [];
@@ -226,7 +227,7 @@ class MusicApiService {
       final url = Uri.parse(
           '$_baseUrl?__call=content.getHomepageData&_format=json&_marker=0&api_version=4&ctx=web6dot0&language=hindi,telugu,tamil,punjabi');
 
-      final response = await http.get(url, headers: _headers);
+      final response = await httpClient.get(url, headers: _headers);
       final List<Song> trendingSongs = [];
       final List<Playlist> playlists = [];
 
@@ -315,7 +316,7 @@ class MusicApiService {
       final url = Uri.parse(
           '$_baseUrl?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=$listId');
 
-      final response = await http.get(url, headers: _headers);
+      final response = await httpClient.get(url, headers: _headers);
       if (response.statusCode != 200) {
         return {'name': '', 'songs': <Song>[]};
       }
@@ -361,7 +362,7 @@ class MusicApiService {
       final url = Uri.parse(
           '$_baseUrl?__call=content.getAlbumDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&albumid=$albumId');
 
-      final response = await http.get(url, headers: _headers);
+      final response = await httpClient.get(url, headers: _headers);
       if (response.statusCode != 200) {
         return {'name': '', 'songs': <Song>[]};
       }
@@ -401,7 +402,7 @@ class MusicApiService {
       final url = Uri.parse(
           '$_baseUrl?__call=artist.getArtistPageDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&artistId=$artistId');
 
-      final response = await http.get(url, headers: _headers);
+      final response = await httpClient.get(url, headers: _headers);
       if (response.statusCode != 200) {
         return {'topSongs': <Song>[], 'albums': <Playlist>[]};
       }
@@ -438,7 +439,7 @@ class MusicApiService {
     try {
       final url = Uri.parse(
           '$_baseUrl?__call=song.getDetails&_format=json&cc=in&_marker=0&pids=$songId');
-      final response = await http.get(url, headers: _headers);
+      final response = await httpClient.get(url, headers: _headers);
 
       if (response.statusCode == 200) {
         final data = await compute(jsonDecode, response.body);
@@ -486,7 +487,7 @@ class MusicApiService {
       if (encUrl == null || encUrl.isEmpty) {
         final url = Uri.parse(
             '$_baseUrl?__call=song.getDetails&_format=json&cc=in&_marker=0&pids=${song.saavnId}');
-        final response = await http.get(url, headers: _headers);
+        final response = await httpClient.get(url, headers: _headers);
 
         if (response.statusCode == 200) {
           final data = await compute(jsonDecode, response.body);
@@ -528,7 +529,7 @@ class MusicApiService {
     try {
       final url = Uri.parse(
           '$_baseUrl?__call=reco.getreco&_format=json&api_version=4&ctx=web6dot0&pid=${song.saavnId}');
-      final response = await http.get(url, headers: _headers);
+      final response = await httpClient.get(url, headers: _headers);
       if (response.statusCode == 200) {
         final data = await compute(jsonDecode, response.body);
         if (data is List && data.isNotEmpty) {
