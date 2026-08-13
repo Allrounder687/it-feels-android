@@ -2,6 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/features/player/canvas_service.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/features/player/audio_player_provider.dart';
+
+class FakeAudioPlayerNotifier extends AudioPlayerNotifier {
+  @override
+  AudioPlayerState build() => const AudioPlayerState(isLoading: false);
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -20,14 +26,22 @@ void main() {
 
   group('CanvasControllerNotifier Tests', () {
     test('initial state is null', () {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          audioPlayerProvider.overrideWith(() => FakeAudioPlayerNotifier()),
+        ],
+      );
       addTearDown(container.dispose);
 
       expect(container.read(canvasControllerProvider), isNull);
     });
 
     test('loadCanvasForSong handles failure gracefully without throwing', () async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          audioPlayerProvider.overrideWith(() => FakeAudioPlayerNotifier()),
+        ],
+      );
       addTearDown(container.dispose);
 
       final notifier = container.read(canvasControllerProvider.notifier);
