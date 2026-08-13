@@ -8,6 +8,29 @@ import 'package:go_router/go_router.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/main.dart';
 
+import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:it_feels_music/data/services/lyrics_service.dart';
+import 'package:it_feels_music/data/services/music_api_service.dart';
+import 'package:it_feels_music/features/social/social_service.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/main.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockLyricsService extends Mock implements LyricsService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class MockMusicApiService extends Mock implements MusicApiService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class MockSocialService extends Mock implements SocialService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class FakeAudioPlayerNotifier extends AudioPlayerNotifier {
   @override
   AudioPlayerState build() => AudioPlayerState(isLoading: false);
@@ -19,17 +42,35 @@ class FakeBottomUiNotifier extends BottomUiNotifier {
 }
 
 void main() {
-  setUpAll(() {
-    appProviderContainer = ProviderContainer();
+  setUp(() {
+    if (!locator.isRegistered<LyricsService>()) {
+      locator.registerSingleton<LyricsService>(MockLyricsService());
+    }
+    if (!locator.isRegistered<MusicApiService>()) {
+      locator.registerSingleton<MusicApiService>(MockMusicApiService());
+    }
+    if (!locator.isRegistered<SocialService>()) {
+      locator.registerSingleton<SocialService>(MockSocialService());
+    }
   });
+  final mockPlaylist = Playlist(
+    id: 'playlist123',
+    title: 'Test Playlist',
+    coverArt: 'test.jpg',
+    songCount: 10,
+    type: 'playlist',
+  );
 
   Widget createWidgetUnderTest(String playlistId) {
-    return ProviderScope(
-      parent: appProviderContainer,
+    appProviderContainer = ProviderContainer(
       overrides: [
         audioPlayerProvider.overrideWith(() => FakeAudioPlayerNotifier()),
         bottomUiProvider.overrideWith(() => FakeBottomUiNotifier()),
       ],
+    );
+
+    return UncontrolledProviderScope(
+      container: appProviderContainer,
       child: MaterialApp.router(
         routerConfig: GoRouter(
           initialLocation: '/playlist/$playlistId',
@@ -37,9 +78,7 @@ void main() {
             GoRoute(
               path: '/playlist/:id',
               builder: (context, state) => PlaylistDetailScreen(
-                playlistName: 'Test Playlist',
-                playlistId: state.pathParameters['id'],
-                isChart: false,
+                playlist: mockPlaylist,
               ),
             ),
           ],

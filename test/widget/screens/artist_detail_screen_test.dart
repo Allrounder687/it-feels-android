@@ -7,6 +7,11 @@ import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/main.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:it_feels_music/data/services/lyrics_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockLyricsService extends Mock implements LyricsService {}
 
 class FakeAudioPlayerNotifier extends AudioPlayerNotifier {
   @override
@@ -19,17 +24,22 @@ class FakeBottomUiNotifier extends BottomUiNotifier {
 }
 
 void main() {
-  setUpAll(() {
-    appProviderContainer = ProviderContainer();
+  setUp(() {
+    if (!locator.isRegistered<LyricsService>()) {
+      locator.registerSingleton<LyricsService>(MockLyricsService());
+    }
   });
 
   Widget createWidgetUnderTest(String artistId) {
-    return ProviderScope(
-      parent: appProviderContainer,
+    appProviderContainer = ProviderContainer(
       overrides: [
         audioPlayerProvider.overrideWith(() => FakeAudioPlayerNotifier()),
         bottomUiProvider.overrideWith(() => FakeBottomUiNotifier()),
       ],
+    );
+
+    return UncontrolledProviderScope(
+      container: appProviderContainer,
       child: MaterialApp.router(
         routerConfig: GoRouter(
           initialLocation: '/artist/$artistId',

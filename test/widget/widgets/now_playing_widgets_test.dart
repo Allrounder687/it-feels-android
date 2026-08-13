@@ -11,6 +11,28 @@ import 'package:it_feels_music/features/subscription/subscription_provider.dart'
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/main.dart';
 import 'package:go_router/go_router.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:it_feels_music/data/services/lyrics_service.dart';
+import 'package:it_feels_music/data/services/music_api_service.dart';
+import 'package:it_feels_music/features/social/social_service.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
+import 'package:it_feels_music/main.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockLyricsService extends Mock implements LyricsService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class MockMusicApiService extends Mock implements MusicApiService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class MockSocialService extends Mock implements SocialService {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 class FakeAudioPlayerNotifier extends AudioPlayerNotifier {
   @override
@@ -27,19 +49,30 @@ class FakeSubscriptionProvider extends ChangeNotifier implements SubscriptionPro
 }
 
 void main() {
-  final emptySong = Song(id: '1', title: 'Test', artist: 'Test', saavnId: '1', album: 'Album', coverArt: 'art.jpg', duration: 200, addedAt: DateTime.now());
-
-  setUpAll(() {
-    appProviderContainer = ProviderContainer();
+  setUp(() {
+    if (!locator.isRegistered<LyricsService>()) {
+      locator.registerSingleton<LyricsService>(MockLyricsService());
+    }
+    if (!locator.isRegistered<MusicApiService>()) {
+      locator.registerSingleton<MusicApiService>(MockMusicApiService());
+    }
+    if (!locator.isRegistered<SocialService>()) {
+      locator.registerSingleton<SocialService>(MockSocialService());
+    }
   });
 
+  final emptySong = Song(id: '1', title: 'Test', artist: 'Test', saavnId: '1', album: 'Album', coverArt: 'art.jpg', duration: 200, addedAt: DateTime.now());
+
   Widget createWidgetUnderTest(Widget child) {
-    return ProviderScope(
-      parent: appProviderContainer,
+    appProviderContainer = ProviderContainer(
       overrides: [
         audioPlayerProvider.overrideWith(() => FakeAudioPlayerNotifier()),
         subscriptionProvider.overrideWith((ref) => FakeSubscriptionProvider()),
       ],
+    );
+
+    return UncontrolledProviderScope(
+      container: appProviderContainer,
       child: MaterialApp.router(
         routerConfig: GoRouter(
           initialLocation: '/',
@@ -100,10 +133,7 @@ void main() {
         WavySeekBar(
           position: Duration.zero,
           duration: const Duration(minutes: 3),
-          accentColor: Colors.blue,
-          onSeekStart: (_) {},
-          onSeekEnd: () {},
-          onSeekUpdate: (_) {},
+          onSeek: (_) {},
         ),
       ));
       expect(find.byType(WavySeekBar), findsOneWidget);

@@ -45,7 +45,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 late AudioPlayerHandler _audioHandler;
-late final ProviderContainer appProviderContainer;
+late ProviderContainer appProviderContainer;
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();

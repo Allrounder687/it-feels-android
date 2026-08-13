@@ -46,10 +46,10 @@ jobs:
       - name: Build Windows Release
         run: flutter build windows --release
 
-      - name: Build NSIS Installer
+      - name: Build Inno Setup Installer
         run: |
           mkdir -p build/windows/x64/installer
-          makensis /DAPP_VERSION="${{ steps.version.outputs.SEMVER }}" windows/packaging/installer.nsi
+          iscc /DMyAppVersion="${{ steps.version.outputs.SEMVER }}" windows/packaging/installer.iss
 
       - name: Copy Unsigned EXE for Dev Artifact
         shell: powershell

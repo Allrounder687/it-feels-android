@@ -338,7 +338,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   ListenTogetherService get socialSync => locator<ListenTogetherService>();
   MusicApiService get apiService => locator<MusicApiService>();
 
-  final LyricsService _lyricsService = locator<LyricsService>();
+  LyricsService get _lyricsService => locator<LyricsService>();
 
   AudioPlayerHandler get audioHandler => engine.audioHandler;
 

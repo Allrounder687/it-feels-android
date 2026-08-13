@@ -39,13 +39,13 @@ target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)
 
-# Automatically build the NSIS installer if makensis is installed
-find_program(NSIS_COMPILER makensis)
-if(NSIS_COMPILER)
+# Automatically build the Inno Setup installer if iscc is installed and on Release build
+find_program(INNO_COMPILER ISCC)
+if(INNO_COMPILER AND CMAKE_BUILD_TYPE MATCHES "Release")
   add_custom_command(
     TARGET ${BINARY_NAME} POST_BUILD
-    COMMAND "${NSIS_COMPILER}" "${CMAKE_SOURCE_DIR}/packaging/installer.nsi"
+    COMMAND "${INNO_COMPILER}" "${CMAKE_SOURCE_DIR}/packaging/installer.iss"
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/packaging"
-    COMMENT "Building Windows Installer using NSIS..."
+    COMMENT "Building Windows Installer using Inno Setup..."
   )
 endif()
