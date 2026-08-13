@@ -1,13 +1,9 @@
-import 'dart:ui';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:it_feels_music/core/theme/app_typography.dart';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
-import 'package:it_feels_music/features/search/search_provider.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -61,14 +57,14 @@ class _RaycastSearchOverlayState extends ConsumerState<RaycastSearchOverlay> {
     }
   }
 
-  void _handleKeyEvent(RawKeyEvent event) {
-    if (event is RawKeyDownEvent) {
+  void _handleKeyEvent(KeyEvent event) {
+    if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.escape) {
         if (context.mounted) context.pop();
       } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
         setState(() {
           final results = ref.read(searchProvider).songs;
-          if (results != null && _selectedIndex < results.length - 1) {
+          if (_selectedIndex < results.length - 1) {
             _selectedIndex++;
           }
         });
@@ -80,7 +76,7 @@ class _RaycastSearchOverlayState extends ConsumerState<RaycastSearchOverlay> {
         });
       } else if (event.logicalKey == LogicalKeyboardKey.enter) {
         final results = ref.read(searchProvider).songs;
-        if (results != null && results.isNotEmpty && _selectedIndex < results.length) {
+        if (results.isNotEmpty && _selectedIndex < results.length) {
           _playSong(results[_selectedIndex]);
         }
       }
@@ -90,11 +86,11 @@ class _RaycastSearchOverlayState extends ConsumerState<RaycastSearchOverlay> {
   @override
   Widget build(BuildContext context) {
     final searchState = ref.watch(searchProvider);
-    final songs = searchState.songs ?? [];
+    final songs = searchState.songs;
 
-    return RawKeyboardListener(
+    return KeyboardListener(
       focusNode: FocusNode(),
-      onKey: _handleKeyEvent,
+      onKeyEvent: _handleKeyEvent,
       child: Scaffold(
         backgroundColor: Colors.transparent, // Fully transparent scaffold
         body: Stack(
