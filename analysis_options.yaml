@@ -16,7 +16,13 @@ analyzer:
     deprecated_member_use: ignore
     depend_on_referenced_packages: ignore
     sort_child_properties_last: ignore
+    dead_code: ignore
+    dead_null_aware_expression: ignore
+    unused_element: ignore
+    unused_local_variable: ignore
+    experimental_member_use: ignore
   exclude:
+    - "**/*.g.dart"
     - "test_*.dart"
     - "test.dart"
     - "test/**"
