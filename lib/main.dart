@@ -11,6 +11,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'data/services/audio_player_handler.dart';
 import 'data/services/music_api_service.dart';
+import 'package:it_feels_music/features/auth/auth_provider.dart';
+import 'package:it_feels_music/core/widgets/dev_toolkit.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'core/utils/service_locator.dart';
@@ -430,11 +432,16 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                       onPointerHover: (_) => isKeyboardNavigating.value = false,
                       child: Consumer(
                         builder: (context, ref, childWidget) {
-                          return Column(
+                          return Stack(
                             children: [
-                              Expanded(
-                                child: childWidget!,
+                              Column(
+                                children: [
+                                  Expanded(
+                                    child: childWidget!,
+                                  ),
+                                ],
                               ),
+                              if (kDebugMode) const DevToolkitOverlay(),
                             ],
                           );
                         },

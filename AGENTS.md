@@ -2,6 +2,11 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Desktop Grid Layouts & Compilers (v3.6.3+73):**
+  - **Fluid Desktop Charts**: Removed the artificial 5-item horizontal list limits in the Home Screen Charts section. Implemented a native `SliverGrid` with `maxCrossAxisExtent: 240.0` that auto-fills to elegantly utilize the entire horizontal estate of 4K/widescreen monitors.
+  - **Miniplayer Layout Guards**: Fixed an issue in `playlist_detail_screen` and `artist_detail_screen` where the lowest songs would be trapped under the floating desktop/mobile miniplayer by expanding bottom sliver padding to 120px.
+  - **Legacy C++ Compiler Resilience**: Hardened `windows/CMakeLists.txt` with a `Clang` interceptor that injects `-Wno-error=nontrivial-memcall` strictly into `rive_common_plugin`. This successfully bypasses fatal HarfBuzz memory copy errors introduced by modern Windows Clang 18+ toolchains without requiring disruptive Dart API upgrades.
+  - **Inno Setup Build Automation**: Intercepted CMake's POST_BUILD hooks to seamlessly execute `ISCC.exe`, automatically generating a lightweight Windows installation `.exe` payload instantly after standard Flutter builds.
 - **3-Layer Adaptive Glassmorphism Desktop UI:** 
   - **Layer 1 (Native OS Compositor):** Integrated `flutter_acrylic` to intercept the window render tree natively, injecting an absolute `WindowEffect.acrylic` (Windows) and `WindowEffect.sidebar` (macOS) layer at the compositor level. Initialized strictly before `runApp`.
   - **Layer 2 (Adaptive Dark Shield):** Engineered `_GlassShieldWrapper` in `main_navigation_wrapper.dart` injected inside a fully transparent `Scaffold`. This strictly applies a 65% black tint paired with a 30px blur over the entire application scaffolding, ensuring 100% text readability over any wallpaper while retaining the ambient glass effect.

@@ -20,6 +20,18 @@ class StorageService {
   static const String _audioPitchKey = 'audio_pitch_v1';
   static const String _customVideoLinksKey = 'custom_video_links_v1';
   static const String _hasSeenOnboardingKey = 'has_seen_onboarding_v1';
+  
+  static const String _favoriteArtistsKey = 'favorite_artists_v1';
+
+  static Future<List<String>> getFavoriteArtists() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_favoriteArtistsKey) ?? [];
+  }
+
+  static Future<void> setFavoriteArtists(List<String> artists) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_favoriteArtistsKey, artists);
+  }
 
   /// Learning Engine: Artist History
   static Future<void> saveListeningHistory(Map<String, int> artistCounts) async {

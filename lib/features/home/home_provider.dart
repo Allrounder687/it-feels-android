@@ -263,39 +263,61 @@ class HomeNotifier extends Notifier<HomeState> {
           }
         }
       } else if (category == 'For You') {
-        // Multi-source Recommendation Engine: Last.fm + Deezer
+        // Multi-source Recommendation Engine: Last.fm + Deezer + Onboarding
+        
+        final favoriteArtists = await StorageService.getFavoriteArtists();
+        final baseArtists = favoriteArtists.isNotEmpty 
+            ? List<String>.from(favoriteArtists)
+            : ['Arijit Singh', 'The Weeknd', 'Taylor Swift', 'Pritam', 'Travis Scott'];
+
+        // Mix in Last.fm if logged in
         final isLoggedIn = await lastfmService.isLoggedIn();
-        if (isLoggedIn && page == 0) {
+        if (isLoggedIn) {
            final username = await lastfmService.getUsername();
            if (username != null) {
-              // Get user's top tracks as seeds
-              final topTracks = await lastfmService.getUserTopTracks(username, limit: 5);
-              if (topTracks.isNotEmpty) {
-                 newShelves.add(FeedShelf(title: 'Because You Like ${topTracks.first['artist']['name']}', type: ShelfType.playlistCarousel, items: await deezerApi.searchPlaylists(topTracks.first['artist']['name'], limit: 10)));
+              final topTracks = await lastfmService.getUserTopTracks(username, limit: 10);
+              for (var track in topTracks) {
+                 final artistName = track['artist']['name'];
+                 if (artistName != null && !baseArtists.contains(artistName)) {
+                     baseArtists.add(artistName);
+                 }
               }
            }
         }
         
-        final offsets = [
-          {'query': 'Daily Mix', 'title': 'Made For You'},
-          {'query': 'New Releases', 'title': 'Fresh Finds'},
-          {'query': 'Discover', 'title': 'Discover Something New'},
-          {'query': 'Top Hits', 'title': 'Jump Back In'},
-          {'query': 'Chill', 'title': 'Unwind & Chill'},
-          {'query': 'Focus', 'title': 'Deep Focus'},
-          {'query': 'Workout', 'title': 'Beast Mode'},
-          {'query': 'Acoustic', 'title': 'Acoustic Mornings'},
-        ];
+        // Mix in some vibe queries for variety
+        final moodQueries = ['Daily Mix', 'New Releases', 'Discover', 'Chill', 'Acoustic', 'Top Hits', 'Focus', 'Workout'];
         
-        // 2 items per page
-        final idx = (page * 2) % offsets.length;
-        final selectedOffsets = [offsets[idx], offsets[(idx + 1) % offsets.length]];
+        // Randomly shuffle our pool to ensure infinite dynamic generation
+        baseArtists.shuffle();
+        moodQueries.shuffle();
         
-        for (var item in selectedOffsets) {
-          final playlists = await deezerApi.searchPlaylists(item['query']!, limit: 10);
-          if (playlists.isNotEmpty) {
-            newShelves.add(FeedShelf(title: item['title']!, type: ShelfType.playlistCarousel, items: playlists));
-          }
+        // Pick 1 artist and 1 mood per page
+        final selectedArtist = baseArtists.isNotEmpty ? baseArtists.first : 'Pop';
+        final selectedMood = moodQueries.first;
+        
+        // Shelf 1: Artist based
+        final artistPlaylists = await deezerApi.searchPlaylists(selectedArtist, limit: 10);
+        if (artistPlaylists.isNotEmpty) {
+           newShelves.add(FeedShelf(
+              title: 'Because you like $selectedArtist',
+              type: ShelfType.playlistCarousel,
+              items: artistPlaylists,
+           ));
+        }
+        
+        // Shelf 2: Mood based or Dynamic combo
+        final isCombo = page % 3 != 0;
+        final dynamicQuery = isCombo ? '$selectedArtist $selectedMood' : selectedMood;
+        final dynamicPlaylists = await deezerApi.searchPlaylists(dynamicQuery, limit: 10);
+        
+        if (dynamicPlaylists.isNotEmpty) {
+           final title = isCombo ? '$selectedMood for $selectedArtist fans' : selectedMood;
+           newShelves.add(FeedShelf(
+              title: title,
+              type: ShelfType.playlistCarousel,
+              items: dynamicPlaylists,
+           ));
         }
       } else if (category == 'Podcasts') {
         final ytPodcastProvider = YouTubePodcastProvider();
@@ -617,16 +639,21 @@ class HomeNotifier extends Notifier<HomeState> {
     if (state.youSongs.isNotEmpty) return;
 
     try {
-      final queryArtists = topArtists.isNotEmpty
-          ? topArtists
-          : (state.trendingSongs.isNotEmpty
-                ? state.trendingSongs
-                      .map((e) => e.artist.split(',').first)
-                      .where((a) => a.isNotEmpty)
-                      .toSet()
-                      .take(4)
-                      .toList()
-                : ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift']);
+      final favoriteArtists = await StorageService.getFavoriteArtists();
+      if (favoriteArtists.isNotEmpty) favoriteArtists.shuffle();
+      
+      final queryArtists = favoriteArtists.isNotEmpty
+          ? favoriteArtists
+          : (topArtists.isNotEmpty
+            ? topArtists
+            : (state.trendingSongs.isNotEmpty
+                  ? state.trendingSongs
+                        .map((e) => e.artist.split(',').first)
+                        .where((a) => a.isNotEmpty)
+                        .toSet()
+                        .take(4)
+                        .toList()
+                  : ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift']));
 
       final newSongs = <Song>[];
       final newPlaylists = <Playlist>[];
