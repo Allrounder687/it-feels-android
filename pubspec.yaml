@@ -112,6 +112,7 @@ dependencies:
   protocol_registry: ^0.0.5
   flutter_acrylic: ^1.1.4
   rive: 0.13.0
+  screen_retriever: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

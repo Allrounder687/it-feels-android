@@ -15,15 +15,15 @@ class SkeletonLoadingList extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 12),
           child: ExcludeSemantics(
             child: Shimmer.fromColors(
-              baseColor: context.themeCardColor.withValues(alpha: 0.5),
-              highlightColor: context.themeCardColor.withValues(alpha: 0.8),
+              baseColor: context.themeCardColor,
+              highlightColor: context.themeSurfaceColor,
             child: Row(
               children: [
                 Container(
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: context.themeCardColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -36,7 +36,7 @@ class SkeletonLoadingList extends StatelessWidget {
                         width: double.infinity,
                         height: 14,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.themeCardColor,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -45,7 +45,7 @@ class SkeletonLoadingList extends StatelessWidget {
                         width: 150,
                         height: 10,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: context.themeCardColor,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),

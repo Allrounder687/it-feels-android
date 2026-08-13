@@ -382,14 +382,14 @@ class SongOptionsSheet extends ConsumerWidget {
                     shrinkWrap: true,
                     itemCount: 5,
                     itemBuilder: (context, index) => ExcludeSemantics(
-                      child: Shimmer.fromColors(
-                        baseColor: context.themeCardColor,
-                        highlightColor: context.themeCardColor.withValues(alpha: 0.5),
-                        child: ListTile(
-                          title: Container(height: 16, width: 120, color: Colors.white, margin: const EdgeInsets.only(right: 150)),
-                          subtitle: Container(height: 12, width: 80, color: Colors.white, margin: const EdgeInsets.only(right: 200, top: 4)),
-                        ),
-                      ),
+                                child: Shimmer.fromColors(
+                                  baseColor: context.themeCardColor,
+                                  highlightColor: context.themeSurfaceColor,
+                                  child: ListTile(
+                                    title: Container(height: 16, width: 120, color: context.themeCardColor, margin: const EdgeInsets.only(right: 150)),
+                                    subtitle: Container(height: 12, width: 80, color: context.themeCardColor, margin: const EdgeInsets.only(right: 200, top: 4)),
+                                  ),
+                                ),
                     ),
                   );
                 }
@@ -416,10 +416,10 @@ class SongOptionsSheet extends ConsumerWidget {
                           return ExcludeSemantics(
                             child: Shimmer.fromColors(
                               baseColor: context.themeCardColor,
-                              highlightColor: context.themeCardColor.withValues(alpha: 0.5),
+                              highlightColor: context.themeSurfaceColor,
                               child: ListTile(
-                                title: Container(height: 16, width: 120, color: Colors.white, margin: const EdgeInsets.only(right: 150)),
-                                subtitle: Container(height: 12, width: 80, color: Colors.white, margin: const EdgeInsets.only(right: 200, top: 4)),
+                                title: Container(height: 16, width: 120, color: context.themeCardColor, margin: const EdgeInsets.only(right: 150)),
+                                subtitle: Container(height: 12, width: 80, color: context.themeCardColor, margin: const EdgeInsets.only(right: 200, top: 4)),
                               ),
                             ),
                           );

@@ -474,17 +474,18 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                       ),
                                     ),
                                     Expanded(
-                                      child: SliderTheme(
-                                        data: const SliderThemeData(
-                                          thumbShape: RoundSliderThumbShape(
-                                            enabledThumbRadius: 6,
+                                      child: ExcludeSemantics(
+                                        child: SliderTheme(
+                                          data: const SliderThemeData(
+                                            thumbShape: RoundSliderThumbShape(
+                                              enabledThumbRadius: 6,
+                                            ),
+                                            trackHeight: 3,
+                                            activeTrackColor:
+                                                AppColors.midnightAccent,
+                                            inactiveTrackColor: Colors.white24,
+                                            thumbColor: AppColors.midnightAccent,
                                           ),
-                                          trackHeight: 3,
-                                          activeTrackColor:
-                                              AppColors.midnightAccent,
-                                          inactiveTrackColor: Colors.white24,
-                                          thumbColor: AppColors.midnightAccent,
-                                        ),
                                         child: Slider(
                                           value: position.inMilliseconds
                                               .toDouble(),
@@ -499,6 +500,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
                                           },
                                         ),
                                       ),
+                                    ),
                                     ),
                                     Text(
                                       _formatDuration(duration),

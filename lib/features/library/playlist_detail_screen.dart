@@ -6,7 +6,6 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/data/services/deezer_api_service.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/widgets/skeleton_loading_list.dart';
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/widgets/animated_equalizer.dart';

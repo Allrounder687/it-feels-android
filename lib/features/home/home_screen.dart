@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,10 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
-import 'package:it_feels_music/features/home/home_provider.dart';
-import 'package:it_feels_music/features/settings/hidden_songs_provider.dart';
 import 'package:it_feels_music/features/library/listening_history_provider.dart';
-import 'package:it_feels_music/features/ai/ai_settings_provider.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/library/playlist_detail_screen.dart';
 import 'package:it_feels_music/features/library/see_all_screen.dart';
@@ -21,7 +17,6 @@ import 'package:it_feels_music/features/settings/settings_screen.dart';
 import 'package:it_feels_music/features/settings/profile_screen.dart';
 import 'package:it_feels_music/features/ai/ask_ai_screen.dart';
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
-import 'package:it_feels_music/features/settings/profile_provider.dart';
 import 'package:it_feels_music/features/home/smart_recommendations_row.dart';
 import 'package:it_feels_music/features/social/room_bottom_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
@@ -66,8 +61,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ref
             .read(homeProvider.notifier)
             .fetchYouSongs(historyProvider.getTopArtists());
-        if (homeProv.moodPlaylists.isEmpty)
+        if (homeProv.moodPlaylists.isEmpty) {
           ref.read(homeProvider.notifier).fetchMoods();
+        }
       } else if (homeProv.selectedCategory == "Charts") {
         ref.read(homeProvider.notifier).fetchCharts();
       } else if (homeProv.selectedCategory == "Music") {
@@ -372,8 +368,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ListeningHistoryState history,
     List<Song> fallbackSongs,
   ) {
-    if (artists.isEmpty)
+    if (artists.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
 
     final Set<String> usedImages = {};
 
@@ -495,8 +492,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String title,
     List<dynamic> artists,
   ) {
-    if (artists.isEmpty)
+    if (artists.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
 
     return SliverToBoxAdapter(
       child: Column(
@@ -718,8 +716,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     List<Song> history,
     AudioPlayerState playerProvider,
   ) {
-    if (history.isEmpty)
+    if (history.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
 
     return SliverToBoxAdapter(
       child: Column(
@@ -851,8 +850,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     List<Song> songs,
     AudioPlayerState playerProvider,
   ) {
-    if (songs.isEmpty)
+    if (songs.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1040,11 +1040,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         }
         final hour = DateTime.now().hour;
         Color topGradientColor;
-        if (hour < 12)
+        if (hour < 12) {
           topGradientColor = const Color(
             0xFFFFC107,
           ).withValues(alpha: 0.15); // Morning Gold
-        else if (hour < 17)
+        } else if (hour < 17)
           topGradientColor = const Color(
             0xFF4CAF50,
           ).withValues(alpha: 0.10); // Afternoon Teal/Green
@@ -1264,10 +1264,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           .fetchYouSongs(
                                             historyProvider.getTopArtists(),
                                           );
-                                      if (homeProv.moodPlaylists.isEmpty)
+                                      if (homeProv.moodPlaylists.isEmpty) {
                                         ref
                                             .read(homeProvider.notifier)
                                             .fetchMoods();
+                                      }
                                     }
                                   },
                                 ),
@@ -1322,7 +1323,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             scrollDirection: Axis.horizontal,
                                             padding: const EdgeInsets.symmetric(horizontal: 20),
                                             itemCount: 2,
-                                            itemBuilder: (_, __) => Padding(
+                                            itemBuilder: (_, _) => Padding(
                                               padding: const EdgeInsets.only(right: 24, top: 16, bottom: 16),
                                               child: Container(
                                                 width: cardWidth,
@@ -1355,7 +1356,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                           scrollDirection: Axis.horizontal,
                                           padding: const EdgeInsets.symmetric(horizontal: 20),
                                           itemCount: 4,
-                                          itemBuilder: (_, __) => Padding(
+                                          itemBuilder: (_, _) => Padding(
                                             padding: const EdgeInsets.only(right: 14),
                                             child: Container(
                                               width: 140,
@@ -1562,7 +1563,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       child: ListView.builder(
                                         scrollDirection: Axis.horizontal,
                                         itemCount: 4,
-                                        itemBuilder: (_, __) => Padding(
+                                        itemBuilder: (_, _) => Padding(
                                           padding: const EdgeInsets.only(
                                             right: 14,
                                           ),

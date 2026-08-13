@@ -536,10 +536,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       // since the native events channel drops the completed event on non-platform threads.
       if (Platform.isWindows &&
           state.isPlaying &&
-          state.duration != null &&
           !state.isLoading) {
-        if (state.duration!.inMilliseconds > 0 && pos.inMilliseconds > 0) {
-          if (state.duration!.inMilliseconds - pos.inMilliseconds <= 250) {
+        if (state.duration.inMilliseconds > 0 && pos.inMilliseconds > 0) {
+          if (state.duration.inMilliseconds - pos.inMilliseconds <= 250) {
             _handleTrackCompleted();
           }
         }
@@ -1106,8 +1105,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     if (oldIndex < 0 ||
         oldIndex >= state.queue.length ||
         newIndex < 0 ||
-        newIndex > state.queue.length)
+        newIndex > state.queue.length) {
       return;
+    }
 
     final updated = List<Song>.from(state.queue);
     final item = updated.removeAt(oldIndex);

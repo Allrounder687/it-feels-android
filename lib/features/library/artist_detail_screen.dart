@@ -101,8 +101,9 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
 
     // Ultimate fallback for missing artist image: grab from top album or song
     if (fetchedImage == null || fetchedImage.isEmpty || fetchedImage.contains('default')) {
-      if (albums.isNotEmpty) fetchedImage = albums.first.coverArt;
-      else if (allSongs.isNotEmpty) fetchedImage = allSongs.first.coverArt;
+      if (albums.isNotEmpty) {
+        fetchedImage = albums.first.coverArt;
+      } else if (allSongs.isNotEmpty) fetchedImage = allSongs.first.coverArt;
     }
 
     if (mounted) {

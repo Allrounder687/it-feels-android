@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:it_feels_music/features/search/search_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
@@ -9,14 +8,11 @@ import 'package:go_router/go_router.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
-import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:it_feels_music/features/settings/profile_screen.dart';
-import 'package:it_feels_music/features/settings/profile_provider.dart';
 import 'package:it_feels_music/features/social/room_bottom_sheet.dart';
 import 'package:it_feels_music/features/radio/radio_screen.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
 import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
-import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
 
 class PremiumTitleBar extends ConsumerStatefulWidget {
@@ -397,7 +393,7 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => ProfileScreen(),
+              builder: (_) => const ProfileScreen(),
             ),
           ),
           child: Container(

@@ -292,32 +292,37 @@ class HomeNotifier extends Notifier<HomeState> {
         baseArtists.shuffle();
         moodQueries.shuffle();
         
-        // Pick 1 artist and 1 mood per page
-        final selectedArtist = baseArtists.isNotEmpty ? baseArtists.first : 'Pop';
-        final selectedMood = moodQueries.first;
+        // Pick 2 artists and 2 moods per page to ensure enough content fills the screen for scrolling
+        final selectedArtists = baseArtists.isNotEmpty ? baseArtists.take(2).toList() : ['Pop', 'Rock'];
+        final selectedMoods = moodQueries.take(2).toList();
         
-        // Shelf 1: Artist based
-        final artistPlaylists = await saavnApi.searchPlaylists(selectedArtist, count: 10);
-        if (artistPlaylists.isNotEmpty) {
-           newShelves.add(FeedShelf(
-              title: 'Because you like $selectedArtist',
-              type: ShelfType.playlistCarousel,
-              items: artistPlaylists,
-           ));
-        }
-        
-        // Shelf 2: Mood based or Dynamic combo
-        final isCombo = page % 3 != 0;
-        final dynamicQuery = isCombo ? '$selectedArtist $selectedMood' : selectedMood;
-        final dynamicPlaylists = await saavnApi.searchPlaylists(dynamicQuery, count: 10);
-        
-        if (dynamicPlaylists.isNotEmpty) {
-           final title = isCombo ? '$selectedMood for $selectedArtist fans' : selectedMood;
-           newShelves.add(FeedShelf(
-              title: title,
-              type: ShelfType.playlistCarousel,
-              items: dynamicPlaylists,
-           ));
+        for (int i = 0; i < 2; i++) {
+           final artist = selectedArtists[i % selectedArtists.length];
+           final mood = selectedMoods[i % selectedMoods.length];
+           
+           // Shelf 1: Artist based
+           final artistPlaylists = await saavnApi.searchPlaylists(artist, count: 10);
+           if (artistPlaylists.isNotEmpty) {
+              newShelves.add(FeedShelf(
+                 title: 'Because you like $artist',
+                 type: ShelfType.playlistCarousel,
+                 items: artistPlaylists,
+              ));
+           }
+           
+           // Shelf 2: Mood based or Dynamic combo
+           final isCombo = (page + i) % 3 != 0;
+           final dynamicQuery = isCombo ? '$artist $mood' : mood;
+           final dynamicPlaylists = await saavnApi.searchPlaylists(dynamicQuery, count: 10);
+           
+           if (dynamicPlaylists.isNotEmpty) {
+              final title = isCombo ? '$mood for $artist fans' : mood;
+              newShelves.add(FeedShelf(
+                 title: title,
+                 type: ShelfType.playlistCarousel,
+                 items: dynamicPlaylists,
+              ));
+           }
         }
       } else if (category == 'Podcasts') {
         final ytPodcastProvider = YouTubePodcastProvider();

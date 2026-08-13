@@ -8,7 +8,6 @@ import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/widgets/wavy_seek_bar.dart';
 import 'package:it_feels_music/features/onboarding/widgets/welcome_permissions_sheet.dart';
-import 'package:it_feels_music/features/home/home_provider.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';

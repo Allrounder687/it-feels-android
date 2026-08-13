@@ -152,11 +152,11 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
 
             if (targetDuration.inSeconds > 2) {
               final maxDuration = targetDuration - const Duration(seconds: 2);
-              if (syncPosition! > maxDuration) syncPosition = maxDuration;
-              if (syncPosition! < Duration.zero) syncPosition = Duration.zero;
+              if (syncPosition > maxDuration) syncPosition = maxDuration;
+              if (syncPosition < Duration.zero) syncPosition = Duration.zero;
             }
           }
-          ref.read(audioPlayerProvider.notifier).seek(syncPosition!);
+          ref.read(audioPlayerProvider.notifier).seek(syncPosition);
         }
       }
       videoProvider.player?.pause();

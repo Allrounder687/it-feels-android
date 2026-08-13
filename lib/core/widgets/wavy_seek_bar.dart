@@ -1,8 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:it_feels_music/features/settings/settings_provider.dart';
-import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 /// A custom animated seek bar with a wavy progress indicator.
 ///

@@ -7,7 +7,6 @@ import 'package:windows_taskbar/windows_taskbar.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/audio_player_handler.dart';
 import 'package:it_feels_music/services/storage_service.dart';
-import 'package:window_manager/window_manager.dart';
 
 enum AudioVibe {
   normal,

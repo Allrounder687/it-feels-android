@@ -54,8 +54,12 @@ class CustomImageWidget extends ConsumerWidget {
         height: height,
         filterQuality: imageFilterQuality,
         errorWidget: errorWidget ?? (context, url, error) {
-          debugPrint('CachedNetworkImage ERROR for $url: $error');
-          return const Icon(Icons.music_note, color: Colors.grey);
+          return Image.asset(
+            'assets/images/placeholder.jpg',
+            fit: fit,
+            width: width,
+            height: height,
+          );
         },
       );
     } else {

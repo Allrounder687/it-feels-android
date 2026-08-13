@@ -6,7 +6,6 @@ import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:isar/isar.dart';
 import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
-import 'dart:math';
 
 class StreamResolver {
   static final StreamResolver _instance = StreamResolver._internal();
