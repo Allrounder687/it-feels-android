@@ -229,7 +229,7 @@ class _VideoPlayerScreenState extends ConsumerState<VideoPlayerScreen> {
   @override
   Widget build(BuildContext context) {
     final videoProvider = ref.watch(videoPlayerProvider);
-    final topInset = MediaQuery.of(context).viewPadding.top;
+
     final isWide = MediaQuery.of(context).size.width > 800;
 
     Widget playerArea = Stack(

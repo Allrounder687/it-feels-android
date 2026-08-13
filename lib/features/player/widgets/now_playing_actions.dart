@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:it_feels_music/core/theme/app_typography.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';

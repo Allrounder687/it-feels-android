@@ -198,9 +198,11 @@ class NowPlayingArt extends ConsumerWidget {
                   isPlaying: isPlaying,
                 ),
               ),
-              StatefulBuilder(
-                builder: (context, setState) {
+              Builder(
+                builder: (context) {
                   bool isHovering = false;
+                  return StatefulBuilder(
+                    builder: (context, setState) {
                   return MouseRegion(
                     onEnter: (_) => isWide ? setState(() => isHovering = true) : null,
                     onExit: (_) => isWide ? setState(() => isHovering = false) : null,
@@ -238,7 +240,9 @@ class NowPlayingArt extends ConsumerWidget {
                     ),
                   );
                 },
-              ),
+              );
+            },
+          ),
               if (isWide)
                 Positioned(
                   top: 16,
