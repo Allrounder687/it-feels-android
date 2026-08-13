@@ -9,7 +9,7 @@ void main() {
   group('End-to-End App Test', () {
     testWidgets('Verify app launch and basic navigation', (WidgetTester tester) async {
       // Launch the app
-      app.main();
+      app.main([]);
       
       // Wait for the app to settle (might take longer due to initial API calls)
       await tester.pumpAndSettle(const Duration(seconds: 5));

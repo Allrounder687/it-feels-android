@@ -64,6 +64,7 @@ class CustomImageWidget extends ConsumerWidget {
         fit: fit,
         width: width,
         height: height,
+        cacheWidth: targetSize,
         filterQuality: imageFilterQuality,
         errorBuilder: (context, error, stackTrace) => errorWidget != null ? errorWidget!(context, imageUrl, error) : const Icon(Icons.music_note, color: Colors.grey),
       );

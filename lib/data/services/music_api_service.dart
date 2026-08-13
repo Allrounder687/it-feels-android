@@ -24,6 +24,12 @@ class MusicApiService {
   final Map<String, DateTime> _playlistCacheExpiries = {};
   final Map<String, DateTime> _albumCacheExpiries = {};
 
+  void _enforceCacheLimit<K, V>(Map<K, V> cache, int maxSize) {
+    while (cache.length > maxSize) {
+      cache.remove(cache.keys.first);
+    }
+  }
+
   bool _isBhakti(String? text) {
     if (text == null || text.isEmpty) return false;
     final lower = text.toLowerCase();
@@ -287,6 +293,7 @@ class MusicApiService {
       _homepageCache.clear();
       _homepageCache.addAll(result);
       _homepageCacheExpiry = DateTime.now().add(_cacheDuration);
+      _enforceCacheLimit(_homepageCache, 50);
       return result;
     } catch (e) {
       debugPrint('[MusicApiService] Homepage error: $e');
@@ -333,6 +340,8 @@ class MusicApiService {
       };
       _playlistCache[listId] = result;
       _playlistCacheExpiries[listId] = DateTime.now().add(_cacheDuration);
+      _enforceCacheLimit(_playlistCache, 50);
+      _enforceCacheLimit(_playlistCacheExpiries, 50);
       return result;
     } catch (e) {
       debugPrint('[MusicApiService] Playlist error for ID $listId: $e');
@@ -377,6 +386,8 @@ class MusicApiService {
       };
       _albumCache[albumId] = result;
       _albumCacheExpiries[albumId] = DateTime.now().add(_cacheDuration);
+      _enforceCacheLimit(_albumCache, 50);
+      _enforceCacheLimit(_albumCacheExpiries, 50);
       return result;
     } catch (e) {
       debugPrint('[MusicApiService] Album error for ID $albumId: $e');

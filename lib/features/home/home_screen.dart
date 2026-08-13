@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:it_feels_music/core/widgets/horizontal_scroll_wrapper.dart';
 import 'package:it_feels_music/core/theme/app_typography.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -515,71 +516,76 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           SizedBox(
             height: 180,
-            child: GridView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 0.35,
-              ),
-              itemCount: artists.length,
-              itemBuilder: (context, index) {
-                final artist = artists[index];
-                final String artistName = artist is Map
-                    ? (artist['title'] ?? '')
-                    : artist.toString();
-                final String? artistImage = artist is Map
-                    ? artist['image']
-                    : null;
-
-                return TVFocusableCard(
-                  onTap: () {},
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: context.themeCardColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            image: artistImage != null && artistImage.isNotEmpty
-                                ? DecorationImage(
-                                    image: NetworkImage(artistImage),
-                                    fit: BoxFit.cover,
-                                  )
-                                : const DecorationImage(
-                                    image: AssetImage(
-                                      'assets/images/placeholder.jpg',
-                                    ),
-                                    fit: BoxFit.cover,
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            artistName,
-                            style: GoogleFonts.inter(
-                              color: context.themeTextColor,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
+            child: HorizontalScrollWrapper(
+              builder: (context, scrollController) {
+                return GridView.builder(
+                  controller: scrollController,
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 0.35,
                   ),
+                  itemCount: artists.length,
+                  itemBuilder: (context, index) {
+                    final artist = artists[index];
+                    final String artistName = artist is Map
+                        ? (artist['title'] ?? '')
+                        : artist.toString();
+                    final String? artistImage = artist is Map
+                        ? artist['image']
+                        : null;
+
+                    return TVFocusableCard(
+                      onTap: () {},
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: context.themeCardColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                image: artistImage != null && artistImage.isNotEmpty
+                                    ? DecorationImage(
+                                        image: NetworkImage(artistImage),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : const DecorationImage(
+                                        image: AssetImage(
+                                          'assets/images/placeholder.jpg',
+                                        ),
+                                        fit: BoxFit.cover,
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                artistName,
+                                style: GoogleFonts.inter(
+                                  color: context.themeTextColor,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
-              },
+              }
             ),
           ),
         ],
@@ -618,16 +624,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           SizedBox(
             height: carouselHeight,
-            child: ScrollConfiguration(
-              behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                clipBehavior: Clip.none,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                itemCount: playlists.length,
-                itemBuilder: (context, index) {
-                  final pl = playlists[index];
+            child: HorizontalScrollWrapper(
+              builder: (context, scrollController) {
+                return ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                  child: ListView.builder(
+                    controller: scrollController,
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    clipBehavior: Clip.none,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: playlists.length,
+                    itemBuilder: (context, index) {
+                      final pl = playlists[index];
 
                   String displayTitle = pl.title;
                   if (displayTitle.startsWith("Daily Mix: ")) {
@@ -695,9 +704,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   );
                 },
               ),
-            ),
-          ),
-          const SizedBox(height: 16),
+            );
+          }),
+        ),
+        const SizedBox(height: 16),
         ],
       ),
     );
@@ -739,89 +749,94 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           SizedBox(
             height: 190,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              itemCount: history.length,
-              itemBuilder: (context, index) {
-                final song = history[index];
-                final isPlaying =
-                    playerProvider.currentSong?.id == song.id &&
-                    playerProvider.isPlaying;
+            child: HorizontalScrollWrapper(
+              builder: (context, scrollController) {
+                return ListView.builder(
+                  controller: scrollController,
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: history.length,
+                  itemBuilder: (context, index) {
+                    final song = history[index];
+                    final isPlaying =
+                        playerProvider.currentSong?.id == song.id &&
+                        playerProvider.isPlaying;
 
-                return Padding(
-                  padding: const EdgeInsets.only(right: 14),
-                  child: TVFocusableCard(
-                    onTap: () {
-                      if (playerProvider.currentSong?.id != song.id) {
-                        ref
-                            .read(audioPlayerProvider.notifier)
-                            .playSong(song, queue: history, index: index);
-                      } else {
-                        ref
-                            .read(audioPlayerProvider.notifier)
-                            .togglePlayPause();
-                      }
-                    },
-                    child: SizedBox(
-                      width: 140,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Stack(
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 14),
+                      child: TVFocusableCard(
+                        onTap: () {
+                          if (playerProvider.currentSong?.id != song.id) {
+                            ref
+                                .read(audioPlayerProvider.notifier)
+                                .playSong(song, queue: history, index: index);
+                          } else {
+                            ref
+                                .read(audioPlayerProvider.notifier)
+                                .togglePlayPause();
+                          }
+                        },
+                        child: SizedBox(
+                          width: 140,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: CustomImageWidget(
-                                  imageUrl: song.coverArt ?? '',
-                                  width: 140,
-                                  height: 140,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Positioned.fill(
-                                child: Container(
-                                  decoration: BoxDecoration(
+                              Stack(
+                                children: [
+                                  ClipRRect(
                                     borderRadius: BorderRadius.circular(16),
-                                    color: Colors.black.withValues(alpha: 0.3),
+                                    child: CustomImageWidget(
+                                      imageUrl: song.coverArt ?? '',
+                                      width: 140,
+                                      height: 140,
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
-                                  child: Center(
+                                  Positioned.fill(
                                     child: Container(
-                                      padding: const EdgeInsets.all(12),
                                       decoration: BoxDecoration(
-                                        color: context.themeAccentColor
-                                            .withValues(alpha: 0.9),
-                                        shape: BoxShape.circle,
+                                        borderRadius: BorderRadius.circular(16),
+                                        color: Colors.black.withValues(alpha: 0.3),
                                       ),
-                                      child: Icon(
-                                        isPlaying
-                                            ? Icons.pause_rounded
-                                            : Icons.play_arrow_rounded,
-                                        color: context.themeInvertedTextColor,
-                                        size: 28,
+                                      child: Center(
+                                        child: Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: context.themeAccentColor
+                                                .withValues(alpha: 0.9),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            isPlaying
+                                                ? Icons.pause_rounded
+                                                : Icons.play_arrow_rounded,
+                                            color: context.themeInvertedTextColor,
+                                            size: 28,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                song.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.interSemiBold.copyWith(
+                                  color: context.themeTextColor,
+                                  fontSize: 13,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            song.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.interSemiBold.copyWith(
-                              color: context.themeTextColor,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 );
-              },
+              }
             ),
           ),
           const SizedBox(height: 16),
@@ -892,9 +907,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // but constrained to a reasonable max width on tablets so they don't stretch into strips.
               return SizedBox(
                 height: carouselHeight,
-                child: GridView.builder(
-                  scrollDirection: Axis.horizontal,
-                  clipBehavior: Clip.none,
+                child: HorizontalScrollWrapper(
+                  builder: (context, scrollController) {
+                    return GridView.builder(
+                      controller: scrollController,
+                      scrollDirection: Axis.horizontal,
+                      clipBehavior: Clip.none,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: crossAxisCount,
@@ -991,9 +1009,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     );
                   },
-                ),
-              );
-            },
+                ); // ends GridView.builder
+              }), // ends HorizontalScrollWrapper builder
+            ); // ends return SizedBox
+          }, // ends LayoutBuilder builder
           ),
           const SizedBox(height: 16),
         ],

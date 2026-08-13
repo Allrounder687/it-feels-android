@@ -114,6 +114,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
   StreamSubscription? _roomSubscription;
   StreamSubscription? _positionSubscription;
   StreamSubscription? _trackerSubscription;
+  int _initStreamGenToken = 0;
   bool _isRecovering = false;
   int _recoveryAttempts = 0;
   Duration _lastKnownPosition = Duration.zero;
@@ -199,6 +200,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       _hostSyncTimer?.cancel();
       _roomSubscription?.cancel();
       _positionSubscription?.cancel();
+      _trackerSubscription?.cancel();
       state.player?.dispose();
     });
     final defaultQuality = ref.read(settingsProvider).defaultVideoQuality;
@@ -375,8 +377,19 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     }
   }
 
+  int _bufferSizeForQuality(String quality) {
+    final q = quality.toLowerCase();
+    if (q.contains('360') || q.contains('240') || q.contains('144')) return 16 * 1024 * 1024;
+    if (q.contains('480')) return 24 * 1024 * 1024;
+    if (q.contains('720')) return 32 * 1024 * 1024;
+    if (q.contains('1080')) return 64 * 1024 * 1024;
+    return 128 * 1024 * 1024; // 4K/8K/HLS safety
+  }
+
   Future<void> _initializeStreamForQuality(String targetQuality, {Duration? startPosition, bool isBackgroundHandoff = false, int targetDurationMs = 0, void Function(String)? onToastMessage}) async {
     if (state.streams.isEmpty) return;
+
+    final myToken = ++_initStreamGenToken;
 
     state = state.copyWith(isLoading: true);
 
@@ -420,6 +433,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     final wasPlaying = state.player?.state.playing ?? true;
 
     await state.player?.dispose();
+    if (_initStreamGenToken != myToken) return;
 
     var selectedStream = state.streams.firstWhere(
       (s) => s['quality'] == targetQuality,
@@ -448,10 +462,10 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     final settings = ref.read(settingsProvider);
     
     final player = Player(
-      configuration: const PlayerConfiguration(
+      configuration: PlayerConfiguration(
         pitch: false, 
         vo: 'gpu', 
-        bufferSize: 128 * 1024 * 1024, // 128MB for 4K/8K safety
+        bufferSize: _bufferSizeForQuality(quality.toString()),
       )
     );
     final controller = VideoController(player);
@@ -461,7 +475,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
         streamUrl,
         extras: {
           'start': (previousPosition.inMilliseconds / 1000).toString(),
-          'demuxer-max-bytes': '128000000',
+          'demuxer-max-bytes': _bufferSizeForQuality(quality.toString()).toString(),
           'cache-pause': 'no',
           'hwdec': Platform.isWindows ? 'auto-copy' : 'auto', // Force Hardware Decoding via GPU
           'vd-lavc-threads': Platform.numberOfProcessors.toString(), // Utilize all available CPU cores
@@ -469,15 +483,27 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       );
       
       await player.open(media, play: false);
+      if (_initStreamGenToken != myToken) {
+        player.dispose();
+        return;
+      }
       
       // Explicitly seek to the requested start position since 'start' extra might be ignored by some HLS/Muxed parsers
       if (previousPosition > Duration.zero) {
         await player.seek(previousPosition);
+        if (_initStreamGenToken != myToken) {
+          player.dispose();
+          return;
+        }
       }
       
       // If it's a separated video-only stream, we need to attach the audio stream
       if (selectedStream['videoOnly'] == true && state.audioUrl.isNotEmpty) {
         await player.setAudioTrack(AudioTrack.uri(state.audioUrl, title: 'Original', language: 'en'));
+        if (_initStreamGenToken != myToken) {
+          player.dispose();
+          return;
+        }
       }
       
     } catch (e) {
@@ -486,7 +512,14 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
         await _handleVideoPlaybackError(previousPosition, wasPlaying);
         return;
       }
+    } finally {
+      if (_initStreamGenToken != myToken) {
+        player.dispose();
+      }
     }
+
+    // If a newer initialization was started, abort
+    if (_initStreamGenToken != myToken) return;
 
     _trackerSubscription?.cancel();
     _trackerSubscription = player.stream.position.listen((pos) {

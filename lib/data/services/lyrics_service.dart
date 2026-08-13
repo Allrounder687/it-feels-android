@@ -31,6 +31,12 @@ class LyricsService {
   final Map<String, Map<String, LyricsResult>> _lyricsCache = {};
   static String? _musixmatchToken;
 
+  void _enforceCacheLimit<K, V>(Map<K, V> cache, int maxSize) {
+    while (cache.length > maxSize) {
+      cache.remove(cache.keys.first);
+    }
+  }
+
   /// Check if lyrics are already cached
   bool isLyricsCached(String songId) => _lyricsCache.containsKey(songId) && _lyricsCache[songId]!.isNotEmpty;
 
@@ -41,6 +47,7 @@ class LyricsService {
   }
 
   /// Fetch lyrics for a song (Races Proxy, LRCLIB, Musixmatch and Saavn concurrently)
+  /// Short-circuits: once a synced result is found, subsequent results are cached but deprioritized.
   void fetchLyrics(Song song, {Function(String)? onError, required void Function(LyricsResult) onResult}) {
     if (_lyricsCache.containsKey(song.id) && _lyricsCache[song.id]!.isNotEmpty) {
       for (final res in _lyricsCache[song.id]!.values) {
@@ -50,11 +57,17 @@ class LyricsService {
     }
 
     _lyricsCache[song.id] = {};
+    _enforceCacheLimit(_lyricsCache, 100);
+    bool hasSyncedResult = false;
 
     void tryComplete(LyricsResult? res) {
       if (res != null && (res.hasSynced || res.hasStatic)) {
         _lyricsCache[song.id]![res.source] = res;
-        onResult(res);
+        // Always deliver synced results; only deliver static if no synced exists yet
+        if (res.hasSynced || !hasSyncedResult) {
+          onResult(res);
+        }
+        if (res.hasSynced) hasSyncedResult = true;
       }
     }
 

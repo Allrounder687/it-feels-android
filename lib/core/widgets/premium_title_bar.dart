@@ -17,6 +17,7 @@ import 'package:it_feels_music/features/radio/radio_screen.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
 import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
 
 class PremiumTitleBar extends ConsumerStatefulWidget {
   final bool isWideScreen;
@@ -121,11 +122,25 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
             : null,
       ),
       child: ClipRRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: (widget.isSolid || isGlass) ? 0.0 : 25.0,
-            sigmaY: (widget.isSolid || isGlass) ? 0.0 : 25.0,
-          ),
+        child: Consumer(
+          builder: (context, ref, child) {
+            final settings = ref.watch(settingsProvider);
+            double blurAmount = 25.0;
+            if (settings.graphicsQuality == GraphicsQuality.medium) {
+              blurAmount = 10.0;
+            } else if (settings.graphicsQuality == GraphicsQuality.low) {
+              blurAmount = 0.0;
+            }
+            if (widget.isSolid || isGlass) blurAmount = 0.0;
+
+            return BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: blurAmount,
+                sigmaY: blurAmount,
+              ),
+              child: child,
+            );
+          },
           child: Container(
             decoration: BoxDecoration(gradient: gradient),
             child: Row(

@@ -11,6 +11,7 @@ import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
 
 class DesktopMiniplayerScreen extends ConsumerStatefulWidget {
   const DesktopMiniplayerScreen({super.key});
@@ -238,59 +239,72 @@ class _PiPLyricsView extends ConsumerWidget {
           imageUrl: song.coverArt,
           fit: BoxFit.cover,
         ),
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 30.0, sigmaY: 30.0),
-          child: Container(color: Colors.black.withValues(alpha: 0.5)),
+        Consumer(
+          builder: (context, ref, child) {
+            final settings = ref.watch(settingsProvider);
+            double blurAmount = 30.0;
+            if (settings.graphicsQuality == GraphicsQuality.medium) blurAmount = 15.0;
+            if (settings.graphicsQuality == GraphicsQuality.low) blurAmount = 0.0;
+
+            return blurAmount > 0
+                ? BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: blurAmount, sigmaY: blurAmount),
+                    child: Container(color: Colors.black.withValues(alpha: 0.5)),
+                  )
+                : Container(color: Colors.black.withValues(alpha: 0.8)); // darker if no blur
+          },
         ),
         // Lyrics Content
-        StreamBuilder<Duration>(
-          stream: engine.positionStream,
-          initialData: engine.position,
-          builder: (context, snapshot) {
-            final position = snapshot.data ?? Duration.zero;
+        RepaintBoundary(
+          child: StreamBuilder<Duration>(
+            stream: engine.positionStream,
+            initialData: engine.position,
+            builder: (context, snapshot) {
+              final position = snapshot.data ?? Duration.zero;
 
-            String currentLine = "Playing ${song.title}...";
-            if (lyricsState.isLoading) {
-              currentLine = "Searching lyrics...";
-            } else if (lyricsResult != null && lyricsResult.hasSynced) {
-              final activeIdx = lyricsState.getActiveLineIndex(position);
-              if (activeIdx >= 0 && activeIdx < lyricsResult.syncedLyrics.length) {
-                currentLine = lyricsResult.syncedLyrics[activeIdx].text;
+              String currentLine = "Playing ${song.title}...";
+              if (lyricsState.isLoading) {
+                currentLine = "Searching lyrics...";
+              } else if (lyricsResult != null && lyricsResult.hasSynced) {
+                final activeIdx = lyricsState.getActiveLineIndex(position);
+                if (activeIdx >= 0 && activeIdx < lyricsResult.syncedLyrics.length) {
+                  currentLine = lyricsResult.syncedLyrics[activeIdx].text;
+                }
+              } else if (lyricsResult != null && lyricsResult.hasStatic && lyricsResult.staticLyrics != null) {
+                currentLine = "Lyrics available (Static)";
+              } else if (lyricsState.lyricsNotFound) {
+                currentLine = "";
               }
-            } else if (lyricsResult != null && lyricsResult.hasStatic && lyricsResult.staticLyrics != null) {
-              currentLine = "Lyrics available (Static)";
-            } else if (lyricsState.lyricsNotFound) {
-              currentLine = "";
-            }
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 60.0),
-              child: Center(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    currentLine,
-                    key: ValueKey(currentLine),
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      shadows: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.5),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 60.0),
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Text(
+                      currentLine,
+                      key: ValueKey(currentLine),
+                      textAlign: TextAlign.center,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        shadows: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ],
     );

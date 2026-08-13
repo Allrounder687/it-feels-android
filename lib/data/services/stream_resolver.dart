@@ -16,6 +16,12 @@ class StreamResolver {
   final Map<String, Map<String, dynamic>> _memoryCache = {};
   final Map<String, Future<Map<String, dynamic>>> _inFlightRequests = {};
   
+  void _enforceCacheLimit<K, V>(Map<K, V> cache, int maxSize) {
+    while (cache.length > maxSize) {
+      cache.remove(cache.keys.first);
+    }
+  }
+  
   /// Get video streams with caching and deduplication
   Future<Map<String, dynamic>> resolveStream(String videoId, {String? query, bool bypassCache = false, Song? song, bool isVideoMode = false}) async {
     final cacheKey = '$videoId|${query ?? ""}|$isVideoMode';
@@ -55,6 +61,7 @@ class StreamResolver {
                 'failureCount': cachedStream.failureCount,
               };
               _memoryCache[cacheKey] = result;
+              _enforceCacheLimit(_memoryCache, 30);
               return result;
             } else {
               // Delete expired from Isar
@@ -101,6 +108,7 @@ class StreamResolver {
       result['expiryTime'] = expiryTime;
       
       _memoryCache[cacheKey] = result;
+      _enforceCacheLimit(_memoryCache, 30);
 
       // Save to Disk Cache (Isar)
       try {
@@ -200,6 +208,7 @@ class StreamResolver {
             };
           }
         }
+      }
       } catch (e) {
         debugPrint('[StreamCascade] Saavn fallback failed: $e');
       }
@@ -228,7 +237,7 @@ class StreamResolver {
 
   void preResolve(String videoId, {String? query, Song? song, bool isVideoMode = false}) {
     // Fire and forget
-    resolveStream(videoId, query: query, song: song, isVideoMode: isVideoMode).catchError((_) => {});
+    resolveStream(videoId, query: query, song: song, isVideoMode: isVideoMode).catchError((_) => <String, dynamic>{});
   }
 
 

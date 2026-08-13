@@ -3,6 +3,7 @@ import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'dart:io';
+import 'dart:async';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'music_api_service.dart';
@@ -19,6 +20,9 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   Future<void> Function()? onToggleFavorite;
   
   SMTCWindows? _smtc;
+  StreamSubscription? _smtcSubscription;
+  StreamSubscription? _playbackEventSubscription;
+  StreamSubscription? _playingSubscription;
 
   AudioPlayerHandler({required this.apiService}) {
     _equalizer = AndroidEqualizer();
@@ -54,7 +58,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
             stopEnabled: true,
           ),
         );
-        _smtc?.buttonPressStream.listen((event) {
+        _smtcSubscription = _smtc?.buttonPressStream.listen((event) {
           switch (event) {
             case PressedButton.play:
               play();
@@ -80,8 +84,8 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       }
     }
     
-    _player.playbackEventStream.listen(_broadcastState);
-    _player.playingStream.listen((_) {
+    _playbackEventSubscription = _player.playbackEventStream.listen(_broadcastState);
+    _playingSubscription = _player.playingStream.listen((_) {
       _broadcastState(_player.playbackEvent);
     });
   }
@@ -295,5 +299,11 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       }
     }
     return super.customAction(name, extras);
+  }
+
+  Future<void> disposeSubscriptions() async {
+    await _smtcSubscription?.cancel();
+    await _playbackEventSubscription?.cancel();
+    await _playingSubscription?.cancel();
   }
 }

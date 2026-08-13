@@ -221,10 +221,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 if (searchProviderObj.isSearching && (songs.isNotEmpty || albums.isNotEmpty || searchProviderObj.artists.isNotEmpty))
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                    child: LinearProgressIndicator(
-                      color: Theme.of(context).colorScheme.primary,
-                      backgroundColor: Colors.transparent,
-                      minHeight: 2,
+                    child: ExcludeSemantics(
+                      child: LinearProgressIndicator(
+                        color: Theme.of(context).colorScheme.primary,
+                        backgroundColor: Colors.transparent,
+                        minHeight: 2,
+                      ),
                     ),
                   ),
                 if (searchProviderObj.isSearching && (songs.isNotEmpty || albums.isNotEmpty || searchProviderObj.artists.isNotEmpty))
@@ -490,7 +492,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                 if (searchProviderObj.isLoadingMore)
                                   const Padding(
                                     padding: EdgeInsets.all(20.0),
-                                    child: Center(child: CircularProgressIndicator()),
+                                    child: ExcludeSemantics(
+                                      child: Center(child: CircularProgressIndicator()),
+                                    ),
                                   ),
 
                                 SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),

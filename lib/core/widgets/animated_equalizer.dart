@@ -51,12 +51,23 @@ class _AnimatedEqualizerState extends State<AnimatedEqualizer> with SingleTicker
         final progress = (_controller.value + begin) % 1.0;
         final val = 0.2 + (0.8 * (progress > 0.5 ? 1.0 - progress : progress) * 2);
         
-        return Container(
+        return SizedBox(
           width: 3,
-          height: 24 * val,
-          decoration: BoxDecoration(
-            color: widget.color,
-            borderRadius: BorderRadius.circular(2),
+          height: 24,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Transform.scale(
+              scaleY: val,
+              alignment: Alignment.bottomCenter,
+              child: Container(
+                width: 3,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: widget.color,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
           ),
         );
       },

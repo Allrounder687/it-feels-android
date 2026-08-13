@@ -32,9 +32,12 @@ class _CleverLoadingTextState extends State<CleverLoadingText> {
     super.initState();
     _currentPhrase = _phrases[Random().nextInt(_phrases.length)];
     _timer = Timer.periodic(const Duration(milliseconds: 1500), (timer) {
-      setState(() {
-        _currentPhrase = _phrases[Random().nextInt(_phrases.length)];
-      });
+      final newPhrase = _phrases[Random().nextInt(_phrases.length)];
+      if (newPhrase != _currentPhrase) {
+        setState(() {
+          _currentPhrase = newPhrase;
+        });
+      }
     });
   }
 

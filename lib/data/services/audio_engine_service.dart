@@ -32,6 +32,9 @@ class AudioEngineService {
   // The Notifier will maintain the true queue state, but we need to pass currentSong to ListenTogether
   Song? currentSong;
   
+  StreamSubscription? _positionSub;
+  StreamSubscription? _playerStateSub;
+  DateTime _lastTaskbarUpdate = DateTime(2000);
   Timer? _sleepTimer;
   
   bool isSleepTimerActive = false;
@@ -59,13 +62,17 @@ class AudioEngineService {
     
     if (!kIsWeb && Platform.isWindows) {
       try { WindowsTaskbar.setProgressMode(TaskbarProgressMode.normal).catchError((_) {}); } catch (_) {}
-      positionStream.listen((pos) {
+      _positionSub = positionStream.listen((pos) {
+        final now = DateTime.now();
+        if (now.difference(_lastTaskbarUpdate).inMilliseconds < 1000) return;
+        _lastTaskbarUpdate = now;
+
         final dur = duration;
         if (dur != null && dur.inMilliseconds > 0) {
           try { WindowsTaskbar.setProgress(pos.inMilliseconds, dur.inMilliseconds).catchError((_) {}); } catch (_) {}
         }
       });
-      playerStateStream.listen((state) {
+      _playerStateSub = playerStateStream.listen((state) {
         try {
           if (state.processingState == ProcessingState.completed) {
             WindowsTaskbar.setProgressMode(TaskbarProgressMode.noProgress).catchError((_) {});
@@ -269,5 +276,13 @@ class AudioEngineService {
 
   Future<void> playSong(Song song, String streamUrl) async {
     await audioHandler.playSong(song, streamUrl);
+  }
+
+  void dispose() {
+    _positionSub?.cancel();
+    _playerStateSub?.cancel();
+    _sleepTimer?.cancel();
+    _sleepTimerController.close();
+    _sleepAfterTrackController.close();
   }
 }

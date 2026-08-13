@@ -9,6 +9,7 @@ import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/features/cast/cast_service.dart';
 import 'package:it_feels_music/features/cast/cast_bottom_sheet.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
 
 class MiniPlayer extends ConsumerWidget {
   final VoidCallback onTap;
@@ -60,162 +61,179 @@ class MiniPlayer extends ConsumerWidget {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: BackdropFilter(
-                      filter: kDebugMode ? ImageFilter.blur(sigmaX: 0, sigmaY: 0) : ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                      child: Stack(
-                        children: [
-                  // Top Progress Indicator Line (YouTube Music style)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 0,
-                    child: ExcludeSemantics(
-                      child: StreamBuilder<Duration>(
-                        stream: ref.read(audioPlayerProvider.notifier).audioHandler.player.positionStream,
-                        initialData: playerProvider.position,
-                        builder: (context, snapshot) {
-                          final pos = snapshot.data ?? playerProvider.position;
-                          final progress = (playerProvider.duration.inMilliseconds > 0)
-                              ? (pos.inMilliseconds / playerProvider.duration.inMilliseconds).clamp(0.0, 1.0)
-                              : 0.0;
-                          return LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 2.5,
-                            backgroundColor: context.themeTextColor12,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              playerProvider.themeAccentColor,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
+                    child: Builder(
+                      builder: (context) {
+                        double blurAmount = 20.0;
+                        if (settings.graphicsQuality == GraphicsQuality.medium) blurAmount = 10.0;
+                        if (settings.graphicsQuality == GraphicsQuality.low) blurAmount = 0.0;
+                        if (kDebugMode) blurAmount = 0.0; // Hot reload performance
 
-                  // Main Mini Player Tap Area
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: onTap,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Row(
+                        final Widget playerContent = Stack(
                           children: [
-                            // Cover Art Thumbnail with Hero
-                            Hero(
-                              tag: 'cover_${currentSong.id}',
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: SizedBox(
-                                  width: 44,
-                                  height: 44,
-                                  child: currentSong.coverArt.isNotEmpty
-                                      ? CustomImageWidget(
-                                          imageUrl: currentSong.coverArt,
-                                          fit: BoxFit.cover,
-                                          errorWidget: (context, url, error) =>
-                                              Icon(
-                                                Icons.music_note,
-                                                color: context.themeTextColor,
-                                              ),
-                                        )
-                                      : Icon(
-                                          Icons.music_note,
-                                          color: context.themeTextColor,
+                            // Top Progress Indicator Line (YouTube Music style)
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              top: 0,
+                              child: RepaintBoundary(
+                                child: ExcludeSemantics(
+                                  child: StreamBuilder<Duration>(
+                                    stream: ref.read(audioPlayerProvider.notifier).audioHandler.player.positionStream,
+                                    initialData: playerProvider.position,
+                                    builder: (context, snapshot) {
+                                      final pos = snapshot.data ?? playerProvider.position;
+                                      final progress = (playerProvider.duration.inMilliseconds > 0)
+                                          ? (pos.inMilliseconds / playerProvider.duration.inMilliseconds).clamp(0.0, 1.0)
+                                          : 0.0;
+                                      return LinearProgressIndicator(
+                                        value: progress,
+                                        minHeight: 2.5,
+                                        backgroundColor: context.themeTextColor12,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          playerProvider.themeAccentColor,
                                         ),
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12),
 
-                            // Song Title & Artist
-                            Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    currentSong.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: context.themeTextColor,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    currentSong.artist,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: context.themeTextColor.withValues(
-                                        alpha: 0.7,
+                            // Main Mini Player Tap Area
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: onTap,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                                  child: Row(
+                                    children: [
+                                      // Cover Art Thumbnail with Hero
+                                      Hero(
+                                        tag: 'cover_${currentSong.id}',
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(10),
+                                          child: SizedBox(
+                                            width: 44,
+                                            height: 44,
+                                            child: currentSong.coverArt.isNotEmpty
+                                                ? CustomImageWidget(
+                                                    imageUrl: currentSong.coverArt,
+                                                    fit: BoxFit.cover,
+                                                    errorWidget: (context, url, error) =>
+                                                        Icon(
+                                                          Icons.music_note,
+                                                          color: context.themeTextColor,
+                                                        ),
+                                                  )
+                                                : Icon(
+                                                    Icons.music_note,
+                                                    color: context.themeTextColor,
+                                                  ),
+                                          ),
+                                        ),
                                       ),
-                                      fontSize: 12,
-                                    ),
+                                      const SizedBox(width: 12),
+
+                                      // Song Title & Artist
+                                      Expanded(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              currentSong.title,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: context.themeTextColor,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              currentSong.artist,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: context.themeTextColor.withValues(
+                                                  alpha: 0.7,
+                                                ),
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      // Cast Action Button
+                                      Builder(
+                                        builder: (context) {
+                                          final isCasting = locator<CastService>().isConnected;
+                                          return IconButton(
+                                            icon: Icon(
+                                              isCasting ? Icons.cast_connected_rounded : Icons.cast_rounded,
+                                              color: isCasting ? playerProvider.themeAccentColor : context.themeMutedTextColor,
+                                              size: 20,
+                                            ),
+                                            onPressed: () {
+                                              CastBottomSheet.show(context);
+                                            },
+                                            tooltip: 'Cast Audio',
+                                          );
+                                        },
+                                      ),
+
+                                      // Play/Pause Button
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: context.themeTextColor.withValues(alpha: 0.15),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: AnimatedPlayPauseButton(
+                                          isPlaying: playerProvider.isPlaying,
+                                          onPressed: () => ref.read(audioPlayerProvider.notifier).togglePlayPause(),
+                                          color: context.themeTextColor,
+                                          size: 24,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+
+                                      // Close Player Button
+                                      IconButton(
+                                        icon: const Icon(Icons.close_rounded, size: 20),
+                                        color: context.themeMutedTextColor,
+                                        onPressed: () {
+                                          ref.read(audioPlayerProvider.notifier).closePlayer();
+                                        },
+                                        tooltip: 'Close Player',
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
-
-                            // Cast Action Button
-                            Builder(
-                              builder: (context) {
-                                final isCasting = locator<CastService>().isConnected;
-                                return IconButton(
-                                  icon: Icon(
-                                    isCasting ? Icons.cast_connected_rounded : Icons.cast_rounded,
-                                    color: isCasting ? playerProvider.themeAccentColor : context.themeMutedTextColor,
-                                    size: 20,
-                                  ),
-                                  onPressed: () {
-                                    CastBottomSheet.show(context);
-                                  },
-                                  tooltip: 'Cast Audio',
-                                );
-                              },
-                            ),
-
-                            // Play/Pause Button
-                            Container(
-                              decoration: BoxDecoration(
-                                color: context.themeTextColor.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: AnimatedPlayPauseButton(
-                                isPlaying: playerProvider.isPlaying,
-                                onPressed: () => ref.read(audioPlayerProvider.notifier).togglePlayPause(),
-                                color: context.themeTextColor,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-
-                            // Close Player Button
-                            IconButton(
-                              icon: const Icon(Icons.close_rounded, size: 20),
-                              color: context.themeMutedTextColor,
-                              onPressed: () {
-                                ref.read(audioPlayerProvider.notifier).closePlayer();
-                              },
-                              tooltip: 'Close Player',
                             ),
                           ],
-                        ),
-                      ),
+                        );
+
+                        return blurAmount > 0
+                            ? BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: blurAmount, sigmaY: blurAmount),
+                                child: playerContent,
+                              )
+                            : playerContent;
+                      },
                     ),
                   ),
-                ],
-              ),
+                );
+                
+                return child;
+              },
             ),
           ),
-          );
-          return child;
-        },
-      ),
-    ),
-  );
-});
+        );
+      },
+    );
   }
 }

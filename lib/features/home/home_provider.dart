@@ -651,20 +651,22 @@ class HomeNotifier extends Notifier<HomeState> {
                         .map((e) => e.artist.split(',').first.trim())
                         .where((a) => a.isNotEmpty)
                         .toSet()
-                        .take(4)
                         .toList()
                   : ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift']));
 
       if (queryArtists.isEmpty) {
         queryArtists = ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift'];
       }
+      
+      // Shuffle to ensure daily changing mixes if there are many artists
+      queryArtists.shuffle();
 
       final newSongs = <Song>[];
       final newPlaylists = <Playlist>[];
 
       final Set<String> usedCovers = {};
 
-      for (var artist in queryArtists.take(4)) {
+      for (var artist in queryArtists.take(10)) {
         final res = await saavnApi.searchSongs(artist, count: 20);
         if (res.isNotEmpty) {
           String selectedCover = '';

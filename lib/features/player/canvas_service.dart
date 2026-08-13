@@ -18,10 +18,12 @@ final canvasControllerProvider = StateNotifierProvider<CanvasControllerNotifier,
 
 class CanvasControllerNotifier extends StateNotifier<VideoController?> {
   final Ref ref;
+  int _canvasGenToken = 0;
   
   CanvasControllerNotifier(this.ref) : super(null);
 
   Future<void> loadCanvasForSong(Song song) async {
+    final myToken = ++_canvasGenToken;
     // Clear old
     if (state != null) {
       await state?.player.pause();
@@ -34,17 +36,23 @@ class CanvasControllerNotifier extends StateNotifier<VideoController?> {
       
       // Offload heavy HTML/Regex parsing to a background isolate
       final streamUrl = await compute(_fetchCanvasUrl, query);
+      if (_canvasGenToken != myToken) return;
       
       if (streamUrl == null) return;
 
       // Allow UI Hero animations to finish smoothly before hitting the GPU
       await Future.delayed(const Duration(milliseconds: 400));
       if (!mounted) return;
+      if (_canvasGenToken != myToken) return;
 
       final player = Player();
       final controller = VideoController(player);
       
       await player.open(Media(streamUrl), play: false);
+      if (_canvasGenToken != myToken) {
+        await player.dispose();
+        return;
+      }
       await player.setVolume(0.0);
       await player.setPlaylistMode(PlaylistMode.loop);
       await player.play();

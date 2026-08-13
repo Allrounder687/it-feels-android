@@ -342,6 +342,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
   AudioPlayerHandler get audioHandler => engine.audioHandler;
 
+  final List<StreamSubscription> _eventSubscriptions = [];
+  bool _hasListenedToEvents = false;
+  bool _isFading = false;
   Timer? _audioSyncHapticTimer;
   bool _hasShownEmailVerification = false;
   int _playSongGenerationToken = 0;
@@ -366,6 +369,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     });
 
     ref.onDispose(() {
+      for (final sub in _eventSubscriptions) { sub.cancel(); }
+      _eventSubscriptions.clear();
+      _bufferingTimer?.cancel();
       _audioSyncHapticTimer?.cancel();
     });
 
@@ -461,8 +467,11 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   void _listenToEvents() {
+    if (_hasListenedToEvents) return;
+    _hasListenedToEvents = true;
+
     // We bind to the Engine's streams which are wrappers over audioHandler
-    engine.playerStateStream.listen((pState) async {
+    _eventSubscriptions.add(engine.playerStateStream.listen((pState) async {
       final isPlaying = pState.playing;
       state = state.copyWith(isPlaying: isPlaying);
       socialSync.updatePresence(state.currentSong, isPlaying);
@@ -513,9 +522,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
           state.isPlaying,
         );
       }
-    });
+    }));
 
-    engine.positionStream.listen((pos) {
+    _eventSubscriptions.add(engine.positionStream.listen((pos) {
       if (!state.hasSentTelemetryForCurrentSong &&
           state.currentSong != null &&
           pos.inSeconds >= 30) {
@@ -535,26 +544,26 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
           }
         }
       }
-    });
+    }));
 
-    engine.durationStream.listen((dur) {
+    _eventSubscriptions.add(engine.durationStream.listen((dur) {
       if (dur != null) {
         state = state.copyWith(duration: dur);
       }
-    });
+    }));
 
     // Bind sleep timer streams from engine
-    engine.sleepTimerStream.listen((endTime) {
+    _eventSubscriptions.add(engine.sleepTimerStream.listen((endTime) {
       state = state.copyWith(
         sleepTimerEndTime: endTime,
         clearSleepTimerEndTime: endTime == null,
         isSleepTimerActive: endTime != null,
       );
-    });
+    }));
 
-    engine.sleepAfterTrackStream.listen((val) {
+    _eventSubscriptions.add(engine.sleepAfterTrackStream.listen((val) {
       state = state.copyWith(sleepAfterCurrentTrack: val);
-    });
+    }));
 
     _loadFavorites();
   }
@@ -1049,16 +1058,22 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> _fadeOut() async {
-    final fadeTime = state.crossfadeDuration.toInt();
-    final step = 1.0 / (fadeTime * 10);
-    double vol = 1.0;
-    for (int i = 0; i < fadeTime * 10; i++) {
-      vol -= step;
-      if (vol < 0) vol = 0;
-      await engine.audioHandler.player.setVolume(vol);
-      await Future.delayed(const Duration(milliseconds: 100));
+    if (_isFading) return; // Prevent concurrent fadeouts from rapid skip taps
+    _isFading = true;
+    try {
+      final fadeTime = state.crossfadeDuration.toInt();
+      final step = 1.0 / (fadeTime * 10);
+      double vol = 1.0;
+      for (int i = 0; i < fadeTime * 10; i++) {
+        vol -= step;
+        if (vol < 0) vol = 0;
+        await engine.audioHandler.player.setVolume(vol);
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+    } finally {
+      _isFading = false;
+      await engine.audioHandler.player.setVolume(1.0);
     }
-    await engine.audioHandler.player.setVolume(1.0);
   }
 
   void addToQueue(Song song) {
