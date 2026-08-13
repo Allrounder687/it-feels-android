@@ -98,7 +98,7 @@ void main() {
   });
 
   group('MusicApiService Details & Cache/Bhakti Filter Tests', () {
-    test('fetchPlaylistDetails filters out devotional/bhakti content', () async {
+    test('fetchPlaylistDetails returns all songs (Bhakti filter removed)', () async {
       final mockPlaylistResponse = {
         'id': 'playlist_123',
         'title': 'Chill Hits',
@@ -148,9 +148,10 @@ void main() {
       final playlist = await apiService.fetchPlaylistDetails('playlist_123');
       final songsList = playlist['songs'] as List<Song>;
 
-      // The secular song should remain, the Bhakti song should be stripped
-      expect(songsList, hasLength(1));
+      // Both songs should remain
+      expect(songsList, hasLength(2));
       expect(songsList[0].id, equals('saavn:secular_1'));
+      expect(songsList[1].id, equals('saavn:bhakti_1'));
     });
 
     test('fetchPlaylistDetails utilizes cache for subsequent requests', () async {

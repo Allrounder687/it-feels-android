@@ -12,6 +12,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
+import 'package:it_feels_music/core/widgets/clever_loading_text.dart';
 
 class DesktopMiniplayerScreen extends ConsumerStatefulWidget {
   const DesktopMiniplayerScreen({super.key});
@@ -86,6 +87,8 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
               // Background Canvas (Video or Artwork)
               if (hasVideo)
                 Video(controller: videoState.videoController!, fit: BoxFit.cover, controls: NoVideoControls)
+              else if (videoState.isVideoActive)
+                const Center(child: CleverLoadingText())
               else
                 _PiPLyricsView(
                   song: currentSong,
@@ -122,6 +125,16 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
+                          IconButton(
+                            icon: const Icon(Icons.lyrics_outlined, color: Colors.white, size: 20),
+                            onPressed: () {
+                              _restoreWindow().then((_) {
+                                ref.read(audioPlayerProvider.notifier).togglePlayPause(); // ensure playing state if needed? no just route
+                                context.go('/lyrics');
+                              });
+                            },
+                            tooltip: 'Lyrics',
+                          ),
                           IconButton(
                             icon: const Icon(Icons.open_in_full, color: Colors.white, size: 20),
                             onPressed: _restoreWindow,
@@ -167,8 +180,7 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                                 icon: const Icon(Icons.replay_10, color: Colors.white),
                                 iconSize: 24,
                                 onPressed: () {
-                                  final newPos = engine.position - const Duration(seconds: 15);
-                                  engine.seek(newPos < Duration.zero ? Duration.zero : newPos);
+                                  ref.read(audioPlayerProvider.notifier).seekBackward(seconds: 15);
                                 },
                               ),
                               IconButton(
@@ -178,17 +190,7 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                                   if (_isDebouncing) return;
                                   setState(() => _isDebouncing = true);
                                   
-                                  if (isPlaying) {
-                                    if (hasVideo) await videoState.player?.pause();
-                                    await ref.read(audioPlayerProvider.notifier).pause();
-                                  } else {
-                                    if (hasVideo) await videoState.player?.play();
-                                    await ref.read(audioPlayerProvider.notifier).playSong(
-                                      currentSong,
-                                      queue: audioState.queue,
-                                      index: audioState.currentIndex,
-                                    );
-                                  }
+                                  await ref.read(audioPlayerProvider.notifier).togglePlayPause();
                                   
                                   Future.delayed(const Duration(milliseconds: 300), () {
                                     if (mounted) setState(() => _isDebouncing = false);
@@ -199,8 +201,7 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                                 icon: const Icon(Icons.forward_10, color: Colors.white),
                                 iconSize: 24,
                                 onPressed: () {
-                                  final newPos = engine.position + const Duration(seconds: 15);
-                                  engine.seek(newPos);
+                                  ref.read(audioPlayerProvider.notifier).seekForward(seconds: 15);
                                 },
                               ),
                               IconButton(

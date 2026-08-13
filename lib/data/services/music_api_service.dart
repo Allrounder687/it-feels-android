@@ -31,21 +31,6 @@ class MusicApiService {
     }
   }
 
-  bool _isBhakti(String? text) {
-    if (text == null || text.isEmpty) return false;
-    final lower = text.toLowerCase();
-    final keywords = [
-      'bhakti', 'bhakthi', 'bhajan', 'aarti', 'arti', 'hanuman', 
-      'chalisa', 'chaleesa', 'mantra', 'shiv', 'ram', 'krishna', 
-      'devotional', 'ganpati', 'ganesha', 'mahadev', 'mata', 
-      'shri', 'shree', 'bhagwan', 'kirtan', 'sai', 'durga',
-      'radha', 'shyam', 'hari'
-    ];
-    return keywords.any((k) {
-      final regExp = RegExp('\\b$k\\b');
-      return regExp.hasMatch(lower);
-    });
-  }
 
   /// Search all categories (songs, albums, playlists)
   Future<Map<String, dynamic>> searchAll(String query, {Function(String message)? onError}) async {
@@ -285,9 +270,6 @@ class MusicApiService {
         trendingSongs.addAll(fallbackSongs);
       }
 
-      // Filter out religious/bhakti songs from recommendations
-      trendingSongs.removeWhere((s) => _isBhakti(s.title) || _isBhakti(s.album) || _isBhakti(s.artist));
-      playlists.removeWhere((p) => _isBhakti(p.title));
 
       final result = {
         'trending': trendingSongs,
@@ -335,7 +317,6 @@ class MusicApiService {
         }
       }
 
-      songs.removeWhere((s) => _isBhakti(s.title) || _isBhakti(s.album) || _isBhakti(s.artist));
 
       final result = {
         'name': playlistName,
@@ -381,7 +362,6 @@ class MusicApiService {
         }
       }
 
-      songs.removeWhere((s) => _isBhakti(s.title) || _isBhakti(s.album) || _isBhakti(s.artist));
 
       final result = {
         'name': albumName,
