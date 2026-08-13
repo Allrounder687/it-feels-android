@@ -208,16 +208,19 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           GestureDetector(
+                            behavior: HitTestBehavior.opaque,
                             onTap: () => ref
                                 .read(lyricsProvider.notifier)
                                 .adjustSyncOffset(-100),
-                            child: Icon(
-                              Icons.remove_circle_outline,
-                              size: 16,
-                              color: context.themeMutedTextColor,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                              child: Icon(
+                                Icons.remove_circle_outline,
+                                size: 18,
+                                color: context.themeMutedTextColor,
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 8),
                           Text(
                             "Sync Offset: ${lyricsProvLocal.syncOffsetMs >= 0 ? '+' : ''}${lyricsProvLocal.syncOffsetMs}ms",
                             style: GoogleFonts.inter(
@@ -226,15 +229,18 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                               color: context.themeMutedTextColor,
                             ),
                           ),
-                          const SizedBox(width: 8),
                           GestureDetector(
+                            behavior: HitTestBehavior.opaque,
                             onTap: () => ref
                                 .read(lyricsProvider.notifier)
                                 .adjustSyncOffset(100),
-                            child: Icon(
-                              Icons.add_circle_outline,
-                              size: 16,
-                              color: context.themeMutedTextColor,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                              child: Icon(
+                                Icons.add_circle_outline,
+                                size: 18,
+                                color: context.themeMutedTextColor,
+                              ),
                             ),
                           ),
                         ],

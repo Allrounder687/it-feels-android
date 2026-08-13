@@ -125,7 +125,15 @@ class LyricsNotifier extends Notifier<LyricsState> {
 
   void adjustSyncOffset(int deltaMs) {
     final newOffset = (state.syncOffsetMs + deltaMs).clamp(-2000, 2000);
-    state = state.copyWith(syncOffsetMs: newOffset);
+    
+    // Evaluate new index immediately without waiting for position stream
+    final engine = locator<AudioEngineService>();
+    final newIndex = state.copyWith(syncOffsetMs: newOffset).getActiveLineIndex(engine.position);
+    
+    state = state.copyWith(syncOffsetMs: newOffset, activeIndex: newIndex);
+    if (newIndex != state.activeIndex) {
+      scrollToActiveIndex();
+    }
   }
 
   void resetSyncOffset() {
