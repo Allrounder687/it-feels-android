@@ -1,7 +1,7 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:io';
+
 import 'package:window_manager/window_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,7 +51,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   void _saveProfile() {
-    final profile = ref.read(profileProvider);
     ref.read(profileProvider.notifier).updateProfile(name: _nameController.text.trim(), avatar: _avatarPath);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

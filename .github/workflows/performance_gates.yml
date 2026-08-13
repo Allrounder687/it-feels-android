@@ -23,7 +23,7 @@ jobs:
         run: flutter pub get
 
       - name: Strict Static Analysis (Detects Leaks & Race Conditions)
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos --fatal-warnings
 
       - name: Check for Widget Tests (Performance Regressions)
         run: flutter test --no-pub

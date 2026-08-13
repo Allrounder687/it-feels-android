@@ -53,9 +53,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -66,7 +67,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         final isDesktop = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
         final searchProviderObj = ref.watch(searchProvider);
         final hiddenProviderObj = ref.watch(hiddenSongsProvider);
-        final settingsProviderObj = ref.watch(settingsProvider);
         final categories = ["ALL", "SONGS", "ARTISTS", "ALBUMS", "PLAYLISTS", "VIDEOS", "PODCASTS"];
 
         final rawSongs = searchProviderObj.songs.where((s) => !hiddenProviderObj.isHidden(s.id));
