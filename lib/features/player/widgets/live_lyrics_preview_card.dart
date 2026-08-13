@@ -160,74 +160,76 @@ class LiveLyricsPreviewCard extends ConsumerWidget {
                   else
                     SizedBox(
                       height: isWide ? 140 : 85,
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 350),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeInCubic,
-                        transitionBuilder: (child, animation) {
-                          final slideIn = Tween<Offset>(
-                            begin: const Offset(0.0, 0.3),
-                            end: Offset.zero,
-                          ).animate(animation);
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position: slideIn,
-                              child: child,
-                            ),
-                          );
-                        },
-                        child: Column(
-                          key: ValueKey(currentLine),
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            if (prevLine.isNotEmpty)
-                              Text(
-                                prevLine,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  color: context.themeMutedTextColor.withValues(
-                                    alpha: 0.35,
+                      child: ExcludeSemantics(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 350),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder: (child, animation) {
+                            final slideIn = Tween<Offset>(
+                              begin: const Offset(0.0, 0.3),
+                              end: Offset.zero,
+                            ).animate(animation);
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: slideIn,
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: Column(
+                            key: ValueKey(currentLine),
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (prevLine.isNotEmpty)
+                                Text(
+                                  prevLine,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
+                                    color: context.themeMutedTextColor.withValues(
+                                      alpha: 0.35,
+                                    ),
+                                    fontSize: isWide ? 16 : 12,
+                                    fontWeight: FontWeight.w500,
                                   ),
-                                  fontSize: isWide ? 16 : 12,
-                                  fontWeight: FontWeight.w500,
+                                ),
+                              if (prevLine.isNotEmpty) const SizedBox(height: 3),
+                              Text(
+                                currentLine,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.outfit(
+                                  color: context.themeTextColor,
+                                  fontSize: isWide ? 24 : 17,
+                                  fontWeight: FontWeight.w800,
+                                  shadows: [
+                                    BoxShadow(
+                                      color: accentColor.withValues(alpha: 0.4),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            if (prevLine.isNotEmpty) const SizedBox(height: 3),
-                            Text(
-                              currentLine,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.outfit(
-                                color: context.themeTextColor,
-                                fontSize: isWide ? 24 : 17,
-                                fontWeight: FontWeight.w800,
-                                shadows: [
-                                  BoxShadow(
-                                    color: accentColor.withValues(alpha: 0.4),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
+                              if (nextLine.isNotEmpty) const SizedBox(height: 3),
+                              if (nextLine.isNotEmpty)
+                                Text(
+                                  nextLine,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
+                                    color: context.themeMutedTextColor.withValues(
+                                      alpha: 0.6,
+                                    ),
+                                    fontSize: isWide ? 18 : 13,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                ],
-                              ),
-                            ),
-                            if (nextLine.isNotEmpty) const SizedBox(height: 3),
-                            if (nextLine.isNotEmpty)
-                              Text(
-                                nextLine,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.inter(
-                                  color: context.themeMutedTextColor.withValues(
-                                    alpha: 0.6,
-                                  ),
-                                  fontSize: isWide ? 18 : 13,
-                                  fontWeight: FontWeight.w600,
                                 ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),

@@ -252,18 +252,19 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                         )
                       : lyricsProvLocal.mode == LyricsMode.synced &&
                             lyricsProvLocal.result.hasSynced
-                      ? ScrollablePositionedList.builder(
-                          itemScrollController: ref
-                              .read(lyricsProvider.notifier)
-                              .itemScrollController,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 28,
-                            vertical: MediaQuery.of(context).size.height * 0.3,
-                          ),
-                          itemCount: lyricsProvLocal.result.syncedLyrics.length,
-                          itemBuilder: (context, index) {
-                            final line =
-                                lyricsProvLocal.result.syncedLyrics[index];
+                      ? ExcludeSemantics(
+                          child: ScrollablePositionedList.builder(
+                            itemScrollController: ref
+                                .read(lyricsProvider.notifier)
+                                .itemScrollController,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 28,
+                              vertical: MediaQuery.of(context).size.height * 0.3,
+                            ),
+                            itemCount: lyricsProvLocal.result.syncedLyrics.length,
+                            itemBuilder: (context, index) {
+                              final line =
+                                  lyricsProvLocal.result.syncedLyrics[index];
                             final isActive =
                                 index == lyricsProvLocal.activeIndex;
 
@@ -323,7 +324,8 @@ class _LyricsScreenState extends ConsumerState<LyricsScreen> {
                               ),
                             );
                           },
-                        )
+                        ),
+                      )
                       : Center(
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 800),
