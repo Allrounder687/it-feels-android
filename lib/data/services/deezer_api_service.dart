@@ -47,7 +47,7 @@ class DeezerApiService {
       headers: {
         'X-Feels-Secret': dotenv.isInitialized ? (dotenv.env['API_SECRET'] ?? 'development_secret_123') : 'development_secret_123',
       },
-    );
+    ).timeout(const Duration(seconds: 5));
     if (response.statusCode == 200) {
       return compute(jsonDecode, response.body);
     }

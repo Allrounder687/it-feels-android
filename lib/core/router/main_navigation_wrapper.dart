@@ -806,12 +806,33 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                                             : context.themeMutedTextColor,
                                         size: 28,
                                       );
-                                      if (count > 0)
-                                        return Badge(
-                                          label: Text(count.toString()),
-                                          backgroundColor: Colors.redAccent,
-                                          child: iconWidget,
+                                      if (count > 0) {
+                                        return Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            iconWidget,
+                                            Positioned(
+                                              right: -4,
+                                              top: -4,
+                                              child: Container(
+                                                padding: const EdgeInsets.all(4),
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.redAccent,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Text(
+                                                  count.toString(),
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         );
+                                      }
                                       return iconWidget;
                                     },
                                   )
@@ -855,12 +876,33 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                                             : context.themeMutedTextColor,
                                         size: 26,
                                       );
-                                      if (count > 0)
-                                        return Badge(
-                                          label: Text(count.toString()),
-                                          backgroundColor: Colors.redAccent,
-                                          child: iconWidget,
+                                      if (count > 0) {
+                                        return Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            iconWidget,
+                                            Positioned(
+                                              right: -4,
+                                              top: -4,
+                                              child: Container(
+                                                padding: const EdgeInsets.all(4),
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.redAccent,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Text(
+                                                  count.toString(),
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         );
+                                      }
                                       return iconWidget;
                                     },
                                   )

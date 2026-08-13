@@ -159,6 +159,20 @@ class NowPlayingHeader extends ConsumerWidget {
               onPressed: onOptionsTap,
               tooltip: 'Options',
             ),
+            if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                icon: Icon(Icons.remove, color: context.themeTextColor, size: 24),
+                onPressed: () => windowManager.minimize(),
+                tooltip: 'Minimize App',
+              ),
+              IconButton(
+                icon: Icon(Icons.close, color: context.themeTextColor, size: 24),
+                onPressed: () => windowManager.close(),
+                tooltip: 'Close App',
+                hoverColor: Colors.red.withValues(alpha: 0.8), // subtle red hover for aesthetic
+              ),
+            ],
           ],
         ),
       ],

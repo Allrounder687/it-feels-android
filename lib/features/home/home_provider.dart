@@ -257,7 +257,7 @@ class HomeNotifier extends Notifier<HomeState> {
         final queries = offsets[idx];
         
         for (var query in queries) {
-          final playlists = await deezerApi.searchPlaylists(query, limit: 10);
+          final playlists = await saavnApi.searchPlaylists(query, count: 10);
           if (playlists.isNotEmpty) {
             newShelves.add(FeedShelf(title: '$query Trending', type: ShelfType.playlistCarousel, items: playlists));
           }
@@ -297,7 +297,7 @@ class HomeNotifier extends Notifier<HomeState> {
         final selectedMood = moodQueries.first;
         
         // Shelf 1: Artist based
-        final artistPlaylists = await deezerApi.searchPlaylists(selectedArtist, limit: 10);
+        final artistPlaylists = await saavnApi.searchPlaylists(selectedArtist, count: 10);
         if (artistPlaylists.isNotEmpty) {
            newShelves.add(FeedShelf(
               title: 'Because you like $selectedArtist',
@@ -309,7 +309,7 @@ class HomeNotifier extends Notifier<HomeState> {
         // Shelf 2: Mood based or Dynamic combo
         final isCombo = page % 3 != 0;
         final dynamicQuery = isCombo ? '$selectedArtist $selectedMood' : selectedMood;
-        final dynamicPlaylists = await deezerApi.searchPlaylists(dynamicQuery, limit: 10);
+        final dynamicPlaylists = await saavnApi.searchPlaylists(dynamicQuery, count: 10);
         
         if (dynamicPlaylists.isNotEmpty) {
            final title = isCombo ? '$selectedMood for $selectedArtist fans' : selectedMood;
@@ -360,7 +360,7 @@ class HomeNotifier extends Notifier<HomeState> {
         final queries = offsets[idx];
         
         for (var item in queries) {
-          final playlists = await deezerApi.searchPlaylists(item['q']!, limit: 10);
+          final playlists = await saavnApi.searchPlaylists(item['q']!, count: 10);
           if (playlists.isNotEmpty) {
              newShelves.add(FeedShelf(title: item['t']!, type: ShelfType.playlistCarousel, items: playlists));
           }
@@ -642,18 +642,22 @@ class HomeNotifier extends Notifier<HomeState> {
       final favoriteArtists = await StorageService.getFavoriteArtists();
       if (favoriteArtists.isNotEmpty) favoriteArtists.shuffle();
       
-      final queryArtists = favoriteArtists.isNotEmpty
+      var queryArtists = favoriteArtists.isNotEmpty
           ? favoriteArtists
           : (topArtists.isNotEmpty
             ? topArtists
             : (state.trendingSongs.isNotEmpty
                   ? state.trendingSongs
-                        .map((e) => e.artist.split(',').first)
+                        .map((e) => e.artist.split(',').first.trim())
                         .where((a) => a.isNotEmpty)
                         .toSet()
                         .take(4)
                         .toList()
                   : ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift']));
+
+      if (queryArtists.isEmpty) {
+        queryArtists = ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift'];
+      }
 
       final newSongs = <Song>[];
       final newPlaylists = <Playlist>[];

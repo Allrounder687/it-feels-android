@@ -112,7 +112,20 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-
+                    // Top Bar (Expand)
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.open_in_full, color: Colors.white, size: 20),
+                            onPressed: _restoreWindow,
+                            tooltip: 'Expand',
+                          ),
+                        ],
+                      ),
+                    ),
                     // Bottom Bar (Info & Playback)
                     Padding(
                       padding: const EdgeInsets.all(12.0),

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:it_feels_music/features/search/search_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:rive/rive.dart' hide LinearGradient;
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:window_manager/window_manager.dart';
@@ -39,27 +38,10 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
 
-  StateMachineController? _riveController;
-  SMIBool? _isChecking;
-  SMINumber? _lookNumber;
-
   @override
   void initState() {
     super.initState();
     windowManager.addListener(this);
-    _searchFocusNode.addListener(() {
-       _isChecking?.value = _searchFocusNode.hasFocus;
-    });
-  }
-
-  void _onRiveInit(Artboard artboard) {
-    final controller = StateMachineController.fromArtboard(artboard, 'State Machine 1');
-    if (controller != null) {
-      artboard.addController(controller);
-      _riveController = controller;
-      _isChecking = controller.findInput<bool>('Check') as SMIBool?;
-      _lookNumber = controller.findInput<double>('Look') as SMINumber?;
-    }
   }
 
   @override
@@ -67,7 +49,6 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
     windowManager.removeListener(this);
     _searchController.dispose();
     _searchFocusNode.dispose();
-    _riveController?.dispose();
     super.dispose();
   }
 
@@ -319,101 +300,71 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
     return Align(
       alignment: Alignment.center,
       child: Container(
-        height: 50,
+        height: 32,
         constraints: const BoxConstraints(maxWidth: 300),
-        child: Stack(
-          alignment: Alignment.bottomCenter,
-          clipBehavior: Clip.none,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: context.themeBackgroundColor.withValues(
+            alpha: _isFocused ? 0.3 : 0.1,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: context.themeTextColor.withValues(alpha: 0.1),
+          ),
+        ),
+        child: Row(
           children: [
-            // Rive Doggo Animation
-            Positioned(
-              top: -55,
-              left: 0,
-              right: 0,
-              bottom: -15,
-              child: ExcludeSemantics(
-                child: IgnorePointer(
-                  child: RiveAnimation.asset(
-                    'assets/rive/doggo.riv',
-                    fit: BoxFit.contain,
-                    alignment: Alignment.bottomCenter,
-                    onInit: _onRiveInit,
-                  ),
-                ),
-              ),
+            Icon(
+              Icons.search_rounded,
+              size: 16,
+              color: context.themeTextColor.withValues(alpha: 0.5),
             ),
-            // Existing Search Field
-            Container(
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: context.themeBackgroundColor.withValues(
-                  alpha: _isFocused ? 0.3 : 0.1,
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: context.themeTextColor,
                 ),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: context.themeTextColor.withValues(alpha: 0.1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.search_rounded,
-                    size: 16,
+                decoration: InputDecoration(
+                  hintText: "Search It Feels...",
+                  hintStyle: TextStyle(
+                    fontSize: 12,
                     color: context.themeTextColor.withValues(alpha: 0.5),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      focusNode: _searchFocusNode,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.themeTextColor,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: "Search It Feels...",
-                        hintStyle: TextStyle(
-                          fontSize: 12,
-                          color: context.themeTextColor.withValues(alpha: 0.5),
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.only(bottom: 14),
-                      ),
-                      onChanged: (val) {
-                        setState(() {});
-                        // Update Doggo's eye position (0 to 100) based on text length
-                        _lookNumber?.value = (val.length * 3.5).clamp(0, 100).toDouble();
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.only(bottom: 14),
+                ),
+                onChanged: (val) {
+                  setState(() {});
 
-                        final uri = GoRouterState.of(context).uri.toString();
-                        if (uri != '/search') {
-                          context.go('/search');
-                          Future.delayed(const Duration(milliseconds: 300), () {
-                            if (mounted) _searchFocusNode.requestFocus();
-                          });
-                        }
-                        ref.read(searchProvider.notifier).search(val);
-                      },
-                    ),
-                  ),
-                  if (_searchController.text.isNotEmpty)
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _searchController.clear();
-                          _lookNumber?.value = 0;
-                        });
-                        ref.read(searchProvider.notifier).search('');
-                      },
-                      child: Icon(
-                        Icons.close,
-                        size: 14,
-                        color: context.themeTextColor.withValues(alpha: 0.5),
-                      ),
-                    ),
-                ],
+                  final uri = GoRouterState.of(context).uri.toString();
+                  if (uri != '/search') {
+                    context.go('/search');
+                    Future.delayed(const Duration(milliseconds: 300), () {
+                      if (mounted) _searchFocusNode.requestFocus();
+                    });
+                  }
+                  ref.read(searchProvider.notifier).search(val);
+                },
               ),
             ),
+            if (_searchController.text.isNotEmpty)
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _searchController.clear();
+                  });
+                  ref.read(searchProvider.notifier).search('');
+                },
+                child: Icon(
+                  Icons.close,
+                  size: 14,
+                  color: context.themeTextColor.withValues(alpha: 0.5),
+                ),
+              ),
           ],
         ),
       ),

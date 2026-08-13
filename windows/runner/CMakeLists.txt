@@ -40,8 +40,8 @@ target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 add_dependencies(${BINARY_NAME} flutter_assemble)
 
 # Automatically build the NSIS installer if makensis is installed
-set(NSIS_COMPILER "C:/Program Files (x86)/NSIS/makensis.exe")
-if(EXISTS ${NSIS_COMPILER})
+find_program(NSIS_COMPILER makensis)
+if(NSIS_COMPILER)
   add_custom_command(
     TARGET ${BINARY_NAME} POST_BUILD
     COMMAND "${NSIS_COMPILER}" "${CMAKE_SOURCE_DIR}/packaging/installer.nsi"

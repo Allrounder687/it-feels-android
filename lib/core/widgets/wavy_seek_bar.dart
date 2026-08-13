@@ -273,7 +273,7 @@ class _WavySeekBarPainter extends CustomPainter {
       const wavelength = 18.0; 
 
       wavePath.moveTo(0, midY); 
-      for (double x = 0; x <= activeWidth; x += 4.0) {
+      for (double x = 0; x <= activeWidth; x += 1.0) {
         final y = midY + amplitude * math.sin((x / wavelength) * 2 * math.pi - wavePhase);
         wavePath.lineTo(x, y);
       }
