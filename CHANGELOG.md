@@ -4,6 +4,9 @@
 - **Deep Linking & Telegram**: Integrated native URL protocol registry for deep links, introduced `download` and `song` deep link screens, and integrated the Telegram bot webhook.
 - **UI & Player Polish**: Restored the dynamic `SliverGrid` layout in the Charts tab on the home screen. Fixed a RenderFlex overflow issue in `NowPlayingSecondaryControls` by optimizing padding on narrow screens.
 
+## v3.6.4+74
+- **Desktop Miniplayer & Layout Fixes**: Fixed an issue where the `NowPlayingScreen` album art would expand indefinitely and crop the edges of the image or video on widescreen layouts (such as when the user double-tapped the miniplayer to maximize it). Wrapped the left-panel `albumArt` inside an explicitly constrained container to maintain precise aspect ratios without horizontal bleeding. Stripped the redundant black gradient top bar and duplicate window controls from `DesktopMiniplayerScreen`.
+
 ## v3.6.2+72
 - **Android Auto Default**: Enabled Android Auto integration by default for all users, seamlessly exposing "Recently Played" and "Favorites" folders to the car dashboard.
 - **UI & Layout Polish**:

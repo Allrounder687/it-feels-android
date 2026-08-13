@@ -112,29 +112,7 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Top Bar (Restore / Drag)
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.open_in_full, color: Colors.white, size: 20),
-                            tooltip: "Restore Window",
-                            onPressed: _restoreWindow,
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                            tooltip: "Close Player",
-                            onPressed: () async {
-                              await windowManager.close();
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    
+
                     // Bottom Bar (Info & Playback)
                     Padding(
                       padding: const EdgeInsets.all(12.0),

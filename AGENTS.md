@@ -2,8 +2,10 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **Desktop Miniplayer & Layout Fixes (v3.6.4+74):**
+  - **Now Playing Constraints**: Fixed an issue where the `NowPlayingScreen` album art would expand indefinitely and crop the edges of the image or video on widescreen layouts (such as when the user double-tapped the miniplayer to maximize it). Wrapped the left-panel `albumArt` inside an explicitly constrained `Container(width: artSize, height: artSize)` to maintain precise aspect ratios without horizontal bleeding.
+  - **Miniplayer Top Bar Cleanup**: Stripped the redundant black gradient top bar and duplicate window controls (Restore / Close) from `DesktopMiniplayerScreen`. This provides a cleaner UI for the PiP widget, and users can continue to rely on the `onDoubleTap` gesture to restore the window.
 - **Desktop Grid Layouts & Compilers (v3.6.3+73):**
-  - **Fluid Desktop Charts**: Removed the artificial 5-item horizontal list limits in the Home Screen Charts section. Implemented a native `SliverGrid` with `maxCrossAxisExtent: 240.0` that auto-fills to elegantly utilize the entire horizontal estate of 4K/widescreen monitors.
   - **Miniplayer Layout Guards**: Fixed an issue in `playlist_detail_screen` and `artist_detail_screen` where the lowest songs would be trapped under the floating desktop/mobile miniplayer by expanding bottom sliver padding to 120px.
   - **Legacy C++ Compiler Resilience**: Hardened `windows/CMakeLists.txt` with a `Clang` interceptor that injects `-Wno-error=nontrivial-memcall` strictly into `rive_common_plugin`. This successfully bypasses fatal HarfBuzz memory copy errors introduced by modern Windows Clang 18+ toolchains without requiring disruptive Dart API upgrades.
   - **Inno Setup Build Automation**: Intercepted CMake's POST_BUILD hooks to seamlessly execute `ISCC.exe`, automatically generating a lightweight Windows installation `.exe` payload instantly after standard Flutter builds.

@@ -438,7 +438,9 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                                   curve: Curves.easeOutCubic,
                                   width: isSidebarPinned ? 90 : 0,
                                   decoration: BoxDecoration(
-                                    color: Colors.transparent,
+                                    color: context.isGlassTheme 
+                                        ? Colors.transparent 
+                                        : context.themeBackgroundColor.withValues(alpha: 0.85),
                                     border: Border(
                                       right: BorderSide(
                                         color: Colors.white.withValues(alpha: 0.08),

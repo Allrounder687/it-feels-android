@@ -668,8 +668,21 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                 Expanded(
                                   flex: 5,
                                   child: Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(32.0),
+                                    child: Container(
+                                      width: artSize,
+                                      height: artSize,
+                                      decoration: BoxDecoration(
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            blurRadius: 30,
+                                            spreadRadius: 2,
+                                            offset: const Offset(0, 10),
+                                          ),
+                                        ],
+                                      ),
                                       child: albumArt,
                                     ),
                                   ),
