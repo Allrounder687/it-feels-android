@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:firebase_database/firebase_database.dart';
+
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/features/social/room_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -305,7 +305,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
         BackendApiService.getRelatedVideos(videoId),
       ]);
       state = state.copyWith(
-        relatedVideos: List<Map<String, dynamic>>.from(results[0] ?? []),
+        relatedVideos: List<Map<String, dynamic>>.from(results[0]),
         isLoading: false,
       );
       return;
@@ -330,7 +330,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     BackendApiService.getRelatedVideos(videoId, query: query).then((relVideos) {
       if (state.currentVideoId == videoId) {
         state = state.copyWith(
-          relatedVideos: List<Map<String, dynamic>>.from(relVideos ?? []),
+          relatedVideos: List<Map<String, dynamic>>.from(relVideos),
         );
       }
     });
@@ -352,7 +352,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     try {
       await state.player?.dispose();
       
-      final settings = ref.read(settingsProvider);
+
       
       final player = Player(configuration: const PlayerConfiguration(pitch: false, vo: 'gpu', bufferSize: 64 * 1024 * 1024));
       final controller = VideoController(player);
