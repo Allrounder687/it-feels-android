@@ -815,11 +815,13 @@ class HomeNotifier extends Notifier<HomeState> {
       debugPrint('[HomeNotifier] Deezer/Saavn API failed: $e');
     }
 
+    final continueWatchingList = await DatabaseService.getContinueWatching();
+
     state = state.copyWith(
       trendingSongs: trending,
       topPlaylists: rawPlaylists,
       topAlbums: rawPlaylists.where((p) => p.type == 'album').toList(),
-      continueWatching: await DatabaseService.getContinueWatching(),
+      continueWatching: continueWatchingList,
       isLoading: false,
     );
 
