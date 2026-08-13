@@ -46,30 +46,32 @@ class _CleverLoadingTextState extends State<CleverLoadingText> {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0.0, 0.2),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
+    return ExcludeSemantics(
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.0, 0.2),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          );
+        },
+        child: Text(
+          _currentPhrase,
+          key: ValueKey<String>(_currentPhrase),
+          style: GoogleFonts.inter(
+            color: Colors.white.withValues(alpha: 0.7),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.5,
           ),
-        );
-      },
-      child: Text(
-        _currentPhrase,
-        key: ValueKey<String>(_currentPhrase),
-        style: GoogleFonts.inter(
-          color: Colors.white.withValues(alpha: 0.7),
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.5,
+          textAlign: TextAlign.center,
         ),
-        textAlign: TextAlign.center,
       ),
     );
   }

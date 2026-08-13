@@ -42,7 +42,7 @@ class AudioPlayerState {
   final bool isRepeat;
   final List<Song> favoriteSongs;
   final bool hasSentTelemetryForCurrentSong;
-  final Duration position;
+  Duration get position => locator<AudioEngineService>().position;
   final Duration duration;
   final String? currentStreamUrl;
   final Color extractedBackgroundColor;
@@ -84,7 +84,6 @@ class AudioPlayerState {
     this.isRepeat = false,
     this.favoriteSongs = const [],
     this.hasSentTelemetryForCurrentSong = false,
-    this.position = Duration.zero,
     this.duration = Duration.zero,
     this.currentStreamUrl,
     this.extractedBackgroundColor = AppColors.midnightBackground,
@@ -264,7 +263,6 @@ class AudioPlayerState {
     bool? isRepeat,
     List<Song>? favoriteSongs,
     bool? hasSentTelemetryForCurrentSong,
-    Duration? position,
     Duration? duration,
     String? currentStreamUrl,
     Color? themeBackgroundColor,
@@ -301,7 +299,6 @@ class AudioPlayerState {
       favoriteSongs: favoriteSongs ?? this.favoriteSongs,
       hasSentTelemetryForCurrentSong:
           hasSentTelemetryForCurrentSong ?? this.hasSentTelemetryForCurrentSong,
-      position: position ?? this.position,
       duration: duration ?? this.duration,
       currentStreamUrl: currentStreamUrl ?? this.currentStreamUrl,
       extractedBackgroundColor:
@@ -428,7 +425,6 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
           queue: savedQueue,
           currentIndex: savedIndex,
           currentSong: current,
-          position: Duration(seconds: savedPosition),
           duration: Duration(seconds: current.duration),
         );
 

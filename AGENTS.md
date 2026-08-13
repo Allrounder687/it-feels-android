@@ -2,6 +2,10 @@
 This file tracks major technical decisions, features implemented, and architecture shifts guided by AI agents.
 
 ## Latest Agent Iteration
+- **A/V Sync & Accessibility Resiliency (v3.6.5+75):**
+  - **Windows AXTree Crash**: Wrapped `AnimatedSwitcher` within `CleverLoadingText` (used during proxy stream resolution) in `ExcludeSemantics`. This permanently resolves the `!child.attached` framework assertion thrown by the Windows accessibility engine when obscured widgets rapidly rebuild.
+  - **Audio Engine Bottleneck**: Stripped the blocking `await _player.play()` command inside `AudioPlayerHandler.playSong`. This allows the `AudioPlayerNotifier` to instantly resolve its `isLoading` state rather than freezing the UI thread if the proxy stream stalls.
+  - **60fps UI Thread Lock**: Completely decoupled `position` from the global `AudioPlayerState` object. Previously, `engine.positionStream` constantly forced `state.copyWith(position: pos)`, causing the entire UI (and 1000-song queue) to be diffed by Riverpod 60 times a second. Replaced with a lightweight native getter `Duration get position => locator<AudioEngineService>().position;` ensuring instantaneous seekbar rendering via localized `StreamBuilder` pipelines.
 - **Desktop Miniplayer & Layout Fixes (v3.6.4+74):**
   - **Now Playing Constraints**: Fixed an issue where the `NowPlayingScreen` album art would expand indefinitely and crop the edges of the image or video on widescreen layouts (such as when the user double-tapped the miniplayer to maximize it). Wrapped the left-panel `albumArt` inside an explicitly constrained `Container(width: artSize, height: artSize)` to maintain precise aspect ratios without horizontal bleeding.
   - **Miniplayer Top Bar Cleanup**: Stripped the redundant black gradient top bar and duplicate window controls (Restore / Close) from `DesktopMiniplayerScreen`. This provides a cleaner UI for the PiP widget, and users can continue to rely on the `onDoubleTap` gesture to restore the window.

@@ -185,7 +185,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
               : Duration.zero,
         );
       }
-      await _player.play();
+      _player.play(); // DO NOT AWAIT. just_audio play() returns a future that resolves when the song finishes.
     } catch (e) {
       debugPrint('[AudioPlayerHandler] Error setting stream URL: $e');
     }
