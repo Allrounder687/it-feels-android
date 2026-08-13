@@ -14,6 +14,9 @@ void main() {
     });
 
     test('Priority 1 (yt-dlp) failover to Priority 2 (Piped API) on 500 Error', () async {
+      final originalYtDlp = BackendApiService.ytDlpBackendUrl;
+      BackendApiService.ytDlpBackendUrl = 'https://it-feels-android.onrender.com/api';
+
       // Mock HTTP Client
       final mockClient = MockClient((request) async {
         final url = request.url.toString();
@@ -53,9 +56,15 @@ void main() {
       expect(result['streams'].length, equals(1));
       expect(result['streams'].first['url'], equals('https://piped.video/stream.mp4'));
       expect(result['audioUrl'], equals('https://piped.video/audio.m4a'));
+
+      BackendApiService.ytDlpBackendUrl = originalYtDlp;
     });
 
     test('Priority 1 (yt-dlp) success prevents fallback', () async {
+      // Temporarily inject the exact URL we are mocking to bypass empty .env on CI
+      final originalYtDlp = BackendApiService.ytDlpBackendUrl;
+      BackendApiService.ytDlpBackendUrl = 'https://it-feels-android.onrender.com/api';
+
       // Mock HTTP Client
       final mockClient = MockClient((request) async {
         final url = request.url.toString();
@@ -90,6 +99,9 @@ void main() {
       expect(result['title'], isNotNull);
       expect(result['streams'], isNotEmpty);
       expect(result['streams'].length, greaterThanOrEqualTo(1));
+
+      // Restore
+      BackendApiService.ytDlpBackendUrl = originalYtDlp;
     });
 
     test('11-character YouTube ID formatting', () async {

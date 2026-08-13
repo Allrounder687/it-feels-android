@@ -80,28 +80,43 @@ class SubscriptionService {
       final user = _auth.currentUser;
       if (user == null) return false;
       
-      final token = await user.getIdToken(true); // Force refresh to get latest claims if any
-      if (token == null) return false;
+      String? token;
+      try {
+        // Try getting token with a 3-second timeout to prevent hanging on Windows C++ channel errors
+        token = await user.getIdToken(true).timeout(const Duration(seconds: 3));
+      } catch (e) {
+        debugPrint("getIdToken(true) failed/timed out, trying without refresh...");
+        try {
+          token = await user.getIdToken().timeout(const Duration(seconds: 2));
+        } catch (_) {}
+      }
 
-      final url = Uri.parse('${BackendApiService.baseUrl}/api/v1/premium/verify?uid=$uid');
-      final response = await http.get(
-        url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'X-Feels-Secret': (dotenv.isInitialized ? dotenv.env['API_SECRET'] : null) ?? 'development_secret_123',
-        },
-      );
+      if (token != null) {
+        final url = Uri.parse('${BackendApiService.baseUrl}/api/v1/premium/verify?uid=$uid');
+        final response = await http.get(
+          url,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'X-Feels-Secret': (dotenv.isInitialized ? dotenv.env['API_SECRET'] : null) ?? 'development_secret_123',
+          },
+        );
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        if (data['success'] == true && data['isPremium'] == true) {
-          return true;
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['success'] == true && data['isPremium'] == true) {
+            return true;
+          }
         }
-      } else {
-        debugPrint("Cloudflare Premium Verification failed: ${response.body}");
+      }
+
+      // 3. Fallback to Firestore directly if Cloudflare verification fails or token fetch hung
+      debugPrint("Cloudflare verification failed or skipped, falling back to Firestore...");
+      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      if (doc.exists && doc.data()?['isPremiumFamily'] == true) {
+        return true;
       }
     } catch (e) {
-      debugPrint("Cloudflare Premium Check Error: $e");
+      debugPrint("Premium Check Error: $e");
     }
 
     return false;

@@ -1245,32 +1245,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               final isSelected = index == _selectedFilterIndex;
                               return Padding(
                                 padding: const EdgeInsets.only(right: 10),
-                                child: _GlassmorphicChip(
-                                  label: _filters[index],
-                                  isSelected: isSelected,
-                                  onTap: () {
-                                    setState(
-                                      () => _selectedFilterIndex = index,
-                                    );
-                                    ref
-                                        .read(homeProvider.notifier)
-                                        .selectCategory(_filters[index]);
-                                    if (_filters[index] == "For You" &&
-                                        homeProv
-                                            .currentCategoryPlaylists
-                                            .isEmpty) {
+                                child: Center(
+                                  child: _GlassmorphicChip(
+                                    label: _filters[index],
+                                    isSelected: isSelected,
+                                    onTap: () {
+                                      setState(
+                                        () => _selectedFilterIndex = index,
+                                      );
                                       ref
                                           .read(homeProvider.notifier)
-                                          .fetchYouSongs(
-                                            historyProvider.getTopArtists(),
-                                          );
-                                      if (homeProv.moodPlaylists.isEmpty) {
+                                          .selectCategory(_filters[index]);
+                                      if (_filters[index] == "For You" &&
+                                          homeProv
+                                              .currentCategoryPlaylists
+                                              .isEmpty) {
                                         ref
                                             .read(homeProvider.notifier)
-                                            .fetchMoods();
+                                            .fetchYouSongs(
+                                              historyProvider.getTopArtists(),
+                                            );
+                                        if (homeProv.moodPlaylists.isEmpty) {
+                                          ref
+                                              .read(homeProvider.notifier)
+                                              .fetchMoods();
+                                        }
                                       }
-                                    }
-                                  },
+                                    },
+                                  ),
                                 ),
                               );
                             },
