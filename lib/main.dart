@@ -11,7 +11,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'data/services/audio_player_handler.dart';
 import 'data/services/music_api_service.dart';
-import 'package:it_feels_music/features/auth/auth_provider.dart';
+
 import 'package:it_feels_music/core/widgets/dev_toolkit.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
@@ -20,7 +20,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/notification_service.dart';
 import 'package:it_feels_music/core/router/app_router.dart';
 import 'package:it_feels_music/features/auth/banned_screen.dart';
-import 'package:it_feels_music/core/providers/fullscreen_provider.dart';
+
 import 'package:it_feels_music/features/admin/in_app_broadcast_listener.dart';
 import 'package:it_feels_music/data/services/smart_storage_service.dart';
 import 'package:media_kit/media_kit.dart';
