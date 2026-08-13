@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -526,10 +527,10 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                                     return MediaQuery(
                                       data: MediaQuery.of(context).copyWith(
                                         padding: MediaQuery.of(context).padding.copyWith(
-                                              bottom: MediaQuery.of(context).padding.bottom + bottomUiHeight,
+                                              bottom: math.max(MediaQuery.of(context).padding.bottom, bottomUiHeight),
                                             ),
                                         viewPadding: MediaQuery.of(context).viewPadding.copyWith(
-                                              bottom: MediaQuery.of(context).viewPadding.bottom + bottomUiHeight,
+                                              bottom: math.max(MediaQuery.of(context).viewPadding.bottom, bottomUiHeight),
                                             ),
                                       ),
                                       child: widget.navigationShell,
@@ -590,10 +591,10 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                           return MediaQuery(
                             data: MediaQuery.of(context).copyWith(
                               padding: MediaQuery.of(context).padding.copyWith(
-                                    bottom: MediaQuery.of(context).padding.bottom + bottomUiHeight,
+                                    bottom: math.max(MediaQuery.of(context).padding.bottom, bottomUiHeight),
                                   ),
                               viewPadding: MediaQuery.of(context).viewPadding.copyWith(
-                                    bottom: MediaQuery.of(context).viewPadding.bottom + bottomUiHeight,
+                                    bottom: math.max(MediaQuery.of(context).viewPadding.bottom, bottomUiHeight),
                                   ),
                             ),
                             child: widget.navigationShell,

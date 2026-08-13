@@ -8,7 +8,7 @@ class AppDimensions {
   static const double bottomNavHeight = 80.0;
   
   /// Standard bottom padding required to clear the mini player and bottom nav bar
-  static const double bottomClearance = 168.0;
+  static const double bottomClearance = 0.0;
 
   /// Returns the standard padding for a screen with a scrolling body, 
   /// ensuring content clears the mini-player and bottom navigation bar.

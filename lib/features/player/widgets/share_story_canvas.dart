@@ -36,7 +36,7 @@ class ShareStoryCanvas extends StatelessWidget {
             child: Opacity(
               opacity: 0.2,
               child: CustomImageWidget(
-                imageUrl: song.coverArt ?? '',
+                imageUrl: song.coverArt,
                 width: double.infinity,
                 height: double.infinity,
                 fit: BoxFit.cover,
@@ -66,7 +66,7 @@ class ShareStoryCanvas extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(40),
                     child: CustomImageWidget(
-                      imageUrl: song.coverArt ?? '',
+                      imageUrl: song.coverArt,
                       width: 800,
                       height: 800,
                       fit: BoxFit.cover,

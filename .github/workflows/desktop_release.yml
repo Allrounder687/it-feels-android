@@ -46,26 +46,24 @@ jobs:
       - name: Build Windows Release
         run: flutter build windows --release
 
-      - name: Build Unsigned MSIX
-        run: >
-          dart run msix:create
-          --store
-          --version ${{ steps.version.outputs.QUAD_VERSION }}
-          --output-name ItFeels-Windows-x64
+      - name: Build NSIS Installer
+        run: |
+          mkdir -p build/windows/x64/installer
+          makensis /DAPP_VERSION="${{ steps.version.outputs.SEMVER }}" windows/packaging/installer.nsi
 
-      - name: Copy Unsigned MSIX for Dev Artifact
+      - name: Copy Unsigned EXE for Dev Artifact
         shell: powershell
         run: |
-          Copy-Item "build\windows\x64\runner\Release\ItFeels-Windows-x64.msix" "ItFeels-Windows-x64-unsigned.msix"
+          Copy-Item "build\windows\x64\installer\ITFeelsMusic_Installer.exe" "ItFeels-Windows-x64-unsigned.exe"
 
       # --- Optional SignPath Foundation Signing ---
-      - name: Upload Unsigned MSIX for Signing
+      - name: Upload Unsigned EXE for Signing
         if: env.SIGNPATH_API_TOKEN != ''
         id: upload-unsigned
         uses: actions/upload-artifact@v4
         with:
-          name: unsigned-msix
-          path: build/windows/x64/runner/Release/ItFeels-Windows-x64.msix
+          name: unsigned-exe
+          path: build/windows/x64/installer/ITFeelsMusic_Installer.exe
 
       - name: Submit to SignPath Foundation
         if: env.SIGNPATH_API_TOKEN != ''
@@ -81,44 +79,25 @@ jobs:
         env:
           SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
 
-      # --- Prepare Final MSIX (signed or unsigned) ---
-      - name: Resolve Final MSIX
+      # --- Prepare Final EXE (signed or unsigned) ---
+      - name: Resolve Final EXE
         shell: powershell
         run: |
-          if (Test-Path "signed-output\ItFeels-Windows-x64.msix") {
-            Write-Host "Using SignPath-signed MSIX"
-            Copy-Item "signed-output\ItFeels-Windows-x64.msix" "ItFeels-Windows-x64.msix"
-            $publisher = "CN=SignPath Foundation, O=SignPath Foundation, C=AT"
+          if (Test-Path "signed-output\ITFeelsMusic_Installer.exe") {
+            Write-Host "Using SignPath-signed EXE"
+            Copy-Item "signed-output\ITFeelsMusic_Installer.exe" "ItFeels-Windows-x64-Setup.exe"
           } else {
-            Write-Host "Using unsigned MSIX (no signing secret configured)"
-            Copy-Item "build\windows\x64\runner\Release\ItFeels-Windows-x64.msix" "ItFeels-Windows-x64.msix"
-            $publisher = "CN=Allrounder687, O=Allrounder687, C=US"
+            Write-Host "Using unsigned EXE (no signing secret configured)"
+            Copy-Item "build\windows\x64\installer\ITFeelsMusic_Installer.exe" "ItFeels-Windows-x64-Setup.exe"
           }
-          Write-Output "PUBLISHER=$publisher" >> $env:GITHUB_ENV
-
-      # --- Generate .appinstaller for Auto-Updates ---
-      - name: Generate AppInstaller Manifest
-        shell: powershell
-        run: |
-          $ver = "${{ steps.version.outputs.QUAD_VERSION }}"
-          $tag = "${{ steps.version.outputs.TAG }}"
-          $pub = $env:PUBLISHER
-
-          $template = Get-Content "windows\packaging\stable.appinstaller.template" -Raw
-          $xml = $template `
-            -replace '\{\{VERSION\}\}', $ver `
-            -replace '\{\{TAG\}\}', $tag `
-            -replace '\{\{PUBLISHER\}\}', $pub
-          Set-Content -Path "ItFeels.appinstaller" -Value $xml -Encoding UTF8
 
       # --- SHA-256 Checksums ---
       - name: Generate SHA-256 Checksums
         shell: powershell
         run: |
           $files = @(
-            "ItFeels-Windows-x64.msix",
-            "ItFeels-Windows-x64-unsigned.msix",
-            "ItFeels.appinstaller"
+            "ItFeels-Windows-x64-Setup.exe",
+            "ItFeels-Windows-x64-unsigned.exe"
           )
           $checksums = @()
           foreach ($f in $files) {
@@ -134,9 +113,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ItFeels-Windows-x64.msix
-            ItFeels-Windows-x64-unsigned.msix
-            ItFeels.appinstaller
+            ItFeels-Windows-x64-Setup.exe
+            ItFeels-Windows-x64-unsigned.exe
             SHA256SUMS-windows.txt
           generate_release_notes: false
 

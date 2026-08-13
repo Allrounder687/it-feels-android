@@ -1,5 +1,7 @@
 !define APP_NAME "IT Feels Music"
-!define APP_VERSION "3.6.3"
+!ifndef APP_VERSION
+  !define APP_VERSION "3.6.3"
+!endif
 !define APP_PUBLISHER "Allrounder687"
 !define APP_EXE "it_feels_music.exe"
 !define BUILD_DIR "..\..\build\windows\x64\runner\Release"

@@ -50,8 +50,17 @@ class ConfigService {
             .doc(_platformConfigDoc)
             .get(const GetOptions(source: Source.server))
             .timeout(const Duration(seconds: 5));
+        
         if (doc.exists && doc.data() != null) {
           return AppConfig.fromMap(doc.data()!);
+        } else {
+          // If the document doesn't exist, it means no forced updates are configured for this platform.
+          return AppConfig(
+            minVersion: 1,
+            latestVersionCode: 1,
+            latestVersion: '1.0.0',
+            updateUrl: '',
+          );
         }
       } catch (e) {
         debugPrint('[ConfigService] Error fetching remote config (attempt ${i + 1}): $e');
