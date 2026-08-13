@@ -94,8 +94,9 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
 
               // Overlay Gradient
               if (_isHovering || !isPlaying)
-                Container(
-                  decoration: BoxDecoration(
+                ExcludeSemantics(
+                  child: Container(
+                    decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
@@ -107,12 +108,14 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                     ),
                   ),
                 ),
+              ),
 
               // Controls overlay
               if (_isHovering || !isPlaying)
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+                ExcludeSemantics(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
                     // Top Bar (Expand)
                     Padding(
                       padding: const EdgeInsets.all(8.0),
@@ -212,6 +215,7 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                     ),
                   ],
                 ),
+              ),
             ],
           ),
         ),

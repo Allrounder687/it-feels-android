@@ -101,10 +101,15 @@ class NowPlayingHeader extends ConsumerWidget {
         ),
           ),
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) ...[
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) ...[
               IconButton(
                 icon: Icon(Icons.fullscreen_rounded, color: context.themeTextColor, size: 28),
                 onPressed: () {
@@ -174,6 +179,9 @@ class NowPlayingHeader extends ConsumerWidget {
               ),
             ],
           ],
+        ),
+            ),
+          ),
         ),
       ],
     );
