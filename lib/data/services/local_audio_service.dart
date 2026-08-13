@@ -4,7 +4,9 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'dart:io';
 
 class LocalAudioService {
-  final OnAudioQuery _audioQuery = OnAudioQuery();
+  final OnAudioQuery _audioQuery;
+
+  LocalAudioService({OnAudioQuery? audioQuery}) : _audioQuery = audioQuery ?? OnAudioQuery();
 
   Future<bool> requestPermission() async {
     if (Platform.isIOS) return true;

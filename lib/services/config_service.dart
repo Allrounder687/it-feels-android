@@ -36,6 +36,11 @@ class AppConfig {
 }
 
 class ConfigService {
+  @visibleForTesting
+  static FirebaseFirestore? customFirestore;
+
+  static FirebaseFirestore get _firestore => customFirestore ?? FirebaseFirestore.instance;
+
   static String get _platformConfigDoc {
     if (!kIsWeb && Platform.isWindows) return 'windows';
     if (!kIsWeb && Platform.isIOS) return 'ios';
@@ -45,7 +50,7 @@ class ConfigService {
   static Future<AppConfig?> fetchRemoteConfig() async {
     for (int i = 0; i < 3; i++) {
       try {
-        final doc = await FirebaseFirestore.instance
+        final doc = await _firestore
             .collection('client_config')
             .doc(_platformConfigDoc)
             .get(const GetOptions(source: Source.server))

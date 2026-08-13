@@ -496,16 +496,22 @@ class _TitleBarIconButtonState extends State<_TitleBarIconButton> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Tooltip(
-          message: widget.tooltip,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            height: 48,
-            color: _isHovered ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
-            child: Icon(widget.icon, size: 16, color: widget.color),
+      child: Semantics(
+        label: widget.tooltip,
+        button: true,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
+          child: ExcludeSemantics(
+            child: Tooltip(
+              message: widget.tooltip,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                height: 48,
+                color: _isHovered ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
+                child: Icon(widget.icon, size: 16, color: widget.color),
+              ),
+            ),
           ),
         ),
       ),

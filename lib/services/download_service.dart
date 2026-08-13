@@ -10,10 +10,17 @@ import 'package:it_feels_music/data/services/music_api_service.dart';
 import 'storage_service.dart';
 
 class DownloadService {
+  @visibleForTesting
+  static http.Client httpClient = http.Client();
+
   final MusicApiService apiService;
+  final FileDownloader _downloader;
   bool _initialized = false;
 
-  DownloadService({required this.apiService}) {
+  DownloadService({
+    required this.apiService,
+    @visibleForTesting FileDownloader? downloader,
+  }) : _downloader = downloader ?? FileDownloader() {
     _initDownloader();
   }
 
@@ -22,7 +29,7 @@ class DownloadService {
     
     // Configure background OS notifications only for mobile platforms where it is supported cleanly
     if (Platform.isAndroid || Platform.isIOS) {
-      FileDownloader().configureNotification(
+      _downloader.configureNotification(
         running: const TaskNotification('Downloading...', 'file: {filename}'),
         complete: const TaskNotification('Download Complete', 'file: {filename}'),
         error: const TaskNotification('Download Failed', 'file: {filename}'),
@@ -92,7 +99,7 @@ class DownloadService {
       // avoiding Android 13+ READ_MEDIA_IMAGES permission issues.
       if (song.coverArt.isNotEmpty) {
         try {
-          final coverResponse = await http.get(Uri.parse(song.coverArt));
+          final coverResponse = await httpClient.get(Uri.parse(song.coverArt));
           if (coverResponse.statusCode == 200) {
             final coverFile = File('${musicDir.path}/$safeId.jpg');
             await coverFile.writeAsBytes(coverResponse.bodyBytes);
@@ -115,7 +122,7 @@ class DownloadService {
       // 3. Enqueue and wait for completion
       // We use .download() so we can await it and update our local database when done.
       // Even if the UI thread is busy, the actual download happens via native OS threads.
-      final result = await FileDownloader().download(
+      final result = await _downloader.download(
         task,
         onProgress: (progress) {
           if (onProgress != null && progress >= 0.0) {

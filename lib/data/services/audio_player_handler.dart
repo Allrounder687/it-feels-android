@@ -24,10 +24,15 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   StreamSubscription? _playbackEventSubscription;
   StreamSubscription? _playingSubscription;
 
-  AudioPlayerHandler({required this.apiService}) {
-    _equalizer = AndroidEqualizer();
-    _loudnessEnhancer = AndroidLoudnessEnhancer();
-    _player = AudioPlayer(
+  AudioPlayerHandler({
+    required this.apiService,
+    @visibleForTesting AudioPlayer? customPlayer,
+    @visibleForTesting AndroidEqualizer? customEqualizer,
+    @visibleForTesting AndroidLoudnessEnhancer? customLoudnessEnhancer,
+  }) {
+    _equalizer = customEqualizer ?? AndroidEqualizer();
+    _loudnessEnhancer = customLoudnessEnhancer ?? AndroidLoudnessEnhancer();
+    _player = customPlayer ?? AudioPlayer(
       audioPipeline: (!kIsWeb && Platform.isAndroid)
           ? AudioPipeline(
               androidAudioEffects: [

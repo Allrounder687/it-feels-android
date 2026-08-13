@@ -5,12 +5,13 @@ import 'package:http/http.dart' as http;
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'dart:io';
+import 'package:it_feels_music/core/utils/service_locator.dart';
 
 class RazorpayService {
   Razorpay? _razorpay;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  FirebaseFirestore get _firestore => locator.isRegistered<FirebaseFirestore>() ? locator<FirebaseFirestore>() : FirebaseFirestore.instance;
+  FirebaseAuth get _auth => locator.isRegistered<FirebaseAuth>() ? locator<FirebaseAuth>() : FirebaseAuth.instance;
   
   static const String _backendUrl = 'https://it-feels-proxy.cleverfox687.workers.dev';
   
@@ -33,7 +34,7 @@ class RazorpayService {
     _paymentCompleter = Completer<bool>();
 
 
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null) return false;
 
     try {
@@ -87,7 +88,7 @@ class RazorpayService {
   }
 
   Future<void> _handlePaymentSuccess(PaymentSuccessResponse response) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user != null) {
       await _firestore.collection('users').doc(user.uid).set({
         'isPremiumFamily': true,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:it_feels_music/core/utils/des_decryptor.dart';
@@ -509,31 +510,104 @@ class MusicApiService {
 
   /// Fetch recommended songs based on a track (used for Autoplay)
   Future<List<Song>> getRecommendedSongs(Song song) async {
+    final List<Song> candidatePool = [];
+
+    // 1. Multi-Query Aggregation
+    // Query A: Primary Artist Top Hits
+    final artists = song.artist.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    final primaryArtist = artists.isNotEmpty ? artists.first : '';
+    
+    // Query B: Co-Artist or Music Director Top Hits
+    final secondaryArtist = artists.length > 1 ? artists[1] : '';
+
+    // Query C: Vibe/Language matching
+    final String languageKeyword = song.language.isNotEmpty ? '${song.language} hits' : 'trending hits';
+
     try {
-      final url = Uri.parse(
-          '$_baseUrl?__call=reco.getreco&_format=json&api_version=4&ctx=web6dot0&pid=${song.saavnId}');
-      final response = await httpClient.get(url, headers: _headers);
-      if (response.statusCode == 200) {
-        final data = await compute(jsonDecode, response.body);
-        if (data is List && data.isNotEmpty) {
-           final List<Song> recoSongs = [];
-           for (var item in data) {
-             recoSongs.add(Song.fromJson(item));
-           }
-           if (recoSongs.isNotEmpty) return recoSongs;
-        }
+      final futures = <Future<List<Song>>>[];
+
+      if (primaryArtist.isNotEmpty) {
+        futures.add(searchSongs(primaryArtist, count: 15));
+      }
+      if (secondaryArtist.isNotEmpty) {
+        futures.add(searchSongs(secondaryArtist, count: 10));
+      }
+      
+      // Always add a generic/language vibe search to prevent artist bubble
+      futures.add(searchSongs(languageKeyword, count: 10));
+
+      final resultsList = await Future.wait(futures);
+      
+      for (final results in resultsList) {
+        candidatePool.addAll(results);
       }
     } catch (e) {
-      debugPrint('[MusicApiService] getRecommendedSongs error: $e');
+      debugPrint('[MusicApiService] getRecommendedSongs aggregation error: $e');
     }
 
-    // Fallback: search for artist's songs
-    if (song.artist.isNotEmpty) {
-       final artist = song.artist.split(',').first.trim();
-       if (artist.isNotEmpty) {
-         return await searchSongs(artist);
-       }
+    // 2. Fallback if everything fails
+    if (candidatePool.isEmpty) {
+      if (primaryArtist.isNotEmpty) {
+         final fallback = await searchSongs(primaryArtist);
+         candidatePool.addAll(fallback);
+      }
     }
-    return [];
+
+    if (candidatePool.isEmpty) return [];
+
+    // 3. Candidate Pool Shuffling & Filtering
+    // Remove exact song and similar titles (e.g. Reprise, Lofi)
+    final seedTitleClean = song.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    
+    final filteredPool = candidatePool.where((candidate) {
+      if (candidate.id == song.id) return false; // Exact match
+
+      final candidateTitleClean = candidate.title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+      
+      // Reject if titles are practically identical or one fully contains the other and is very similar in length
+      if (candidateTitleClean == seedTitleClean) return false;
+      if (candidateTitleClean.contains(seedTitleClean) || seedTitleClean.contains(candidateTitleClean)) {
+         return false;
+      }
+      return true;
+    }).toList();
+
+    // Shuffle the pool for freshness
+    filteredPool.shuffle(Random());
+
+    // 4. Strict Diversity Filter (Artist Consecutive Cap)
+    final List<Song> finalQueue = [];
+    int consecutiveArtistCount = 0;
+    String lastArtist = "";
+
+    for (final candidate in filteredPool) {
+      if (finalQueue.length >= 10) break; // Return top 10
+
+      // Prevent duplicate IDs in the final queue
+      if (finalQueue.any((s) => s.id == candidate.id)) continue;
+
+      final candidatePrimaryArtist = candidate.artist.split(',').first.trim();
+
+      if (candidatePrimaryArtist == lastArtist) {
+        consecutiveArtistCount++;
+      } else {
+        consecutiveArtistCount = 1;
+        lastArtist = candidatePrimaryArtist;
+      }
+
+      // Max 2 consecutive songs by the exact same primary artist
+      if (consecutiveArtistCount > 2) {
+        continue;
+      }
+
+      finalQueue.add(candidate);
+    }
+
+    // If for some reason the strict filter removed everything, return a naive deduplicated sublist
+    if (finalQueue.isEmpty && filteredPool.isNotEmpty) {
+       return filteredPool.toSet().take(10).toList();
+    }
+
+    return finalQueue;
   }
 }

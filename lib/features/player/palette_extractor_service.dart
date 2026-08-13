@@ -33,6 +33,9 @@ class PaletteExtractorService {
     return hsl.withLightness(hsl.lightness.clamp(0.4, 0.8)).toColor();
   }
 
+  @visibleForTesting
+  static Future<PaletteResult?> Function(String imageUrl)? customExtractor;
+
   Future<PaletteExtractorResult?> extract(String? imageUrl) async {
     if (imageUrl == null || imageUrl.isEmpty) return null;
     
@@ -42,7 +45,9 @@ class PaletteExtractorService {
       }
 
       if (imageUrl.startsWith('http')) {
-        final res = await PaletteExtractor.extractPalette(imageUrl);
+        final res = customExtractor != null
+            ? await customExtractor!(imageUrl)
+            : await PaletteExtractor.extractPalette(imageUrl);
         if (res != null) {
           return PaletteExtractorResult(
             backgroundColor: _adjustBackgroundColor(Color(res.background)),

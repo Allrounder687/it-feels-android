@@ -5,6 +5,10 @@ import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 
 class SmartCacheService {
+  final DatabaseService _dbService;
+
+  SmartCacheService({DatabaseService? dbService}) : _dbService = dbService ?? DatabaseService();
+
   bool _isRunning = false;
 
   /// Trigger a background sync of the top 50 most played songs.
@@ -21,8 +25,7 @@ class SmartCacheService {
       }
 
       debugPrint('[SmartCacheService] Starting background sync of top songs...');
-      final dbService = DatabaseService();
-      final topSongs = await dbService.getTopPlayedSongs(limit: 50);
+      final topSongs = await _dbService.getTopPlayedSongs(limit: 50);
       
       if (topSongs.isEmpty) {
         debugPrint('[SmartCacheService] No top songs found to cache.');

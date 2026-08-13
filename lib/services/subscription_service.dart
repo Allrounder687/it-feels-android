@@ -111,7 +111,7 @@ class SubscriptionService {
 
       // 3. Fallback to Firestore directly if Cloudflare verification fails or token fetch hung
       debugPrint("Cloudflare verification failed or skipped, falling back to Firestore...");
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists && doc.data()?['isPremiumFamily'] == true) {
         return true;
       }

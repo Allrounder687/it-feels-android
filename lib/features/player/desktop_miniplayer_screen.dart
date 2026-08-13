@@ -13,6 +13,8 @@ import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/core/widgets/clever_loading_text.dart';
+import 'package:it_feels_music/core/router/app_router.dart';
+import 'package:it_feels_music/features/player/lyrics_screen.dart';
 
 class DesktopMiniplayerScreen extends ConsumerStatefulWidget {
   const DesktopMiniplayerScreen({super.key});
@@ -68,8 +70,11 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
       );
     }
 
-    final isPlaying = audioState.isPlaying || (videoState.player?.state.playing ?? false);
+    final settings = ref.watch(settingsProvider);
     final hasVideo = videoState.isVideoActive && videoState.videoController != null;
+    final isPlaying = (settings.useVideoAudioSource && hasVideo)
+        ? (videoState.player?.state.playing ?? false)
+        : audioState.isPlaying;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -129,8 +134,9 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                             icon: const Icon(Icons.lyrics_outlined, color: Colors.white, size: 20),
                             onPressed: () {
                               _restoreWindow().then((_) {
-                                ref.read(audioPlayerProvider.notifier).togglePlayPause(); // ensure playing state if needed? no just route
-                                context.go('/lyrics');
+                                rootNavigatorKey.currentState?.push(
+                                  MaterialPageRoute(builder: (_) => const LyricsScreen()),
+                                );
                               });
                             },
                             tooltip: 'Lyrics',
@@ -190,7 +196,12 @@ class _DesktopMiniplayerScreenState extends ConsumerState<DesktopMiniplayerScree
                                   if (_isDebouncing) return;
                                   setState(() => _isDebouncing = true);
                                   
-                                  await ref.read(audioPlayerProvider.notifier).togglePlayPause();
+                                  if (settings.useVideoAudioSource && hasVideo && videoState.player != null) {
+                                    final p = videoState.player!;
+                                    p.state.playing ? await p.pause() : await p.play();
+                                  } else {
+                                    await ref.read(audioPlayerProvider.notifier).togglePlayPause();
+                                  }
                                   
                                   Future.delayed(const Duration(milliseconds: 300), () {
                                     if (mounted) setState(() => _isDebouncing = false);
@@ -285,8 +296,9 @@ class _PiPLyricsView extends ConsumerWidget {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 60.0),
                 child: Center(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
+                  child: ExcludeSemantics(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
                     child: Text(
                       currentLine,
                       key: ValueKey(currentLine),
@@ -307,6 +319,7 @@ class _PiPLyricsView extends ConsumerWidget {
                       ),
                     ),
                   ),
+                ),
                 ),
               );
             },

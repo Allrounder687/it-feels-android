@@ -4,6 +4,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'dart:async';
 
 import 'package:it_feels_music/services/subscription_service.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 import 'package:it_feels_music/services/razorpay_service.dart';
@@ -21,17 +22,19 @@ class SubscriptionProvider extends ChangeNotifier {
   bool get isPremium => _isPremium;
   bool get isLoading => _isLoading;
 
+  FirebaseAuth get _auth => locator.isRegistered<FirebaseAuth>() ? locator<FirebaseAuth>() : FirebaseAuth.instance;
+
   SubscriptionProvider({SubscriptionService? service}) 
       : _service = service ?? SubscriptionService() {
     _init();
   }
 
   Future<void> _init() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     await _service.initialize(user?.uid);
     await checkStatus();
     
-    FirebaseAuth.instance.authStateChanges().listen((user) async {
+    _auth.authStateChanges().listen((user) async {
       if (user != null) {
         await _service.login(user.uid);
       } else {
@@ -52,7 +55,7 @@ class SubscriptionProvider extends ChangeNotifier {
       } else {
         // RevenueCat says no premium, but they might have a Firestore custom coupon
         // So we re-verify via the backend before downgrading them.
-        final user = FirebaseAuth.instance.currentUser;
+        final user = _auth.currentUser;
         if (user != null) {
           final isFirestoreActive = await _service.checkPremiumStatus(user.uid);
           if (_isPremium != isFirestoreActive) {
@@ -70,7 +73,7 @@ class SubscriptionProvider extends ChangeNotifier {
   }
 
   Future<void> checkStatus() async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null || user.isAnonymous) {
       _isPremium = false;
       _isLoading = false;
@@ -106,7 +109,7 @@ class SubscriptionProvider extends ChangeNotifier {
   }
 
   Future<bool> redeemCoupon(String code) async {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = _auth.currentUser;
     if (user == null) return false;
     
     _isLoading = true;

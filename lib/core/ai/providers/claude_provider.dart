@@ -5,7 +5,8 @@ import '../../../data/models/song_model.dart';
 
 class ClaudeProvider implements AIProvider {
   final String apiKey;
-  ClaudeProvider(this.apiKey);
+  final http.Client _client;
+  ClaudeProvider(this.apiKey, {http.Client? client}) : _client = client ?? http.Client();
 
   @override
   String get id => 'claude';
@@ -323,7 +324,7 @@ class ClaudeProvider implements AIProvider {
   Future<bool> checkAvailability() async {
     if (apiKey.isEmpty) return false;
     try {
-      final response = await http.post(
+      final response = await _client.post(
         Uri.parse('https://api.anthropic.com/v1/messages'),
         headers: {
           'x-api-key': apiKey,
@@ -348,7 +349,7 @@ class ClaudeProvider implements AIProvider {
     required Map<String, dynamic> body,
     required Duration timeout,
   }) async {
-    final response = await http.post(
+    final response = await _client.post(
       Uri.parse('https://api.anthropic.com/v1/messages'),
       headers: {
         'x-api-key': apiKey,

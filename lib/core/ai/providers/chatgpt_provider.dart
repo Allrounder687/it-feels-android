@@ -5,7 +5,8 @@ import '../../../data/models/song_model.dart';
 
 class ChatGPTProvider implements AIProvider {
   final String apiKey;
-  ChatGPTProvider(this.apiKey);
+  final http.Client _client;
+  ChatGPTProvider(this.apiKey, {http.Client? client}) : _client = client ?? http.Client();
 
   @override
   String get id => 'chatgpt';
@@ -341,7 +342,7 @@ class ChatGPTProvider implements AIProvider {
   Future<bool> checkAvailability() async {
     if (apiKey.isEmpty) return false;
     try {
-      final response = await http.post(
+      final response = await _client.post(
         Uri.parse('https://api.openai.com/v1/chat/completions'),
         headers: {
           'Authorization': 'Bearer $apiKey',
@@ -365,7 +366,7 @@ class ChatGPTProvider implements AIProvider {
     required Map<String, dynamic> body,
     required Duration timeout,
   }) async {
-    final response = await http.post(
+    final response = await _client.post(
       Uri.parse('https://api.openai.com/v1/chat/completions'),
       headers: {
         'Authorization': 'Bearer $apiKey',

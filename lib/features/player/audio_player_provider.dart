@@ -733,7 +733,30 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   void toggleAutoplay() {
     state = state.copyWith(isAutoplayEnabled: !state.isAutoplayEnabled);
     engine.isAutoplayEnabled = state.isAutoplayEnabled;
+    if (state.isAutoplayEnabled && state.currentIndex == state.queue.length - 1) {
+      _fetchAutoplayRecommendations();
+    }
     engine.saveAudioSettings();
+  }
+
+  Future<void> _fetchAutoplayRecommendations() async {
+    if (state.queue.isEmpty) return;
+    try {
+      final current = state.queue.last;
+      final recommendations = await locator<MusicApiService>().getRecommendedSongs(current);
+      if (recommendations.isNotEmpty) {
+        final newSongs = recommendations
+            .where((s) => !state.queue.any((q) => q.id == s.id))
+            .toList();
+        if (newSongs.isNotEmpty) {
+          final updatedQ = List<Song>.from(state.queue)..addAll(newSongs.take(10));
+          state = state.copyWith(queue: updatedQ);
+          _saveMemory();
+        }
+      }
+    } catch (e) {
+      debugPrint("Autoplay recommendation failed: $e");
+    }
   }
 
   Future<void> playSong(

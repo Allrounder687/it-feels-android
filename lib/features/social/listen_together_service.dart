@@ -25,8 +25,11 @@ class ListenTogetherService {
   bool isHost = false;
   int _serverTimeOffset = 0;
 
-  ListenTogetherService() {
-    _offsetSubscription = FirebaseDatabase.instance.ref('.info/serverTimeOffset').onValue.listen((event) {
+  final FirebaseDatabase _database;
+  FirebaseFirestore get _firestore => locator.isRegistered<FirebaseFirestore>() ? locator<FirebaseFirestore>() : FirebaseFirestore.instance;
+
+  ListenTogetherService({FirebaseDatabase? database}) : _database = database ?? FirebaseDatabase.instance {
+    _offsetSubscription = _database.ref('.info/serverTimeOffset').onValue.listen((event) {
       _serverTimeOffset = (event.snapshot.value as int?) ?? 0;
     });
   }
@@ -57,7 +60,7 @@ class ListenTogetherService {
     
     // Zero-cognitive load friending: Notify all friends
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
         final friends = List<String>.from(data['friends'] ?? []);
