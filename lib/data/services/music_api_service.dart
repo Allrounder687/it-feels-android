@@ -36,12 +36,15 @@ class MusicApiService {
     final lower = text.toLowerCase();
     final keywords = [
       'bhakti', 'bhakthi', 'bhajan', 'aarti', 'arti', 'hanuman', 
-      'chalisa', 'chaleesa', 'mantra', 'shiv', 'ram ', 'krishna', 
+      'chalisa', 'chaleesa', 'mantra', 'shiv', 'ram', 'krishna', 
       'devotional', 'ganpati', 'ganesha', 'mahadev', 'mata', 
-      'shri ', 'shree ', 'bhagwan', 'kirtan', 'sai ', 'durga',
+      'shri', 'shree', 'bhagwan', 'kirtan', 'sai', 'durga',
       'radha', 'shyam', 'hari'
     ];
-    return keywords.any((k) => lower.contains(k));
+    return keywords.any((k) {
+      final regExp = RegExp('\\b$k\\b');
+      return regExp.hasMatch(lower);
+    });
   }
 
   /// Search all categories (songs, albums, playlists)

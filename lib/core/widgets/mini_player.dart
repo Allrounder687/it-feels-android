@@ -53,7 +53,7 @@ class MiniPlayer extends ConsumerWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: context.themeInvertedTextColor.withValues(alpha: 0.15),
+                        color: Colors.black.withValues(alpha: 0.5),
                         blurRadius: 24,
                         offset: const Offset(0, 8),
                       ),

@@ -109,7 +109,7 @@ void main() {
             'more_info': {
               'artistMap': {
                 'primary_artists': [
-                  {'name': 'Singer A'}
+                  {'name': 'Artist A'}
                 ]
               },
               'album': 'Normal Album',

@@ -159,7 +159,7 @@ class LiveLyricsPreviewCard extends ConsumerWidget {
                     )
                   else
                     SizedBox(
-                      height: isWide ? 140 : 85,
+                      height: isWide ? 150 : 100,
                       child: ExcludeSemantics(
                         child: AnimatedSwitcher(
                           duration: const Duration(milliseconds: 350),
@@ -178,9 +178,11 @@ class LiveLyricsPreviewCard extends ConsumerWidget {
                               ),
                             );
                           },
-                          child: Column(
+                          child: SingleChildScrollView(
                             key: ValueKey(currentLine),
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            physics: const NeverScrollableScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               if (prevLine.isNotEmpty)
