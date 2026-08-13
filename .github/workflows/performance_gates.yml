@@ -19,14 +19,14 @@ jobs:
           channel: 'stable'
           cache: true
       
+      - name: Create dummy .env for tests
+        run: touch .env
+
       - name: Install Dependencies
         run: flutter pub get
 
       - name: Strict Static Analysis (Detects Leaks & Race Conditions)
         run: dart analyze --fatal-warnings
-
-      - name: Create dummy .env for tests
-        run: touch .env
 
       - name: Check for Widget Tests (Performance Regressions)
         run: flutter test --no-pub

@@ -261,8 +261,9 @@ class _PiPLyricsView extends ConsumerWidget {
         ),
         // Lyrics Content
         RepaintBoundary(
-          child: StreamBuilder<Duration>(
-            stream: engine.positionStream,
+          child: ExcludeSemantics(
+            child: StreamBuilder<Duration>(
+              stream: engine.positionStream,
             initialData: engine.position,
             builder: (context, snapshot) {
               final position = snapshot.data ?? Duration.zero;
@@ -310,6 +311,7 @@ class _PiPLyricsView extends ConsumerWidget {
               );
             },
           ),
+        ),
         ),
       ],
     );

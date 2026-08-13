@@ -6,6 +6,9 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 
 class DeezerApiService {
+  @visibleForTesting
+  static http.Client httpClient = http.Client();
+
   String get _baseUrl => '${BackendApiService.baseUrl}/api/v1/deezer';
 
   Song _parseTrack(Map<String, dynamic> track) {
@@ -42,7 +45,7 @@ class DeezerApiService {
 
   Future<dynamic> _get(String endpoint) async {
     final uri = Uri.parse('$_baseUrl/$endpoint');
-    final response = await http.get(
+    final response = await httpClient.get(
       uri,
       headers: {
         'X-Feels-Secret': dotenv.isInitialized ? (dotenv.env['API_SECRET'] ?? 'development_secret_123') : 'development_secret_123',
