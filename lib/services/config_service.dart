@@ -63,9 +63,16 @@ class ConfigService {
           );
         }
       } catch (e) {
-        debugPrint('[ConfigService] Error fetching remote config (attempt ${i + 1}): $e');
-        if (i == 2) return null;
-        await Future.delayed(const Duration(seconds: 1));
+        if (i == 2) {
+          // If all retries fail, return a safe fallback to prevent hanging the splash screen
+          return AppConfig(
+            minVersion: 1,
+            latestVersionCode: 1,
+            latestVersion: '1.0.0',
+            updateUrl: '',
+          );
+        }
+        await Future.delayed(const Duration(milliseconds: 500));
       }
     }
     return null;

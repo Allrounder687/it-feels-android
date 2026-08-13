@@ -45,6 +45,7 @@ if(NSIS_COMPILER)
   add_custom_command(
     TARGET ${BINARY_NAME} POST_BUILD
     COMMAND "${NSIS_COMPILER}" "${CMAKE_SOURCE_DIR}/packaging/installer.nsi"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/packaging"
     COMMENT "Building Windows Installer using NSIS..."
   )
 endif()

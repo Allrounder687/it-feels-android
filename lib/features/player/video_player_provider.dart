@@ -14,6 +14,13 @@ import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
+// Testable dependency injection for Player & VideoController
+@visibleForTesting
+Player Function(PlayerConfiguration config)? customPlayerFactory;
+
+@visibleForTesting
+VideoController Function(Player player)? customVideoControllerFactory;
+
 @immutable
 class VideoPlayerState {
   final Player? player;
@@ -354,8 +361,9 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
       
 
       
-      final player = Player(configuration: const PlayerConfiguration(pitch: false, vo: 'gpu', bufferSize: 64 * 1024 * 1024));
-      final controller = VideoController(player);
+      final config = const PlayerConfiguration(pitch: false, vo: 'gpu', bufferSize: 64 * 1024 * 1024);
+      final player = customPlayerFactory?.call(config) ?? Player(configuration: config);
+      final controller = customVideoControllerFactory?.call(player) ?? VideoController(player);
       
       final media = Media(
         localPath,
@@ -461,14 +469,13 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     
     final settings = ref.read(settingsProvider);
     
-    final player = Player(
-      configuration: PlayerConfiguration(
-        pitch: false, 
-        vo: 'gpu', 
-        bufferSize: _bufferSizeForQuality(quality.toString()),
-      )
+    final config = PlayerConfiguration(
+      pitch: false, 
+      vo: 'gpu', 
+      bufferSize: _bufferSizeForQuality(quality.toString()),
     );
-    final controller = VideoController(player);
+    final player = customPlayerFactory?.call(config) ?? Player(configuration: config);
+    final controller = customVideoControllerFactory?.call(player) ?? VideoController(player);
     
     try {
       final media = Media(

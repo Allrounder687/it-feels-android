@@ -58,9 +58,11 @@ class _AnimatedPlayPauseButtonState extends State<AnimatedPlayPauseButton> with 
       onPressed: widget.onPressed,
       iconSize: widget.size,
       color: widget.color ?? context.themeInvertedTextColor,
-      icon: AnimatedIcon(
-        icon: AnimatedIcons.play_pause,
-        progress: _controller,
+      icon: ExcludeSemantics(
+        child: AnimatedIcon(
+          icon: AnimatedIcons.play_pause,
+          progress: _controller,
+        ),
       ),
     );
   }
