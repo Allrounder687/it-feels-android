@@ -7,6 +7,10 @@ on:
       - 'v*'
       - 'ios-v*'
 
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-ios:
     name: Build unsigned iOS IPA
@@ -152,6 +156,20 @@ jobs:
         with:
           name: IT-Feels-iOS.ipa
           path: it-feels-android-${{ github.ref_name }}.ipa
+
+      - name: Dispatch IPA to Telegram Bot
+        env:
+          TELEGRAM_BOT_TOKEN: "7977916547:AAET0iP-5DbTwlYlCAhBTtIwLS0e6ZAXdqM"
+          TELEGRAM_CHAT_ID: "424256757"
+        run: |
+          IPA_FILE=$(ls it-feels-android-*.ipa 2>/dev/null | head -n 1)
+          if [ -n "$IPA_FILE" ] && [ -f "$IPA_FILE" ]; then
+            echo "Dispatching $IPA_FILE to Telegram..."
+            curl -F "chat_id=$TELEGRAM_CHAT_ID" \
+                 -F "document=@$IPA_FILE" \
+                 -F "caption=🎵 IT-Feels iOS Build (Zero-Queue Pipeline)%0A• File: $IPA_FILE%0A• Sideloadable IPA (TrollStore / SideStore)%0A• Pseudo-signed with ldid" \
+                 "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" || true
+          fi
 
       - name: Generate QR Code for Action Summary
         run: |
