@@ -52,17 +52,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     Map<String, dynamic> data;
 
     try {
-      if (widget.playlist.id.startsWith('dz_')) {
-        final dzApi = locator<IMusicRepository>();
-        final dzId = widget.playlist.id.replaceFirst('dz_', '');
-        data = await dzApi.fetchPlaylistDetails(dzId);
+      final api = locator<IMusicRepository>();
+      if (widget.playlist.type == 'album') {
+        data = await api.fetchAlbumDetails(widget.playlist.id);
       } else {
-        final api = locator<IMusicRepository>();
-        if (widget.playlist.type == 'album') {
-          data = await api.fetchAlbumDetails(widget.playlist.id);
-        } else {
-          data = await api.fetchPlaylistDetails(widget.playlist.id);
-        }
+        data = await api.fetchPlaylistDetails(widget.playlist.id);
       }
     } catch (e) {
       debugPrint('Error fetching playlist details: $e');
@@ -424,6 +418,9 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                           builder: (context, ref, child) {
                             final playerProvider = ref.watch(audioPlayerProvider);
                             final isCurrentSong = playerProvider.currentSong?.id == song.id;
+                            final downloadState = ref.watch(downloadProvider);
+                            final isSongDown = downloadState.isDownloaded(song.id);
+                            final isSongDownloading = downloadState.isDownloading(song.id);
                             
                             return Padding(
                               padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 2),
@@ -595,7 +592,13 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                         child: Row(
                                           mainAxisAlignment: MainAxisAlignment.end,
                                           children: [
-                                            if (isDown)
+                                            if (isSongDownloading)
+                                              SizedBox(
+                                                width: 14,
+                                                height: 14,
+                                                child: CircularProgressIndicator(strokeWidth: 2, color: context.themeAccentColor),
+                                              )
+                                            else if (isSongDown)
                                               Icon(Icons.download_done_rounded, color: context.themeAccentColor, size: 16),
                                             const SizedBox(width: 8),
                                             InkWell(

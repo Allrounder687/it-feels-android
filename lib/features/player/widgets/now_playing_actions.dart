@@ -73,6 +73,9 @@ class _NowPlayingActionsState extends ConsumerState<NowPlayingActions> {
 
   @override
   Widget build(BuildContext context) {
+    final downloadState = ref.watch(downloadProvider);
+    final isDown = downloadState.isDownloaded(widget.currentSong.id);
+    final isDownloading = downloadState.isDownloading(widget.currentSong.id);
     return Stack(
       children: [
         // Hidden canvas for story export
@@ -109,7 +112,7 @@ class _NowPlayingActionsState extends ConsumerState<NowPlayingActions> {
           const SizedBox(width: 16),
           IconButton(
             onPressed: () async {
-              if (widget.isDown) {
+              if (isDown) {
                 await ref.read(downloadProvider.notifier).removeDownload(widget.currentSong);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -128,15 +131,15 @@ class _NowPlayingActionsState extends ConsumerState<NowPlayingActions> {
                 }
               }
             },
-            tooltip: widget.isDown ? "Downloaded" : "Download",
-            icon: widget.isDownloading
+            tooltip: isDown ? "Downloaded" : "Download",
+            icon: isDownloading
                 ? SizedBox(
                     width: 28, height: 28,
                     child: CircularProgressIndicator(strokeWidth: 2, color: context.themeTextColor),
                   )
                 : Icon(
-                    widget.isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
-                    color: widget.isDown ? widget.accentColor : context.themeMutedTextColor,
+                    isDown ? Icons.download_done_rounded : Icons.file_download_outlined,
+                    color: isDown ? widget.accentColor : context.themeMutedTextColor,
                     size: 28,
                   ),
           ),

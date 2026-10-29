@@ -356,6 +356,29 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
+                                      Consumer(
+                                        builder: (context, ref, _) {
+                                          final downloadState = ref.watch(downloadProvider);
+                                          final isSongDown = downloadState.isDownloaded(song.id);
+                                          final isSongDownloading = downloadState.isDownloading(song.id);
+                                          if (isSongDownloading) {
+                                            return Padding(
+                                              padding: const EdgeInsets.only(right: 8),
+                                              child: SizedBox(
+                                                width: 14,
+                                                height: 14,
+                                                child: CircularProgressIndicator(strokeWidth: 2, color: context.themeAccentColor),
+                                              ),
+                                            );
+                                          } else if (isSongDown) {
+                                            return Padding(
+                                              padding: const EdgeInsets.only(right: 8),
+                                              child: Icon(Icons.download_done_rounded, color: context.themeAccentColor, size: 16),
+                                            );
+                                          }
+                                          return const SizedBox.shrink();
+                                        },
+                                      ),
                                       IconButton(
                                         icon: Icon(Icons.remove_circle_outline, color: context.themeMutedTextColor),
                                         onPressed: () {

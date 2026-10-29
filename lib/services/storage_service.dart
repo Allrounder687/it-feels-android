@@ -323,7 +323,7 @@ class StorageService {
       'downloadQuality': prefs.getString(_downloadQualityKey) ?? '320 kbps (Very High)',
       'theme': prefs.getString(_themeKey) ?? 'Dynamic (Album Art)',
       'customDownloadPath': prefs.getString(_downloadPathKey) ?? '',
-      'enableAndroidAuto': prefs.getBool('enable_android_auto') ?? false,
+      'enableAndroidAuto': prefs.getBool('enable_android_auto') ?? true,
       'hapticsMode': prefs.getString('haptics_mode') ?? 'Off',
       'useProxyBackend': prefs.getBool('use_proxy_backend') ?? true,
       'proxyUrl': prefs.getString('proxy_url') ?? 'https://it-feels-proxy.cleverfox687.workers.dev',

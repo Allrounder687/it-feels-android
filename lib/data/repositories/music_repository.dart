@@ -63,6 +63,8 @@ abstract class IMusicRepository {
   Future<List<Song>> getTopStations();
   Future<List<Song>> searchStations(String query);
   Future<Map<String, dynamic>> getCharts();
+  Future<Map<String, dynamic>> getChartsByLanguage(String language);
+  Future<List<Playlist>> getFeaturedPlaylistsByLanguage(String language);
   Future<Map<String, dynamic>> fetchHomepageData({Function(String)? onError});
 }
 
@@ -191,6 +193,18 @@ class MusicRepository implements IMusicRepository {
   Future<Map<String, dynamic>> getCharts() async {
     final addonManager = AddonManager();
     return await addonManager.getCharts();
+  }
+
+  @override
+  Future<Map<String, dynamic>> getChartsByLanguage(String language) async {
+    final addonManager = AddonManager();
+    return await addonManager.getChartsByLanguage(language);
+  }
+
+  @override
+  Future<List<Playlist>> getFeaturedPlaylistsByLanguage(String language) async {
+    final addonManager = AddonManager();
+    return await addonManager.getFeaturedPlaylistsByLanguage(language);
   }
 
   @override

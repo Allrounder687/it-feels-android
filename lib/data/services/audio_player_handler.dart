@@ -252,7 +252,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<List<MediaItem>> getChildren(String parentMediaId, [Map<String, dynamic>? options]) async {
     final settings = await StorageService.loadSettings();
-    if (settings['enableAndroidAuto'] != true) return [];
+    if (settings['enableAndroidAuto'] == false) return [];
 
     if (parentMediaId == AudioService.browsableRootId) {
       return [
@@ -266,11 +266,40 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
           title: 'Favorites',
           playable: false,
         ),
+        const MediaItem(
+          id: 'downloads',
+          title: 'Downloaded Songs',
+          playable: false,
+        ),
       ];
-    } else if (parentMediaId == 'favorites' || parentMediaId == 'recently_played') {
+    } else if (parentMediaId == AudioService.recentRootId) {
       final state = await StorageService.loadPlaybackState();
       if (state != null) {
-        final key = parentMediaId == 'favorites' ? 'favorites' : 'recentlyPlayed';
+        final List<dynamic> rawList = state['recentlyPlayed'] ?? [];
+        if (rawList.isNotEmpty) {
+          final s = Song.fromJson(Map<String, dynamic>.from(rawList.first));
+          return [
+            MediaItem(
+              id: s.id,
+              title: s.title,
+              artist: s.artist,
+              album: s.album,
+              duration: Duration(seconds: s.duration),
+              artUri: s.coverArt.isNotEmpty
+                  ? (s.coverArt.startsWith('http') ? Uri.parse(s.coverArt) : Uri.file(s.coverArt))
+                  : null,
+              playable: true,
+            )
+          ];
+        }
+      }
+      return [];
+    } else if (parentMediaId == 'favorites' || parentMediaId == 'recently_played' || parentMediaId == 'downloads') {
+      final state = await StorageService.loadPlaybackState();
+      if (state != null) {
+        final key = parentMediaId == 'favorites'
+            ? 'favorites'
+            : (parentMediaId == 'downloads' ? 'downloads' : 'recentlyPlayed');
         final List<dynamic> rawList = state[key] ?? [];
         return rawList.map((e) {
           final s = Song.fromJson(Map<String, dynamic>.from(e));
@@ -280,7 +309,9 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
             artist: s.artist,
             album: s.album,
             duration: Duration(seconds: s.duration),
-            artUri: s.coverArt.isNotEmpty ? (s.coverArt.startsWith('http') ? Uri.parse(s.coverArt) : Uri.file(s.coverArt)) : null,
+            artUri: s.coverArt.isNotEmpty
+                ? (s.coverArt.startsWith('http') ? Uri.parse(s.coverArt) : Uri.file(s.coverArt))
+                : null,
             playable: true,
           );
         }).toList();
@@ -295,7 +326,8 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     if (state != null) {
       final List<dynamic> rawFavs = state['favorites'] ?? [];
       final List<dynamic> rawRecent = state['recentlyPlayed'] ?? [];
-      final all = [...rawFavs, ...rawRecent];
+      final List<dynamic> rawDown = state['downloads'] ?? [];
+      final all = [...rawFavs, ...rawRecent, ...rawDown];
       for (final e in all) {
         final song = Song.fromJson(Map<String, dynamic>.from(e));
         if (song.id == mediaId) {
@@ -310,8 +342,59 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   }
 
   @override
+  Future<void> playFromSearch(String query, [Map<String, dynamic>? extras]) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) {
+      return play();
+    }
+    try {
+      final results = await locator<IMusicRepository>().search(cleanQuery);
+      if (results.isNotEmpty) {
+        final song = results.first;
+        final streamUrl = await locator<IMusicRepository>().getStreamUrl(song);
+        if (streamUrl != null && streamUrl.isNotEmpty) {
+          await playSong(song, streamUrl);
+        }
+      }
+    } catch (e) {
+      debugPrint('[AudioPlayerHandler] playFromSearch failed: $e');
+    }
+  }
+
+  @override
+  Future<void> playFromUri(Uri uri, [Map<String, dynamic>? extras]) async {
+    return play();
+  }
+
+  @override
   Future<MediaItem?> getMediaItem(String mediaId) async {
-    return null; // Fallback
+    if (mediaItem.value?.id == mediaId) {
+      return mediaItem.value;
+    }
+    final state = await StorageService.loadPlaybackState();
+    if (state != null) {
+      final List<dynamic> rawFavs = state['favorites'] ?? [];
+      final List<dynamic> rawRecent = state['recentlyPlayed'] ?? [];
+      final List<dynamic> rawDown = state['downloads'] ?? [];
+      final all = [...rawFavs, ...rawRecent, ...rawDown];
+      for (final e in all) {
+        final s = Song.fromJson(Map<String, dynamic>.from(e));
+        if (s.id == mediaId) {
+          return MediaItem(
+            id: s.id,
+            title: s.title,
+            artist: s.artist,
+            album: s.album,
+            duration: Duration(seconds: s.duration),
+            artUri: s.coverArt.isNotEmpty
+                ? (s.coverArt.startsWith('http') ? Uri.parse(s.coverArt) : Uri.file(s.coverArt))
+                : null,
+            playable: true,
+          );
+        }
+      }
+    }
+    return null;
   }
 
   // --- Smart Lockscreen Action ---

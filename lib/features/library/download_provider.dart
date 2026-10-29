@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,34 +13,68 @@ class DownloadState {
   final List<Song> downloadedSongs;
   final Map<String, double> downloadProgressMap;
   final Set<String> downloadingIds;
+  final bool isScanning;
 
   const DownloadState({
     this.downloadedSongs = const [],
     this.downloadProgressMap = const {},
     this.downloadingIds = const {},
+    this.isScanning = false,
   });
 
+  static String normalizeId(String id) {
+    if (id.startsWith('saavn:')) return id.substring(6);
+    if (id.startsWith('youtube:')) return id.substring(8);
+    return id;
+  }
+
   bool isDownloaded(String songId) {
-    return downloadedSongs.any((s) => s.id == songId);
+    if (songId.isEmpty) return false;
+    final cleanQuery = normalizeId(songId);
+    return downloadedSongs.any((s) {
+      if (s.id == songId) return true;
+      final cleanSaved = normalizeId(s.id);
+      if (cleanSaved == cleanQuery) return true;
+      if (s.saavnId.isNotEmpty && (s.saavnId == songId || s.saavnId == cleanQuery)) return true;
+      return false;
+    });
   }
 
   bool isDownloading(String songId) {
-    return downloadingIds.contains(songId);
+    if (songId.isEmpty) return false;
+    final cleanQuery = normalizeId(songId);
+    return downloadingIds.any((id) {
+      if (id == songId) return true;
+      final cleanId = normalizeId(id);
+      return cleanId == cleanQuery;
+    });
   }
 
   double getProgress(String songId) {
-    return downloadProgressMap[songId] ?? 0.0;
+    if (songId.isEmpty) return 0.0;
+    if (downloadProgressMap.containsKey(songId)) {
+      return downloadProgressMap[songId]!;
+    }
+    final cleanQuery = normalizeId(songId);
+    for (final entry in downloadProgressMap.entries) {
+      if (normalizeId(entry.key) == cleanQuery) {
+        return entry.value;
+      }
+    }
+    return 0.0;
   }
 
   DownloadState copyWith({
     List<Song>? downloadedSongs,
     Map<String, double>? downloadProgressMap,
     Set<String>? downloadingIds,
+    bool? isScanning,
   }) {
     return DownloadState(
       downloadedSongs: downloadedSongs ?? this.downloadedSongs,
       downloadProgressMap: downloadProgressMap ?? this.downloadProgressMap,
       downloadingIds: downloadingIds ?? this.downloadingIds,
+      isScanning: isScanning ?? this.isScanning,
     );
   }
 }
@@ -57,6 +92,22 @@ class DownloadNotifier extends Notifier<DownloadState> {
   Future<void> _init() async {
     final songs = await StorageService.loadDownloads();
     state = state.copyWith(downloadedSongs: songs);
+    // Background scan for any downloads from older/debug/other app builds
+    unawaited(scanAndSync());
+  }
+
+  /// Scans file manager directories across all versions/builds and synchronizes state
+  Future<List<Song>> scanAndSync() async {
+    state = state.copyWith(isScanning: true);
+    try {
+      final scanned = await downloadService.scanAllDownloads();
+      state = state.copyWith(downloadedSongs: scanned, isScanning: false);
+      return scanned;
+    } catch (e) {
+      debugPrint('[DownloadNotifier] scanAndSync error: $e');
+      state = state.copyWith(isScanning: false);
+      return state.downloadedSongs;
+    }
   }
 
   Future<bool> downloadSong(Song song) async {
@@ -108,9 +159,6 @@ class DownloadNotifier extends Notifier<DownloadState> {
         }
       }
       
-      // Explicitly yield to the event loop after processing a batch.
-      // This allows the Garbage Collector to sweep dead memory and prevents OOM crashes
-      // on budget Android devices when downloading massive playlists.
       if (end < songs.length) {
         await Future.delayed(const Duration(milliseconds: 1000));
       }
@@ -122,12 +170,39 @@ class DownloadNotifier extends Notifier<DownloadState> {
       if (song.encryptedMediaUrl != null && song.encryptedMediaUrl!.isNotEmpty) {
         final file = File(song.encryptedMediaUrl!);
         if (await file.exists()) {
+          final parentDir = file.parent;
           await file.delete();
+
+          // If the song is in its own dedicated folder, delete cover, lyrics, and metadata files too
+          try {
+            final rootPath = await downloadService.getDownloadDirectoryPath();
+            if (parentDir.path != rootPath && await parentDir.exists()) {
+              final remaining = await parentDir.list().toList();
+              final isSongFolder = remaining.isEmpty || remaining.every((f) {
+                final lower = f.path.toLowerCase();
+                return lower.endsWith('.jpg') ||
+                    lower.endsWith('.png') ||
+                    lower.endsWith('.lrc') ||
+                    lower.endsWith('.txt') ||
+                    lower.endsWith('.json');
+              });
+              if (isSongFolder) {
+                await parentDir.delete(recursive: true);
+              }
+            }
+          } catch (_) {}
         }
       }
     } catch (_) {}
 
-    final updated = List<Song>.from(state.downloadedSongs)..removeWhere((s) => s.id == song.id);
+    final cleanId = DownloadState.normalizeId(song.id);
+    final updated = List<Song>.from(state.downloadedSongs)..removeWhere((s) {
+      if (s.id == song.id) return true;
+      final sClean = DownloadState.normalizeId(s.id);
+      if (sClean == cleanId) return true;
+      if (s.saavnId.isNotEmpty && (s.saavnId == song.id || s.saavnId == cleanId)) return true;
+      return false;
+    });
     state = state.copyWith(downloadedSongs: updated);
     await StorageService.saveDownloads(updated);
   }
@@ -138,7 +213,25 @@ class DownloadNotifier extends Notifier<DownloadState> {
         if (song.encryptedMediaUrl != null && song.encryptedMediaUrl!.isNotEmpty) {
           final file = File(song.encryptedMediaUrl!);
           if (await file.exists()) {
+            final parentDir = file.parent;
             await file.delete();
+            try {
+              final rootPath = await downloadService.getDownloadDirectoryPath();
+              if (parentDir.path != rootPath && await parentDir.exists()) {
+                final remaining = await parentDir.list().toList();
+                final isSongFolder = remaining.isEmpty || remaining.every((f) {
+                  final lower = f.path.toLowerCase();
+                  return lower.endsWith('.jpg') ||
+                      lower.endsWith('.png') ||
+                      lower.endsWith('.lrc') ||
+                      lower.endsWith('.txt') ||
+                      lower.endsWith('.json');
+                });
+                if (isSongFolder) {
+                  await parentDir.delete(recursive: true);
+                }
+              }
+            } catch (_) {}
           }
         }
       } catch (_) {}

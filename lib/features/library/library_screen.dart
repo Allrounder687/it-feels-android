@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,6 +18,15 @@ import 'package:it_feels_music/features/library/custom_playlist_detail_screen.da
 import 'package:it_feels_music/features/settings/settings_screen.dart';
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/services/download_service.dart';
+
+enum LibrarySortOption {
+  dateAdded,
+  titleAsc,
+  titleDesc,
+  artistAsc,
+  duration,
+}
 
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
@@ -28,6 +38,16 @@ class LibraryScreen extends ConsumerStatefulWidget {
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   int _selectedTabIndex = 0;
   final List<String> _tabs = ["SONGS", "FAVORITES", "DOWNLOADS", "ALBUMS", "ARTIST", "MY PLAYLISTS"];
+  String _searchQuery = '';
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  LibrarySortOption _currentSort = LibrarySortOption.dateAdded;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   final List<Map<String, String>> _topArtists = [
     {'name': 'Atif Aslam', 'image': 'https://c.saavncdn.com/artists/Atif_Aslam_500x500.jpg'},
@@ -119,6 +139,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                         onTap: () {
                           setState(() {
                             _selectedTabIndex = index;
+                            _searchQuery = '';
+                            _searchController.clear();
+                            _isSearching = false;
                           });
                         },
                         child: Container(
@@ -177,7 +200,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     } else if (_selectedTabIndex == 2) {
       // DOWNLOADS TAB
       final downloaded = downloadProviderLocal.downloadedSongs;
-      return _buildSongListView(downloaded, playerProvider, "No downloaded tracks for offline playback");
+      return _buildSongListView(
+        downloaded,
+        playerProvider,
+        "No downloaded tracks for offline playback",
+        isDownloadsTab: true,
+        downloadState: downloadProviderLocal,
+      );
     } else if (_selectedTabIndex == 3) {
       // ALBUMS TAB
       final albums = playlists.where((p) => p.type == 'album').toList();
@@ -352,72 +381,478 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
-  Widget _buildSongListView(List<Song> songs, AudioPlayerState playerProvider, String emptyMessage) {
+  List<Song> _applySortAndFilter(List<Song> songs) {
+    var list = List<Song>.from(songs);
+    if (_searchQuery.trim().isNotEmpty) {
+      final q = _searchQuery.trim().toLowerCase();
+      list = list.where((s) =>
+        s.title.toLowerCase().contains(q) ||
+        s.artist.toLowerCase().contains(q) ||
+        s.album.toLowerCase().contains(q)
+      ).toList();
+    }
+    switch (_currentSort) {
+      case LibrarySortOption.dateAdded:
+        list.sort((a, b) => b.addedAt.compareTo(a.addedAt));
+        break;
+      case LibrarySortOption.titleAsc:
+        list.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        break;
+      case LibrarySortOption.titleDesc:
+        list.sort((a, b) => b.title.toLowerCase().compareTo(a.title.toLowerCase()));
+        break;
+      case LibrarySortOption.artistAsc:
+        list.sort((a, b) => a.artist.toLowerCase().compareTo(b.artist.toLowerCase()));
+        break;
+      case LibrarySortOption.duration:
+        list.sort((a, b) => b.duration.compareTo(a.duration));
+        break;
+    }
+    return list;
+  }
+
+  String _formatTotalDuration(List<Song> songs) {
+    final totalSeconds = songs.fold<int>(0, (sum, s) => sum + s.duration);
+    if (totalSeconds <= 0) return '';
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    if (hours > 0) {
+      return '$hours hr ${minutes > 0 ? '$minutes min' : ''}';
+    }
+    return '$minutes min';
+  }
+
+  String _calculateDownloadsSize(List<Song> songs) {
+    int totalBytes = 0;
+    for (final song in songs) {
+      if (song.encryptedMediaUrl != null && song.encryptedMediaUrl!.isNotEmpty) {
+        try {
+          final f = File(song.encryptedMediaUrl!);
+          if (f.existsSync()) {
+            totalBytes += f.lengthSync();
+            final cover = File('${f.parent.path}/cover.jpg');
+            if (cover.existsSync()) totalBytes += cover.lengthSync();
+          }
+        } catch (_) {}
+      }
+    }
+    if (totalBytes < 1024 * 1024) {
+      return '${(totalBytes / 1024).toStringAsFixed(1)} KB';
+    } else if (totalBytes < 1024 * 1024 * 1024) {
+      return '${(totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    } else {
+      return '${(totalBytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+    }
+  }
+
+  PopupMenuItem<LibrarySortOption> _buildSortMenuItem(
+    BuildContext context,
+    LibrarySortOption option,
+    String title,
+    IconData icon,
+  ) {
+    final isSelected = _currentSort == option;
+    return PopupMenuItem<LibrarySortOption>(
+      value: option,
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: isSelected ? context.themeAccentColor : context.themeMutedTextColor,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.inter(
+                color: isSelected ? context.themeAccentColor : context.themeTextColor,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          if (isSelected)
+            Icon(Icons.check_rounded, size: 16, color: context.themeAccentColor),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSongListView(
+    List<Song> songs,
+    AudioPlayerState playerProvider,
+    String emptyMessage, {
+    bool isDownloadsTab = false,
+    DownloadState? downloadState,
+  }) {
     if (songs.isEmpty) {
       IconData iconData = Icons.music_note_rounded;
       if (emptyMessage.contains("favorite")) iconData = Icons.favorite_border_rounded;
       if (emptyMessage.contains("download")) iconData = Icons.download_done_rounded;
       
-      return PremiumEmptyState(
-        icon: iconData,
-        title: "It's empty here",
-        message: emptyMessage,
-        ctaText: "Discover Music",
-        onCtaPressed: () {
-          context.go('/search');
-        },
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-      itemCount: songs.length,
-      itemBuilder: (context, index) {
-        final song = songs[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Material(
-            color: context.themeCardColor.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(16),
-            child: ListTile(
-              leading: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: song.coverArt.isNotEmpty
-                      ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover)
-                      : Icon(Icons.music_note, color: context.themeTextColor),
-                ),
+      return Column(
+        children: [
+          if (isDownloadsTab) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: context.themeAccentColor,
+                        side: BorderSide(color: context.themeAccentColor.withValues(alpha: 0.5)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      icon: (downloadState?.isScanning ?? false)
+                          ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: context.themeAccentColor))
+                          : const Icon(Icons.sync_rounded, size: 20),
+                      label: Text(
+                        (downloadState?.isScanning ?? false) ? "Scanning Device Storage..." : "Scan Device Storage for Downloads",
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                      onPressed: (downloadState?.isScanning ?? false)
+                          ? null
+                          : () async {
+                              final scanned = await ref.read(downloadProvider.notifier).scanAndSync();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("Scan complete: Found ${scanned.length} downloaded tracks")),
+                                );
+                              }
+                            },
+                    ),
+                  ),
+                ],
               ),
-              title: Text(
-                song.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 14),
-              ),
-              subtitle: Text(
-                song.artist,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12),
-              ),
-              trailing: IconButton(
-                icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
-                onPressed: () {
-                  SongOptionsSheet.show(context, song, playlistContext: songs);
-                },
-              ),
-              onTap: () {
-                ref.read(audioPlayerProvider.notifier).playSong(song, queue: songs, index: index);
-              },
-              onLongPress: () {
-                SongOptionsSheet.show(context, song, playlistContext: songs);
+            ),
+          ],
+          Expanded(
+            child: PremiumEmptyState(
+              icon: iconData,
+              title: "It's empty here",
+              message: emptyMessage,
+              ctaText: "Discover Music",
+              onCtaPressed: () {
+                context.go('/search');
               },
             ),
           ),
-        );
-      },
+        ],
+      );
+    }
+
+    final processedSongs = _applySortAndFilter(songs);
+    final durationStr = _formatTotalDuration(processedSongs);
+    final sizeStr = isDownloadsTab ? _calculateDownloadsSize(processedSongs) : null;
+
+    return Column(
+      children: [
+        // Action Bar: Play All, Shuffle, Sort, Search/Filter, Rescan
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Search field (if active)
+              if (_isSearching) ...[
+                Container(
+                  height: 44,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: context.themeCardColor.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: context.themeTextColor24),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    autofocus: true,
+                    style: GoogleFonts.inter(color: context.themeTextColor, fontSize: 14),
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      hintText: "Filter ${processedSongs.length} tracks...",
+                      hintStyle: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13),
+                      prefixIcon: Icon(Icons.search_rounded, color: context.themeMutedTextColor, size: 20),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(Icons.clear_rounded, color: context.themeMutedTextColor, size: 18),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+              ],
+
+              // Header Row: Count & Info | Search | Sort | Rescan
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "${processedSongs.length} Tracks${durationStr.isNotEmpty ? ' • $durationStr' : ''}",
+                          style: GoogleFonts.inter(
+                            color: context.themeTextColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (sizeStr != null) ...[
+                          Text(
+                            "$sizeStr storage used",
+                            style: GoogleFonts.inter(
+                              color: context.themeMutedTextColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  // Search toggle icon
+                  IconButton(
+                    icon: Icon(
+                      _isSearching ? Icons.close_rounded : Icons.search_rounded,
+                      color: _isSearching ? context.themeAccentColor : context.themeMutedTextColor,
+                      size: 22,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    tooltip: "Search in tab",
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = !_isSearching;
+                        if (!_isSearching) {
+                          _searchQuery = '';
+                          _searchController.clear();
+                        }
+                      });
+                    },
+                  ),
+
+                  // Sort Menu
+                  PopupMenuButton<LibrarySortOption>(
+                    icon: Icon(Icons.sort_rounded, color: context.themeMutedTextColor, size: 22),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    tooltip: "Sort songs",
+                    color: context.themeSurfaceColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    onSelected: (opt) {
+                      setState(() => _currentSort = opt);
+                    },
+                    itemBuilder: (ctx) => [
+                      _buildSortMenuItem(ctx, LibrarySortOption.dateAdded, "Date Added", Icons.calendar_today_rounded),
+                      _buildSortMenuItem(ctx, LibrarySortOption.titleAsc, "Title (A - Z)", Icons.sort_by_alpha_rounded),
+                      _buildSortMenuItem(ctx, LibrarySortOption.titleDesc, "Title (Z - A)", Icons.sort_by_alpha_rounded),
+                      _buildSortMenuItem(ctx, LibrarySortOption.artistAsc, "Artist (A - Z)", Icons.person_outline_rounded),
+                      _buildSortMenuItem(ctx, LibrarySortOption.duration, "Duration", Icons.timer_outlined),
+                    ],
+                  ),
+
+                  // Downloads Tab Rescan button
+                  if (isDownloadsTab) ...[
+                    IconButton(
+                      icon: (downloadState?.isScanning ?? false)
+                          ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: context.themeAccentColor))
+                          : Icon(Icons.sync_rounded, color: context.themeAccentColor, size: 22),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                      tooltip: "Rescan Device Storage for Downloads",
+                      onPressed: (downloadState?.isScanning ?? false)
+                          ? null
+                          : () async {
+                              final scanned = await ref.read(downloadProvider.notifier).scanAndSync();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("Scan complete: Found ${scanned.length} downloaded tracks on device")),
+                                );
+                              }
+                            },
+                    ),
+                  ],
+                ],
+              ),
+
+              const SizedBox(height: 10),
+
+              // Action Buttons Row: Play All & Shuffle Play
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: context.themeAccentColor,
+                        foregroundColor: context.themeInvertedTextColor,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.play_arrow_rounded, size: 22),
+                      label: Text(
+                        "Play All",
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
+                      onPressed: processedSongs.isNotEmpty
+                          ? () {
+                              ref.read(audioPlayerProvider.notifier).playSong(
+                                    processedSongs[0],
+                                    queue: processedSongs,
+                                    index: 0,
+                                  );
+                            }
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: context.themeCardColor.withValues(alpha: 0.5),
+                        foregroundColor: context.themeTextColor,
+                        side: BorderSide(color: context.themeTextColor24),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      icon: const Icon(Icons.shuffle_rounded, size: 20),
+                      label: Text(
+                        "Shuffle",
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
+                      onPressed: processedSongs.isNotEmpty
+                          ? () {
+                              final shuffled = List<Song>.from(processedSongs)..shuffle();
+                              ref.read(audioPlayerProvider.notifier).playSong(
+                                    shuffled[0],
+                                    queue: shuffled,
+                                    index: 0,
+                                  );
+                            }
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // Song List View
+        Expanded(
+          child: processedSongs.isEmpty
+              ? Center(
+                  child: Text(
+                    "No tracks match '$_searchQuery'",
+                    style: GoogleFonts.inter(color: context.themeMutedTextColor),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  itemCount: processedSongs.length,
+                  itemBuilder: (context, index) {
+                    final song = processedSongs[index];
+                    final isPlaying = playerProvider.currentSong?.id == song.id && playerProvider.isPlaying;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Material(
+                        color: isPlaying
+                            ? context.themeAccentColor.withValues(alpha: 0.12)
+                            : context.themeCardColor.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(16),
+                        child: ListTile(
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Stack(
+                                children: [
+                                  song.coverArt.isNotEmpty
+                                      ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover, width: 48, height: 48)
+                                      : Container(
+                                          color: context.themeCardColor,
+                                          child: Icon(Icons.music_note, color: context.themeTextColor),
+                                        ),
+                                  if (isPlaying)
+                                    Container(
+                                      color: Colors.black45,
+                                      child: Center(
+                                        child: Icon(Icons.equalizer_rounded, color: context.themeAccentColor, size: 24),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            song.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.inter(
+                              color: isPlaying ? context.themeAccentColor : context.themeTextColor,
+                              fontWeight: isPlaying ? FontWeight.w800 : FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          subtitle: Row(
+                            children: [
+                              if (isDownloadsTab) ...[
+                                Icon(Icons.download_done_rounded, size: 13, color: context.themeAccentColor),
+                                const SizedBox(width: 4),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  song.artist,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.inter(
+                                    color: context.themeMutedTextColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                              if (song.duration > 0) ...[
+                                Text(
+                                  DownloadService.formatDuration(song.duration),
+                                  style: GoogleFonts.inter(
+                                    color: context.themeMutedTextColor,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          trailing: IconButton(
+                            icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
+                            onPressed: () {
+                              SongOptionsSheet.show(context, song, playlistContext: processedSongs);
+                            },
+                          ),
+                          onTap: () {
+                            ref.read(audioPlayerProvider.notifier).playSong(song, queue: processedSongs, index: index);
+                          },
+                          onLongPress: () {
+                            SongOptionsSheet.show(context, song, playlistContext: processedSongs);
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 

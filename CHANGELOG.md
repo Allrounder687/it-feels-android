@@ -1,3 +1,9 @@
+## v3.6.22+92
+- **Download Status Icon Reactivity, Deezer Purge & Curated Language Storefront**:
+  - **Download Status Icon Reactivity & Prefix Normalization**: Normalized song ID prefix matching (`saavn:xyz` vs `xyz`) in `DownloadState.isDownloaded`, `isDownloading`, `getProgress`, and `removeDownload`. Added reactive Riverpod watchers to `NowPlayingActions`, `PlaylistDetailScreen`, and `CustomPlaylistDetailScreen` to immediately show `Icons.download_done_rounded` upon download completion.
+  - **Zero-Deezer Policy Compliance**: Eradicated all Deezer code, endpoints, proxies, and tests from backend and frontend. Saavn API is exclusively used for all music discovery and streaming.
+  - **Authentic Curated Language Storefront & Hollywood Pop**: Integrated official JioSaavn language endpoints with `Cookie: L=<language>;` for English, Hindi, Punjabi, Telugu, and Tamil. Fixed `_fetchSongsFromContents` Map iteration bug, unlocking full tracklists for all curated charts and playlists. Enforced English language filter on Hollywood Pop to serve genuine international hits without Indian lyric matching.
+
 ## v3.6.18+88
 - **Audio Engine Stability, Viewport Architecture & Playlist UI**:
   - **Playlist Download Button Mobile Overflow & Tap Dead-Zone Fix**: Fixed the issue where the "Download Playlist" action button in `PlaylistDetailScreen` and `CustomPlaylistDetailScreen` overflowed the available screen width on mobile devices (<414px) and failed to respond to touch gestures. Replaced fixed 140px button constraints with responsive `Expanded` flex layouts for "Play" and "Shuffle", normalized horizontal mobile padding to 20px, and styled the Download Playlist button as a clean 42x42px container matching companion action buttons.

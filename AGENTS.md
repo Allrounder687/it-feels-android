@@ -13,6 +13,29 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Download Status Icon Reactivity, Deezer Purge & Curated Language Storefront (v3.6.22):**
+  - **Download Status Icon Reactivity & Prefix Normalization**:
+    - Normalized song ID matching (`saavn:xyz` vs `xyz`) in `DownloadState.isDownloaded`, `isDownloading`, `getProgress`, and `removeDownload`.
+    - Bound `ref.watch(downloadProvider)` directly inside `NowPlayingActions`, `PlaylistDetailScreen`, and `CustomPlaylistDetailScreen` so that the download icon reactively updates to `Icons.download_done_rounded` (or a downloading spinner) immediately when tasks start or finish.
+  - **Complete Deezer Purge & Zero-Deezer Policy Compliance**:
+    - Completely purged all Deezer proxy routes, models, and providers from `backend/src/index.ts`, `backend/src/providers/deezer.ts`, and `test/deezer_api_test.dart`.
+    - Removed obsolete Deezer branches from `PlaylistDetailScreen` and updated `HomeNotifier` to rely strictly on native JioSaavn charts and storefront endpoints.
+  - **Authentic Curated JioSaavn Language Endpoints & Hollywood Pop International Hits**:
+    - Added `getChartsByLanguage(language)` and `getFeaturedPlaylistsByLanguage(language)` in `AddonManager` and `IMusicRepository` using official JioSaavn API endpoints with `Cookie: L=<language>;`.
+    - Fixed `_fetchSongsFromContents` in `AddonManager` by iterating over `sData.values` when JioSaavn returns song details as a Map, resolving all batch tracklists.
+    - Enforced `song.language.toLowerCase() == 'english'` in `fetchHollywoodSongs()`, ensuring genuine international hits (The Weeknd, Ed Sheeran, Katy Perry, Ellie Goulding) without Indian lyrics/remixes.
+    - Refactored `fetchBollywoodSongs`, `fetchPunjabiSongs`, `fetchTeluguSongs`, and `fetchTamilSongs` to deliver official Top 50 hits directly from native language charts.
+- **Original Name Downloads, Bundled Song Folders & Library QOL Suite (v3.6.21):**
+  - **Original Song Name Android Notifications**: Configured `background_downloader` notifications to bind `{displayName}` and task-specific original song titles (`${song.title} • ${song.artist}`), eliminating scrambled `saavn_...` filenames from OS notifications.
+  - **Bundled Dedicated Song Directory Structure**: Overhauled download file storage from flat scrambled filenames to structured per-song folders inside the parent download directory (`${musicDir.path}/${cleanTitle} - ${cleanArtist}/`). Bundles the clean audio file (`${cleanTitle} - ${cleanArtist}.m4a`), album cover (`cover.jpg`), timestamped synced lyrics (`lyrics.lrc`), plain text lyrics (`lyrics.txt`), and comprehensive metadata (`metadata.json`).
+  - **Cross-Platform Filesystem Sanitizer (`sanitizeFileName`)**: Stripped forbidden filesystem characters (`/ \ : * ? " < > |`), converted slashes/colons to readable hyphens, cleaned HTML entities/UTF-8 mojibake, trimmed trailing dots/spaces, and capped folder/file length to 90 chars.
+  - **Multi-Version File Manager Storage Scanner (`scanAllDownloads`)**: Implemented automated and on-demand filesystem scanning across Scoped Storage (`StorageDirectory.music` & `StorageDirectory.downloads`), variant package paths (`com.itfeels.music`, `.debug`, `it_feels`, `it_feels_alternate`), public directories (`/storage/emulated/0/Music`, `/storage/emulated/0/Download`), and application documents. Automatically identifies, dedupes, and recovers songs from dedicated song folders (with `metadata.json`) and legacy direct files (`saavn_*.mp4`) from any past, present, or debug build.
+  - **Seamless Offline Lyrics Loading**: Enhanced `LyricsService` to automatically inspect the local directory of downloaded songs for `lyrics.lrc` and `lyrics.txt`, allowing instant zero-network synced karaoke playback offline.
+  - **Library QOL Overhaul (Songs, Favorites, Downloads Tabs)**:
+    - Added Action Bar across all list tabs with **Play All** (sequential queue) and **Shuffle Play** (randomized queue) buttons.
+    - Added **Sort Menu** supporting Date Added (Newest/Oldest), Title (A-Z / Z-A), Artist (A-Z), and Duration.
+    - Added instant **In-Tab Filter / Search** to quickly search through songs within the active tab.
+    - Added **Rescan Device Storage** button with real-time feedback snackbars, track count, total duration, and storage space usage badges (`XX.X MB storage used`).
 - **Addon Engine Runtime Deduplication & Single-Execution Pipeline (v3.6.20):**
   - **Single Instance Runtime Registry (_activeRuntimesMap)**: Replaced the unbounded List<JavascriptRuntime> with a path-keyed map (Map<String, JavascriptRuntime>). Any plugin file (like default_backend.js) is strictly loaded once, preventing duplicate engines when initialize() is called multiple times or during hot restarts.
   - **Conditional In-Memory Baseline Fallback**: Shifted _loadBaselineRuntime to execute strictly when _activeRuntimesMap.isEmpty. If default_backend.js is already present on disk or installed from network, the baseline runtime is excluded, permanently eliminating triplicate search, playlist, and chart HTTP requests.

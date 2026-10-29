@@ -198,8 +198,16 @@ class HomeNotifier extends Notifier<HomeState> {
       await fetchMoods();
     } else if (category == "Charts" && state.chartPlaylists.isEmpty) {
       await fetchCharts();
-    } else if (category == "Music" && state.hollywoodSongs.isEmpty) {
-      await fetchHollywoodSongs();
+    } else if (category == "Music") {
+      final futures = <Future>[];
+      if (state.hollywoodSongs.isEmpty) futures.add(fetchHollywoodSongs());
+      if (state.bollywoodSongs.isEmpty) futures.add(fetchBollywoodSongs());
+      if (state.punjabiSongs.isEmpty) futures.add(fetchPunjabiSongs());
+      if (state.teluguSongs.isEmpty) futures.add(fetchTeluguSongs());
+      if (state.tamilSongs.isEmpty) futures.add(fetchTamilSongs());
+      if (futures.isNotEmpty) {
+        await Future.wait(futures);
+      }
     }
 
     // Auto load first feed page for category if empty
@@ -246,7 +254,7 @@ class HomeNotifier extends Notifier<HomeState> {
 
     try {
       if (category == 'Music') {
-        // Endless scrolling through Deezer Curated Categories
+        // Endless scrolling through Curated Categories
         final offsets = [
           ['Pop', 'Hip Hop', 'R&B', 'Electronic', 'Rock'],
           ['Indie', 'Jazz', 'Classical', 'K-Pop', 'Chill'],
@@ -263,7 +271,7 @@ class HomeNotifier extends Notifier<HomeState> {
           }
         }
       } else if (category == 'For You') {
-        // Multi-source Recommendation Engine: Last.fm + Deezer + Onboarding
+        // Multi-source Recommendation Engine: Personal Mixes + Onboarding
         
         final favoriteArtists = await StorageService.getFavoriteArtists();
         final baseArtists = favoriteArtists.isNotEmpty 
@@ -434,188 +442,142 @@ class HomeNotifier extends Notifier<HomeState> {
 
   Future<void> fetchBollywoodSongs() async {
     try {
-      final random = Random();
-      final artists = [
-        'Arijit Singh',
-        'Shreya Ghoshal',
-        'Atif Aslam',
-        'Pritam',
-        'Sachin-Jigar',
-        'Jubin Nautiyal',
-        'Vishal Mishra',
-        'Darshan Raval',
-        'Badshah',
-        'Mohit Chauhan',
-        'KK',
-        'Sonu Nigam',
-      ];
-      final a1 = artists.removeAt(random.nextInt(artists.length));
-      final a2 = artists.removeAt(random.nextInt(artists.length));
-      final a3 = artists.removeAt(random.nextInt(artists.length));
-
-      final list1 = await musicRepo.searchSongs(a1, count: 25);
-      final list2 = await musicRepo.searchSongs(a2, count: 25);
-      final list3 = await musicRepo.searchSongs(a3, count: 25);
-      final playlists = await musicRepo.searchPlaylists(
-        "Top Hindi Songs",
-        count: 20,
-      );
-
-      final combined = _deduplicate([...list1, ...list2, ...list3])
+      final data = await musicRepo.getChartsByLanguage('hindi');
+      var tracks = (data['tracks'] as List<Song>? ?? [])
           .where((s) => !_isInstrumentalOrJunk(s))
           .toList();
+      var playlists = data['playlists'] as List<Playlist>? ?? [];
+
+      if (playlists.isEmpty) {
+        playlists = await musicRepo.getFeaturedPlaylistsByLanguage('hindi');
+      }
+
+      if (tracks.length < 15 && playlists.isNotEmpty) {
+        final moreTracks = await musicRepo.getPlaylistTracks(playlists.first.id);
+        tracks = _deduplicate([...tracks, ...moreTracks])
+            .where((s) => !_isInstrumentalOrJunk(s))
+            .toList();
+      }
+
       state = state.copyWith(
-        bollywoodSongs: combined.isNotEmpty ? combined : state.bollywoodSongs,
-        bollywoodPlaylists: playlists.isNotEmpty
-            ? playlists
-            : state.bollywoodPlaylists,
+        bollywoodSongs: tracks.isNotEmpty ? tracks : state.bollywoodSongs,
+        bollywoodPlaylists: playlists.isNotEmpty ? playlists : state.bollywoodPlaylists,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[HomeNotifier] fetchBollywoodSongs error: $e');
+    }
   }
 
   Future<void> fetchTeluguSongs() async {
     try {
-      final random = Random();
-      final artists = [
-        'Sid Sriram Telugu',
-        'Devi Sri Prasad',
-        'Thaman S',
-        'Anurag Kulkarni',
-        'Ram Miriyala',
-        'Armaan Malik Telugu',
-        'S. P. Balasubrahmanyam',
-      ];
-      final a1 = artists.removeAt(random.nextInt(artists.length));
-      final a2 = artists.removeAt(random.nextInt(artists.length));
-
-      final list1 = await musicRepo.searchSongs(a1, count: 25);
-      final list2 = await musicRepo.searchSongs(a2, count: 25);
-      final list3 = await musicRepo.searchSongs("Telugu Top 50", count: 25);
-      final playlists = await musicRepo.searchPlaylists(
-        "Telugu Hits",
-        count: 20,
-      );
-
-      final combined = _deduplicate([...list1, ...list2, ...list3])
+      final data = await musicRepo.getChartsByLanguage('telugu');
+      var tracks = (data['tracks'] as List<Song>? ?? [])
           .where((s) => !_isInstrumentalOrJunk(s))
           .toList();
+      var playlists = data['playlists'] as List<Playlist>? ?? [];
+
+      if (playlists.isEmpty) {
+        playlists = await musicRepo.getFeaturedPlaylistsByLanguage('telugu');
+      }
+
+      if (tracks.length < 15 && playlists.isNotEmpty) {
+        final moreTracks = await musicRepo.getPlaylistTracks(playlists.first.id);
+        tracks = _deduplicate([...tracks, ...moreTracks])
+            .where((s) => !_isInstrumentalOrJunk(s))
+            .toList();
+      }
+
       state = state.copyWith(
-        teluguSongs: combined.isNotEmpty ? combined : state.teluguSongs,
-        teluguPlaylists: playlists.isNotEmpty
-            ? playlists
-            : state.teluguPlaylists,
+        teluguSongs: tracks.isNotEmpty ? tracks : state.teluguSongs,
+        teluguPlaylists: playlists.isNotEmpty ? playlists : state.teluguPlaylists,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[HomeNotifier] fetchTeluguSongs error: $e');
+    }
   }
 
   Future<void> fetchTamilSongs() async {
     try {
-      final random = Random();
-      final artists = [
-        'Anirudh Ravichander',
-        'A.R. Rahman Tamil',
-        'Yuvan Shankar Raja',
-        'Harris Jayaraj',
-        'Sid Sriram Tamil',
-        'Pradeep Kumar',
-      ];
-      final a1 = artists.removeAt(random.nextInt(artists.length));
-      final a2 = artists.removeAt(random.nextInt(artists.length));
-
-      final list1 = await musicRepo.searchSongs(a1, count: 25);
-      final list2 = await musicRepo.searchSongs(a2, count: 25);
-      final list3 = await musicRepo.searchSongs("Tamil Top 50", count: 25);
-      final playlists = await musicRepo.searchPlaylists(
-        "Tamil Hits",
-        count: 20,
-      );
-
-      final combined = _deduplicate([...list1, ...list2, ...list3])
+      final data = await musicRepo.getChartsByLanguage('tamil');
+      var tracks = (data['tracks'] as List<Song>? ?? [])
           .where((s) => !_isInstrumentalOrJunk(s))
           .toList();
+      var playlists = data['playlists'] as List<Playlist>? ?? [];
+
+      if (playlists.isEmpty) {
+        playlists = await musicRepo.getFeaturedPlaylistsByLanguage('tamil');
+      }
+
+      if (tracks.length < 15 && playlists.isNotEmpty) {
+        final moreTracks = await musicRepo.getPlaylistTracks(playlists.first.id);
+        tracks = _deduplicate([...tracks, ...moreTracks])
+            .where((s) => !_isInstrumentalOrJunk(s))
+            .toList();
+      }
+
       state = state.copyWith(
-        tamilSongs: combined.isNotEmpty ? combined : state.tamilSongs,
+        tamilSongs: tracks.isNotEmpty ? tracks : state.tamilSongs,
         tamilPlaylists: playlists.isNotEmpty ? playlists : state.tamilPlaylists,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[HomeNotifier] fetchTamilSongs error: $e');
+    }
   }
 
   Future<void> fetchPunjabiSongs() async {
     try {
-      final random = Random();
-      final artists = [
-        'Karan Aujla',
-        'Diljit Dosanjh',
-        'AP Dhillon',
-        'Sidhu Moose Wala',
-        'Shubh',
-        'Amrinder Gill',
-        'Guru Randhawa',
-      ];
-      final a1 = artists.removeAt(random.nextInt(artists.length));
-      final a2 = artists.removeAt(random.nextInt(artists.length));
-
-      final list1 = await musicRepo.searchSongs(a1, count: 25);
-      final list2 = await musicRepo.searchSongs(a2, count: 25);
-      final list3 = await musicRepo.searchSongs("Punjabi Top 50", count: 25);
-      final playlists = await musicRepo.searchPlaylists(
-        "Punjabi Hits",
-        count: 20,
-      );
-
-      final combined = _deduplicate([...list1, ...list2, ...list3])
+      final data = await musicRepo.getChartsByLanguage('punjabi');
+      var tracks = (data['tracks'] as List<Song>? ?? [])
           .where((s) => !_isInstrumentalOrJunk(s))
           .toList();
+      var playlists = data['playlists'] as List<Playlist>? ?? [];
+
+      if (playlists.isEmpty) {
+        playlists = await musicRepo.getFeaturedPlaylistsByLanguage('punjabi');
+      }
+
+      if (tracks.length < 15 && playlists.isNotEmpty) {
+        final moreTracks = await musicRepo.getPlaylistTracks(playlists.first.id);
+        tracks = _deduplicate([...tracks, ...moreTracks])
+            .where((s) => !_isInstrumentalOrJunk(s))
+            .toList();
+      }
+
       state = state.copyWith(
-        punjabiSongs: combined.isNotEmpty ? combined : state.punjabiSongs,
-        punjabiPlaylists: playlists.isNotEmpty
-            ? playlists
-            : state.punjabiPlaylists,
+        punjabiSongs: tracks.isNotEmpty ? tracks : state.punjabiSongs,
+        punjabiPlaylists: playlists.isNotEmpty ? playlists : state.punjabiPlaylists,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[HomeNotifier] fetchPunjabiSongs error: $e');
+    }
   }
 
   Future<void> fetchHollywoodSongs() async {
     try {
-      final random = Random();
-      final artists = [
-        'Taylor Swift',
-        'The Weeknd',
-        'Dua Lipa',
-        'Ed Sheeran',
-        'Billie Eilish',
-        'Post Malone',
-        'Drake',
-        'Ariana Grande',
-        'Justin Bieber',
-        'Bruno Mars',
-        'Eminem',
-        'Rihanna',
-        'Coldplay',
-        'Imagine Dragons',
-        'Maroon 5',
-        'Shawn Mendes',
-      ];
-      final artist1 = artists.removeAt(random.nextInt(artists.length));
-      final artist2 = artists.removeAt(random.nextInt(artists.length));
-      final artist3 = artists.removeAt(random.nextInt(artists.length));
+      final data = await musicRepo.getChartsByLanguage('english');
+      var tracks = (data['tracks'] as List<Song>? ?? [])
+          .where((s) => s.language.toLowerCase() == 'english' && !_isInstrumentalOrJunk(s))
+          .toList();
+      var playlists = data['playlists'] as List<Playlist>? ?? [];
 
-      final list1 = await musicRepo.searchSongs(artist1, count: 30);
-      final list2 = await musicRepo.searchSongs(artist2, count: 30);
-      final list3 = await musicRepo.searchSongs(artist3, count: 30);
-      final playlists = await musicRepo.searchPlaylists(
-        "English Pop",
-        count: 20,
-      );
+      if (playlists.isEmpty) {
+        playlists = await musicRepo.getFeaturedPlaylistsByLanguage('english');
+      }
 
-      final combined = _deduplicate([...list1, ...list2, ...list3]).where((s) => !_isInstrumentalOrJunk(s)).toList();
+      if (tracks.length < 15 && playlists.isNotEmpty) {
+        final moreTracks = await musicRepo.getPlaylistTracks(playlists.first.id);
+        tracks = _deduplicate([...tracks, ...moreTracks])
+            .where((s) => s.language.toLowerCase() == 'english' && !_isInstrumentalOrJunk(s))
+            .toList();
+      }
+
       state = state.copyWith(
-        hollywoodSongs: combined.isNotEmpty ? combined : state.hollywoodSongs,
-        hollywoodPlaylists: playlists.isNotEmpty
-            ? playlists
-            : state.hollywoodPlaylists,
+        hollywoodSongs: tracks.isNotEmpty ? tracks : state.hollywoodSongs,
+        hollywoodPlaylists: playlists.isNotEmpty ? playlists : state.hollywoodPlaylists,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[HomeNotifier] fetchHollywoodSongs error: $e');
+    }
   }
 
   Future<void> fetchPodcasts() async {
@@ -827,14 +789,13 @@ class HomeNotifier extends Notifier<HomeState> {
     List<Playlist> rawPlaylists = [];
 
     try {
-      // Primary discovery via Deezer Charts
+      // Primary discovery via Saavn Charts
       final charts = await musicRepo.getCharts();
       if (charts['tracks'].isNotEmpty) {
         trending = charts['tracks'];
         rawPlaylists = charts['playlists'];
-        debugPrint('[HomeNotifier] Loaded storefront via Deezer API');
+        debugPrint('[HomeNotifier] Loaded storefront via Saavn Charts API');
       } else {
-        // Fallback to Saavn if Deezer is fully restricted
         final data = await musicRepo.fetchHomepageData(
           onError: (message) {
             if (context != null) {
@@ -851,10 +812,10 @@ class HomeNotifier extends Notifier<HomeState> {
         
         final rawPl = data['playlists'] as List? ?? [];
         rawPlaylists = rawPl.map((e) => e is Playlist ? e : Playlist.fromJson(e)).toList();
-        debugPrint('[HomeNotifier] Loaded storefront via Saavn Fallback');
+        debugPrint('[HomeNotifier] Loaded storefront via Saavn Home Feed');
       }
     } catch (e) {
-      debugPrint('[HomeNotifier] Deezer/Saavn API failed: $e');
+      debugPrint('[HomeNotifier] Saavn storefront API failed: $e');
     }
 
     final continueWatchingList = await DatabaseService.getContinueWatching();
@@ -871,6 +832,7 @@ class HomeNotifier extends Notifier<HomeState> {
     fetchTeluguSongs();
     fetchTamilSongs();
     fetchPunjabiSongs();
+    fetchHollywoodSongs();
     fetchIndianAlbums();
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -82,6 +83,55 @@ class LyricsService {
         return; // Cache hit, skip network fetch
       } catch (e) {
         debugPrint('[LyricsService] Error parsing cached Isar lyrics: $e');
+      }
+    }
+
+    // Check if the song has local downloaded lyrics in its folder
+    if (song.encryptedMediaUrl != null &&
+        song.encryptedMediaUrl!.isNotEmpty &&
+        !song.encryptedMediaUrl!.startsWith('http://') &&
+        !song.encryptedMediaUrl!.startsWith('https://')) {
+      try {
+        final audioFile = File(song.encryptedMediaUrl!);
+        if (audioFile.existsSync()) {
+          final songDir = audioFile.parent;
+          final lrcFile = File('${songDir.path}/lyrics.lrc');
+          final txtFile = File('${songDir.path}/lyrics.txt');
+
+          List<LyricLine> synced = [];
+          String? staticLyrics;
+
+          if (lrcFile.existsSync()) {
+            final rawLrc = await lrcFile.readAsString();
+            synced = LrcParser.parse(rawLrc).map((l) {
+              final translit = HinglishTransliterator.transliterate(l.text);
+              return LyricLine(
+                time: l.time,
+                text: l.text,
+                transliteration: translit != l.text ? translit : null,
+              );
+            }).toList();
+          }
+
+          if (txtFile.existsSync()) {
+            staticLyrics = await txtFile.readAsString();
+          }
+
+          if (synced.isNotEmpty || (staticLyrics != null && staticLyrics.isNotEmpty)) {
+            final res = LyricsResult(
+              staticLyrics: staticLyrics,
+              syncedLyrics: synced,
+              source: 'Downloaded',
+            );
+            _lyricsCache[song.id]![res.source] = res;
+            if (sessionId == _currentSessionId) {
+              onResult(res);
+            }
+            return;
+          }
+        }
+      } catch (e) {
+        debugPrint('[LyricsService] Error reading local lyrics file: $e');
       }
     }
 

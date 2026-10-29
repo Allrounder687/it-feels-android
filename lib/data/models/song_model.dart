@@ -109,6 +109,12 @@ class Song {
       } else if (primary is String && primary.isNotEmpty) {
         artistName = primary;
       }
+      if (artistName.isEmpty) {
+        final allArtists = json['more_info']['artistMap']['artists'];
+        if (allArtists is List && allArtists.isNotEmpty) {
+          artistName = allArtists.map((x) => x['name'] ?? '').where((x) => x.isNotEmpty).join(', ');
+        }
+      }
     }
     if (artistName.isEmpty && json['more_info'] != null && json['more_info']['singers'] != null && json['more_info']['singers'].toString().trim().isNotEmpty) {
       artistName = json['more_info']['singers'].toString().trim();

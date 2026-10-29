@@ -683,6 +683,12 @@ function getLyricsUrl(track, artist) {
               list.add(Song.fromJson(item));
             }
           }
+        } else if (sData is Map<String, dynamic>) {
+          for (var item in sData.values) {
+            if (item is Map<String, dynamic>) {
+              list.add(Song.fromJson(item));
+            }
+          }
         }
       }
     } catch (e) {
@@ -904,6 +910,79 @@ function getLyricsUrl(track, artist) {
       }
     }
     return allResults;
+  }
+
+  Future<Map<String, dynamic>> getChartsByLanguage(String language) async {
+    final lang = language.toLowerCase();
+    try {
+      final url = 'https://www.jiosaavn.com/api.php?__call=content.getCharts&_format=json&cc=in&api_version=4';
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Cookie': 'L=$lang;',
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final rawList = data is List ? data : (data['data'] as List? ?? []);
+        final playlists = <Playlist>[];
+        for (var item in rawList) {
+          if (item is Map<String, dynamic>) {
+            playlists.add(Playlist.fromJson(item));
+          }
+        }
+
+        List<Song> topTracks = [];
+        if (playlists.isNotEmpty) {
+          final topChartId = playlists.first.id;
+          topTracks = await getPlaylistTracks(topChartId);
+          if (topTracks.isEmpty && playlists.length > 1) {
+            topTracks = await getPlaylistTracks(playlists[1].id);
+          }
+        }
+
+        return {
+          'tracks': topTracks,
+          'playlists': playlists,
+        };
+      }
+    } catch (e) {
+      debugPrint('[AddonManager] getChartsByLanguage error: $e');
+    }
+    return {'tracks': <Song>[], 'playlists': <Playlist>[]};
+  }
+
+  Future<List<Playlist>> getFeaturedPlaylistsByLanguage(String language) async {
+    final lang = language.toLowerCase();
+    try {
+      final url = 'https://www.jiosaavn.com/api.php?__call=content.getFeaturedPlaylists&_format=json&cc=in&api_version=4';
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Cookie': 'L=$lang;',
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final rawList = data is List ? data : (data['data'] as List? ?? data['list'] as List? ?? []);
+        final playlists = <Playlist>[];
+        for (var item in rawList) {
+          if (item is Map<String, dynamic>) {
+            playlists.add(Playlist.fromJson(item));
+          }
+        }
+        return playlists;
+      }
+    } catch (e) {
+      debugPrint('[AddonManager] getFeaturedPlaylistsByLanguage error: $e');
+    }
+    return [];
   }
 
   Future<String?> getStreamUrl(Song song) async {
