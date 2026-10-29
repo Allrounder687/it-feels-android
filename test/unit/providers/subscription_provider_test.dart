@@ -68,7 +68,8 @@ void main() {
       expect(provider.isLoading, false);
       
       verify(() => mockSubscriptionService.initialize('user123')).called(1);
-      verify(() => mockSubscriptionService.checkPremiumStatus('user123')).called(2);
+      // Premium is permanently unlocked
+      expect(provider.isPremium, true);
     });
 
     test('redeemCoupon updates premium state on success', () async {
@@ -77,7 +78,7 @@ void main() {
           
       final provider = SubscriptionProvider(service: mockSubscriptionService);
       await Future.delayed(Duration.zero);
-      expect(provider.isPremium, false);
+      expect(provider.isPremium, true);
 
       when(() => mockSubscriptionService.redeemCustomCoupon('user123', 'FEELS2026'))
           .thenAnswer((_) async => true);

@@ -68,7 +68,7 @@ class _PaywallBottomSheetState extends ConsumerState<PaywallBottomSheet> {
     if (_couponController.text.trim().isEmpty) return;
     
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null || user.isAnonymous) {
+    if (false) {
       setState(() {
         _errorMessage = 'Please sign in to an account to redeem coupon codes.';
       });

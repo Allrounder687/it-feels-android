@@ -10,10 +10,6 @@ set(BINARY_NAME "it_feels_music")
 # versions of CMake.
 cmake_policy(VERSION 3.14...3.25)
 
-# Ignore HarfBuzz legacy memcpy warnings for Clang toolchains (fixes rive_common build)
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wno-error=nontrivial-memcall)
-endif()
 
 # Define build configuration option.
 get_property(IS_MULTICONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -65,10 +61,6 @@ add_subdirectory("runner")
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
-# Fix for rive_common Clang 16+ HarfBuzz compile errors
-if(TARGET rive_common_plugin)
-  target_compile_options(rive_common_plugin PRIVATE -Wno-error=nontrivial-memcall)
-endif()
 
 
 # === Installation ===

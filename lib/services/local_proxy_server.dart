@@ -7,7 +7,7 @@ class LocalProxyServer {
   static bool get isRunning => _server != null;
 
   static Future<void> start() async {
-    if (_server != null) return;
+    if (_server != null || kIsWeb || !Platform.isWindows) return;
     _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     _port = _server!.port;
     debugPrint('[LocalProxyServer] Started on port $_port');
@@ -55,7 +55,7 @@ class LocalProxyServer {
   }
 
   static String getProxyUrl(String originalUrl) {
-    if (!isRunning || kIsWeb) return originalUrl;
+    if (!isRunning || kIsWeb || !Platform.isWindows) return originalUrl;
     return 'http://127.0.0.1:$_port/?url=${Uri.encodeComponent(originalUrl)}';
   }
 }

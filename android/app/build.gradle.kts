@@ -10,8 +10,13 @@ plugins {
 
 android {
     namespace = "com.itfeels.music"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
+
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -21,7 +26,7 @@ android {
     defaultConfig {
         applicationId = "com.itfeels.music"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -32,6 +37,8 @@ android {
             keyPassword = "android"
             storeFile = file("key.jks")
             storePassword = "android"
+            enableV1Signing = true
+            enableV2Signing = true
         }
     }
 

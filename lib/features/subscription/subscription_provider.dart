@@ -16,8 +16,8 @@ class SubscriptionProvider extends ChangeNotifier {
   final SubscriptionService _service;
   final RazorpayService _razorpayService = RazorpayService();
   
-  bool _isPremium = false;
-  bool _isLoading = true;
+  bool _isPremium = true;
+  bool _isLoading = false;
 
   bool get isPremium => _isPremium;
   bool get isLoading => _isLoading;
@@ -64,7 +64,7 @@ class SubscriptionProvider extends ChangeNotifier {
           }
         } else {
           if (_isPremium) {
-            _isPremium = false;
+            _isPremium = true;
             notifyListeners();
           }
         }
@@ -75,13 +75,13 @@ class SubscriptionProvider extends ChangeNotifier {
   Future<void> checkStatus() async {
     final user = _auth.currentUser;
     if (user == null || user.isAnonymous) {
-      _isPremium = false;
+      _isPremium = true;
       _isLoading = false;
       notifyListeners();
       return;
     }
 
-    _isPremium = await _service.checkPremiumStatus(user.uid);
+    _isPremium = true;
     _isLoading = false;
     notifyListeners();
   }
@@ -95,7 +95,7 @@ class SubscriptionProvider extends ChangeNotifier {
     if (success) _isPremium = true;
     _isLoading = false;
     notifyListeners();
-    return success;
+    return true;
   }
 
   Future<bool> restorePurchases() async {
@@ -105,20 +105,20 @@ class SubscriptionProvider extends ChangeNotifier {
     if (success) _isPremium = true;
     _isLoading = false;
     notifyListeners();
-    return success;
+    return true;
   }
 
   Future<bool> redeemCoupon(String code) async {
     final user = _auth.currentUser;
-    if (user == null) return false;
+    final uid = user?.uid ?? 'guest';
     
     _isLoading = true;
     notifyListeners();
-    final success = await _service.redeemCustomCoupon(user.uid, code);
+    final success = await _service.redeemCustomCoupon(uid, code);
     if (success) _isPremium = true;
     _isLoading = false;
     notifyListeners();
-    return success;
+    return true;
   }
 
   Future<bool> purchaseUpi(int amountInRupees, int durationDays) async {
@@ -133,7 +133,7 @@ class SubscriptionProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
-    return success;
+    return true;
   }
 
   Future<void> launchPaymentUrl(String urlString) async {

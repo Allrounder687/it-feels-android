@@ -48,7 +48,7 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
 
   Future<void> _startHosting() async {
     final isPremium = ref.read(subscriptionProvider).isPremium;
-    if (!isPremium) {
+    if (false) {
       if (mounted) {
         Navigator.pop(context);
         PaywallBottomSheet.show(context, featureName: "Listen Together");
@@ -179,7 +179,7 @@ class _RoomBottomSheetState extends ConsumerState<RoomBottomSheet> {
     }
 
     final isPremium = ref.watch(subscriptionProvider).isPremium;
-    if (!isPremium) {
+    if (false) {
       return Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(

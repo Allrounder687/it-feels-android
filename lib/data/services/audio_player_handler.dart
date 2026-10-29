@@ -8,7 +8,6 @@ import 'dart:async';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:it_feels_music/services/storage_service.dart';
-import 'package:it_feels_music/services/database_service.dart';
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   late final Player _player;
@@ -16,7 +15,9 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   
   VoidCallback? onSkipNext;
   VoidCallback? onSkipPrevious;
+  VoidCallback? onTrackCompleted;
   Future<void> Function()? onToggleFavorite;
+  bool _isLoadingTrack = false;
   
   SMTCWindows? _smtc;
   StreamSubscription? _smtcSubscription;
@@ -80,6 +81,11 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     _player.stream.completed.listen((completed) {
       if (completed) {
         _broadcastState(); // Do not emit isCompleted to prevent iOS teardown
+        if (onTrackCompleted != null) {
+          onTrackCompleted!();
+        } else if (onSkipNext != null) {
+          onSkipNext!();
+        }
       }
     });
     _player.stream.buffering.listen((buffering) {
@@ -91,16 +97,20 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     final playing = _player.state.playing;
     
     AudioProcessingState audioProcessingState = AudioProcessingState.ready;
-    if (isBuffering) {
+    if (_isLoadingTrack) {
+      audioProcessingState = AudioProcessingState.loading;
+    } else if (isBuffering) {
       audioProcessingState = AudioProcessingState.buffering;
     } else if (playing) {
       audioProcessingState = AudioProcessingState.ready;
     }
 
+    final effectivePlaying = _isLoadingTrack ? true : playing;
+
     playbackState.add(playbackState.value.copyWith(
       controls: [
         const MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Previous', action: MediaAction.skipToPrevious),
-        if (playing) const MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Pause', action: MediaAction.pause) else const MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Play', action: MediaAction.play),
+        if (effectivePlaying) const MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Pause', action: MediaAction.pause) else const MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Play', action: MediaAction.play),
         const MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Next', action: MediaAction.skipToNext),
         const MediaControl(androidIcon: 'mipmap/ic_launcher', label: 'Stop', action: MediaAction.stop),
       ],
@@ -116,8 +126,8 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       },
       androidCompactActionIndices: const [0, 1, 2],
       processingState: audioProcessingState,
-      playing: playing,
-      updatePosition: _player.state.position,
+      playing: effectivePlaying,
+      updatePosition: _isLoadingTrack ? Duration.zero : _player.state.position,
       bufferedPosition: _player.state.buffer,
       speed: _player.state.rate,
       queueIndex: 0,
@@ -132,12 +142,48 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
           endTimeMs: _player.state.duration.inMilliseconds,
           positionMs: _player.state.position.inMilliseconds,
         ));
-      } catch (e) {}
+      } catch (e) {
+        // Ignored: SMTC update error on unsupported state
+      }
     }
+  }
+
+  void notifyLoading(Song song) {
+    _isLoadingTrack = true;
+    final item = MediaItem(
+      id: song.id,
+      album: song.album,
+      title: song.title,
+      artist: song.artist,
+      duration: Duration(seconds: song.duration),
+      artUri: song.coverArt.isNotEmpty
+          ? (song.coverArt.startsWith('http')
+              ? Uri.parse(song.coverArt)
+              : Uri.file(song.coverArt))
+          : null,
+    );
+    mediaItem.add(item);
+    if (_smtc != null) {
+      try {
+        _smtc!.updateMetadata(MusicMetadata(
+          title: song.title,
+          artist: song.artist,
+          album: song.album ?? '',
+          thumbnail: song.coverArt,
+        ));
+      } catch (_) {}
+    }
+    _broadcastState(isBuffering: true);
+  }
+
+  void cancelLoading() {
+    _isLoadingTrack = false;
+    _broadcastState();
   }
 
   Future<void> playSong(Song song, String streamUrl) async {
     try {
+      _isLoadingTrack = false;
       final item = MediaItem(
         id: song.id,
         album: song.album,

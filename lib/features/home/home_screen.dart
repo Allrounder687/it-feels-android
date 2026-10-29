@@ -1093,8 +1093,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       // Top App Bar Branding
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 32,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: MediaQuery.of(context).size.width < 600 ? 16 : 32,
                             vertical: 12,
                           ),
                           child: Row(
@@ -1103,55 +1103,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     if (ref.watch(profileProvider).userName.isNotEmpty)
                                       Text(
                                         ref.watch(profileProvider).getTimeGreeting(),
                                         style: GoogleFonts.inter(
-                                          fontSize: 14,
+                                          fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                           color: context.themeMutedTextColor,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
-                                    Text(
-                                      ref.watch(profileProvider).userName.isNotEmpty
-                                          ? ref.watch(profileProvider).userName
-                                          : ref.watch(profileProvider).getTimeGreeting(),
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.w800,
-                                        color: context.themeTextColor,
-                                        letterSpacing: -0.5,
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        ref.watch(profileProvider).userName.isNotEmpty
+                                            ? ref.watch(profileProvider).userName
+                                            : ref.watch(profileProvider).getTimeGreeting(),
+                                        style: GoogleFonts.outfit(
+                                          fontSize: MediaQuery.of(context).size.width < 600 ? 24 : 28,
+                                          fontWeight: FontWeight.w800,
+                                          color: context.themeTextColor,
+                                          letterSpacing: -0.5,
+                                        ),
+                                        maxLines: 1,
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
                               ),
+                              const SizedBox(width: 8),
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   if (!(!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux))) ...[
-                                  if (ref
-                                      .watch(aiSettingsProvider)
-                                      .isConfigured)
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.auto_awesome_rounded,
-                                        color: context.themeTextColor,
-                                        size: 22,
-                                      ),
-                                      onPressed: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const AskAIScreen(),
+                                    if (ref.watch(aiSettingsProvider).isConfigured)
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                        padding: const EdgeInsets.all(6),
+                                        icon: Icon(
+                                          Icons.auto_awesome_rounded,
+                                          color: context.themeTextColor,
+                                          size: 20,
                                         ),
+                                        onPressed: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => const AskAIScreen(),
+                                          ),
+                                        ),
+                                        tooltip: 'Ask Feels',
                                       ),
-                                      tooltip: 'Ask Feels',
-                                    ),
                                   ],
                                   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) ...[
                                     TVFocusableCard(
@@ -1163,36 +1169,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         ),
                                       ),
                                       child: Container(
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                        ),
+                                        margin: const EdgeInsets.symmetric(horizontal: 4),
                                         child: Consumer(
                                           builder: (context, ref, _) {
-                                            final profile = ref.watch(
-                                              profileProvider,
-                                            );
-                                            final hasAvatar =
-                                                profile.userAvatar.isNotEmpty &&
-                                                File(
-                                                  profile.userAvatar,
-                                                ).existsSync();
+                                            final profile = ref.watch(profileProvider);
+                                            final hasAvatar = profile.userAvatar.isNotEmpty &&
+                                                File(profile.userAvatar).existsSync();
                                             return CircleAvatar(
-                                              radius: 16,
-                                              backgroundColor: context
-                                                  .themeAccentColor
-                                                  .withValues(alpha: 0.2),
-                                              backgroundImage: hasAvatar
-                                                  ? FileImage(
-                                                      File(profile.userAvatar),
-                                                    )
-                                                  : null,
+                                              radius: 15,
+                                              backgroundColor: context.themeAccentColor.withValues(alpha: 0.2),
+                                              backgroundImage: hasAvatar ? FileImage(File(profile.userAvatar)) : null,
                                               child: hasAvatar
                                                   ? null
                                                   : Icon(
                                                       Icons.person_outline,
-                                                      color:
-                                                          context.themeTextColor,
-                                                      size: 20,
+                                                      color: context.themeTextColor,
+                                                      size: 18,
                                                     ),
                                             );
                                           },
@@ -1200,24 +1192,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       ),
                                     ),
                                     IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                      padding: const EdgeInsets.all(6),
                                       icon: Icon(
                                         Icons.cell_tower_rounded,
-                                        color: playerProvider.isInRoom
-                                            ? Colors.greenAccent
-                                            : context.themeTextColor,
-                                        size: 22,
+                                        color: playerProvider.isInRoom ? Colors.greenAccent : context.themeTextColor,
+                                        size: 20,
                                       ),
-                                      onPressed: () => RoomBottomSheet.show(
-                                        context,
-                                        isHost: false,
-                                      ),
+                                      onPressed: () => RoomBottomSheet.show(context, isHost: false),
                                       tooltip: 'Listen Together',
                                     ),
                                     IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                      padding: const EdgeInsets.all(6),
                                       icon: Icon(
                                         Icons.radio,
                                         color: context.themeTextColor,
-                                        size: 22,
+                                        size: 20,
                                       ),
                                       onPressed: () => Navigator.push(
                                         context,
@@ -1227,20 +1220,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       ),
                                       tooltip: 'Radio Stations',
                                     ),
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.settings_outlined,
-                                        color: context.themeTextColor,
-                                        size: 22,
-                                      ),
-                                      onPressed: () => Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => const SettingsScreen(),
+                                    if (MediaQuery.of(context).size.width >= 600)
+                                      IconButton(
+                                        visualDensity: VisualDensity.compact,
+                                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                        padding: const EdgeInsets.all(6),
+                                        icon: Icon(
+                                          Icons.settings_outlined,
+                                          color: context.themeTextColor,
+                                          size: 20,
                                         ),
+                                        onPressed: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => const SettingsScreen(),
+                                          ),
+                                        ),
+                                        tooltip: 'Settings',
                                       ),
-                                      tooltip: 'Settings',
-                                    ),
                                   ],
                                 ],
                               ),
@@ -1248,7 +1245,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                       ),
-
                       // Category Filter Chips Bar
                       SliverToBoxAdapter(
                         child: SizedBox(
@@ -1604,8 +1600,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
 
-                      SliverToBoxAdapter(
-                        child: const AddonManagerCard(),
+                      const SliverToBoxAdapter(
+                        child: AddonManagerCard(),
                       ),
 
                       SliverToBoxAdapter(

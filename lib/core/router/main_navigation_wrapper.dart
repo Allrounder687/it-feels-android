@@ -402,6 +402,7 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
         isGlassMode: context.isGlassTheme,
         child: Scaffold(
           backgroundColor: Colors.transparent,
+          resizeToAvoidBottomInset: false,
           extendBodyBehindAppBar: true,
           body: FocusTraversalGroup(
           policy: OrderedTraversalPolicy(),
@@ -588,7 +589,8 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                       // Active Shell Route
                       Consumer(
                         builder: (context, ref, _) {
-                          final bottomUiHeight = ref.watch(bottomUiProvider);
+                          final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+                          final bottomUiHeight = isKeyboardOpen ? 0.0 : ref.watch(bottomUiProvider);
                           return MediaQuery(
                             data: MediaQuery.of(context).copyWith(
                               padding: MediaQuery.of(context).padding.copyWith(
@@ -604,7 +606,8 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                       ),
 
                       // Floating MiniPlayer + Bottom Navigation Bar Overlay
-                      if (MediaQuery.of(context).orientation ==
+                      if (MediaQuery.of(context).viewInsets.bottom == 0 &&
+                          MediaQuery.of(context).orientation ==
                           Orientation.portrait)
                         Positioned(
                           left: 0,

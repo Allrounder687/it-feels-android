@@ -183,7 +183,9 @@ class AudioEngineService {
           await audioHandler.player.setPitch(playbackPitch);
           break;
       }
-    } catch (e) {}
+    } catch (e) {
+      // Ignored: platform/engine pitch or rate change error
+    }
   }
 
   Future<void> setCrossfadeDuration(double seconds) async {
@@ -195,6 +197,9 @@ class AudioEngineService {
     sleepAfterCurrentTrack = value;
     _sleepAfterTrackController.add(value);
   }
+
+  void notifyLoading(Song song) => audioHandler.notifyLoading(song);
+  void cancelLoading() => audioHandler.cancelLoading();
 
   Future<void> playSong(Song song, String streamUrl) async {
     await audioHandler.playSong(song, streamUrl);

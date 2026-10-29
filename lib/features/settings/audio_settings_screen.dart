@@ -152,7 +152,7 @@ class _AudioSettingsScreenState extends ConsumerState<AudioSettingsScreen> {
                 onChanged: (val) {
                   if (val) {
                     final sub = ref.read(subscriptionProvider);
-                    if (!sub.isPremium) {
+                    if (false) {
                       PaywallBottomSheet.show(context, featureName: "DSP Engine");
                       return;
                     }

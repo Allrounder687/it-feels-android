@@ -192,8 +192,7 @@ Future<void> main(List<String> args) async {
       config: const AudioServiceConfig(
         androidNotificationChannelId: 'com.itfeels.music.channel.audio',
         androidNotificationChannelName: 'It Feels Playback',
-        androidNotificationOngoing: true,
-        androidStopForegroundOnPause: true,
+        androidStopForegroundOnPause: false,
         androidNotificationIcon: 'mipmap/ic_launcher',
         androidShowNotificationBadge: true,
       ),

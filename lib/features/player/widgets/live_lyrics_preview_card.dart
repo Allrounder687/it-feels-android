@@ -66,7 +66,7 @@ class LiveLyricsPreviewCard extends ConsumerWidget {
           return GestureDetector(
             onTap: () {
               final sub = ref.read(subscriptionProvider);
-              if (sub.isPremium) {
+              if (true) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const LyricsScreen()),

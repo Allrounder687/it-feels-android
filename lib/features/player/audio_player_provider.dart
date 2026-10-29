@@ -404,6 +404,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     // Wire up Lock Screen & Control Center skip buttons
     audioHandler.onSkipNext = () => skipToNext();
     audioHandler.onSkipPrevious = () => skipToPrevious();
+    audioHandler.onTrackCompleted = () => _handleTrackCompleted();
 
     // Sync the Notifier's state with the Engine's initial state
     state = state.copyWith(
@@ -537,13 +538,16 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         BackendApiService.sendTelemetryPlay(state.currentSong!);
       }
 
-      // Windows threading bug fallback: Manually trigger completion if we reach the end of the track
-      // since the native events channel drops the completed event on non-platform threads.
-      if (Platform.isWindows &&
-          state.isPlaying &&
-          !state.isLoading) {
+      // Pre-warm next song stream URL early in playback so transitions are instantaneous
+      if (pos.inSeconds == 15 || pos.inSeconds == 30) {
+        _preloadQueueLyricsAndMedia();
+      }
+
+      // Reliable cross-platform end-of-track fallback:
+      // In background playback or low-power modes, native engines can drop the completed event.
+      if (state.isPlaying && !state.isLoading) {
         if (state.duration.inMilliseconds > 0 && pos.inMilliseconds > 0) {
-          if (state.duration.inMilliseconds - pos.inMilliseconds <= 250) {
+          if (state.duration.inMilliseconds - pos.inMilliseconds <= 350) {
             _handleTrackCompleted();
           }
         }
@@ -551,9 +555,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     }));
 
     _eventSubscriptions.add(engine.durationStream.listen((dur) {
-      if (dur != null) {
-        state = state.copyWith(duration: dur);
-      }
+      state = state.copyWith(duration: dur);
     }));
 
     // Bind sleep timer streams from engine
@@ -585,26 +587,28 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       } else if (state.isRepeat) {
         await engine.seek(Duration.zero);
         await engine.play();
-      } else if (state.queue.isNotEmpty && state.isHost == false ||
-          (state.isHost && state.currentRoomId != null) ||
-          state.currentRoomId == null) {
+      } else if (state.queue.isNotEmpty) {
         if (state.currentRoomId != null && !state.isHost) return;
 
         if (state.currentIndex == state.queue.length - 1 &&
             state.isAutoplayEnabled) {
-          final current = state.queue[state.currentIndex];
-          final recommendations = await locator<IMusicRepository>()
-              .getRecommendedSongs(current);
-          if (recommendations.isNotEmpty) {
-            final newSongs = recommendations
-                .where((s) => !state.queue.any((q) => q.id == s.id))
-                .toList();
-            if (newSongs.isNotEmpty) {
-              final updatedQ = List<Song>.from(state.queue)
-                ..addAll(newSongs.take(10));
-              state = state.copyWith(queue: updatedQ);
-              _saveMemory();
+          try {
+            final current = state.queue[state.currentIndex];
+            final recommendations = await locator<IMusicRepository>()
+                .getRecommendedSongs(current);
+            if (recommendations.isNotEmpty) {
+              final newSongs = recommendations
+                  .where((s) => !state.queue.any((q) => q.id == s.id))
+                  .toList();
+              if (newSongs.isNotEmpty) {
+                final updatedQ = List<Song>.from(state.queue)
+                  ..addAll(newSongs.take(10));
+                state = state.copyWith(queue: updatedQ);
+                _saveMemory();
+              }
             }
+          } catch (e) {
+            debugPrint('[AudioPlayerNotifier] Autoplay fetch failed: $e');
           }
         }
         await skipToNext();
@@ -785,11 +789,14 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     int index = 0,
     BuildContext? context,
     String? predefinedStreamUrl,
+    int retryCount = 0,
   }) async {
     if (_currentlyFetchingSongId == song.id) {
       debugPrint('[AudioPlayerNotifier] Debouncing duplicate play request for ${song.title}');
       return;
     }
+
+    engine.notifyLoading(song);
 
     final currentToken = ++_playSongGenerationToken;
 
@@ -963,6 +970,23 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       debugPrint(
         '[AudioPlayerNotifier] Failed to resolve stream for ${song.title}',
       );
+      state = state.copyWith(isLoading: false);
+      engine.cancelLoading();
+
+      // Resilience auto-skip: If this track failed to resolve (e.g. temporary network drop or dead stream),
+      // smoothly advance to the next song in the queue (up to 3 consecutive retries) instead of leaving user in silence.
+      if (retryCount < 3 && newQueue.length > 1) {
+        final nextIndex = (newIndex + 1) % newQueue.length;
+        if (nextIndex != newIndex) {
+          debugPrint('[AudioPlayerNotifier] Auto-skipping failed track to index $nextIndex (retry $retryCount)');
+          await playSong(
+            newQueue[nextIndex],
+            queue: newQueue,
+            index: nextIndex,
+            retryCount: retryCount + 1,
+          );
+        }
+      }
     }
 
     _updateHomeWidget();

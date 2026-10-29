@@ -120,7 +120,7 @@ class AddonManager {
           debugPrint('[AddonManager] Fetching search from: $searchUrl');
           final response = await http.get(Uri.parse(searchUrl));
           if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['results'] != null) {
               for (var item in data['results']) {
                 allResults.add(Song.fromJson(item));
@@ -148,7 +148,7 @@ class AddonManager {
           debugPrint('[AddonManager] Fetching searchPlaylists from: $searchUrl');
           final response = await http.get(Uri.parse(searchUrl));
           if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['results'] != null) {
               for (var item in data['results']) {
                 allResults.add(Playlist(
@@ -181,7 +181,7 @@ class AddonManager {
           debugPrint('[AddonManager] Fetching playlist tracks from: $searchUrl');
           final response = await http.get(Uri.parse(searchUrl));
           if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['tracks'] != null) {
               for (var item in data['tracks']) {
                 allResults.add(Song.fromJson(item));
@@ -207,7 +207,7 @@ class AddonManager {
           debugPrint('[AddonManager] Fetching album tracks from: $searchUrl');
           final response = await http.get(Uri.parse(searchUrl));
           if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['tracks'] != null) {
               for (var item in data['tracks']) {
                 allResults.add(Song.fromJson(item));
@@ -233,7 +233,7 @@ class AddonManager {
           debugPrint('[AddonManager] Fetching searchPodcasts from: $searchUrl');
           final response = await http.get(Uri.parse(searchUrl));
           if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['results'] != null) {
               for (var item in data['results']) {
                 allResults.add(Song.fromJson(item));
@@ -259,7 +259,7 @@ class AddonManager {
           debugPrint('[AddonManager] Fetching searchVideos from: $searchUrl');
           final response = await http.get(Uri.parse(searchUrl));
           if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['results'] != null) {
               allResults = List<Map<String, dynamic>>.from(data['results']);
             }
@@ -283,7 +283,7 @@ class AddonManager {
           debugPrint('[AddonManager] Fetching trendingVideos from: $searchUrl');
           final response = await http.get(Uri.parse(searchUrl));
           if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['results'] != null) {
               allResults = List<Map<String, dynamic>>.from(data['results']);
             }
@@ -307,7 +307,7 @@ class AddonManager {
           debugPrint('[AddonManager] Fetching charts from: $url');
           final response = await http.get(Uri.parse(url));
           if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['data'] != null) {
               final tracks = (data['data']['tracks'] as List? ?? []).map((e) => Song.fromJson(e)).toList();
               final playlists = (data['data']['playlists'] as List? ?? []).map((e) => Playlist.fromJson(e)).toList();
@@ -334,7 +334,7 @@ class AddonManager {
           debugPrint('[AddonManager] Fetching stream from: $streamApiUrl');
           final response = await http.get(Uri.parse(streamApiUrl));
           if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['audioUrl'] != null) {
               return LocalProxyServer.getProxyUrl(data['audioUrl']);
             }
@@ -360,7 +360,7 @@ class AddonManager {
           debugPrint('[AddonManager] Fetching video streams from: $streamApiUrl');
           final response = await http.get(Uri.parse(streamApiUrl));
           if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['streams'] != null) {
               return data;
             }
@@ -383,7 +383,7 @@ class AddonManager {
           debugPrint('[AddonManager] Fetching home feed from: $homeUrl');
           final response = await http.get(Uri.parse(homeUrl));
           if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['data'] != null) {
               return data['data']; 
             }
@@ -408,7 +408,7 @@ class AddonManager {
           debugPrint('[AddonManager] Fetching lyrics from: $url');
           final response = await http.get(Uri.parse(url));
           if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true) {
               return data['lyrics'];
             }

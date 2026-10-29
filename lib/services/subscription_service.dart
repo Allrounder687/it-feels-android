@@ -60,7 +60,7 @@ class SubscriptionService {
   }
 
   Future<bool> checkPremiumStatus(String uid) async {
-    if (kIsWeb || uid.isEmpty) return false;
+    return true;
 
 
     // 1. Check RevenueCat Status (if keys configured)

@@ -48,14 +48,21 @@ class DownloadService {
     if (customPath.isNotEmpty) {
       return customPath;
     } else if (Platform.isAndroid) {
-      return '/storage/emulated/0/Music/IT-Feels';
+      try {
+        final extDirs = await getExternalStorageDirectories(type: StorageDirectory.music);
+        if (extDirs != null && extDirs.isNotEmpty) {
+          return extDirs.first.path;
+        }
+      } catch (_) {}
+      final dir = await getApplicationDocumentsDirectory();
+      return '${dir.path}/downloaded_music';
     } else {
       final dir = await getApplicationDocumentsDirectory();
       return '${dir.path}/downloaded_music';
     }
   }
 
-  /// Download a single song for offline playback via background OS task
+  /// Download a single song for offline playback via background OS task with HTTP streaming fallback
   Future<bool> downloadSong(Song song, {Function(double)? onProgress}) async {
     try {
       Directory musicDir;
@@ -65,15 +72,11 @@ class DownloadService {
       if (customPath.isNotEmpty) {
         musicDir = Directory(customPath);
       } else if (Platform.isAndroid) {
-        await Permission.storage.request();
-        if (await Permission.manageExternalStorage.isDenied) {
-          await Permission.manageExternalStorage.request();
-        }
-        await Permission.audio.request();
-        // Request notification permission for Android 13+ background notifications
-        await Permission.notification.request();
-        
-        musicDir = Directory('/storage/emulated/0/Music/IT-Feels');
+        try {
+          await Permission.notification.request();
+        } catch (_) {}
+        final path = await getDownloadDirectoryPath();
+        musicDir = Directory(path);
       } else {
         final dir = await getApplicationDocumentsDirectory();
         musicDir = Directory('${dir.path}/downloaded_music');
@@ -95,9 +98,6 @@ class DownloadService {
       final savedFilePath = '${musicDir.path}/$fileName';
 
       // 1. Download Cover Art locally first (for external players)
-      // We no longer overwrite the song's coverArt property with this local path.
-      // We keep the HTTP URL so CachedNetworkImage can handle offline caching automatically,
-      // avoiding Android 13+ READ_MEDIA_IMAGES permission issues.
       if (song.coverArt.isNotEmpty) {
         try {
           final coverResponse = await httpClient.get(Uri.parse(song.coverArt));
@@ -108,31 +108,81 @@ class DownloadService {
         } catch (_) {}
       }
 
+      bool downloadCompleted = false;
+
       // 2. Configure Background Download Task
-      final task = DownloadTask(
-        url: streamUrl,
-        filename: fileName,
-        directory: musicDir.path,
-        baseDirectory: BaseDirectory.root, // Important for absolute custom paths
-        updates: Updates.statusAndProgress,
-        retries: 3,
-        allowPause: true,
-        metaData: song.id,
-      );
+      try {
+        final task = DownloadTask(
+          url: streamUrl,
+          filename: fileName,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://www.jiosaavn.com/',
+            'Accept': '*/*',
+          },
+          directory: musicDir.path,
+          baseDirectory: BaseDirectory.root, // Important for absolute custom paths
+          updates: Updates.statusAndProgress,
+          retries: 2,
+          allowPause: true,
+          metaData: song.id,
+        );
 
-      // 3. Enqueue and wait for completion
-      // We use .download() so we can await it and update our local database when done.
-      // Even if the UI thread is busy, the actual download happens via native OS threads.
-      final result = await _downloader.download(
-        task,
-        onProgress: (progress) {
-          if (onProgress != null && progress >= 0.0) {
-            onProgress(progress);
+        final result = await _downloader.download(
+          task,
+          onProgress: (progress) {
+            if (onProgress != null && progress >= 0.0) {
+              onProgress(progress);
+            }
+          },
+        );
+
+        if (result.status == TaskStatus.complete) {
+          final targetFile = File(savedFilePath);
+          if (await targetFile.exists() && await targetFile.length() > 1024) {
+            downloadCompleted = true;
           }
-        },
-      );
+        }
+      } catch (e) {
+        debugPrint('[DownloadService] Background downloader error: $e');
+      }
 
-      if (result.status == TaskStatus.complete) {
+      // 3. Fallback: Direct Streaming Download if Background Downloader was unsuccessful
+      if (!downloadCompleted) {
+        debugPrint('[DownloadService] Attempting direct stream download fallback for: ${song.title}');
+        try {
+          final request = http.Request('GET', Uri.parse(streamUrl));
+          request.headers.addAll({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://www.jiosaavn.com/',
+            'Accept': '*/*',
+          });
+          final streamedResponse = await httpClient.send(request);
+          if (streamedResponse.statusCode == 200) {
+            final totalBytes = streamedResponse.contentLength ?? 0;
+            int receivedBytes = 0;
+            final file = File(savedFilePath);
+            final sink = file.openWrite();
+            await streamedResponse.stream.listen((chunk) {
+              sink.add(chunk);
+              receivedBytes += chunk.length;
+              if (totalBytes > 0 && onProgress != null) {
+                onProgress(receivedBytes / totalBytes);
+              }
+            }).asFuture();
+            await sink.flush();
+            await sink.close();
+
+            if (await file.exists() && await file.length() > 1024) {
+              downloadCompleted = true;
+            }
+          }
+        } catch (e) {
+          debugPrint('[DownloadService] Direct stream download fallback error: $e');
+        }
+      }
+
+      if (downloadCompleted) {
         // Create downloaded song entry
         final downloadedSong = Song(
           id: song.id,
@@ -152,10 +202,10 @@ class DownloadService {
         currentDownloads.add(downloadedSong);
 
         await StorageService.saveDownloads(currentDownloads);
-        debugPrint('[DownloadService] Successfully downloaded via Background Task: ${song.title}');
+        debugPrint('[DownloadService] Successfully downloaded: ${song.title} to $savedFilePath');
         return true;
       } else {
-        debugPrint('[DownloadService] Background download failed with status: ${result.status}');
+        debugPrint('[DownloadService] All download strategies failed for ${song.title}');
         return false;
       }
     } catch (e) {

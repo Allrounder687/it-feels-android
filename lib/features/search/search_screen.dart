@@ -102,7 +102,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               children: [
                 // Top Search Header
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -123,7 +123,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           Text(
                             "Search",
                             style: GoogleFonts.outfit(
-                              fontSize: 36,
+                              fontSize: isDesktop ? 36 : 28,
                               fontWeight: FontWeight.w900,
                               color: context.themeTextColor,
                             ),

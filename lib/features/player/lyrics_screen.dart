@@ -7,7 +7,6 @@ import 'package:it_feels_music/features/player/lyrics_provider.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:it_feels_music/core/widgets/glass_shield_wrapper.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';

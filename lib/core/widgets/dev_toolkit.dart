@@ -12,17 +12,21 @@ class DevToolkitOverlay extends StatefulWidget {
 
 class _DevToolkitOverlayState extends State<DevToolkitOverlay> {
   bool _isOpen = false;
-  Offset _position = const Offset(20, 100);
+  double _right = 16.0;
+  double _top = 220.0;
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
     return Positioned(
-      left: _position.dx,
-      top: _position.dy,
+      right: _right,
+      top: _top,
       child: GestureDetector(
         onPanUpdate: (details) {
           setState(() {
-            _position += details.delta;
+            _right = (_right - details.delta.dx).clamp(0.0, screenSize.width - 60.0);
+            _top = (_top + details.delta.dy).clamp(60.0, screenSize.height - 120.0);
           });
         },
         child: Material(

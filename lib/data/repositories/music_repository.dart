@@ -169,19 +169,56 @@ class MusicRepository implements IMusicRepository {
   Future<String?> resolveStream(Song song) async => null;
 
   @override
-  Future<List<Song>> getRecommendedSongs(Song song) async => [];
+  Future<List<Song>> getRecommendedSongs(Song song) async {
+    final artist = song.artist.split(',').first.split('-').first.trim();
+    if (artist.isNotEmpty && artist != 'Unknown Artist') {
+      return await searchSongs(artist, count: 15);
+    }
+    return [];
+  }
 
   @override
-  Future<void> preloadStreamUrl(Song song) async {}
+  Future<Map<String, dynamic>> searchAll(String query) async {
+    final songs = await searchSongs(query, count: 30);
+    final playlists = await searchPlaylists(query, count: 20);
+
+    final albums = playlists.where((p) => p.type.toLowerCase() == 'album').toList();
+    final regularPlaylists = playlists.where((p) => p.type.toLowerCase() != 'album').toList();
+
+    List<Playlist> finalAlbums = albums;
+    if (finalAlbums.isEmpty && query.isNotEmpty) {
+      final queryAlbums = await searchPlaylists('$query Album', count: 10);
+      finalAlbums = queryAlbums;
+    }
+
+    return {
+      'songs': songs,
+      'albums': finalAlbums,
+      'playlists': regularPlaylists.isNotEmpty ? regularPlaylists : playlists,
+      'artists': <Map<String, dynamic>>[],
+    };
+  }
 
   @override
-  Future<Map<String, dynamic>> searchAll(String query) async => {'songs': <Song>[], 'albums': [], 'playlists': []};
+  Future<Map<String, dynamic>> fetchArtistDetails(String token, {int? page, int? count}) async {
+    final songs = await searchSongs(token, count: 30);
+    final albums = await searchAlbums(token, count: 10);
+    return {
+      'topSongs': songs,
+      'albums': albums,
+    };
+  }
 
   @override
-  Future<Map<String, dynamic>> fetchArtistDetails(String token, {int? page, int? count}) async => {'topSongs': <Song>[]};
-
-  @override
-  Future<List<Playlist>> searchAlbums(String query, {int? page, int? count}) async => [];
+  Future<List<Playlist>> searchAlbums(String query, {int? page, int? count}) async {
+    final cleanQuery = query.trim();
+    final searchParam = cleanQuery.toLowerCase().endsWith('album') || cleanQuery.toLowerCase().endsWith('albums')
+        ? cleanQuery
+        : '$cleanQuery Albums';
+    final results = await searchPlaylists(searchParam, page: page, count: count);
+    if (results.isNotEmpty) return results;
+    return await searchPlaylists(cleanQuery, page: page, count: count);
+  }
 
   @override
   Future<List<Playlist>> searchPlaylists(String query, {int? page, int? count}) async {
@@ -223,12 +260,15 @@ class MusicRepository implements IMusicRepository {
 
   @override
   Future<List<Song>> fetchRecommendations({String? songId, String? artist}) async {
+    if (artist != null && artist.isNotEmpty && artist != 'Unknown Artist') {
+      return await searchSongs(artist.split(',').first.trim(), count: 15);
+    }
     return [];
   }
 
   @override
   Future<List<Song>> fetchArtistTopTracks(String artistId) async {
-    return [];
+    return await searchSongs(artistId, count: 25);
   }
 
   @override
@@ -272,11 +312,28 @@ class MusicRepository implements IMusicRepository {
     return [];
   }
 
+  final Map<String, String> _streamCache = {};
+
+  @override
+  Future<void> preloadStreamUrl(Song song) async {
+    if (_streamCache.containsKey(song.id)) return;
+    try {
+      final url = await getStreamUrl(song);
+      if (url != null && url.isNotEmpty) {
+        _streamCache[song.id] = url;
+      }
+    } catch (_) {}
+  }
+
   @override
   Future<String?> getStreamUrl(Song song) async {
+    if (_streamCache.containsKey(song.id)) {
+      return _streamCache[song.id];
+    }
     final addonManager = AddonManager();
     final addonStream = await addonManager.getStreamUrl(song);
     if (addonStream != null && addonStream.isNotEmpty) {
+      _streamCache[song.id] = addonStream;
       return addonStream;
     }
 

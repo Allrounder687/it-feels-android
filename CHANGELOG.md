@@ -1,8 +1,26 @@
-## Unreleased / Hotfixes
-- **3-Layer Adaptive Glassmorphism Desktop UI**: Engineered a strictly platform-gated 3-layer architecture for desktop transparency. Added `flutter_acrylic` to establish a native OS material base (Layer 1). Developed an adaptive dark shield `_GlassShieldWrapper` (Layer 2) that guarantees 100% text readability over any wallpaper while fixing `Scaffold` transparency constraints. Built a generic `GlassContainer` with 12% white borders and 5% white fills (Layer 3) to render premium glass components on top. Fixed active category pill text visibility and completely overhauled desktop grid constraints, locking horizontal carousels and vertical grids to 350px widths to prevent massive widescreen stretching.
-- **Video & Network Resiliency**: Fixed Saavn CDN 404 errors by strictly enforcing valid CDN resolutions (50, 150, 500). Resolved `_directInnerTubeVideoSearch` compilation bugs.
-- **Deep Linking & Telegram**: Integrated native URL protocol registry for deep links, introduced `download` and `song` deep link screens, and integrated the Telegram bot webhook.
-- **UI & Player Polish**: Restored the dynamic `SliverGrid` layout in the Charts tab on the home screen. Fixed a RenderFlex overflow issue in `NowPlayingSecondaryControls` by optimizing padding on narrow screens.
+## v3.6.16+86
+- **Mobile UI Inspection & Layout Polish**:
+  - **Greeting Header Overflow Remediation**: Replaced fixed 28px text on mobile home screen with responsive 24px font wrapped in `FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft)` and compact icon button constraints. Hid redundant settings icon on mobile viewports (<600px) where settings is already directly accessible via the bottom navigation bar.
+  - **Dev Toolkit Repositioning**: Moved `DevToolkitOverlay` initial position to `right: 16, top: 220`, ensuring full touch interactivity for top filter tabs and clean floating ergonomics.
+  - **UTF-8 Mojibake Sanitization**: Eliminated `Ã¢â‚¬Â¢` character corruption across tracklists and search results by updating `AddonManager` to decode HTTP JSON responses using `utf8.decode(response.bodyBytes)` instead of latin1-fallback `response.body`. Enhanced `StringUtils.cleanText` to clean legacy mojibake sequences.
+  - **Soft Keyboard Bottom Overflow Fix**: Resolved `BOTTOM OVERFLOWED BY 25 PIXELS` on `SearchScreen` by adding `resizeToAvoidBottomInset: false` to `MainNavigationWrapper` and hiding the floating bottom navigation bar and miniplayer when keyboard is active (`MediaQuery.of(context).viewInsets.bottom > 0`). Reset `bottomUiHeight` to 0.0 when keyboard is open.
+  - **List Scroll Bottom Clearance**: Updated `AppDimensions.bottomClearance` from 0.0 to 110.0 and added dynamic bottom padding to `SeeAllSongsScreen`, guaranteeing the final playlist and search tracks are never obscured behind the floating miniplayer.
+
+## v3.6.15+85
+- **Permanent Feature Unlock & Coupon System Decoupling**:
+  - **Zero-Barrier Lifetime Premium**: Globally set lifetime premium access without requiring subscription or auth gates.
+  - **Universal Coupon Redemption**: Decoupled coupon redemption from strict auth gates, ensuring any code triggers celebration.
+  - **Direct UI Feature Routing**: Bypassed paywalls for live lyrics, DSP Engine, and Listen Together rooms.
+- **Background Playback & Lock-Screen Queue Progression (Android & iOS)**:
+  - **Uninterrupted Background Foreground Service**: Changed `androidStopForegroundOnPause: false` in `AudioServiceConfig`. Prevents Android Doze mode from tearing down the foreground service notification and suspending the background CPU isolate during inter-track buffering and pause states.
+  - **Immediate Transition State Handoff**: Added `notifyLoading` and `cancelLoading` to `AudioPlayerHandler` which immediately transitions `audio_service` to `AudioProcessingState.loading` with `playing: true` as soon as a new song is initiated. Prevents iOS `AVAudioSession` and Android `MediaSession` from terminating background eligibility during async stream resolution.
+  - **Direct Native Mobile CDN Streaming**: Bypassed Dart loopback proxy (`LocalProxyServer`) on non-Windows platforms. Mobile devices now stream directly through native hardware media pipelines without being stalled by suspended Dart event loops when the device is locked.
+  - **In-Memory Stream Preloading**: Implemented in-memory `_streamCache` in `MusicRepository` and wired active `preloadStreamUrl` polling during playback. The next song's audio URL is pre-resolved in the background before the current song finishes, ensuring seamless zero-delay transitions.
+  - **Playback Resolution Auto-Skip & Freeze Guard**: Reset `isLoading = false` on stream resolution failure and added intelligent auto-skipping (up to 3 retries) so unresolvable songs never freeze the queue or trap the UI in an infinite loading state.
+  - **Universal End-of-Track Safety Net**: Expanded the 350ms position-based completion fallback across all platforms (Windows, Android, iOS) to guard against dropped native EOF events in background battery saver modes.
+- **Windows Toolchain & Symlink Path Resolution Resilience**:
+  - Eliminated unused `rive: 0.13.0` dependency, orphaned `doggo.riv`, and ClangCL toolset requirement on Windows workstations.
+  - Patched `resolve_symlinks.ps1` in `cargokit` (`smtc_windows`) to handle hidden `AppData` directories cleanly without throwing PowerShell errors.
 
 ## v3.6.4+74
 - **Desktop Miniplayer & Layout Fixes**: Fixed an issue where the `NowPlayingScreen` album art would expand indefinitely and crop the edges of the image or video on widescreen layouts (such as when the user double-tapped the miniplayer to maximize it). Wrapped the left-panel `albumArt` inside an explicitly constrained container to maintain precise aspect ratios without horizontal bleeding. Stripped the redundant black gradient top bar and duplicate window controls from `DesktopMiniplayerScreen`.

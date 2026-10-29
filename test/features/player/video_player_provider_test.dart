@@ -49,6 +49,7 @@ void main() {
 
     when(() => mockPlayer.pause()).thenAnswer((_) async {});
     when(() => mockPlayer.play()).thenAnswer((_) async {});
+    when(() => mockPlayer.stop()).thenAnswer((_) async {});
     when(() => mockPlayer.dispose()).thenAnswer((_) async {});
     when(() => mockPlayer.seek(any())).thenAnswer((_) async {});
     when(() => mockPlayer.setRate(any())).thenAnswer((_) async {});
@@ -120,13 +121,11 @@ void main() {
 
       container.read(videoPlayerProvider.notifier).closeVideo();
 
-      verify(() => mockPlayer.pause()).called(1);
-      verify(() => mockPlayer.dispose()).called(1);
+      verify(() => mockPlayer.stop()).called(1);
       
       final state = container.read(videoPlayerProvider);
       expect(state.isVideoActive, isFalse);
-      expect(state.player, isNull);
-      expect(state.videoController, isNull);
+      expect(state.currentVideoId, isEmpty);
     });
     
     test('Phase 2: setPlaybackSpeed updates rate and state', () async {

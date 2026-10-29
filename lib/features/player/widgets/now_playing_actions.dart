@@ -144,7 +144,7 @@ class _NowPlayingActionsState extends ConsumerState<NowPlayingActions> {
           IconButton(
             onPressed: () {
               final sub = ref.read(subscriptionProvider);
-              if (sub.isPremium) {
+              if (true) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const LyricsScreen()),

@@ -9,6 +9,7 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
+import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class SeeAllSongsScreen extends ConsumerStatefulWidget {
   final String title;
@@ -140,7 +141,7 @@ class _SeeAllSongsScreenState extends ConsumerState<SeeAllSongsScreen> {
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                      padding: EdgeInsets.fromLTRB(20, 6, 20, AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
                       itemCount: filteredSongs.length,
                       itemBuilder: (context, index) {
                         final song = filteredSongs[index];
@@ -175,7 +176,7 @@ class _SeeAllSongsScreenState extends ConsumerState<SeeAllSongsScreen> {
                                 ),
                               ),
                               subtitle: Text(
-                                "${song.artist} Ã¢â‚¬Â¢ ${song.album.isNotEmpty ? song.album : 'Single'}",
+                                "${song.artist} • ${song.album.isNotEmpty ? song.album : 'Single'}",
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
