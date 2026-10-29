@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" fill="none">
+  <defs>
+    <!-- Deep Cosmic Obsidian Background -->
+    <radialGradient id="musicBg" cx="50%" cy="50%" r="72%">
+      <stop offset="0%" stop-color="#181126" />
+      <stop offset="45%" stop-color="#0E0B18" />
+      <stop offset="80%" stop-color="#08060D" />
+      <stop offset="100%" stop-color="#040307" />
+    </radialGradient>
+
+    <!-- Vibrant Music Plasma Aura Glow -->
+    <radialGradient id="musicAura" cx="50%" cy="50%" r="52%">
+      <stop offset="0%" stop-color="#FF007F" stop-opacity="0.45" />
+      <stop offset="40%" stop-color="#8A2BE2" stop-opacity="0.30" />
+      <stop offset="75%" stop-color="#00F0FF" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.0" />
+    </radialGradient>
+
+    <!-- Liquid Titanium Monogram Gradient -->
+    <linearGradient id="titaniumSheen" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="20%" stop-color="#F4F4F8" />
+      <stop offset="50%" stop-color="#D1D5DB" />
+      <stop offset="80%" stop-color="#9CA3AF" />
+      <stop offset="100%" stop-color="#4B5563" />
+    </linearGradient>
+
+    <!-- Specular Edge Highlight -->
+    <linearGradient id="specularRim" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95" />
+      <stop offset="50%" stop-color="#E0E7FF" stop-opacity="0.60" />
+      <stop offset="100%" stop-color="#818CF8" stop-opacity="0.20" />
+    </linearGradient>
+
+    <!-- Electric Harmonic Play Shard Gradient -->
+    <linearGradient id="harmonicShard" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF2E93" />
+      <stop offset="50%" stop-color="#A855F7" />
+      <stop offset="100%" stop-color="#00F0FF" />
+    </linearGradient>
+
+    <!-- Equalizer Bar Gradient -->
+    <linearGradient id="eqBarGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#FF007F" />
+      <stop offset="60%" stop-color="#A855F7" />
+      <stop offset="100%" stop-color="#00F0FF" />
+    </linearGradient>
+
+    <!-- Drop Shadow & Neon Bloom Filters -->
+    <filter id="monogramShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="20" stdDeviation="28" flood-color="#000000" flood-opacity="0.85" />
+      <feDropShadow dx="0" dy="0" stdDeviation="16" flood-color="#8A2BE2" flood-opacity="0.40" />
+    </filter>
+
+    <filter id="shardGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#FF007F" flood-opacity="0.60" />
+      <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#00F0FF" flood-opacity="0.45" />
+    </filter>
+
+    <!-- Glassmorphic Top Dome Sheen -->
+    <linearGradient id="topDomeSheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.18" />
+      <stop offset="45%" stop-color="#FFFFFF" stop-opacity="0.04" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Layer 1: Squircle Base Chassis -->
+  <g id="layer-background">
+    <rect width="1024" height="1024" rx="225" fill="url(#musicBg)" />
+    <!-- Outer Rim Bevel -->
+    <rect x="3" y="3" width="1018" height="1018" rx="223" fill="none" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="3" />
+    <rect x="6" y="6" width="1012" height="1012" rx="220" fill="none" stroke="#A855F7" stroke-opacity="0.25" stroke-width="1.5" />
+  </g>
+
+  <!-- Layer 2: Radiant Acoustic Aura -->
+  <g id="layer-aura">
+    <circle cx="512" cy="512" r="410" fill="url(#musicAura)" />
+  </g>
+
+  <!-- Layer 3: Concentric Vinyl Record Grooves & Soundwave Harmonics -->
+  <g id="layer-vinyl-grooves">
+    <circle cx="512" cy="512" r="380" stroke="#A855F7" stroke-opacity="0.12" stroke-width="2" />
+    <circle cx="512" cy="512" r="330" stroke="#FF007F" stroke-opacity="0.10" stroke-width="1.5" stroke-dasharray="12 8" />
+    <circle cx="512" cy="512" r="280" stroke="#00F0FF" stroke-opacity="0.15" stroke-width="2" />
+    <circle cx="512" cy="512" r="230" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1" stroke-dasharray="6 6" />
+    <!-- Subtle Acoustic Pulse Points -->
+    <circle cx="512" cy="132" r="3" fill="#00F0FF" opacity="0.6" />
+    <circle cx="512" cy="892" r="3" fill="#FF007F" opacity="0.6" />
+    <circle cx="132" cy="512" r="3" fill="#A855F7" opacity="0.6" />
+    <circle cx="892" cy="512" r="3" fill="#00F0FF" opacity="0.6" />
+  </g>
+
+  <!-- Layer 4: Canonical Monogram ("IT" Sovereign Blades) -->
+  <g id="layer-monogram" filter="url(#monogramShadow)">
+    <!-- "I" Pillar (Left Monolith Blade) -->
+    <path d="M 240.6 322.6 L 380.9 240.6 L 380.9 742.4 L 240.6 824.3 Z"
+          fill="url(#titaniumSheen)" stroke="url(#specularRim)" stroke-width="4.5" stroke-linejoin="round" />
+    
+    <!-- "T" Cross-Vanguard & Kinetic Blade -->
+    <path d="M 440.3 209.9 L 824.3 312.3 L 783.4 430.1 L 622.6 378.9 L 622.6 839.7 L 460.8 762.9 L 460.8 332.8 Z"
+          fill="url(#titaniumSheen)" stroke="url(#specularRim)" stroke-width="4.5" stroke-linejoin="round" />
+  </g>
+
+  <!-- Layer 5: Distinct "IT Feels" Music Kinetic Play Shard with Integrated Equalizer Core -->
+  <g id="layer-music-shard" filter="url(#shardGlow)">
+    <!-- Kinetic Play Wedge -->
+    <path d="M 488 432 L 602 524 L 488 616 Z"
+          fill="url(#harmonicShard)" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round" />
+
+    <!-- Musical Equalizer Harmonic Bars Inside Play Center -->
+    <!-- Bar 1 -->
+    <rect x="510" y="496" width="6" height="56" rx="3" fill="#FFFFFF" opacity="0.95" />
+    <!-- Bar 2 (Apex) -->
+    <rect x="524" y="476" width="6" height="96" rx="3" fill="#FFFFFF" opacity="0.95" />
+    <!-- Bar 3 -->
+    <rect x="538" y="488" width="6" height="72" rx="3" fill="#FFFFFF" opacity="0.95" />
+    <!-- Bar 4 (Lead Shard) -->
+    <rect x="552" y="506" width="6" height="36" rx="3" fill="#FFFFFF" opacity="0.95" />
+  </g>
+
+  <!-- Layer 6: Ambient Acoustic Sound Wave Arcs Radiating Outward -->
+  <g id="layer-acoustic-waves" opacity="0.85">
+    <!-- Right radiating acoustic pulse arc 1 -->
+    <path d="M 640 470 A 75 75 0 0 1 640 578" fill="none" stroke="#00F0FF" stroke-width="4.5" stroke-linecap="round" />
+    <!-- Right radiating acoustic pulse arc 2 -->
+    <path d="M 662 444 A 110 110 0 0 1 662 604" fill="none" stroke="#FF007F" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="16 6" />
+  </g>
+
+  <!-- Layer 7: Glassmorphic Specular Top Sheen Dome -->
+  <g id="layer-top-sheen">
+    <rect x="3" y="3" width="1018" height="350" rx="223" fill="url(#topDomeSheen)" />
+  </g>
+</svg>

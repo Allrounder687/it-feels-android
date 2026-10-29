@@ -239,5 +239,145 @@ void main() {
       final scannedSongs = await service.scanAllDownloads();
       expect(scannedSongs.any((s) => s.id.contains('legacy999')), isTrue);
     });
+
+    test('recursively discovers songs in nested artist and album subdirectories', () async {
+      final downloadDir = await service.getDownloadDirectoryPath();
+      final nestedDir = Directory('$downloadDir/Coldplay/A Head Full of Dreams');
+      nestedDir.createSync(recursive: true);
+
+      final audioFile = File('${nestedDir.path}/Adventure of a Lifetime - Coldplay.m4a');
+      audioFile.writeAsBytesSync(List.filled(2048, 8));
+
+      final scannedSongs = await service.scanAllDownloads();
+      expect(scannedSongs.any((s) => s.title.contains('Adventure of a Lifetime') && s.artist == 'Coldplay'), isTrue);
+    });
+  });
+
+  group('DownloadService isSongMissingDetails', () {
+    test('correctly identifies songs with missing or placeholder details', () {
+      final now = DateTime.now();
+      final placeholderSong = Song(
+        id: 'saavn_xNVbUezC',
+        saavnId: 'xNVbUezC',
+        title: 'Downloaded Track (xNVbUezC)',
+        artist: 'Unknown Artist',
+        album: '',
+        duration: 0,
+        coverArt: '',
+        addedAt: now,
+      );
+      expect(DownloadService.isSongMissingDetails(placeholderSong), isTrue);
+
+      final noCoverSong = Song(
+        id: 'song_123',
+        saavnId: '123',
+        title: 'Valid Title',
+        artist: 'Valid Artist',
+        album: 'Album',
+        duration: 180,
+        coverArt: '',
+        addedAt: now,
+      );
+      expect(DownloadService.isSongMissingDetails(noCoverSong), isTrue);
+
+      final nonExistentLocalCover = Song(
+        id: 'song_456',
+        saavnId: '456',
+        title: 'Valid Title',
+        artist: 'Valid Artist',
+        album: 'Album',
+        duration: 180,
+        coverArt: '/non/existent/path/cover.jpg',
+        addedAt: now,
+      );
+      expect(DownloadService.isSongMissingDetails(nonExistentLocalCover), isTrue);
+
+      final validSong = Song(
+        id: 'song_789',
+        saavnId: '789',
+        title: 'Starboy',
+        artist: 'The Weeknd',
+        album: 'Starboy',
+        duration: 230,
+        coverArt: 'https://c.saavncdn.com/123/Starboy-500x500.jpg',
+        addedAt: now,
+      );
+      expect(DownloadService.isSongMissingDetails(validSong), isFalse);
+    });
+  });
+
+  group('DownloadService restoreSongMetadata', () {
+    test('restores full metadata, cover art, and lyrics from JioSaavn API', () async {
+      final downloadDir = await service.getDownloadDirectoryPath();
+      final songDir = Directory('$downloadDir/Undi Bundi - Shashi');
+      songDir.createSync(recursive: true);
+
+      final audioFile = File('${songDir.path}/Undi Bundi.m4a');
+      audioFile.writeAsBytesSync(List.filled(2048, 9));
+
+      final placeholderSong = Song(
+        id: 'saavn_xNVbUezC',
+        saavnId: 'xNVbUezC',
+        title: 'Downloaded Track (xNVbUezC)',
+        artist: 'Unknown Artist',
+        album: '',
+        duration: 0,
+        coverArt: '',
+        encryptedMediaUrl: audioFile.path,
+        addedAt: DateTime.now(),
+      );
+
+      final mockSaavnResponse = '''{
+        "songs": [
+          {
+            "id": "xNVbUezC",
+            "title": "Undi Bundi",
+            "image": "https://c.saavncdn.com/737/Undi-Bundi-150x150.jpg",
+            "more_info": {
+              "album": "Prem Keetanu",
+              "duration": "162",
+              "has_lyrics": "true",
+              "artistMap": {
+                "primary_artists": [
+                  {"id": "483654", "name": "Shashi", "role": "primary_artists"}
+                ]
+              }
+            }
+          }
+        ]
+      }''';
+
+      when(() => mockClient.get(
+        Uri.parse('https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=xNVbUezC&_format=json&_marker=0&api_version=4&ctx=web6dot0'),
+        headers: any(named: 'headers'),
+      )).thenAnswer((_) async => http.Response(mockSaavnResponse, 200));
+
+      when(() => mockClient.get(
+        Uri.parse('https://c.saavncdn.com/737/Undi-Bundi-500x500.jpg'),
+      )).thenAnswer((_) async => http.Response.bytes([1, 2, 3, 4], 200));
+
+      when(() => mockClient.get(
+        Uri.parse('https://www.jiosaavn.com/api.php?__call=lyrics.getLyrics&lyrics_id=xNVbUezC&_format=json&ctx=web6dot0'),
+        headers: any(named: 'headers'),
+      )).thenAnswer((_) async => http.Response('{"lyrics": "Undi bundi bol de<br>Khul ke prem me dol de"}', 200));
+
+      final restored = await service.restoreSongMetadata(placeholderSong);
+      expect(restored, isNotNull);
+      expect(restored!.title, 'Undi Bundi');
+      expect(restored.artist, 'Shashi');
+      expect(restored.album, 'Prem Keetanu');
+      expect(restored.duration, 162);
+      expect(restored.hasLyrics, isTrue);
+
+      final metaFile = File('${songDir.path}/metadata.json');
+      expect(metaFile.existsSync(), isTrue);
+
+      final coverFile = File('${songDir.path}/cover.jpg');
+      expect(coverFile.existsSync(), isTrue);
+
+      final lyricsFile = File('${songDir.path}/lyrics.txt');
+      expect(lyricsFile.existsSync(), isTrue);
+      expect(lyricsFile.readAsStringSync(), contains('Undi bundi bol de'));
+    });
   });
 }

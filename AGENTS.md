@@ -13,6 +13,31 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Universal AI App Icon, Deep Recursive Download Scanner & In-App JioSaavn Metadata Restoration Suite (v3.6.25):**
+  - **Universal AI App Icon Overhaul ("IF" Emblem)**:
+    - Generated a bespoke 3D glassmorphic, glossy obsidian app icon using AI image generation, fusing futuristic glowing neon cyan, electric violet, and magenta 'IF' initials with fluid audio waves and headphones.
+    - Synchronized and compiled master icon across all platforms via `IconCraftEngine.deploy_to_project()` and `flutter_launcher_icons`:
+      - `assets/icon.png` (1024x1024 master lossless PNG)
+      - `windows/runner/resources/app_icon.ico` (multi-resolution ICO 16x16 through 256x256)
+      - `android/app/src/main/res/mipmap-*` (`ic_launcher.png`, `ic_launcher_round.png`)
+      - `android/app/src/main/res/drawable-*` (`ic_launcher_foreground.png` with adaptive `#090D16` background)
+      - iOS, macOS, and Web icon bundles.
+  - **Deep Recursive Download Storage Scanner (`scanAllDownloads`)**:
+    - Expanded directory candidate resolution to unconditionally include the user's `customDownloadPath` setting (even if write-restricted by Scoped Storage on Android 11+).
+    - Added all root storage directories (`/storage/emulated/0/It Feels`, `/storage/emulated/0/IT-Feels`, `/storage/emulated/0/IT Feels`, `/storage/emulated/0/It_Feels`, `/storage/emulated/0/it_feels`, `/sdcard/...`), public folders (`/Music`, `/Download`, `/Documents`), and package variants (`com.itfeels.music`, `com.itfeels.music.debug`, `com.itfeels.it_feels`, etc.).
+    - Implemented `_scanDirectoryRecursive` safely traversing directory trees up to depth 4, discovering both bundled song folders (with `metadata.json`) and loose files across deep nested artist and album structures.
+  - **In-App JioSaavn Metadata & Artwork Restoration Engine**:
+    - **Detection (`DownloadService.isSongMissingDetails`)**: Reactively detects songs missing artwork, titled "Downloaded Track", named with raw `saavn_` IDs, with unknown artists, zero durations, or non-existent local cover files.
+    - **Single Track & Batch Restoration (`restoreSongMetadata` & `restoreAllMissingMetadata`)**:
+      - Resolves Saavn ID directly via JioSaavn `song.getDetails` (or queries autocomplete search for un-tagged tracks).
+      - Downloads high-resolution 500x500 album art locally (`cover.jpg` or companion `${baseName}.jpg`).
+      - Fetches and saves lyrics locally (`lyrics.txt` / `lyrics.lrc`).
+      - Updates and caches local `metadata.json` and updates the offline registry.
+    - **Library Downloads Tab Banner & Quick-Fix Actions**:
+      - Added dynamic restoration banner in `LibraryScreen` (Downloads tab) displaying missing item counts, active progress bar, and a one-tap **"Fix All"** restoration button.
+      - Added **"Restore Artwork & Details"** option into `SongOptionsSheet` for individual on-demand recovery of downloaded songs.
+  - **Release APK Delivery**: Built release APK (`app-release.apk`) signed with production keystore, uploaded to direct UAE-accessible mirrors (Litterbox + Temp.sh), and dispatched links to the Telegram bot.
+
 - **Android Auto 2026 Compliance, Data Saver Restoration & Now Playing Video Tab De-emphasis (v3.6.24):**
   - **Now Playing Video Tab De-emphasis & "Coming Soon" Feature Mark**:
     - Removed glowing `boxShadow` and auto-highlight triggers that activated every time a song/canvas loaded in `NowPlayingHeader`.

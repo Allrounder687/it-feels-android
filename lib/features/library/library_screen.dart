@@ -744,6 +744,79 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   ),
                 ],
               ),
+
+              // Missing Details Restoration Banner (Downloads Tab)
+              if (isDownloadsTab && ((downloadState?.missingDetailsCount ?? 0) > 0 || (downloadState?.isRestoring ?? false))) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: context.themeAccentColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: context.themeAccentColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.auto_fix_high_rounded, color: context.themeAccentColor, size: 22),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              (downloadState?.isRestoring ?? false)
+                                  ? (downloadState?.restorationStatus ?? "Restoring metadata...")
+                                  : "${downloadState!.missingDetailsCount} songs missing artwork or details",
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: context.themeTextColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (downloadState?.isRestoring ?? false) ...[
+                              const SizedBox(height: 6),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: (downloadState?.restorationProgress ?? 0) > 0 ? downloadState!.restorationProgress : null,
+                                  backgroundColor: context.themeAccentColor.withValues(alpha: 0.2),
+                                  valueColor: AlwaysStoppedAnimation(context.themeAccentColor),
+                                  minHeight: 4,
+                                ),
+                              ),
+                            ] else ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                "Recover album art, titles, and lyrics from JioSaavn",
+                                style: GoogleFonts.inter(fontSize: 11, color: context.themeMutedTextColor),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (!(downloadState?.isRestoring ?? false))
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: context.themeAccentColor,
+                            foregroundColor: context.themeInvertedTextColor,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            elevation: 0,
+                          ),
+                          onPressed: () {
+                            ref.read(downloadProvider.notifier).restoreMissingMetadata();
+                          },
+                          child: Text("Fix All", style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700)),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),

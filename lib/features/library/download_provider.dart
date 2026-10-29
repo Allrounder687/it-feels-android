@@ -14,13 +14,23 @@ class DownloadState {
   final Map<String, double> downloadProgressMap;
   final Set<String> downloadingIds;
   final bool isScanning;
+  final bool isRestoring;
+  final double restorationProgress;
+  final String restorationStatus;
 
   const DownloadState({
     this.downloadedSongs = const [],
     this.downloadProgressMap = const {},
     this.downloadingIds = const {},
     this.isScanning = false,
+    this.isRestoring = false,
+    this.restorationProgress = 0.0,
+    this.restorationStatus = '',
   });
+
+  int get missingDetailsCount {
+    return downloadedSongs.where(DownloadService.isSongMissingDetails).length;
+  }
 
   static String normalizeId(String id) {
     if (id.startsWith('saavn:')) return id.substring(6);
@@ -69,12 +79,18 @@ class DownloadState {
     Map<String, double>? downloadProgressMap,
     Set<String>? downloadingIds,
     bool? isScanning,
+    bool? isRestoring,
+    double? restorationProgress,
+    String? restorationStatus,
   }) {
     return DownloadState(
       downloadedSongs: downloadedSongs ?? this.downloadedSongs,
       downloadProgressMap: downloadProgressMap ?? this.downloadProgressMap,
       downloadingIds: downloadingIds ?? this.downloadingIds,
       isScanning: isScanning ?? this.isScanning,
+      isRestoring: isRestoring ?? this.isRestoring,
+      restorationProgress: restorationProgress ?? this.restorationProgress,
+      restorationStatus: restorationStatus ?? this.restorationStatus,
     );
   }
 }
@@ -107,6 +123,63 @@ class DownloadNotifier extends Notifier<DownloadState> {
       debugPrint('[DownloadNotifier] scanAndSync error: $e');
       state = state.copyWith(isScanning: false);
       return state.downloadedSongs;
+    }
+  }
+
+  /// Restores missing metadata, album artwork, and lyrics from JioSaavn for all downloaded tracks
+  Future<int> restoreMissingMetadata() async {
+    if (state.isRestoring) return 0;
+    state = state.copyWith(
+      isRestoring: true,
+      restorationProgress: 0.0,
+      restorationStatus: 'Starting metadata restoration...',
+    );
+
+    try {
+      final restoredCount = await downloadService.restoreAllMissingMetadata(
+        candidateSongs: state.downloadedSongs,
+        onProgress: (current, total, song) {
+          final progress = total > 0 ? (current / total) : 0.0;
+          state = state.copyWith(
+            restorationProgress: progress,
+            restorationStatus: 'Restoring ($current/$total): ${song.title.isNotEmpty ? song.title : song.id}',
+          );
+        },
+      );
+
+      final updatedDownloads = await StorageService.loadDownloads();
+      state = state.copyWith(
+        downloadedSongs: updatedDownloads,
+        isRestoring: false,
+        restorationProgress: 1.0,
+        restorationStatus: 'Restored $restoredCount tracks',
+      );
+      return restoredCount;
+    } catch (e) {
+      debugPrint('[DownloadNotifier] restoreMissingMetadata error: $e');
+      state = state.copyWith(
+        isRestoring: false,
+        restorationStatus: 'Error during restoration: $e',
+      );
+      return 0;
+    }
+  }
+
+  /// Restores metadata and artwork for a single downloaded song
+  Future<bool> restoreSingleSong(Song song) async {
+    try {
+      final restored = await downloadService.restoreSongMetadata(song);
+      if (restored != null) {
+        final existing = await StorageService.loadDownloads();
+        final updated = existing.map((s) => s.id == song.id ? restored : s).toList();
+        await StorageService.saveDownloads(updated);
+        state = state.copyWith(downloadedSongs: updated);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('[DownloadNotifier] restoreSingleSong error: $e');
+      return false;
     }
   }
 

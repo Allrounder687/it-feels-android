@@ -160,7 +160,7 @@ class Song {
       coverArt: rawImage,
       encryptedMediaUrl: encUrl,
       hasLyrics: hasLrc,
-      language: json['language']?.toString() ?? (json['more_info'] != null ? json['more_info']['language'] : 'unknown'),
+      language: json['language']?.toString() ?? (json['more_info'] != null ? json['more_info']['language']?.toString() : null) ?? 'unknown',
       year: int.tryParse(json['year']?.toString() ?? '2024') ?? 2024,
       isExplicit: json['explicit_content'] == '1' || json['explicit_content'] == 1,
       addedAt: DateTime.now(),

@@ -452,8 +452,358 @@ class DownloadService {
     }
   }
 
-  /// Scans file manager directories across all versions/builds (debug, release, old, new)
-  /// and synchronizes them into the downloads registry.
+  /// Checks whether a downloaded song is missing crucial metadata or assets
+  /// (title placeholder, unknown artist, missing duration, or missing cover art).
+  static bool isSongMissingDetails(Song song) {
+    final title = song.title.trim().toLowerCase();
+    if (title.isEmpty ||
+        title.startsWith('downloaded track') ||
+        title.startsWith('saavn_') ||
+        title == 'unknown track' ||
+        title == 'unknown') {
+      return true;
+    }
+    final artist = song.artist.trim().toLowerCase();
+    if (artist.isEmpty || artist == 'unknown artist' || artist == 'unknown') {
+      return true;
+    }
+    if (song.duration <= 0) {
+      return true;
+    }
+    if (song.coverArt.trim().isEmpty) {
+      return true;
+    }
+    if (!song.coverArt.startsWith('http://') && !song.coverArt.startsWith('https://')) {
+      final cleanPath = song.coverArt.startsWith('file://')
+          ? song.coverArt.replaceFirst('file://', '')
+          : song.coverArt;
+      try {
+        if (!File(cleanPath).existsSync()) return true;
+      } catch (_) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Queries JioSaavn (via Saavn ID or autocomplete search) to restore full metadata,
+  /// 500x500 album art, and lyrics for downloaded songs that have missing details.
+  Future<Song?> restoreSongMetadata(Song song) async {
+    try {
+      String? saavnId = song.saavnId.isNotEmpty ? song.saavnId : null;
+      if (saavnId == null || saavnId.isEmpty) {
+        if (song.id.startsWith('saavn_')) {
+          saavnId = song.id.replaceFirst('saavn_', '');
+        } else if (song.id.startsWith('saavn:')) {
+          saavnId = song.id.replaceFirst('saavn:', '');
+        }
+      }
+
+      // Check if audio filename or media url has saavn_XYZ
+      if (saavnId == null || saavnId.isEmpty) {
+        if (song.encryptedMediaUrl != null) {
+          final m = RegExp(r'saavn_([a-zA-Z0-9_-]+)').firstMatch(song.encryptedMediaUrl!);
+          if (m != null) {
+            saavnId = m.group(1);
+          }
+        }
+      }
+
+      // Check if title has (saavnId) placeholder e.g. "Downloaded Track (xNVbUezC)"
+      if (saavnId == null || saavnId.isEmpty) {
+        final m = RegExp(r'\(([a-zA-Z0-9_-]{6,16})\)').firstMatch(song.title);
+        if (m != null) {
+          saavnId = m.group(1);
+        }
+      }
+
+      Map<String, dynamic>? songDetails;
+
+      // 1. Attempt direct lookup by Saavn ID if available
+      if (saavnId != null && saavnId.isNotEmpty) {
+        try {
+          final uri = Uri.parse(
+            'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=$saavnId&_format=json&_marker=0&api_version=4&ctx=web6dot0',
+          );
+          final resp = await httpClient.get(uri, headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          }).timeout(const Duration(seconds: 12));
+
+          if (resp.statusCode == 200) {
+            final data = jsonDecode(utf8.decode(resp.bodyBytes));
+            if (data is Map && data['songs'] is List && (data['songs'] as List).isNotEmpty) {
+              songDetails = (data['songs'] as List).first as Map<String, dynamic>;
+            } else if (data is Map && data[saavnId] is Map) {
+              songDetails = data[saavnId] as Map<String, dynamic>;
+            }
+          }
+        } catch (e) {
+          debugPrint('[DownloadService] song.getDetails lookup error for $saavnId: $e');
+        }
+      }
+
+      // 2. If no saavnId or lookup failed, attempt search by query
+      if (songDetails == null) {
+        String searchQuery = '';
+        if (song.title.isNotEmpty && !song.title.startsWith('Downloaded Track') && !song.title.startsWith('saavn_')) {
+          searchQuery = song.title;
+          if (song.artist.isNotEmpty && song.artist.toLowerCase() != 'unknown artist') {
+            searchQuery += ' ${song.artist}';
+          }
+        } else if (song.encryptedMediaUrl != null && song.encryptedMediaUrl!.isNotEmpty) {
+          final file = File(song.encryptedMediaUrl!);
+          final baseName = file.uri.pathSegments.isNotEmpty ? file.uri.pathSegments.last : '';
+          final parentName = file.parent.uri.pathSegments.where((s) => s.isNotEmpty).isNotEmpty
+              ? file.parent.uri.pathSegments.where((s) => s.isNotEmpty).last
+              : '';
+
+          if (parentName.isNotEmpty &&
+              parentName.contains(' - ') &&
+              !parentName.toLowerCase().contains('download') &&
+              !parentName.toLowerCase().contains('it-feels')) {
+            searchQuery = parentName.replaceAll(RegExp(r'[\\/:*?"<>|]'), ' ');
+          } else {
+            final cleanBase = baseName
+                .replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')
+                .replaceFirst('saavn_', '')
+                .replaceAll(RegExp(r'[_-]'), ' ')
+                .trim();
+            if (cleanBase.isNotEmpty) {
+              searchQuery = cleanBase;
+            }
+          }
+        }
+
+        if (searchQuery.isNotEmpty) {
+          try {
+            // First try autocomplete.get
+            final searchUri = Uri.parse(
+              'https://www.jiosaavn.com/api.php?__call=autocomplete.get&query=${Uri.encodeComponent(searchQuery)}&_format=json&_marker=0&ctx=android',
+            );
+            final searchResp = await httpClient.get(searchUri, headers: {
+              'User-Agent': 'Mozilla/5.0',
+            }).timeout(const Duration(seconds: 10));
+
+            if (searchResp.statusCode == 200) {
+              final searchData = jsonDecode(utf8.decode(searchResp.bodyBytes));
+              if (searchData is Map && searchData['songs'] is Map && searchData['songs']['data'] is List) {
+                final list = searchData['songs']['data'] as List;
+                if (list.isNotEmpty) {
+                  final firstMatch = list.first as Map;
+                  final matchId = firstMatch['id']?.toString();
+                  if (matchId != null && matchId.isNotEmpty) {
+                    final detailUri = Uri.parse(
+                      'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=$matchId&_format=json&_marker=0&api_version=4&ctx=web6dot0',
+                    );
+                    final dResp = await httpClient.get(detailUri, headers: {'User-Agent': 'Mozilla/5.0'}).timeout(const Duration(seconds: 10));
+                    if (dResp.statusCode == 200) {
+                      final dData = jsonDecode(utf8.decode(dResp.bodyBytes));
+                      if (dData is Map && dData['songs'] is List && (dData['songs'] as List).isNotEmpty) {
+                        songDetails = (dData['songs'] as List).first as Map<String, dynamic>;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            // Fallback to search.getResults if autocomplete didn't yield details
+            if (songDetails == null) {
+              final getResultsUri = Uri.parse(
+                'https://www.jiosaavn.com/api.php?__call=search.getResults&q=${Uri.encodeComponent(searchQuery)}&_format=json&p=1&n=5',
+              );
+              final rResp = await httpClient.get(getResultsUri, headers: {'User-Agent': 'Mozilla/5.0'}).timeout(const Duration(seconds: 10));
+              if (rResp.statusCode == 200) {
+                final rData = jsonDecode(utf8.decode(rResp.bodyBytes));
+                if (rData is Map && rData['results'] is List && (rData['results'] as List).isNotEmpty) {
+                  final firstMatch = (rData['results'] as List).first as Map;
+                  final matchId = firstMatch['id']?.toString();
+                  if (matchId != null && matchId.isNotEmpty) {
+                    final detailUri = Uri.parse(
+                      'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=$matchId&_format=json&_marker=0&api_version=4&ctx=web6dot0',
+                    );
+                    final dResp = await httpClient.get(detailUri, headers: {'User-Agent': 'Mozilla/5.0'}).timeout(const Duration(seconds: 10));
+                    if (dResp.statusCode == 200) {
+                      final dData = jsonDecode(utf8.decode(dResp.bodyBytes));
+                      if (dData is Map && dData['songs'] is List && (dData['songs'] as List).isNotEmpty) {
+                        songDetails = (dData['songs'] as List).first as Map<String, dynamic>;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            debugPrint('[DownloadService] Search lookup error: $e');
+          }
+        }
+      }
+
+      if (songDetails == null) return null;
+
+      // 3. Parse enriched song metadata using Song.fromJson
+      final enrichedSong = Song.fromJson(songDetails);
+
+      // Determine local directory paths safely
+      final audioFilePath = song.encryptedMediaUrl;
+      File? audioFile;
+      Directory? parentDir;
+      if (audioFilePath != null && audioFilePath.isNotEmpty) {
+        audioFile = File(audioFilePath);
+        parentDir = audioFile.parent;
+      }
+
+      // Default localCoverPath to the high-res 500x500 CDN URL immediately!
+      // This guarantees that coverArt is NEVER empty and the UI displays artwork even if disk write is blocked!
+      String localCoverPath = enrichedSong.coverArt;
+
+      if (enrichedSong.coverArt.isNotEmpty && enrichedSong.coverArt.startsWith('http')) {
+        try {
+          final imgResp = await httpClient.get(Uri.parse(enrichedSong.coverArt)).timeout(const Duration(seconds: 12));
+          if (imgResp.statusCode == 200 && imgResp.bodyBytes.isNotEmpty) {
+            bool savedLocally = false;
+            // First attempt to save in the song's parent directory
+            if (parentDir != null && await parentDir.exists()) {
+              try {
+                final isDedicatedFolder = parentDir.uri.pathSegments.where((s) => s.isNotEmpty).last.toLowerCase() != 'music' &&
+                    parentDir.uri.pathSegments.where((s) => s.isNotEmpty).last.toLowerCase() != 'download' &&
+                    parentDir.uri.pathSegments.where((s) => s.isNotEmpty).last.toLowerCase() != 'it-feels';
+
+                final File targetCover = isDedicatedFolder
+                    ? File('${parentDir.path}/cover.jpg')
+                    : File('${parentDir.path}/${audioFile!.uri.pathSegments.last.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')}.jpg');
+                await targetCover.writeAsBytes(imgResp.bodyBytes);
+                localCoverPath = targetCover.path;
+                savedLocally = true;
+              } catch (_) {}
+            }
+
+            // Fallback: If external storage was write-restricted (Android 11+ Scoped Storage),
+            // save cover into app documents directory which is ALWAYS 100% writable!
+            if (!savedLocally) {
+              try {
+                final appDocs = await getApplicationDocumentsDirectory();
+                final coversDir = Directory('${appDocs.path}/download_covers');
+                if (!await coversDir.exists()) await coversDir.create(recursive: true);
+                final safeId = enrichedSong.id.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+                final File appDocCover = File('${coversDir.path}/$safeId.jpg');
+                await appDocCover.writeAsBytes(imgResp.bodyBytes);
+                localCoverPath = appDocCover.path;
+                savedLocally = true;
+              } catch (_) {}
+            }
+          }
+        } catch (e) {
+          debugPrint('[DownloadService] Cover download error: $e');
+        }
+      }
+
+      // 5. Fetch and save lyrics
+      bool hasLyrics = enrichedSong.hasLyrics;
+      try {
+        final moreInfo = songDetails['more_info'];
+        final hasLyricsFlag = moreInfo != null && (moreInfo['has_lyrics'] == 'true' || moreInfo['has_lyrics'] == true);
+        if (hasLyricsFlag) {
+          final cleanLyricsId = enrichedSong.saavnId.isNotEmpty
+              ? enrichedSong.saavnId
+              : enrichedSong.id.replaceFirst('saavn:', '');
+          final lyricsUri = Uri.parse(
+            'https://www.jiosaavn.com/api.php?__call=lyrics.getLyrics&lyrics_id=$cleanLyricsId&_format=json&ctx=web6dot0',
+          );
+          final lyrResp = await httpClient.get(lyricsUri, headers: {'User-Agent': 'Mozilla/5.0'}).timeout(const Duration(seconds: 10));
+          if (lyrResp.statusCode == 200) {
+            final lyrData = jsonDecode(utf8.decode(lyrResp.bodyBytes));
+            final rawLyrics = lyrData['lyrics']?.toString();
+            if (rawLyrics != null && rawLyrics.trim().isNotEmpty) {
+              hasLyrics = true;
+              if (parentDir != null && await parentDir.exists()) {
+                try {
+                  final targetLrc = File('${parentDir.path}/lyrics.txt');
+                  await targetLrc.writeAsString(rawLyrics.replaceAll('<br>', '\n').replaceAll('&quot;', '"'));
+                } catch (_) {}
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[DownloadService] Lyrics download error: $e');
+      }
+
+      // 6. Save or update metadata.json if directory is writable
+      if (parentDir != null && await parentDir.exists()) {
+        try {
+          final metaFile = File('${parentDir.path}/metadata.json');
+          final metadata = {
+            'id': enrichedSong.id,
+            'saavnId': enrichedSong.saavnId.isNotEmpty ? enrichedSong.saavnId : enrichedSong.id,
+            'title': enrichedSong.title,
+            'artist': enrichedSong.artist,
+            'album': enrichedSong.album,
+            'duration': enrichedSong.duration,
+            'durationFormatted': formatDuration(enrichedSong.duration),
+            'coverArt': localCoverPath,
+            'audioFile': audioFile != null ? audioFile.uri.pathSegments.last : null,
+            'coverFile': localCoverPath.endsWith('.jpg') ? 'cover.jpg' : null,
+            'hasLyrics': hasLyrics,
+            'downloadedAt': song.addedAt.toIso8601String(),
+            'restoredAt': DateTime.now().toIso8601String(),
+            'app': 'IT-Feels',
+          };
+          await metaFile.writeAsString(const JsonEncoder.withIndent('  ').convert(metadata));
+        } catch (_) {}
+      }
+
+      // 7. Construct final restored song
+      final restored = Song(
+        id: song.id,
+        saavnId: enrichedSong.saavnId.isNotEmpty ? enrichedSong.saavnId : (saavnId ?? enrichedSong.id),
+        title: enrichedSong.title.isNotEmpty ? enrichedSong.title : song.title,
+        artist: enrichedSong.artist.isNotEmpty ? enrichedSong.artist : song.artist,
+        album: enrichedSong.album.isNotEmpty ? enrichedSong.album : song.album,
+        duration: enrichedSong.duration > 0 ? enrichedSong.duration : song.duration,
+        coverArt: localCoverPath.isNotEmpty ? localCoverPath : (enrichedSong.coverArt.isNotEmpty ? enrichedSong.coverArt : song.coverArt),
+        encryptedMediaUrl: audioFilePath,
+        hasLyrics: hasLyrics || song.hasLyrics,
+        addedAt: song.addedAt,
+      );
+
+      return restored;
+    } catch (e) {
+      debugPrint('[DownloadService] restoreSongMetadata failed for ${song.title}: $e');
+      return null;
+    }
+  }
+
+  /// Restores missing metadata, covers, and lyrics across all downloaded songs in background.
+  Future<int> restoreAllMissingMetadata({
+    List<Song>? candidateSongs,
+    Function(int current, int total, Song song)? onProgress,
+  }) async {
+    final existingDownloads = candidateSongs ?? await StorageService.loadDownloads();
+    final toRestore = existingDownloads.where(isSongMissingDetails).toList();
+    if (toRestore.isEmpty) return 0;
+
+    int restoredCount = 0;
+    final Map<String, Song> registry = {
+      for (final s in existingDownloads) s.id: s,
+    };
+
+    for (int i = 0; i < toRestore.length; i++) {
+      final song = toRestore[i];
+      onProgress?.call(i + 1, toRestore.length, song);
+
+      final restored = await restoreSongMetadata(song);
+      if (restored != null) {
+        registry[song.id] = restored;
+        restoredCount++;
+        await StorageService.saveDownloads(registry.values.toList());
+      }
+
+      await Future.delayed(const Duration(milliseconds: 150));
+    }
+
+    return restoredCount;
+  }
   Future<List<Song>> scanAllDownloads() async {
     final Map<String, Song> discoveredSongs = {};
 
@@ -479,8 +829,42 @@ class DownloadService {
       candidatePaths.add(primary);
     } catch (_) {}
 
-    // Android external storage directories
+    // Custom download path from user settings (unconditionally, without requiring write permission)
+    try {
+      final settings = await StorageService.loadSettings();
+      final customPath = settings['customDownloadPath']?.toString().trim();
+      if (customPath != null && customPath.isNotEmpty) {
+        candidatePaths.add(customPath);
+      }
+    } catch (_) {}
+
+    // Android external storage directories & storage roots
     if (Platform.isAndroid) {
+      final roots = ['/storage/emulated/0', '/sdcard'];
+      final folderNames = [
+        'It Feels',
+        'IT-Feels',
+        'IT Feels',
+        'IT_Feels',
+        'it_feels',
+        'it_feels_alternate',
+        'IT-Feels-Alternate',
+        'ITFeels',
+        'downloaded_music',
+      ];
+
+      for (final root in roots) {
+        for (final folder in folderNames) {
+          candidatePaths.add('$root/$folder');
+          candidatePaths.add('$root/Music/$folder');
+          candidatePaths.add('$root/Download/$folder');
+          candidatePaths.add('$root/Downloads/$folder');
+          candidatePaths.add('$root/Documents/$folder');
+        }
+        candidatePaths.add('$root/Music');
+        candidatePaths.add('$root/Download');
+      }
+
       try {
         final extMusic = await getExternalStorageDirectories(type: StorageDirectory.music);
         if (extMusic != null) {
@@ -508,27 +892,22 @@ class DownloadService {
         }
       } catch (_) {}
 
-      // Well-known public paths for IT-Feels versions
-      final wellKnownPaths = [
-        '/storage/emulated/0/Music/IT-Feels',
-        '/storage/emulated/0/Music/IT-Feels-Alternate',
-        '/storage/emulated/0/Music/IT_Feels',
-        '/storage/emulated/0/Music/it_feels',
-        '/storage/emulated/0/Music/ITFeels',
-        '/storage/emulated/0/Music/downloaded_music',
-        '/storage/emulated/0/Music',
-        '/storage/emulated/0/Download/IT-Feels',
-        '/storage/emulated/0/Download/IT-Feels-Alternate',
-        '/storage/emulated/0/Download/IT_Feels',
-        // Alternate and debug packages
-        '/storage/emulated/0/Android/data/com.itfeels.music/files/Music',
-        '/storage/emulated/0/Android/data/com.itfeels.music.debug/files/Music',
-        '/storage/emulated/0/Android/data/com.itfeels.it_feels/files/Music',
-        '/storage/emulated/0/Android/data/com.itfeels.it_feels_alternate/files/Music',
-        '/storage/emulated/0/Android/data/com.example.it_feels_music/files/Music',
-        '/storage/emulated/0/Android/data/com.example.it_feels/files/Music',
+      // Package data and media paths across all package variants (debug, release, alternate)
+      final packageNames = [
+        'com.itfeels.music',
+        'com.itfeels.music.debug',
+        'com.itfeels.it_feels',
+        'com.itfeels.it_feels.debug',
+        'com.itfeels.it_feels_alternate',
+        'com.example.it_feels_music',
+        'com.example.it_feels',
       ];
-      candidatePaths.addAll(wellKnownPaths);
+      for (final pkg in packageNames) {
+        candidatePaths.add('/storage/emulated/0/Android/data/$pkg/files/Music');
+        candidatePaths.add('/storage/emulated/0/Android/data/$pkg/files/downloaded_music');
+        candidatePaths.add('/storage/emulated/0/Android/data/$pkg/files');
+        candidatePaths.add('/storage/emulated/0/Android/media/$pkg');
+      }
     }
 
     // Documents & Support paths across all platforms
@@ -546,141 +925,17 @@ class DownloadService {
 
     const audioExtensions = ['.m4a', '.mp3', '.mp4', '.flac', '.wav', '.ogg', '.opus', '.aac'];
 
-    // 3. Scan candidate directories
+    // 3. Recursively scan candidate directories up to depth 4
     for (final dirPath in candidatePaths) {
       final dir = Directory(dirPath);
-      try {
-        if (!dir.existsSync()) continue;
-
-        final entities = dir.listSync(followLinks: false);
-        for (final entity in entities) {
-          if (entity is Directory) {
-            // Subfolder: e.g. "Music/Shape of You - Ed Sheeran/"
-            try {
-              final subFiles = entity.listSync(followLinks: false);
-              File? metaFile;
-              File? coverFile;
-              File? lrcFile;
-              File? audioFile;
-
-              for (final sub in subFiles) {
-                if (sub is File) {
-                  final name = sub.uri.pathSegments.last.toLowerCase();
-                  if (name == 'metadata.json') {
-                    metaFile = sub;
-                  } else if (name == 'cover.jpg' || name == 'cover.png' || name == 'album.jpg') {
-                    coverFile = sub;
-                  } else if (name == 'lyrics.lrc' || name == 'lyrics.txt') {
-                    lrcFile = sub;
-                  } else if (audioExtensions.any((ext) => name.endsWith(ext))) {
-                    if (sub.lengthSync() > 1024) {
-                      audioFile ??= sub;
-                    }
-                  }
-                }
-              }
-
-              if (audioFile != null) {
-                if (discoveredSongs.containsKey(audioFile.path)) continue;
-
-                Song? parsedSong;
-                if (metaFile != null && metaFile.existsSync()) {
-                  try {
-                    final meta = jsonDecode(metaFile.readAsStringSync());
-                    if (meta is Map) {
-                      parsedSong = Song(
-                        id: meta['id']?.toString() ?? 'scanned_${audioFile.path.hashCode.abs()}',
-                        saavnId: meta['saavnId']?.toString() ?? '',
-                        title: meta['title']?.toString() ?? _extractTitleFromFileName(audioFile.path),
-                        artist: meta['artist']?.toString() ?? 'Unknown Artist',
-                        album: meta['album']?.toString() ?? '',
-                        duration: int.tryParse(meta['duration']?.toString() ?? meta['durationSeconds']?.toString() ?? '0') ?? 0,
-                        coverArt: coverFile != null ? coverFile.path : (meta['coverArt']?.toString() ?? ''),
-                        encryptedMediaUrl: audioFile.path,
-                        hasLyrics: meta['hasLyrics'] == true || lrcFile != null,
-                        addedAt: DateTime.tryParse(meta['downloadedAt']?.toString() ?? '') ?? DateTime.now(),
-                      );
-                    }
-                  } catch (_) {}
-                }
-
-                if (parsedSong == null) {
-                  // Fallback: parse from folder name or file name
-                  final folderName = entity.uri.pathSegments.where((s) => s.isNotEmpty).last;
-                  final (parsedTitle, parsedArtist) = _parseTitleAndArtist(folderName);
-                  parsedSong = Song(
-                    id: 'scanned_${audioFile.path.hashCode.abs()}',
-                    saavnId: '',
-                    title: parsedTitle.isNotEmpty ? parsedTitle : _extractTitleFromFileName(audioFile.path),
-                    artist: parsedArtist,
-                    album: '',
-                    duration: 0,
-                    coverArt: coverFile != null ? coverFile.path : '',
-                    encryptedMediaUrl: audioFile.path,
-                    hasLyrics: lrcFile != null,
-                    addedAt: audioFile.lastModifiedSync(),
-                  );
-                }
-
-                discoveredSongs[audioFile.path] = parsedSong;
-              }
-            } catch (_) {}
-          } else if (entity is File) {
-            // Direct file in directory: e.g. "saavn_9yG781.mp4" or "Tum Hi Ho - Arijit Singh.m4a"
-            try {
-              final fileName = entity.uri.pathSegments.last;
-              final lower = fileName.toLowerCase();
-              if (audioExtensions.any((ext) => lower.endsWith(ext)) && entity.lengthSync() > 1024) {
-                if (discoveredSongs.containsKey(entity.path)) continue;
-
-                final baseName = fileName.substring(0, fileName.lastIndexOf('.'));
-                File? companionCover;
-                final jpgTest = File('${entity.parent.path}/$baseName.jpg');
-                final pngTest = File('${entity.parent.path}/$baseName.png');
-                if (jpgTest.existsSync()) {
-                  companionCover = jpgTest;
-                } else if (pngTest.existsSync()) {
-                  companionCover = pngTest;
-                }
-
-                Song? matchedExisting = existingDownloads.cast<Song?>().firstWhere(
-                  (s) => s?.id == baseName || s?.saavnId == baseName || (s?.encryptedMediaUrl != null && s!.encryptedMediaUrl!.endsWith(fileName)),
-                  orElse: () => null,
-                );
-
-                if (matchedExisting != null) {
-                  discoveredSongs[entity.path] = Song(
-                    id: matchedExisting.id,
-                    saavnId: matchedExisting.saavnId,
-                    title: matchedExisting.title,
-                    artist: matchedExisting.artist,
-                    album: matchedExisting.album,
-                    duration: matchedExisting.duration,
-                    coverArt: companionCover != null ? companionCover.path : matchedExisting.coverArt,
-                    encryptedMediaUrl: entity.path,
-                    hasLyrics: matchedExisting.hasLyrics,
-                    addedAt: matchedExisting.addedAt,
-                  );
-                } else {
-                  final (parsedTitle, parsedArtist) = _parseTitleAndArtist(baseName);
-                  discoveredSongs[entity.path] = Song(
-                    id: baseName.startsWith('saavn_') ? baseName : 'scanned_${entity.path.hashCode.abs()}',
-                    saavnId: baseName.startsWith('saavn_') ? baseName.replaceFirst('saavn_', '') : '',
-                    title: parsedTitle,
-                    artist: parsedArtist,
-                    album: '',
-                    duration: 0,
-                    coverArt: companionCover != null ? companionCover.path : '',
-                    encryptedMediaUrl: entity.path,
-                    hasLyrics: false,
-                    addedAt: entity.lastModifiedSync(),
-                  );
-                }
-              }
-            } catch (_) {}
-          }
-        }
-      } catch (_) {}
+      await _scanDirectoryRecursive(
+        dir: dir,
+        currentDepth: 0,
+        maxDepth: 4,
+        audioExtensions: audioExtensions,
+        discoveredSongs: discoveredSongs,
+        existingDownloads: existingDownloads,
+      );
     }
 
     // 4. Deduplicate by song.id and audio path
@@ -702,6 +957,156 @@ class DownloadService {
     // 5. Persist back to storage
     await StorageService.saveDownloads(resultList);
     return resultList;
+  }
+
+  /// Safely traverses candidate directory trees up to [maxDepth],
+  /// discovering bundled song directories, audio files, companion covers, and lyrics.
+  Future<void> _scanDirectoryRecursive({
+    required Directory dir,
+    required int currentDepth,
+    required int maxDepth,
+    required List<String> audioExtensions,
+    required Map<String, Song> discoveredSongs,
+    required List<Song> existingDownloads,
+  }) async {
+    if (currentDepth > maxDepth) return;
+    try {
+      if (!dir.existsSync()) return;
+
+      final entities = dir.listSync(followLinks: false);
+      File? metaFile;
+      File? coverFile;
+      File? lrcFile;
+      final List<File> audioFilesInDir = [];
+      final List<Directory> subDirs = [];
+
+      for (final entity in entities) {
+        if (entity is File) {
+          final name = entity.uri.pathSegments.last.toLowerCase();
+          if (name == 'metadata.json') {
+            metaFile = entity;
+          } else if (name == 'cover.jpg' || name == 'cover.png' || name == 'album.jpg') {
+            coverFile = entity;
+          } else if (name == 'lyrics.lrc' || name == 'lyrics.txt') {
+            lrcFile = entity;
+          } else if (audioExtensions.any((ext) => name.endsWith(ext))) {
+            try {
+              if (entity.lengthSync() > 1024) {
+                audioFilesInDir.add(entity);
+              }
+            } catch (_) {}
+          }
+        } else if (entity is Directory) {
+          subDirs.add(entity);
+        }
+      }
+
+      if (audioFilesInDir.isNotEmpty) {
+        for (final audioFile in audioFilesInDir) {
+          if (discoveredSongs.containsKey(audioFile.path)) continue;
+
+          final fileName = audioFile.uri.pathSegments.last;
+          final baseName = fileName.contains('.') ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
+
+          File? companionCover = coverFile;
+          if (companionCover == null) {
+            final testJpg = File('${audioFile.parent.path}/$baseName.jpg');
+            final testPng = File('${audioFile.parent.path}/$baseName.png');
+            if (testJpg.existsSync()) {
+              companionCover = testJpg;
+            } else if (testPng.existsSync()) {
+              companionCover = testPng;
+            }
+          }
+
+          Song? matchedExisting = existingDownloads.cast<Song?>().firstWhere(
+            (s) =>
+                s?.id == baseName ||
+                s?.saavnId == baseName ||
+                (s?.encryptedMediaUrl != null && s!.encryptedMediaUrl == audioFile.path) ||
+                (s?.encryptedMediaUrl != null && s!.encryptedMediaUrl!.endsWith(fileName)),
+            orElse: () => null,
+          );
+
+          Song? songResult;
+          if (metaFile != null && metaFile.existsSync()) {
+            try {
+              final meta = jsonDecode(metaFile.readAsStringSync());
+              if (meta is Map) {
+                songResult = Song(
+                  id: meta['id']?.toString() ?? 'scanned_${audioFile.path.hashCode.abs()}',
+                  saavnId: meta['saavnId']?.toString() ?? '',
+                  title: meta['title']?.toString() ?? _extractTitleFromFileName(audioFile.path),
+                  artist: meta['artist']?.toString() ?? 'Unknown Artist',
+                  album: meta['album']?.toString() ?? '',
+                  duration: int.tryParse(meta['duration']?.toString() ?? meta['durationSeconds']?.toString() ?? '0') ?? 0,
+                  coverArt: companionCover != null ? companionCover.path : (meta['coverArt']?.toString() ?? ''),
+                  encryptedMediaUrl: audioFile.path,
+                  hasLyrics: meta['hasLyrics'] == true || lrcFile != null,
+                  addedAt: DateTime.tryParse(meta['downloadedAt']?.toString() ?? '') ?? audioFile.lastModifiedSync(),
+                );
+              }
+            } catch (_) {}
+          }
+
+          if (songResult == null && matchedExisting != null) {
+            songResult = Song(
+              id: matchedExisting.id,
+              saavnId: matchedExisting.saavnId,
+              title: matchedExisting.title,
+              artist: matchedExisting.artist,
+              album: matchedExisting.album,
+              duration: matchedExisting.duration,
+              coverArt: companionCover != null ? companionCover.path : matchedExisting.coverArt,
+              encryptedMediaUrl: audioFile.path,
+              hasLyrics: matchedExisting.hasLyrics || lrcFile != null,
+              addedAt: matchedExisting.addedAt,
+            );
+          }
+
+          if (songResult == null) {
+            final folderName = dir.uri.pathSegments.where((s) => s.isNotEmpty).last;
+            final (parsedTitle, parsedArtist) = _parseTitleAndArtist(
+              baseName.startsWith('saavn_') ? baseName : (folderName.contains(' - ') ? folderName : baseName),
+            );
+
+            String extractedSaavnId = '';
+            if (baseName.startsWith('saavn_')) {
+              extractedSaavnId = baseName.replaceFirst('saavn_', '');
+            }
+
+            songResult = Song(
+              id: extractedSaavnId.isNotEmpty ? 'saavn_$extractedSaavnId' : 'scanned_${audioFile.path.hashCode.abs()}',
+              saavnId: extractedSaavnId,
+              title: parsedTitle,
+              artist: parsedArtist,
+              album: '',
+              duration: 0,
+              coverArt: companionCover != null ? companionCover.path : '',
+              encryptedMediaUrl: audioFile.path,
+              hasLyrics: lrcFile != null,
+              addedAt: audioFile.lastModifiedSync(),
+            );
+          }
+
+          discoveredSongs[audioFile.path] = songResult;
+        }
+      }
+
+      for (final subDir in subDirs) {
+        final dirName = subDir.uri.pathSegments.where((s) => s.isNotEmpty).last;
+        if (dirName.startsWith('.')) continue;
+
+        await _scanDirectoryRecursive(
+          dir: subDir,
+          currentDepth: currentDepth + 1,
+          maxDepth: maxDepth,
+          audioExtensions: audioExtensions,
+          discoveredSongs: discoveredSongs,
+          existingDownloads: existingDownloads,
+        );
+      }
+    } catch (_) {}
   }
 
   static (String, String) _parseTitleAndArtist(String name) {

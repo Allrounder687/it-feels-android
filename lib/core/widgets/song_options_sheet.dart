@@ -232,6 +232,31 @@ class SongOptionsSheet extends ConsumerWidget {
             },
           ),
 
+          // Action 5b: Restore Metadata & Artwork (if downloaded)
+          if (isDown)
+            _buildOptionTile(
+              context,
+              icon: Icons.auto_fix_high_rounded,
+              iconColor: context.themeAccentColor,
+              title: 'Restore Artwork and Details',
+              onTap: () async {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Restoring details for ...')),
+                );
+                final ok = await ref.read(downloadProvider.notifier).restoreSingleSong(song);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(ok
+                          ? 'Restored details and artwork for '
+                          : 'Could not restore metadata from JioSaavn'),
+                    ),
+                  );
+                }
+              },
+            ),
+
           // Action 5: Toggle Favorite
           _buildOptionTile(context, 
             icon: isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
