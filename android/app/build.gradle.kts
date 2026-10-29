@@ -39,6 +39,7 @@ android {
             storePassword = "android"
             enableV1Signing = true
             enableV2Signing = true
+            enableV3Signing = true
         }
     }
 
@@ -67,8 +68,9 @@ android {
         variant.outputs
             .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
             .forEach { output ->
-                val outputFileName = "IT-Feels-v${variant.versionName}.apk"
-                output.outputFileName = outputFileName
+                val abi = output.filters.find { it.filterType == "ABI" }?.identifier
+                val suffix = if (abi != null) "-$abi" else ""
+                output.outputFileName = "IT-Feels-v${variant.versionName}$suffix.apk"
             }
     }
 }

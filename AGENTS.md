@@ -13,6 +13,20 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Android Auto 2026 Compliance, Data Saver Restoration & Now Playing Video Tab De-emphasis (v3.6.24):**
+  - **Now Playing Video Tab De-emphasis & "Coming Soon" Feature Mark**:
+    - Removed glowing `boxShadow` and auto-highlight triggers that activated every time a song/canvas loaded in `NowPlayingHeader`.
+    - Integrated a sleek `SOON` pill badge next to the "Video" tab with subtle accent styling.
+    - Updated `_toggleMode` in `NowPlayingScreen` to prevent switching into unhandled video mode and display a clean "Music video playback is coming soon!" toast notification.
+  - **Data Saver Audio Quality Reset to Premium**:
+    - Fixed `setDataSaverEnabled` in `SettingsNotifier`: turning off Data Saver now explicitly changes both `wifiQuality` and `mobileQuality` back to `'320 kbps (Very High)'` (Premium), preventing quality from remaining locked at 64 kbps.
+  - **Android Auto 2026 Standards & MediaBrowserService Compliance**:
+    - **Session Resumption (`AudioService.recentRootId`)**: Added handling for Android Auto / Android 11+ system media resumption roots in `AudioPlayerHandler.getChildren()`, returning the most recently played song(s) for instant one-tap resume.
+    - **Metadata Resolution (`getMediaItem`)**: Implemented deep lookup across active playback, favorites, recents, and local downloads to return populated `MediaItem` instances when Android Auto queries individual tracks.
+    - **Voice Actions Routing (`playFromSearch`)**: Wired `playFromSearch(query)` into `IMusicRepository.search()` so Google Assistant commands ("Hey Google, play [song] on IT Feels") stream the top match directly to the vehicle head unit.
+    - **Automotive Navigation Hierarchy & Default State**: Added downloaded offline songs tree (`downloads`) alongside favorites and recently played. Fixed `StorageService.loadSettings()` to default `enableAndroidAuto` to `true`.
+  - **Release APK Delivery**: Built release APK (`app-release.apk`, 147.7MB) signed with production keystore, uploaded to direct UAE-accessible mirrors (Litterbox + Temp.sh), and dispatched links to the Telegram bot.
+
 - **Scoped Storage Write Validation, Local Image Fault-Tolerance & Presence Guard (v3.6.23):**
   - **Dynamic Scoped Storage Fallback (`isPathWritable`)**:
     - Created `isPathWritable(path)` probing directories with temporary file operations before scheduling background download tasks.
