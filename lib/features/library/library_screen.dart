@@ -17,7 +17,6 @@ import 'package:it_feels_music/features/library/custom_playlist_detail_screen.da
 import 'package:it_feels_music/features/settings/settings_screen.dart';
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
-import 'package:it_feels_music/core/theme/app_dimensions.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
@@ -155,7 +154,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   ),
                 ),
 
-                SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom),
               ],
             ),
           ),
@@ -186,7 +184,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       final displayAlbums = albums.isNotEmpty ? albums : playlists;
 
       return GridView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 180,
           childAspectRatio: 0.85,
@@ -229,7 +227,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     } else if (_selectedTabIndex == 4) {
       // ARTIST TAB
       return ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
         itemCount: _topArtists.length,
         itemBuilder: (context, index) {
           final artist = _topArtists[index];
@@ -303,7 +301,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                         style: GoogleFonts.inter(color: context.themeMutedTextColor)),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     itemCount: myPlaylists.length,
                     itemBuilder: (context, index) {
                       final pl = myPlaylists[index];
@@ -372,7 +370,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
       itemCount: songs.length,
       itemBuilder: (context, index) {
         final song = songs[index];
