@@ -242,7 +242,7 @@ class SongOptionsSheet extends ConsumerWidget {
               onTap: () async {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Restoring details for ...')),
+                  const SnackBar(content: Text('Restoring details for ...')),
                 );
                 final ok = await ref.read(downloadProvider.notifier).restoreSingleSong(song);
                 if (context.mounted) {

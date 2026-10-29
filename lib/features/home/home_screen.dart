@@ -1,3 +1,6 @@
+import 'package:it_feels_music/features/home/widgets/glassmorphic_chip.dart';
+import 'package:it_feels_music/features/home/widgets/home_hero_banner.dart';
+import 'package:it_feels_music/features/home/widgets/home_compact_track_grid.dart';
 import 'dart:io';
 import 'package:it_feels_music/core/widgets/custom_image_widget.dart';
 import 'package:flutter/material.dart';
@@ -85,286 +88,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (hour < 17) return "Good Afternoon ☕";
     if (hour < 21) return "Good Evening 👋";
     return "Late Night Vibes 🌙";
-  }
-
-  Widget _buildHeroBanner(
-    BuildContext context,
-    List<Song> heroSongs,
-    AudioPlayerState player,
-  ) {
-    if (heroSongs.isEmpty) return const SizedBox.shrink();
-
-    // Use up to 5 songs for the hero carousel
-    final carouselSongs = heroSongs.take(5).toList();
-    
-    // Determine card dimensions adaptively from smallest to largest screen
-    final screenWidth = MediaQuery.of(context).size.width;
-    final hPadding = screenWidth < 600 ? 16.0 : 32.0;
-    final double cardWidth = screenWidth < 400
-        ? (screenWidth * 0.80).clamp(210.0, 280.0)
-        : (screenWidth < 600
-            ? (screenWidth * 0.72).clamp(260.0, 340.0)
-            : (screenWidth * 0.32).clamp(300.0, 460.0));
-    final double cardHeight = cardWidth * (9 / 16);
-
-    return SizedBox(
-      height: cardHeight + (screenWidth < 600 ? 28 : 40),
-      child: ScrollConfiguration(
-        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.symmetric(horizontal: hPadding),
-          itemCount: carouselSongs.length,
-          itemBuilder: (context, index) {
-            final heroSong = carouselSongs[index];
-
-            return Padding(
-              padding: const EdgeInsets.only(right: 24.0, top: 16.0, bottom: 16.0),
-              child: SizedBox(
-                width: cardWidth,
-                child: TVFocusableCard(
-                  onTap: () => ref
-                      .read(audioPlayerProvider.notifier)
-                      .playSong(heroSong, queue: carouselSongs, index: index),
-                  focusedScale: 1.02,
-                  borderRadius: 12.0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.3),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          // Background Image
-                          heroSong.coverArt.isNotEmpty
-                              ? CustomImageWidget(
-                                  imageUrl: heroSong.coverArt,
-                                  fit: BoxFit.cover,
-                                )
-                              : Container(color: context.themeSurfaceColor),
-                          
-                          // Gradient Overlay
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.black.withValues(alpha: 0.3),
-                                  Colors.transparent,
-                                  Colors.black.withValues(alpha: 0.8),
-                                ],
-                                stops: const [0.0, 0.4, 1.0],
-                              ),
-                            ),
-                          ),
-                          
-                          // Content
-                          Padding(
-                            padding: const EdgeInsets.all(24.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // Top Tag
-                                Text(
-                                  "NEW RELEASE",
-                                  style: GoogleFonts.inter(
-                                    color: Colors.white70,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.5,
-                                    fontSize: 12,
-                                    shadows: const [
-                                      Shadow(offset: Offset(0, 2), blurRadius: 6.0, color: Color(0xD9000000)),
-                                    ],
-                                  ),
-                                ),
-                                
-                                // Bottom Metadata
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      heroSong.title,
-                                      style: GoogleFonts.outfit(
-                                        color: Colors.white,
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.w800,
-                                        shadows: const [
-                                          Shadow(offset: Offset(0, 2), blurRadius: 6.0, color: Color(0xD9000000)),
-                                        ],
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      heroSong.artist,
-                                      style: GoogleFonts.inter(
-                                        color: Colors.white70,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        shadows: const [
-                                          Shadow(offset: Offset(0, 2), blurRadius: 6.0, color: Color(0xD9000000)),
-                                        ],
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCompactTrackGrid(
-    BuildContext context,
-    List<Song> songs,
-    AudioPlayerState playerProvider, {
-    String? title,
-  }) {
-    if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
-
-    final screenWidth = MediaQuery.of(context).size.width;
-    // Calculate how many columns we can fit: 1 on small screens, 2 on medium, 3 on large
-    int crossAxisCount = 1;
-    if (screenWidth >= 1000) {
-      crossAxisCount = 3;
-    } else if (screenWidth >= 600) {
-      crossAxisCount = 2;
-    }
-
-    final gridSongs = songs;
-    final hPadding = screenWidth < 600 ? 16.0 : 32.0;
-
-    return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (title != null)
-            Padding(
-              padding: EdgeInsets.only(left: hPadding, right: hPadding, top: 48, bottom: 16),
-              child: Text(
-                title,
-                style: GoogleFonts.outfit(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800, // Premium bold
-                  color: context.themeTextColor,
-                  letterSpacing: -0.5,
-                ),
-              ),
-            ),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPadding),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: screenWidth >= 1400 ? 4 : (screenWidth >= 1000 ? 3 : (screenWidth >= 600 ? 2 : 1)),
-              mainAxisExtent: 64,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 10,
-            ),
-            itemCount: gridSongs.length,
-            itemBuilder: (context, index) {
-              final song = gridSongs[index];
-
-              return TVFocusableCard(
-                onTap: () => ref
-                    .read(audioPlayerProvider.notifier)
-                    .playSong(song, queue: gridSongs, index: index),
-                onLongPress: () => SongOptionsSheet.show(
-                  context,
-                  song,
-                  playlistContext: gridSongs,
-                ),
-                focusedScale: 1.02,
-                borderRadius: 6.0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: song.coverArt.isNotEmpty
-                              ? CustomImageWidget(
-                                  imageUrl: song.coverArt,
-                                  fit: BoxFit.cover,
-                                  size: 150,
-                                )
-                              : Container(color: context.themeSurfaceColor),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              song.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
-                                color: context.themeTextColor,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              song.artist,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
-                                color: context.themeMutedTextColor,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Icon(
-                        Icons.more_horiz_rounded,
-                        color: context.themeMutedTextColor,
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
   }
 
   Widget _buildTopArtistsCarousel(
@@ -1276,7 +999,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               return Padding(
                                 padding: const EdgeInsets.only(right: 10),
                                 child: Center(
-                                  child: _GlassmorphicChip(
+                                  child: GlassmorphicChip(
                                     label: _filters[index],
                                     isSelected: isSelected,
                                     onTap: () {
@@ -1316,11 +1039,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           selectedCat != "Charts" &&
                           !homeProv.isLoading)
                         SliverToBoxAdapter(
-                          child: _buildHeroBanner(
-                            context,
-                            activeSongs,
-                            playerProvider,
-                          ),
+                          child: HomeHeroBanner(heroSongs: activeSongs),
                         ),
 
                       if (homeProv.continueWatching.isNotEmpty &&
@@ -1466,12 +1185,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   ? "Jump Back In"
                                   : "Trending Picks";
                               if (gridSongs.length > 1) {
-                                return _buildCompactTrackGrid(
-                                  context,
-                                  gridSongs,
-                                  playerProvider,
-                                  title: gridTitle,
-                                );
+                                return HomeCompactTrackGrid(songs: gridSongs, title: gridTitle);
                               }
                               return const SliverToBoxAdapter(
                                 child: SizedBox.shrink(),
@@ -1497,14 +1211,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ],
                       ] else if (selectedCat == "Music") ...[
-                          _buildCompactTrackGrid(
-                            context,
-                            activeSongs.length > 1
+                          HomeCompactTrackGrid(songs: activeSongs.length > 1
                                 ? activeSongs.take(18).toList()
-                                : homeProv.trendingSongs.take(18).toList(),
-                            playerProvider,
-                            title: "Quick Picks",
-                          ),
+                                : homeProv.trendingSongs.take(18).toList(), title: "Quick Picks"),
                         // Render Horizontal Swipeable Song Grid Carousels for Genres
                         _buildSongCarousel(
                           context,
@@ -1765,59 +1474,5 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
     return const SliverToBoxAdapter(child: SizedBox.shrink());
-  }
-}
-
-class _GlassmorphicChip extends StatefulWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _GlassmorphicChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  State<_GlassmorphicChip> createState() => _GlassmorphicChipState();
-}
-
-class _GlassmorphicChipState extends State<_GlassmorphicChip> {
-  bool _isHovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      cursor: SystemMouseCursors.click,
-      child: TVFocusableCard(
-        onTap: widget.onTap,
-        focusedScale: 1.1,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          decoration: BoxDecoration(
-            color: widget.isSelected
-                ? Colors.white
-                : (_isHovered
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.transparent),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            widget.label,
-            style: GoogleFonts.inter(
-              color: widget.isSelected
-                  ? Colors.black
-                  : Colors.white.withValues(alpha: 0.7),
-              fontSize: 14,
-              fontWeight: widget.isSelected ? FontWeight.w600 : FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

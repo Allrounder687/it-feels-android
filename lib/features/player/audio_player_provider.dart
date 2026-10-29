@@ -346,7 +346,6 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   bool _hasListenedToEvents = false;
   bool _isFading = false;
   Timer? _audioSyncHapticTimer;
-  bool _hasShownEmailVerification = false;
   int _playSongGenerationToken = 0;
   Timer? _bufferingTimer;
 
