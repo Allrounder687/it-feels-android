@@ -561,7 +561,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
           if (dur > Duration.zero && !completer.isCompleted) {
             final w = player.state.width;
             final h = player.state.height;
-            debugPrint('[Video] opened/probed duration=$dur params=${w}x${h}');
+            debugPrint('[Video] opened/probed duration=$dur params=${w}x$h');
             completer.complete(true);
           }
         });
@@ -571,7 +571,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
           final h = params.h ?? 0;
           if (w > 0 && h > 0 && !completer.isCompleted) {
             final dur = player.state.duration;
-            debugPrint('[Video] opened/probed duration=$dur params=${w}x${h}');
+            debugPrint('[Video] opened/probed duration=$dur params=${w}x$h');
             completer.complete(true);
           }
         });

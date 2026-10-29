@@ -570,15 +570,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         color: context.themeCardColor.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
         child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+          visualDensity: const VisualDensity(horizontal: -1, vertical: -1),
           leading: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             child: SizedBox(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               child: song.coverArt.isNotEmpty ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover) : Icon(Icons.music_note, color: context.themeTextColor),
             ),
           ),
-          title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 14)),
+          title: Text(song.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 14)),
           subtitle: Row(
             children: [
               _buildProviderBadge(context, song),
@@ -586,8 +588,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               Expanded(child: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12))),
             ],
           ),
-          trailing: IconButton(icon: Icon(Icons.more_vert, color: context.themeMutedTextColor), onPressed: () => SongOptionsSheet.show(context, song, playlistContext: playlistContext)),
-          onTap: () => ref.read(audioPlayerProvider.notifier).playSong(song, queue: [song], index: 0),
+          trailing: IconButton(
+            icon: Icon(Icons.more_vert, color: context.themeMutedTextColor, size: 20),
+            onPressed: () => SongOptionsSheet.show(context, song, playlistContext: playlistContext),
+          ),
+          onTap: () {
+            final songIdx = playlistContext.indexOf(song);
+            ref.read(audioPlayerProvider.notifier).playSong(
+                  song,
+                  queue: playlistContext.isNotEmpty ? playlistContext : [song],
+                  index: songIdx != -1 ? songIdx : 0,
+                );
+          },
           onLongPress: () => SongOptionsSheet.show(context, song, playlistContext: playlistContext),
         ),
       ),

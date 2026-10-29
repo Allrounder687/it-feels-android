@@ -255,6 +255,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     final gridSongs = songs;
+    final hPadding = screenWidth < 600 ? 16.0 : 32.0;
 
     return SliverToBoxAdapter(
       child: Column(
@@ -262,7 +263,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           if (title != null)
             Padding(
-              padding: const EdgeInsets.only(left: 32, right: 32, top: 48, bottom: 16),
+              padding: EdgeInsets.only(left: hPadding, right: hPadding, top: 48, bottom: 16),
               child: Text(
                 title,
                 style: GoogleFonts.outfit(
@@ -276,7 +277,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            padding: EdgeInsets.symmetric(horizontal: hPadding),
             gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
               maxCrossAxisExtent: 350,
               mainAxisExtent: 64,
@@ -717,7 +718,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     List<Song> history,
     AudioPlayerState playerProvider,
   ) {
-    if (history.isEmpty) {
+    final jumpBackSongs = history.take(3).toList();
+    if (jumpBackSongs.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
@@ -755,9 +757,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   controller: scrollController,
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: history.length,
+                  itemCount: jumpBackSongs.length,
                   itemBuilder: (context, index) {
-                    final song = history[index];
+                    final song = jumpBackSongs[index];
                     final isPlaying =
                         playerProvider.currentSong?.id == song.id &&
                         playerProvider.isPlaying;
@@ -769,7 +771,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           if (playerProvider.currentSong?.id != song.id) {
                             ref
                                 .read(audioPlayerProvider.notifier)
-                                .playSong(song, queue: history, index: index);
+                                .playSong(song, queue: jumpBackSongs, index: index);
                           } else {
                             ref
                                 .read(audioPlayerProvider.notifier)
@@ -863,14 +865,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: context.themeTextColor,
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.outfit(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: context.themeTextColor,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 TVFocusableCard(
                   onTap: () => Navigator.push(
                     context,
@@ -910,17 +917,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 height: carouselHeight,
                 child: HorizontalScrollWrapper(
                   builder: (context, scrollController) {
-                    return GridView.builder(
+                    final itemWidth = isWide ? 350.0 : (screenWidth - 48.0).clamp(260.0, 350.0);
+                  return GridView.builder(
                       controller: scrollController,
                       scrollDirection: Axis.horizontal,
                       clipBehavior: Clip.none,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossAxisCount,
-                    mainAxisExtent: 350, // Constrain item width to 350px
-                    mainAxisSpacing: 16, // Horizontal spacing between items
-                    crossAxisSpacing: 12, // Vertical spacing between rows
-                  ),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        mainAxisExtent: itemWidth,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 12,
+                      ),
                   itemCount: songs.length > 15 ? 15 : songs.length,
                   itemBuilder: (context, index) {
                     final song = songs[index];
@@ -973,7 +981,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               children: [
                                 Text(
                                   song.title,
-                                  maxLines: 1,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.inter(
                                     color: context.themeTextColor,
@@ -1439,7 +1447,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           Builder(
                             builder: (context) {
                               final gridSongs = activeSongs.length > 1
-                                  ? activeSongs.take(6).toList()
+                                  ? activeSongs.take(3).toList()
                                   : homeProv.trendingSongs.take(6).toList();
                               final gridTitle = activeSongs.length > 1
                                   ? "Jump Back In"

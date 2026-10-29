@@ -6,7 +6,31 @@ function getSearchUrl(query) {
 }
 
 function getSearchPlaylistsUrl(query) {
-    return BACKEND_URL + "/api/v1/search/playlists?query=" + encodeURIComponent(query);
+    return "https://www.jiosaavn.com/api.php?__call=search.getPlaylistResults&_format=json&_marker=0&api_version=4&p=1&n=20&q=" + encodeURIComponent(query);
+}
+
+function getSearchAlbumsUrl(query) {
+    return "https://www.jiosaavn.com/api.php?__call=search.getAlbumResults&_format=json&_marker=0&api_version=4&p=1&n=20&q=" + encodeURIComponent(query);
+}
+
+function getSearchAllUrl(query) {
+    return "https://www.jiosaavn.com/api.php?__call=autocomplete.get&_format=json&_marker=0&api_version=4&ctx=web6dot0&query=" + encodeURIComponent(query);
+}
+
+function getArtistDetailsUrl(id) {
+    return "https://www.jiosaavn.com/api.php?__call=artist.getArtistPageDetails&_format=json&_marker=0&api_version=4&artistId=" + encodeURIComponent(id);
+}
+
+function getPlaylistTracksUrl(id) {
+    return "https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=" + encodeURIComponent(id);
+}
+
+function getAlbumTracksUrl(id) {
+    return "https://www.jiosaavn.com/api.php?__call=content.getAlbumDetails&_format=json&_marker=0&api_version=4&albumid=" + encodeURIComponent(id);
+}
+
+function getChartsUrl() {
+    return "https://api.deezer.com/chart";
 }
 
 function getSearchPodcastsUrl(query) {
@@ -22,21 +46,13 @@ function getStreamUrl(id, query) {
 }
 
 function getHomeFeedUrl() {
-    return BACKEND_URL + "/api/v1/saavn/home";
-}
-
-function getPlaylistTracksUrl(id) {
-    return BACKEND_URL + "/api/v1/saavn/playlist?id=" + encodeURIComponent(id);
-}
-
-function getAlbumTracksUrl(id) {
-    return BACKEND_URL + "/api/v1/saavn/album?id=" + encodeURIComponent(id);
-}
-
-function getChartsUrl() {
-    return BACKEND_URL + "/api/v1/charts/trending";
+    return BACKEND_URL + "/api/v1/home";
 }
 
 function getTrendingVideosUrl() {
     return BACKEND_URL + "/api/v1/videos/trending";
+}
+
+function getLyricsUrl(track, artist) {
+    return BACKEND_URL + "/api/v1/lyrics?track=" + encodeURIComponent(track) + "&artist=" + encodeURIComponent(artist);
 }

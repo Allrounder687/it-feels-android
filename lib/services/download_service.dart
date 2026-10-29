@@ -6,7 +6,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:background_downloader/background_downloader.dart';
 
 import 'package:it_feels_music/data/models/song_model.dart';
-import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/repositories/music_repository.dart';
 import 'storage_service.dart';
 

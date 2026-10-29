@@ -167,7 +167,7 @@ class _SeeAllSongsScreenState extends ConsumerState<SeeAllSongsScreen> {
                               ),
                               title: Text(
                                 song.title,
-                                maxLines: 1,
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: GoogleFonts.inter(
                                   color: context.themeTextColor,

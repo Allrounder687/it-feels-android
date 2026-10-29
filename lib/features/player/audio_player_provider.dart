@@ -590,8 +590,8 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       } else if (state.queue.isNotEmpty) {
         if (state.currentRoomId != null && !state.isHost) return;
 
-        if (state.currentIndex == state.queue.length - 1 &&
-            state.isAutoplayEnabled) {
+        if (state.currentIndex >= state.queue.length - 1 &&
+            (state.isAutoplayEnabled || state.queue.length <= 3)) {
           try {
             final current = state.queue[state.currentIndex];
             final recommendations = await locator<IMusicRepository>()
@@ -901,6 +901,10 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     );
     _saveMemory();
 
+    if (newQueue.length <= 3 && newIndex == newQueue.length - 1) {
+      _fetchAutoplayRecommendations();
+    }
+
     locator<PaletteExtractorService>().extract(song.coverArt).then((res) {
       if (res != null) {
         state = state.copyWith(
@@ -1111,7 +1115,23 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     } else {
       nextIndex = state.currentIndex + 1;
       if (nextIndex >= state.queue.length) {
-        nextIndex = 0;
+        if (state.isAutoplayEnabled || state.queue.length <= 3) {
+          try {
+            final current = state.queue[state.currentIndex];
+            final recommendations = await locator<IMusicRepository>().getRecommendedSongs(current);
+            final newSongs = recommendations.where((s) => !state.queue.any((q) => q.id == s.id)).toList();
+            if (newSongs.isNotEmpty) {
+              final updatedQ = List<Song>.from(state.queue)..addAll(newSongs.take(10));
+              state = state.copyWith(queue: updatedQ);
+              _saveMemory();
+            }
+          } catch (e) {
+            debugPrint('[AudioPlayerNotifier] skipToNext autoplay failed: $e');
+          }
+        }
+        if (nextIndex >= state.queue.length) {
+          nextIndex = 0;
+        }
       }
     }
     await playSong(

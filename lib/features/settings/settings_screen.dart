@@ -900,7 +900,7 @@ class SettingsScreen extends ConsumerWidget {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.check_circle_rounded, color: Colors.green, size: 20),
+                          const Icon(Icons.check_circle_rounded, color: Colors.green, size: 20),
                           const SizedBox(width: 8),
                           Text("Status: Active", style: GoogleFonts.inter(color: Colors.green, fontWeight: FontWeight.bold)),
                         ],

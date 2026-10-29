@@ -366,6 +366,42 @@ class HomeNotifier extends Notifier<HomeState> {
     return newShelves;
   }
 
+    bool _isInstrumentalOrJunk(Song s) {
+    final title = s.title.toLowerCase();
+    const junk = [
+      'instrumental',
+      'karaoke',
+      'ringtone',
+      'flute version',
+      'flute cover',
+      'flute',
+      'piano version',
+      'piano cover',
+      'guitar cover',
+      'background score',
+      'bgm',
+      'soundtrack version',
+      'theme music',
+      'tribute to',
+      'meditation',
+      'sleep music',
+      'relaxing music',
+      'slowed reverb',
+      'slowed+reverb',
+      'lofi flip',
+      'orchestral version',
+      'synthesizer',
+      'shehnai',
+      'tabla solo',
+      'santoor',
+      'sitar',
+    ];
+    for (final j in junk) {
+      if (title.contains(j)) return true;
+    }
+    return false;
+  }
+
   List<Song> _deduplicate(List<Song> songs) {
     final Map<String, Song> unique = {};
     for (var s in songs) {
@@ -399,27 +435,35 @@ class HomeNotifier extends Notifier<HomeState> {
   Future<void> fetchBollywoodSongs() async {
     try {
       final random = Random();
-      final keywords = ['Hindi Songs', 'Bollywood Hits', 'Latest Hindi'];
-      final artists = ['Arijit Singh', 'Shreya Ghoshal', 'Pritam'];
+      final artists = [
+        'Arijit Singh',
+        'Shreya Ghoshal',
+        'Atif Aslam',
+        'Pritam',
+        'Sachin-Jigar',
+        'Jubin Nautiyal',
+        'Vishal Mishra',
+        'Darshan Raval',
+        'Badshah',
+        'Mohit Chauhan',
+        'KK',
+        'Sonu Nigam',
+      ];
+      final a1 = artists.removeAt(random.nextInt(artists.length));
+      final a2 = artists.removeAt(random.nextInt(artists.length));
+      final a3 = artists.removeAt(random.nextInt(artists.length));
 
-      final list1 = await musicRepo.searchSongs(
-        keywords[random.nextInt(keywords.length)],
-        count: 30,
-      );
-      final list2 = await musicRepo.searchSongs(
-        artists[random.nextInt(artists.length)],
-        count: 30,
-      );
-      final list3 = await musicRepo.searchSongs(
-        "Hindi Romantic Hits",
-        count: 30,
-      );
+      final list1 = await musicRepo.searchSongs(a1, count: 25);
+      final list2 = await musicRepo.searchSongs(a2, count: 25);
+      final list3 = await musicRepo.searchSongs(a3, count: 25);
       final playlists = await musicRepo.searchPlaylists(
-        "Bollywood Hits",
+        "Top Hindi Songs",
         count: 20,
       );
 
-      final combined = _deduplicate([...list1, ...list2, ...list3]);
+      final combined = _deduplicate([...list1, ...list2, ...list3])
+          .where((s) => !_isInstrumentalOrJunk(s))
+          .toList();
       state = state.copyWith(
         bollywoodSongs: combined.isNotEmpty ? combined : state.bollywoodSongs,
         bollywoodPlaylists: playlists.isNotEmpty
@@ -432,27 +476,29 @@ class HomeNotifier extends Notifier<HomeState> {
   Future<void> fetchTeluguSongs() async {
     try {
       final random = Random();
-      final keywords = ['Telugu Songs', 'Tollywood Hits', 'Latest Telugu'];
-      final artists = ['Sid Sriram Telugu', 'Devi Sri Prasad', 'Thaman S'];
+      final artists = [
+        'Sid Sriram Telugu',
+        'Devi Sri Prasad',
+        'Thaman S',
+        'Anurag Kulkarni',
+        'Ram Miriyala',
+        'Armaan Malik Telugu',
+        'S. P. Balasubrahmanyam',
+      ];
+      final a1 = artists.removeAt(random.nextInt(artists.length));
+      final a2 = artists.removeAt(random.nextInt(artists.length));
 
-      final list1 = await musicRepo.searchSongs(
-        keywords[random.nextInt(keywords.length)],
-        count: 30,
-      );
-      final list2 = await musicRepo.searchSongs(
-        artists[random.nextInt(artists.length)],
-        count: 30,
-      );
-      final list3 = await musicRepo.searchSongs(
-        "Telugu Melody Hits",
-        count: 30,
-      );
+      final list1 = await musicRepo.searchSongs(a1, count: 25);
+      final list2 = await musicRepo.searchSongs(a2, count: 25);
+      final list3 = await musicRepo.searchSongs("Telugu Top 50", count: 25);
       final playlists = await musicRepo.searchPlaylists(
         "Telugu Hits",
         count: 20,
       );
 
-      final combined = _deduplicate([...list1, ...list2, ...list3]);
+      final combined = _deduplicate([...list1, ...list2, ...list3])
+          .where((s) => !_isInstrumentalOrJunk(s))
+          .toList();
       state = state.copyWith(
         teluguSongs: combined.isNotEmpty ? combined : state.teluguSongs,
         teluguPlaylists: playlists.isNotEmpty
@@ -465,31 +511,28 @@ class HomeNotifier extends Notifier<HomeState> {
   Future<void> fetchTamilSongs() async {
     try {
       final random = Random();
-      final keywords = ['Tamil Songs', 'Kollywood Hits', 'Latest Tamil'];
       final artists = [
         'Anirudh Ravichander',
         'A.R. Rahman Tamil',
         'Yuvan Shankar Raja',
+        'Harris Jayaraj',
+        'Sid Sriram Tamil',
+        'Pradeep Kumar',
       ];
+      final a1 = artists.removeAt(random.nextInt(artists.length));
+      final a2 = artists.removeAt(random.nextInt(artists.length));
 
-      final list1 = await musicRepo.searchSongs(
-        keywords[random.nextInt(keywords.length)],
-        count: 30,
-      );
-      final list2 = await musicRepo.searchSongs(
-        artists[random.nextInt(artists.length)],
-        count: 30,
-      );
-      final list3 = await musicRepo.searchSongs(
-        "Tamil Melody Hits",
-        count: 30,
-      );
+      final list1 = await musicRepo.searchSongs(a1, count: 25);
+      final list2 = await musicRepo.searchSongs(a2, count: 25);
+      final list3 = await musicRepo.searchSongs("Tamil Top 50", count: 25);
       final playlists = await musicRepo.searchPlaylists(
         "Tamil Hits",
         count: 20,
       );
 
-      final combined = _deduplicate([...list1, ...list2, ...list3]);
+      final combined = _deduplicate([...list1, ...list2, ...list3])
+          .where((s) => !_isInstrumentalOrJunk(s))
+          .toList();
       state = state.copyWith(
         tamilSongs: combined.isNotEmpty ? combined : state.tamilSongs,
         tamilPlaylists: playlists.isNotEmpty ? playlists : state.tamilPlaylists,
@@ -500,27 +543,29 @@ class HomeNotifier extends Notifier<HomeState> {
   Future<void> fetchPunjabiSongs() async {
     try {
       final random = Random();
-      final keywords = ['Punjabi Songs', 'Punjabi Hits', 'Latest Punjabi'];
-      final artists = ['Karan Aujla', 'Diljit Dosanjh', 'AP Dhillon'];
+      final artists = [
+        'Karan Aujla',
+        'Diljit Dosanjh',
+        'AP Dhillon',
+        'Sidhu Moose Wala',
+        'Shubh',
+        'Amrinder Gill',
+        'Guru Randhawa',
+      ];
+      final a1 = artists.removeAt(random.nextInt(artists.length));
+      final a2 = artists.removeAt(random.nextInt(artists.length));
 
-      final list1 = await musicRepo.searchSongs(
-        keywords[random.nextInt(keywords.length)],
-        count: 30,
-      );
-      final list2 = await musicRepo.searchSongs(
-        artists[random.nextInt(artists.length)],
-        count: 30,
-      );
-      final list3 = await musicRepo.searchSongs(
-        "Punjabi Party Hits",
-        count: 30,
-      );
+      final list1 = await musicRepo.searchSongs(a1, count: 25);
+      final list2 = await musicRepo.searchSongs(a2, count: 25);
+      final list3 = await musicRepo.searchSongs("Punjabi Top 50", count: 25);
       final playlists = await musicRepo.searchPlaylists(
         "Punjabi Hits",
         count: 20,
       );
 
-      final combined = _deduplicate([...list1, ...list2, ...list3]);
+      final combined = _deduplicate([...list1, ...list2, ...list3])
+          .where((s) => !_isInstrumentalOrJunk(s))
+          .toList();
       state = state.copyWith(
         punjabiSongs: combined.isNotEmpty ? combined : state.punjabiSongs,
         punjabiPlaylists: playlists.isNotEmpty
@@ -563,7 +608,7 @@ class HomeNotifier extends Notifier<HomeState> {
         count: 20,
       );
 
-      final combined = _deduplicate([...list1, ...list2, ...list3]);
+      final combined = _deduplicate([...list1, ...list2, ...list3]).where((s) => !_isInstrumentalOrJunk(s)).toList();
       state = state.copyWith(
         hollywoodSongs: combined.isNotEmpty ? combined : state.hollywoodSongs,
         hollywoodPlaylists: playlists.isNotEmpty
@@ -597,7 +642,7 @@ class HomeNotifier extends Notifier<HomeState> {
       final combined = _deduplicate([...list1, ...list2]);
       state = state.copyWith(
         podcastSongs: combined.isNotEmpty ? combined : state.podcastSongs,
-        podcastPlaylists: [], // Disabled: we only fetch podcasts natively via YouTube Explode now
+        podcastPlaylists: await musicRepo.searchPlaylists("Podcast", count: 10)
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchPodcasts error: $e');
@@ -799,6 +844,10 @@ class HomeNotifier extends Notifier<HomeState> {
         );
         final rawTrending = data['trending'] as List? ?? [];
         trending = rawTrending.map((e) => e is Song ? e : Song.fromJson(e)).toList();
+        if (trending.isEmpty) {
+          trending = await musicRepo.searchSongs("Top Global Hits 2026", count: 30);
+        }
+        trending = trending.where((s) => !_isInstrumentalOrJunk(s)).toList();
         
         final rawPl = data['playlists'] as List? ?? [];
         rawPlaylists = rawPl.map((e) => e is Playlist ? e : Playlist.fromJson(e)).toList();

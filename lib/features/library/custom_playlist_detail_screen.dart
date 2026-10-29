@@ -282,6 +282,25 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                             },
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        IconButton(
+                          tooltip: 'Download Playlist',
+                          onPressed: () async {
+                            if (songs.isEmpty) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Downloading ${songs.length} songs...")),
+                            );
+                            await ref.read(downloadProvider.notifier).downloadBatch(songs);
+                          },
+                          icon: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: context.themeCardColor.withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 22),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -304,22 +323,23 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                           (context, index) {
                             final song = songs[index];
                             return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
                               child: Material(
                                 color: context.themeCardColor.withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(14),
                                 child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                                   leading: ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(10),
                                     child: SizedBox(
-                                      width: 48,
-                                      height: 48,
+                                      width: 42,
+                                      height: 42,
                                       child: song.coverArt.isNotEmpty
                                           ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover)
                                           : Icon(Icons.music_note, color: context.themeTextColor),
                                     ),
                                   ),
-                                  title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 14)),
+                                  title: Text(song.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeTextColor, fontWeight: FontWeight.w600, fontSize: 14)),
                                   subtitle: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 12)),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,

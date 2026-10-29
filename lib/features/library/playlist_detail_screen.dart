@@ -298,6 +298,25 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                             }
                                           },
                                         ),
+                                         const SizedBox(width: 12),
+                                         IconButton(
+                                           tooltip: "Download Playlist",
+                                           onPressed: () async {
+                                             if (_songs.isEmpty) return;
+                                             ScaffoldMessenger.of(context).showSnackBar(
+                                               SnackBar(content: Text("Downloading ${_songs.length} songs...")),
+                                             );
+                                             await ref.read(downloadProvider.notifier).downloadBatch(_songs);
+                                           },
+                                           icon: Container(
+                                             padding: const EdgeInsets.all(8),
+                                             decoration: BoxDecoration(
+                                               color: context.themeCardColor,
+                                               shape: BoxShape.circle,
+                                             ),
+                                             child: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 22),
+                                           ),
+                                         ),
                                       ],
                                     )
                                   ],
@@ -384,7 +403,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                         final isDown = downloadProv.isDownloaded(song.id);
                         final screenWidth = MediaQuery.of(context).size.width;
                         final isWide = screenWidth >= 700;
-                        final horizontalPadding = isWide ? (screenWidth > 1400 ? (screenWidth - 1400) / 2 : 48.0) : 16.0;
+                        final horizontalPadding = isWide ? (screenWidth > 1400 ? (screenWidth - 1400) / 2 : 48.0) : 8.0;
                         
                         final artists = song.artist.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
                         final minutes = song.duration ~/ 60;
@@ -406,12 +425,12 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                 highlightColor: Colors.white.withValues(alpha: 0.1),
                                 splashColor: Colors.transparent,
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  padding: EdgeInsets.symmetric(horizontal: isWide ? 16 : 8, vertical: isWide ? 12 : 8),
                                   child: Row(
                                     children: [
                                       // Track Number / Equalizer
                                       SizedBox(
-                                        width: 40,
+                                        width: isWide ? 40 : 26,
                                         child: Center(
                                           child: isCurrentSong && playerProvider.isPlaying
                                               ? AnimatedEqualizer(color: context.themeAccentColor)
@@ -419,30 +438,30 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                                   "${index + 1}",
                                                   style: GoogleFonts.inter(
                                                     color: isCurrentSong ? context.themeAccentColor : context.themeMutedTextColor,
-                                                    fontSize: 14,
+                                                    fontSize: isWide ? 14 : 12,
                                                     fontWeight: isCurrentSong ? FontWeight.w700 : FontWeight.w500,
                                                   ),
                                                 ),
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
+                                      SizedBox(width: isWide ? 8 : 4),
                                       // Title Column
                                       Expanded(
                                         flex: isWide ? 6 : 1,
                                         child: Row(
                                           children: [
-                                            // Optional mini thumbnail
+                                            // Mini thumbnail
                                             ClipRRect(
                                               borderRadius: BorderRadius.circular(6),
                                               child: SizedBox(
-                                                width: 42,
-                                                height: 42,
+                                                width: isWide ? 42 : 36,
+                                                height: isWide ? 42 : 36,
                                                 child: song.coverArt.isNotEmpty
                                                     ? CustomImageWidget(imageUrl: song.coverArt, fit: BoxFit.cover, size: 100)
                                                     : Container(color: context.themeCardColor),
                                               ),
                                             ),
-                                            const SizedBox(width: 16),
+                                            SizedBox(width: isWide ? 16 : 8),
                                             Expanded(
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,12 +469,12 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                                 children: [
                                                   Text(
                                                     song.title,
-                                                    maxLines: 1,
+                                                    maxLines: 2,
                                                     overflow: TextOverflow.ellipsis,
                                                     style: GoogleFonts.inter(
                                                       color: isCurrentSong ? context.themeAccentColor : context.themeTextColor,
-                                                      fontWeight: isCurrentSong ? FontWeight.w700 : FontWeight.w500,
-                                                      fontSize: 15,
+                                                      fontWeight: isCurrentSong ? FontWeight.w700 : FontWeight.w600,
+                                                      fontSize: isWide ? 15 : 14,
                                                     ),
                                                   ),
                                                   if (!isWide) ...[
@@ -562,7 +581,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                       ),
                                       // Action / Download
                                       SizedBox(
-                                        width: 60,
+                                        width: isWide ? 60 : 40,
                                         child: Row(
                                           mainAxisAlignment: MainAxisAlignment.end,
                                           children: [

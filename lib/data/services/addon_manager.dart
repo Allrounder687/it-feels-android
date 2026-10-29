@@ -1,3 +1,4 @@
+import 'package:it_feels_music/core/utils/string_utils.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -18,15 +19,85 @@ class AddonManager {
   
   final ValueNotifier<bool> hasPluginsNotifier = ValueNotifier(false);
 
+  static const String defaultPluginSource = '''
+const BACKEND_URL = "https://it-feels-backend.cleverfox687.workers.dev";
+
+function getSearchUrl(query) {
+    return BACKEND_URL + "/api/v1/search?query=" + encodeURIComponent(query);
+}
+
+function getSearchPlaylistsUrl(query) {
+    return "https://www.jiosaavn.com/api.php?__call=search.getPlaylistResults&_format=json&_marker=0&api_version=4&p=1&n=20&q=" + encodeURIComponent(query);
+}
+
+function getSearchAlbumsUrl(query) {
+    return "https://www.jiosaavn.com/api.php?__call=search.getAlbumResults&_format=json&_marker=0&api_version=4&p=1&n=20&q=" + encodeURIComponent(query);
+}
+
+function getSearchAllUrl(query) {
+    return "https://www.jiosaavn.com/api.php?__call=autocomplete.get&_format=json&_marker=0&api_version=4&ctx=web6dot0&query=" + encodeURIComponent(query);
+}
+
+function getArtistDetailsUrl(id) {
+    return "https://www.jiosaavn.com/api.php?__call=artist.getArtistPageDetails&_format=json&_marker=0&api_version=4&artistId=" + encodeURIComponent(id);
+}
+
+function getPlaylistTracksUrl(id) {
+    return "https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=" + encodeURIComponent(id);
+}
+
+function getAlbumTracksUrl(id) {
+    return "https://www.jiosaavn.com/api.php?__call=content.getAlbumDetails&_format=json&_marker=0&api_version=4&albumid=" + encodeURIComponent(id);
+}
+
+function getSearchPodcastsUrl(query) {
+    return BACKEND_URL + "/api/v1/search/podcasts?query=" + encodeURIComponent(query);
+}
+
+function getStreamUrl(id, query) {
+    if (query) {
+        return BACKEND_URL + "/api/v1/video/stream?id=" + encodeURIComponent(id) + "&query=" + encodeURIComponent(query);
+    }
+    return BACKEND_URL + "/api/v1/video/stream?id=" + encodeURIComponent("search:" + id);
+}
+
+function getHomeFeedUrl() {
+    return BACKEND_URL + "/api/v1/home";
+}
+
+function getChartsUrl() {
+    return "https://api.deezer.com/chart";
+}
+
+function getLyricsUrl(track, artist) {
+    return BACKEND_URL + "/api/v1/lyrics?track=" + encodeURIComponent(track) + "&artist=" + encodeURIComponent(artist);
+}
+''';
+
   Future<void> initialize() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
       final pluginsDir = Directory('${dir.path}/plugins');
       if (!await pluginsDir.exists()) {
-        await pluginsDir.create();
+        await pluginsDir.create(recursive: true);
       }
 
-      final files = pluginsDir.listSync().where((f) => f.path.endsWith('.js')).toList();
+      var files = pluginsDir.listSync().where((f) => f.path.endsWith('.js')).toList();
+      if (files.isEmpty) {
+        // Automatically install default plugin so user never experiences an empty app
+        await installDefaultPlugin();
+        files = pluginsDir.listSync().where((f) => f.path.endsWith('.js')).toList();
+      }
+
+      // Always initialize a baseline runtime with defaultPluginSource
+      try {
+        final baselineRuntime = getJavascriptRuntime();
+        baselineRuntime.evaluate(defaultPluginSource);
+        _activeRuntimes.add(baselineRuntime);
+      } catch (e) {
+        debugPrint('[AddonManager] Error loading baseline runtime: $e');
+      }
+
       for (var file in files) {
         await _loadPlugin(file);
       }
@@ -38,7 +109,24 @@ class AddonManager {
 
   Future<bool> installDefaultPlugin() async {
     final defaultPluginUrl = "https://raw.githubusercontent.com/Allrounder687/it-feels-provider-backend/main/backend_addon.js";
-    return await installPluginFromUrl(defaultPluginUrl, "default_backend.js");
+    final success = await installPluginFromUrl(defaultPluginUrl, "default_backend.js");
+    if (!success) {
+      try {
+        final dir = await getApplicationDocumentsDirectory();
+        final pluginsDir = Directory('${dir.path}/plugins');
+        if (!await pluginsDir.exists()) {
+          await pluginsDir.create(recursive: true);
+        }
+        final file = File('${pluginsDir.path}/default_backend.js');
+        await file.writeAsString(defaultPluginSource);
+        await _loadPlugin(file);
+        hasPluginsNotifier.value = _activeRuntimes.isNotEmpty;
+        return true;
+      } catch (e) {
+        debugPrint('[AddonManager] Error writing fallback default plugin: $e');
+      }
+    }
+    return success;
   }
 
   Future<bool> installPluginFromUrl(String url, String filename) async {
@@ -48,7 +136,7 @@ class AddonManager {
         final dir = await getApplicationDocumentsDirectory();
         final pluginsDir = Directory('${dir.path}/plugins');
         if (!await pluginsDir.exists()) {
-          await pluginsDir.create();
+          await pluginsDir.create(recursive: true);
         }
         
         String safeName = filename.endsWith('.js') ? filename : '$filename.js';
@@ -86,15 +174,39 @@ class AddonManager {
     try {
       String source = await File(file.path).readAsString();
 
-      // Polyfill for missing playlist/album fetchers in older backend_addon.js
-      if (!source.contains('getPlaylistTracksUrl') && source.contains('BACKEND_URL')) {
+      // Polyfills for complete Saavn API structuring in JavaScript addon engine
+      if (!source.contains('getPlaylistTracksUrl')) {
         source += '''
-          
           function getPlaylistTracksUrl(id) {
-              return BACKEND_URL + "/api/v1/playlist?id=" + encodeURIComponent(id);
+              return "https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=" + encodeURIComponent(id);
           }
+        ''';
+      }
+      if (!source.contains('getAlbumTracksUrl')) {
+        source += '''
           function getAlbumTracksUrl(id) {
-              return BACKEND_URL + "/api/v1/album?id=" + encodeURIComponent(id);
+              return "https://www.jiosaavn.com/api.php?__call=content.getAlbumDetails&_format=json&_marker=0&api_version=4&albumid=" + encodeURIComponent(id);
+          }
+        ''';
+      }
+      if (!source.contains('getSearchAlbumsUrl')) {
+        source += '''
+          function getSearchAlbumsUrl(query) {
+              return "https://www.jiosaavn.com/api.php?__call=search.getAlbumResults&_format=json&_marker=0&api_version=4&p=1&n=20&q=" + encodeURIComponent(query);
+          }
+        ''';
+      }
+      if (!source.contains('getSearchAllUrl')) {
+        source += '''
+          function getSearchAllUrl(query) {
+              return "https://www.jiosaavn.com/api.php?__call=autocomplete.get&_format=json&_marker=0&api_version=4&ctx=web6dot0&query=" + encodeURIComponent(query);
+          }
+        ''';
+      }
+      if (!source.contains('getArtistDetailsUrl')) {
+        source += '''
+          function getArtistDetailsUrl(id) {
+              return "https://www.jiosaavn.com/api.php?__call=artist.getArtistPageDetails&_format=json&_marker=0&api_version=4&artistId=" + encodeURIComponent(id);
           }
         ''';
       }
@@ -121,9 +233,12 @@ class AddonManager {
           final response = await http.get(Uri.parse(searchUrl));
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
-            if (data['success'] == true && data['results'] != null) {
-              for (var item in data['results']) {
-                allResults.add(Song.fromJson(item));
+            final rawList = data['results'] ?? data['songs']?['data'] ?? (data is List ? data : null);
+            if (rawList is List) {
+              for (var item in rawList) {
+                if (item is Map<String, dynamic>) {
+                  allResults.add(Song.fromJson(item));
+                }
               }
             }
           } else {
@@ -149,16 +264,19 @@ class AddonManager {
           final response = await http.get(Uri.parse(searchUrl));
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
-            if (data['success'] == true && data['results'] != null) {
-              for (var item in data['results']) {
-                allResults.add(Playlist(
-                  id: item['id']?.toString() ?? '',
-                  title: item['title']?.toString() ?? '',
-                  type: item['type']?.toString() ?? 'playlist',
-                  coverArt: item['image']?.toString() ?? item['coverArt']?.toString() ?? '',
-                  songCount: int.tryParse(item['songCount']?.toString() ?? '0') ?? 0,
-                  songs: [],
-                ));
+            final rawList = data['results'] ?? data['playlists']?['data'] ?? (data is List ? data : null);
+            if (rawList is List) {
+              for (var item in rawList) {
+                if (item is Map<String, dynamic>) {
+                  allResults.add(Playlist(
+                    id: item['id']?.toString() ?? '',
+                    title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
+                    type: item['type']?.toString() ?? 'playlist',
+                    coverArt: item['image']?.toString() ?? item['coverArt']?.toString() ?? '',
+                    songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? item['songCount']?.toString() ?? '0') ?? 0,
+                    songs: [],
+                  ));
+                }
               }
             }
           }
@@ -167,7 +285,384 @@ class AddonManager {
         debugPrint('[AddonManager] searchPlaylists error in plugin: $e');
       }
     }
+
+    if (allResults.isEmpty && query.isNotEmpty) {
+      try {
+        final fallbackUrl = 'https://www.jiosaavn.com/api.php?__call=search.getPlaylistResults&_format=json&_marker=0&api_version=4&p=1&n=20&q=${Uri.encodeComponent(query)}';
+        final response = await http.get(Uri.parse(fallbackUrl));
+        if (response.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          final rawList = data['results'] ?? data['playlists']?['data'] ?? (data is List ? data : null);
+          if (rawList is List) {
+            for (var item in rawList) {
+              if (item is Map<String, dynamic>) {
+                allResults.add(Playlist(
+                  id: item['id']?.toString() ?? '',
+                  title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
+                  type: item['type']?.toString() ?? 'playlist',
+                  coverArt: item['image']?.toString() ?? item['coverArt']?.toString() ?? '',
+                  songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? item['songCount']?.toString() ?? '0') ?? 0,
+                  songs: [],
+                ));
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[AddonManager] Fallback searchPlaylists error: $e');
+      }
+    }
     return allResults;
+  }
+
+  Future<List<Playlist>> searchAlbums(String query) async {
+    List<Playlist> allResults = [];
+    for (var runtime in _activeRuntimes) {
+      try {
+        final jsResult = runtime.evaluate("typeof getSearchAlbumsUrl === 'function' ? getSearchAlbumsUrl('${query.replaceAll("'", "\\'")}') : null");
+        final searchUrl = jsResult.stringResult.replaceAll('"', '');
+        
+        if (searchUrl != 'null' && searchUrl.isNotEmpty) {
+          debugPrint('[AddonManager] Fetching searchAlbums from: $searchUrl');
+          final response = await http.get(Uri.parse(searchUrl));
+          if (response.statusCode == 200) {
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
+            final rawList = data['results'] ?? data['albums']?['data'] ?? (data is List ? data : null);
+            if (rawList is List) {
+              for (var item in rawList) {
+                if (item is Map<String, dynamic>) {
+                  allResults.add(Playlist(
+                    id: item['id']?.toString() ?? '',
+                    title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
+                    type: 'album',
+                    coverArt: item['image']?.toString() ?? item['coverArt']?.toString() ?? '',
+                    songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? item['songCount']?.toString() ?? '0') ?? 0,
+                    songs: [],
+                  ));
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[AddonManager] searchAlbums error in plugin: $e');
+      }
+    }
+
+    if (allResults.isEmpty && query.isNotEmpty) {
+      try {
+        final fallbackUrl = 'https://www.jiosaavn.com/api.php?__call=search.getAlbumResults&_format=json&_marker=0&api_version=4&p=1&n=20&q=${Uri.encodeComponent(query)}';
+        final response = await http.get(Uri.parse(fallbackUrl));
+        if (response.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          final rawList = data['results'] ?? data['albums']?['data'] ?? (data is List ? data : null);
+          if (rawList is List) {
+            for (var item in rawList) {
+              if (item is Map<String, dynamic>) {
+                allResults.add(Playlist(
+                  id: item['id']?.toString() ?? '',
+                  title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
+                  type: 'album',
+                  coverArt: item['image']?.toString() ?? item['coverArt']?.toString() ?? '',
+                  songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? item['songCount']?.toString() ?? '0') ?? 0,
+                  songs: [],
+                ));
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[AddonManager] Fallback searchAlbums error: $e');
+      }
+    }
+    return allResults;
+  }
+
+  Future<Map<String, dynamic>> searchAll(String query) async {
+    final Map<String, dynamic> result = {
+      'songs': <Song>[],
+      'albums': <Playlist>[],
+      'playlists': <Playlist>[],
+      'artists': <Map<String, dynamic>>[],
+    };
+
+    for (var runtime in _activeRuntimes) {
+      try {
+        final jsResult = runtime.evaluate("typeof getSearchAllUrl === 'function' ? getSearchAllUrl('${query.replaceAll("'", "\\'")}') : null");
+        final searchUrl = jsResult.stringResult.replaceAll('"', '');
+
+        if (searchUrl != 'null' && searchUrl.isNotEmpty) {
+          debugPrint('[AddonManager] Fetching searchAll from: $searchUrl');
+          final response = await http.get(Uri.parse(searchUrl));
+          if (response.statusCode == 200) {
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
+
+            // Parse Songs
+            final rawSongs = data['songs']?['data'];
+            if (rawSongs is List) {
+              for (var item in rawSongs) {
+                if (item is Map<String, dynamic>) {
+                  result['songs'].add(Song.fromJson(item));
+                }
+              }
+            }
+
+            // Parse Albums
+            final rawAlbums = data['albums']?['data'];
+            if (rawAlbums is List) {
+              for (var item in rawAlbums) {
+                if (item is Map<String, dynamic>) {
+                  result['albums'].add(Playlist(
+                    id: item['id']?.toString() ?? '',
+                    title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
+                    type: 'album',
+                    coverArt: item['image']?.toString() ?? '',
+                    songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? '0') ?? 0,
+                    songs: [],
+                  ));
+                }
+              }
+            }
+
+            // Parse Playlists
+            final rawPlaylists = data['playlists']?['data'];
+            if (rawPlaylists is List) {
+              for (var item in rawPlaylists) {
+                if (item is Map<String, dynamic>) {
+                  result['playlists'].add(Playlist(
+                    id: item['id']?.toString() ?? '',
+                    title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
+                    type: 'playlist',
+                    coverArt: item['image']?.toString() ?? '',
+                    songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? '0') ?? 0,
+                    songs: [],
+                  ));
+                }
+              }
+            }
+
+            // Parse TopQuery / Artists
+            final topQuery = data['topquery']?['data'];
+            if (topQuery is List) {
+              for (var item in topQuery) {
+                if (item is Map<String, dynamic> && item['type'] == 'artist') {
+                  result['artists'].add({
+                    'id': item['id']?.toString() ?? '',
+                    'title': StringUtils.cleanText(item['title']?.toString() ?? ''),
+                    'image': item['image']?.toString() ?? '',
+                    'description': item['description']?.toString() ?? 'Artist',
+                  });
+                }
+              }
+            }
+            final rawArtists = data['artists']?['data'];
+            if (rawArtists is List) {
+              for (var item in rawArtists) {
+                if (item is Map<String, dynamic>) {
+                  final id = item['id']?.toString() ?? '';
+                  if (!(result['artists'] as List).any((a) => a['id'] == id)) {
+                    result['artists'].add({
+                      'id': id,
+                      'title': StringUtils.cleanText(item['title']?.toString() ?? ''),
+                      'image': item['image']?.toString() ?? '',
+                      'description': item['description']?.toString() ?? 'Artist',
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[AddonManager] searchAll error in plugin: $e');
+      }
+    }
+
+    if (result['songs']!.isEmpty && result['albums']!.isEmpty && query.isNotEmpty) {
+      try {
+        final fallbackUrl = 'https://www.jiosaavn.com/api.php?__call=autocomplete.get&_format=json&_marker=0&api_version=4&ctx=web6dot0&query=${Uri.encodeComponent(query)}';
+        final response = await http.get(Uri.parse(fallbackUrl));
+        if (response.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          final rawSongs = data['songs']?['data'];
+          if (rawSongs is List) {
+            for (var item in rawSongs) {
+              if (item is Map<String, dynamic>) {
+                result['songs'].add(Song.fromJson(item));
+              }
+            }
+          }
+          final rawAlbums = data['albums']?['data'];
+          if (rawAlbums is List) {
+            for (var item in rawAlbums) {
+              if (item is Map<String, dynamic>) {
+                result['albums'].add(Playlist(
+                  id: item['id']?.toString() ?? '',
+                  title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
+                  type: 'album',
+                  coverArt: item['image']?.toString() ?? '',
+                  songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? '0') ?? 0,
+                  songs: [],
+                ));
+              }
+            }
+          }
+          final rawPlaylists = data['playlists']?['data'];
+          if (rawPlaylists is List) {
+            for (var item in rawPlaylists) {
+              if (item is Map<String, dynamic>) {
+                result['playlists'].add(Playlist(
+                  id: item['id']?.toString() ?? '',
+                  title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
+                  type: 'playlist',
+                  coverArt: item['image']?.toString() ?? '',
+                  songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? '0') ?? 0,
+                  songs: [],
+                ));
+              }
+            }
+          }
+          final rawArtists = data['artists']?['data'];
+          if (rawArtists is List) {
+            for (var item in rawArtists) {
+              if (item is Map<String, dynamic>) {
+                final id = item['id']?.toString() ?? '';
+                if (!(result['artists'] as List).any((a) => a['id'] == id)) {
+                  result['artists'].add({
+                    'id': id,
+                    'title': StringUtils.cleanText(item['title']?.toString() ?? ''),
+                    'image': item['image']?.toString() ?? '',
+                    'description': item['description']?.toString() ?? 'Artist',
+                  });
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[AddonManager] Fallback searchAll error: $e');
+      }
+    }
+    return result;
+  }
+
+  Future<Map<String, dynamic>> getArtistDetails(String id) async {
+    final Map<String, dynamic> result = {
+      'topSongs': <Song>[],
+      'albums': <Playlist>[],
+      'image': null,
+      'name': null,
+      'bio': null,
+    };
+
+    for (var runtime in _activeRuntimes) {
+      try {
+        final jsResult = runtime.evaluate("typeof getArtistDetailsUrl === 'function' ? getArtistDetailsUrl('${id.replaceAll("'", "\\'")}') : null");
+        final url = jsResult.stringResult.replaceAll('"', '');
+
+        if (url != 'null' && url.isNotEmpty) {
+          debugPrint('[AddonManager] Fetching artist details from: $url');
+          final response = await http.get(Uri.parse(url));
+          if (response.statusCode == 200) {
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
+            result['image'] = data['image'];
+            result['name'] = data['name'];
+            result['bio'] = data['bio'];
+
+            final rawSongs = data['topSongs']?['songs'] ?? data['topSongs'];
+            if (rawSongs is List) {
+              for (var item in rawSongs) {
+                if (item is Map<String, dynamic>) {
+                  result['topSongs'].add(Song.fromJson(item));
+                }
+              }
+            }
+
+            final rawAlbums = data['topAlbums']?['albums'] ?? data['topAlbums'];
+            if (rawAlbums is List) {
+              for (var item in rawAlbums) {
+                if (item is Map<String, dynamic>) {
+                  result['albums'].add(Playlist(
+                    id: item['id']?.toString() ?? '',
+                    title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
+                    type: 'album',
+                    coverArt: item['image']?.toString() ?? '',
+                    songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? '0') ?? 0,
+                    songs: [],
+                  ));
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[AddonManager] getArtistDetails error in plugin: $e');
+      }
+    }
+
+    if (result['topSongs']!.isEmpty && result['albums']!.isEmpty && id.isNotEmpty) {
+      try {
+        final fallbackUrl = 'https://www.jiosaavn.com/api.php?__call=artist.getArtistPageDetails&_format=json&_marker=0&api_version=4&artistId=${Uri.encodeComponent(id)}';
+        final response = await http.get(Uri.parse(fallbackUrl));
+        if (response.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          result['image'] = data['image'];
+          result['name'] = StringUtils.cleanText(data['name']?.toString() ?? '');
+          result['bio'] = data['bio'];
+
+          final rawSongs = data['topSongs']?['songs'] ?? data['topSongs'];
+          if (rawSongs is List) {
+            for (var item in rawSongs) {
+              if (item is Map<String, dynamic>) {
+                result['topSongs'].add(Song.fromJson(item));
+              }
+            }
+          }
+
+          final rawAlbums = data['topAlbums']?['albums'] ?? data['topAlbums'];
+          if (rawAlbums is List) {
+            for (var item in rawAlbums) {
+              if (item is Map<String, dynamic>) {
+                result['albums'].add(Playlist(
+                  id: item['id']?.toString() ?? '',
+                  title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
+                  type: 'album',
+                  coverArt: item['image']?.toString() ?? '',
+                  songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? '0') ?? 0,
+                  songs: [],
+                ));
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[AddonManager] Fallback getArtistDetails error: $e');
+      }
+    }
+    return result;
+  }
+
+    Future<List<Song>> _fetchSongsFromContents(String contents) async {
+    final list = <Song>[];
+    if (contents.isEmpty) return list;
+    try {
+      final songDetailsUrl = 'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=${Uri.encodeComponent(contents)}&_format=json&_marker=0&api_version=4&ctx=web6dot0';
+      final resp = await http.get(Uri.parse(songDetailsUrl)).timeout(const Duration(seconds: 8));
+      if (resp.statusCode == 200) {
+        final sData = jsonDecode(utf8.decode(resp.bodyBytes));
+        final sList = sData['songs'] ?? (sData is List ? sData : null);
+        if (sList is List) {
+          for (var item in sList) {
+            if (item is Map<String, dynamic>) {
+              list.add(Song.fromJson(item));
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[AddonManager] Failed fetching song IDs from contents: $e');
+    }
+    return list;
   }
 
   Future<List<Song>> getPlaylistTracks(String id) async {
@@ -182,15 +677,49 @@ class AddonManager {
           final response = await http.get(Uri.parse(searchUrl));
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
-            if (data['success'] == true && data['tracks'] != null) {
-              for (var item in data['tracks']) {
-                allResults.add(Song.fromJson(item));
+            final rawList = data['tracks'] ?? data['list'] ?? data['songs'];
+            if (rawList is List && rawList.isNotEmpty) {
+              for (var item in rawList) {
+                if (item is Map<String, dynamic>) {
+                  allResults.add(Song.fromJson(item));
+                }
+              }
+            } else {
+              final contents = data['more_info']?['contents']?.toString() ?? data['contents']?.toString() ?? '';
+              if (contents.isNotEmpty) {
+                allResults = await _fetchSongsFromContents(contents);
               }
             }
           }
         }
       } catch (e) {
         debugPrint('[AddonManager] getPlaylistTracks error in plugin: $e');
+      }
+    }
+
+    if (allResults.isEmpty && id.isNotEmpty) {
+      try {
+        final fallbackUrl = 'https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=${Uri.encodeComponent(id)}';
+        debugPrint('[AddonManager] Fallback getPlaylistTracks from: $fallbackUrl');
+        final response = await http.get(Uri.parse(fallbackUrl));
+        if (response.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          final rawList = data['list'] ?? data['tracks'] ?? data['songs'];
+          if (rawList is List && rawList.isNotEmpty) {
+            for (var item in rawList) {
+              if (item is Map<String, dynamic>) {
+                allResults.add(Song.fromJson(item));
+              }
+            }
+          } else {
+            final contents = data['more_info']?['contents']?.toString() ?? data['contents']?.toString() ?? '';
+            if (contents.isNotEmpty) {
+              allResults = await _fetchSongsFromContents(contents);
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[AddonManager] Fallback getPlaylistTracks error: $e');
       }
     }
     return allResults;
@@ -208,15 +737,44 @@ class AddonManager {
           final response = await http.get(Uri.parse(searchUrl));
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
-            if (data['success'] == true && data['tracks'] != null) {
-              for (var item in data['tracks']) {
-                allResults.add(Song.fromJson(item));
+            final rawList = data['tracks'] ?? data['list'] ?? data['songs'] ?? (data is List ? data : null);
+            if (rawList is List) {
+              for (var item in rawList) {
+                if (item is Map<String, dynamic>) {
+                  allResults.add(Song.fromJson(item));
+                }
               }
             }
           }
         }
       } catch (e) {
         debugPrint('[AddonManager] getAlbumTracks error in plugin: $e');
+      }
+    }
+
+    if (allResults.isEmpty && id.isNotEmpty) {
+      try {
+        final fallbackUrl = 'https://www.jiosaavn.com/api.php?__call=content.getAlbumDetails&_format=json&_marker=0&api_version=4&albumid=${Uri.encodeComponent(id)}';
+        debugPrint('[AddonManager] Fallback getAlbumTracks from: $fallbackUrl');
+        final response = await http.get(Uri.parse(fallbackUrl));
+        if (response.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          final rawList = data['list'] ?? data['songs'] ?? data['tracks'];
+          if (rawList is List && rawList.isNotEmpty) {
+            for (var item in rawList) {
+              if (item is Map<String, dynamic>) {
+                allResults.add(Song.fromJson(item));
+              }
+            }
+          } else {
+            final contents = data['more_info']?['contents']?.toString() ?? data['contents']?.toString() ?? '';
+            if (contents.isNotEmpty) {
+              allResults = await _fetchSongsFromContents(contents);
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[AddonManager] Fallback getAlbumTracks error: $e');
       }
     }
     return allResults;
@@ -305,13 +863,46 @@ class AddonManager {
         
         if (url != 'null' && url.isNotEmpty) {
           debugPrint('[AddonManager] Fetching charts from: $url');
-          final response = await http.get(Uri.parse(url));
+          final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 6));
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['data'] != null) {
               final tracks = (data['data']['tracks'] as List? ?? []).map((e) => Song.fromJson(e)).toList();
               final playlists = (data['data']['playlists'] as List? ?? []).map((e) => Playlist.fromJson(e)).toList();
               allResults = {'tracks': tracks, 'playlists': playlists};
+            } else if (data['tracks'] != null) {
+              final List<Song> tracks = [];
+              final List<Playlist> playlists = [];
+              final rawTracks = data['tracks']?['data'] ?? (data['tracks'] is List ? data['tracks'] : []);
+              for (var item in rawTracks) {
+                if (item is Map<String, dynamic>) {
+                  tracks.add(Song(
+                    id: 'dz_${item['id']}',
+                    saavnId: '',
+                    title: StringUtils.cleanText(item['title']?.toString() ?? ''),
+                    artist: StringUtils.cleanText(item['artist']?['name']?.toString() ?? 'Unknown Artist'),
+                    album: StringUtils.cleanText(item['album']?['title']?.toString() ?? ''),
+                    duration: int.tryParse(item['duration']?.toString() ?? '0') ?? 0,
+                    coverArt: item['album']?['cover_medium']?.toString() ?? '',
+                    addedAt: DateTime.now(),
+                  ));
+                }
+              }
+              final rawPlaylists = data['playlists']?['data'] ?? (data['playlists'] is List ? data['playlists'] : []);
+              for (var item in rawPlaylists) {
+                if (item is Map<String, dynamic>) {
+                  playlists.add(Playlist(
+                    id: 'dz_${item['id']}',
+                    title: StringUtils.cleanText(item['title']?.toString() ?? ''),
+                    type: 'playlist',
+                    coverArt: item['picture_medium']?.toString() ?? '',
+                    songCount: int.tryParse(item['nb_tracks']?.toString() ?? '0') ?? 0,
+                  ));
+                }
+              }
+              if (tracks.isNotEmpty) {
+                allResults = {'tracks': tracks, 'playlists': playlists};
+              }
             }
           }
         }
@@ -319,6 +910,50 @@ class AddonManager {
         debugPrint('[AddonManager] getCharts error in plugin: $e');
       }
     }
+
+    if ((allResults['tracks'] as List).isEmpty) {
+      try {
+        final response = await http.get(Uri.parse('https://api.deezer.com/chart')).timeout(const Duration(seconds: 6));
+        if (response.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(response.bodyBytes));
+          final List<Song> tracks = [];
+          final List<Playlist> playlists = [];
+          final rawTracks = data['tracks']?['data'] ?? [];
+          for (var item in rawTracks) {
+            if (item is Map<String, dynamic>) {
+              tracks.add(Song(
+                id: 'dz_${item['id']}',
+                saavnId: '',
+                title: StringUtils.cleanText(item['title']?.toString() ?? ''),
+                artist: StringUtils.cleanText(item['artist']?['name']?.toString() ?? 'Unknown Artist'),
+                album: StringUtils.cleanText(item['album']?['title']?.toString() ?? ''),
+                duration: int.tryParse(item['duration']?.toString() ?? '0') ?? 0,
+                coverArt: item['album']?['cover_medium']?.toString() ?? '',
+                addedAt: DateTime.now(),
+              ));
+            }
+          }
+          final rawPlaylists = data['playlists']?['data'] ?? [];
+          for (var item in rawPlaylists) {
+            if (item is Map<String, dynamic>) {
+              playlists.add(Playlist(
+                id: 'dz_${item['id']}',
+                title: StringUtils.cleanText(item['title']?.toString() ?? ''),
+                type: 'playlist',
+                coverArt: item['picture_medium']?.toString() ?? '',
+                songCount: int.tryParse(item['nb_tracks']?.toString() ?? '0') ?? 0,
+              ));
+            }
+          }
+          if (tracks.isNotEmpty) {
+            allResults = {'tracks': tracks, 'playlists': playlists};
+          }
+        }
+      } catch (e) {
+        debugPrint('[AddonManager] Direct Deezer charts fallback error: $e');
+      }
+    }
+
     return allResults;
   }
 

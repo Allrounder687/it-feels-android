@@ -102,19 +102,23 @@ class Song {
 
     String artistName = '';
     
-    if (json['subtitle'] != null && json['subtitle'].toString().trim().isNotEmpty) {
-      artistName = json['subtitle'].toString().trim();
-    } else if (json['more_info'] != null && json['more_info']['artistMap'] != null) {
+    if (json['more_info'] != null && json['more_info']['artistMap'] != null) {
       final primary = json['more_info']['artistMap']['primary_artists'];
       if (primary is List && primary.isNotEmpty) {
         artistName = primary.map((x) => x['name'] ?? '').where((x) => x.isNotEmpty).join(', ');
       } else if (primary is String && primary.isNotEmpty) {
         artistName = primary;
       }
-    } else if (json['artist'] != null && json['artist'].toString().trim().isNotEmpty) {
-      artistName = json['artist'].toString().trim();
-    } else if (json['more_info'] != null && json['more_info']['singers'] != null && json['more_info']['singers'].toString().trim().isNotEmpty) {
+    }
+    if (artistName.isEmpty && json['more_info'] != null && json['more_info']['singers'] != null && json['more_info']['singers'].toString().trim().isNotEmpty) {
       artistName = json['more_info']['singers'].toString().trim();
+    }
+    if (artistName.isEmpty && json['artist'] != null && json['artist'].toString().trim().isNotEmpty) {
+      artistName = json['artist'].toString().trim();
+    }
+    if (artistName.isEmpty && json['subtitle'] != null && json['subtitle'].toString().trim().isNotEmpty) {
+      final sub = json['subtitle'].toString().trim();
+      artistName = sub.contains(' - ') ? sub.split(' - ').first.trim() : sub;
     }
 
     if (artistName.isEmpty || artistName == 'null') {

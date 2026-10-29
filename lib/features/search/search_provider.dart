@@ -144,31 +144,150 @@ class SearchNotifier extends Notifier<SearchState> {
     state = state.copyWith(recentSearches: recent);
   }
 
-  int _calculateRelevance(String query, String target, {bool isArtist = false}) {
-    if (target.isEmpty) return 0;
+  int _calculateSongRelevance(String query, Song song, int originalIndex) {
+    final qLower = query.toLowerCase().trim();
+    final titleLower = song.title.toLowerCase().trim();
+    final artistLower = song.artist.toLowerCase().trim();
+    final albumLower = song.album.toLowerCase().trim();
+
     int score = 0;
+
+    // Clean title without parentheticals or featured artists: e.g. "Blinding Lights (feat. ...)" -> "blinding lights"
+    final cleanTitle = titleLower
+        .replaceAll(RegExp(r'\s*\(.*?\)\s*'), ' ')
+        .replaceAll(RegExp(r'\s*\[.*?\]\s*'), ' ')
+        .trim();
+
+    // Exact Title Matches
+    if (titleLower == qLower || cleanTitle == qLower) {
+      score += 150;
+    } else if (titleLower.startsWith(qLower) || cleanTitle.startsWith(qLower)) {
+      score += 90;
+    } else if (titleLower.contains(qLower) || cleanTitle.contains(qLower)) {
+      score += 50;
+    }
+
+    // Exact Artist Matches
+    if (artistLower == qLower) {
+      score += 110;
+    } else if (artistLower.startsWith(qLower)) {
+      score += 70;
+    } else if (artistLower.contains(qLower)) {
+      score += 40;
+    }
+
+    if (albumLower.contains(qLower)) {
+      score += 25;
+    }
+
+    // Token Overlap
+    final qTokens = qLower.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+    if (qTokens.length > 1) {
+      int matched = 0;
+      for (final token in qTokens) {
+        if (titleLower.contains(token) || artistLower.contains(token)) matched++;
+      }
+      score += ((matched / qTokens.length) * 35).round();
+    }
+
+    // HEAVY PENALTIES FOR UNWANTED MODIFIERS (Remix, Cover, Slowed, Reverb, Lofi, Instrumental, etc.)
+    // Unless the user explicitly included those words in their search query!
+    final hasRemixInQuery = qLower.contains('remix') || qLower.contains('mix');
+    if (!hasRemixInQuery && (titleLower.contains('remix') || titleLower.contains(' mix'))) {
+      score -= 90;
+    }
+
+    final hasCoverInQuery = qLower.contains('cover');
+    if (!hasCoverInQuery && titleLower.contains('cover')) {
+      score -= 100;
+    }
+
+    final hasSlowedInQuery = qLower.contains('slowed') || qLower.contains('reverb');
+    if (!hasSlowedInQuery && (titleLower.contains('slowed') || titleLower.contains('reverb'))) {
+      score -= 90;
+    }
+
+    final hasLofiInQuery = qLower.contains('lofi') || qLower.contains('lo-fi');
+    if (!hasLofiInQuery && (titleLower.contains('lofi') || titleLower.contains('lo-fi'))) {
+      score -= 90;
+    }
+
+    final hasInstrumentalInQuery = qLower.contains('instrumental') || qLower.contains('karaoke');
+    if (!hasInstrumentalInQuery &&
+        (titleLower.contains('instrumental') ||
+         titleLower.contains('karaoke') ||
+         titleLower.contains('tribute') ||
+         titleLower.contains('ringtone') ||
+         titleLower.contains('flute version') ||
+         titleLower.contains('piano version'))) {
+      score -= 130;
+    }
+
+    final hasAcousticInQuery = qLower.contains('acoustic') || qLower.contains('unplugged');
+    if (!hasAcousticInQuery && (titleLower.contains('acoustic') || titleLower.contains('unplugged'))) {
+      score -= 40;
+    }
+
+    // Natural Search Engine Priority Preservation
+    score += (25 - originalIndex).clamp(0, 25);
+
+    return score;
+  }
+
+  int _calculateAlbumRelevance(String query, Playlist album) {
+    final qLower = query.toLowerCase().trim();
+    final titleLower = album.title.toLowerCase().trim();
+
+    int score = 0;
+
+    // Exact Title Match
+    if (titleLower == qLower) {
+      score += 160;
+    } else if (titleLower.startsWith(qLower)) {
+      score += 100;
+    } else if (titleLower.contains(qLower)) {
+      score += 60;
+    }
+
+    // Token Overlap
+    final qTokens = qLower.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+    if (qTokens.length > 1) {
+      int matched = 0;
+      for (final token in qTokens) {
+        if (titleLower.contains(token)) matched++;
+      }
+      score += ((matched / qTokens.length) * 40).round();
+    }
+
+    // Song Count Weight: Prioritize multi-song albums over single-song singles
+    if (album.songCount > 1) {
+      score += 50; // true album with multiple songs
+      if (album.songCount >= 5) score += 20; // full album
+    } else if (album.songCount == 1) {
+      score -= 40; // penalize single-song clutter
+    }
+
+    return score;
+  }
+
+  int _calculateArtistRelevance(String query, String target) {
+    if (target.isEmpty) return 0;
     final qLower = query.toLowerCase().trim();
     final tLower = target.toLowerCase().trim();
 
-    if (qLower == tLower) {
-      score += 100;
-      if (isArtist) score += 50; // Exact match on artist is a very strong signal
-    } else if (tLower.startsWith(qLower)) {
-      score += 60;
-    } else if (tLower.contains(qLower)) {
-      score += 30;
-    }
+    if (qLower == tLower) return 150;
+    if (tLower.startsWith(qLower)) return 100;
+    if (tLower.contains(qLower)) return 60;
 
-    final qTokens = qLower.split(' ').where((t) => t.isNotEmpty).toList();
-    int tokensMatched = 0;
+    final qTokens = qLower.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
+    int matched = 0;
     for (final token in qTokens) {
-      if (tLower.contains(token)) tokensMatched++;
+      if (tLower.contains(token)) matched++;
     }
     if (qTokens.isNotEmpty) {
-      score += ((tokensMatched / qTokens.length) * 40).round();
+      return ((matched / qTokens.length) * 50).round();
     }
-    
-    return score;
+    return 0;
   }
 
   void search(String newQuery, {BuildContext? context}) {
@@ -227,55 +346,90 @@ class SearchNotifier extends Notifier<SearchState> {
         var albums = List<Playlist>.from(results['albums'] ?? []);
         var playlists = List<Playlist>.from(results['playlists'] ?? []);
         var artists = List<Map<String, dynamic>>.from(results['artists'] ?? []);
-        List<Song> songs = [];
+        
+        // Merge and deduplicate songs
+        final Set<String> seenIds = {};
+        final List<Song> combinedSongs = [];
+        
+        for (final s in topSongs) {
+          if (!seenIds.contains(s.id)) {
+            combinedSongs.add(s);
+            seenIds.add(s.id);
+          }
+        }
+        final resultSongs = List<Song>.from(results['songs'] ?? []);
+        for (final s in resultSongs) {
+          if (!seenIds.contains(s.id)) {
+            combinedSongs.add(s);
+            seenIds.add(s.id);
+          }
+        }
 
-        // Relevance Ranking
+        // Score and sort songs
+        final indexedSongs = combinedSongs.asMap().entries.toList();
+        indexedSongs.sort((a, b) {
+          final scoreA = _calculateSongRelevance(newQuery, a.value, a.key);
+          final scoreB = _calculateSongRelevance(newQuery, b.value, b.key);
+          return scoreB.compareTo(scoreA);
+        });
+        List<Song> songs = indexedSongs.map((e) => e.value).toList();
+
+        // Sort artists by relevance
         artists.sort((a, b) {
-          final scoreA = _calculateRelevance(newQuery, a['title'] ?? '', isArtist: true);
-          final scoreB = _calculateRelevance(newQuery, b['title'] ?? '', isArtist: true);
+          final scoreA = _calculateArtistRelevance(newQuery, a['title'] ?? '');
+          final scoreB = _calculateArtistRelevance(newQuery, b['title'] ?? '');
           return scoreB.compareTo(scoreA);
         });
 
-        topSongs.sort((a, b) {
-          final scoreA = _calculateRelevance(newQuery, a.title);
-          final scoreB = _calculateRelevance(newQuery, b.title);
-          return scoreB.compareTo(scoreA);
-        });
+        // If an overwhelmingly matching artist was explicitly searched (score >= 120), enrich catalog
+        if (artists.isNotEmpty) {
+          final bestArtistScore = _calculateArtistRelevance(newQuery, artists.first['title'] ?? '');
+          if (bestArtistScore >= 120) {
+            try {
+              final artistId = artists.first['id'].toString();
+              final artistData = await apiService.fetchArtistDetails(artistId);
+              if (state.query == newQuery) {
+                final artistTopSongs = artistData['topSongs'] as List<Song>? ?? [];
+                final artistAlbums = artistData['albums'] as List<Playlist>? ?? [];
+                
+                for (final song in artistTopSongs) {
+                  if (!seenIds.contains(song.id)) {
+                    combinedSongs.add(song);
+                    seenIds.add(song.id);
+                  }
+                }
 
-        int bestArtistScore = artists.isNotEmpty ? _calculateRelevance(newQuery, artists.first['title'] ?? '', isArtist: true) : 0;
-        int bestSongScore = topSongs.isNotEmpty ? _calculateRelevance(newQuery, topSongs.first.title) : 0;
-
-        // If an artist is a very strong match, prioritize it as the "Top Result" and fetch their catalog
-        if (bestArtistScore > 0 && bestArtistScore >= bestSongScore) {
-          final artistId = artists.first['id'].toString();
-          final artistData = await apiService.fetchArtistDetails(artistId);
-          
-          if (state.query != newQuery) return;
-
-          if (artistData['topSongs'] != null && (artistData['topSongs'] as List).isNotEmpty) {
-            songs = artistData['topSongs'] as List<Song>;
-            if (artistData['albums'] != null && (artistData['albums'] as List).isNotEmpty) {
-              albums.insertAll(0, artistData['albums'] as List<Playlist>);
+                final Set<String> albumIds = albums.map((a) => a.id).toSet();
+                for (final alb in artistAlbums) {
+                  if (!albumIds.contains(alb.id)) {
+                    albums.add(alb);
+                    albumIds.add(alb.id);
+                  }
+                }
+              }
+            } catch (e) {
+              debugPrint('[SearchNotifier] Artist detail enrichment error: $e');
             }
           }
-        } else {
-          // Otherwise, just show the songs
-          songs = topSongs.isNotEmpty ? topSongs : List<Song>.from(results['songs'] ?? []);
         }
+
+        // Sort albums by relevance to the query
+        albums.sort((a, b) {
+          final scoreA = _calculateAlbumRelevance(newQuery, a);
+          final scoreB = _calculateAlbumRelevance(newQuery, b);
+          return scoreB.compareTo(scoreA);
+        });
 
         // Prepend Native Catalog Songs and tag them
         if (nativeSongs.isNotEmpty) {
           final taggedNativeSongs = nativeSongs.map((s) => s.copyWith(album: '${s.album} (IT-Feels)')).toList();
-          
-          // Filter out duplicates
           final nativeIds = taggedNativeSongs.map((s) => s.id).toSet();
           songs.removeWhere((s) => nativeIds.contains(s.id));
-          // Insert native songs near the top
           int insertIndex = songs.isNotEmpty ? 1 : 0;
           songs.insertAll(insertIndex, taggedNativeSongs);
         }
 
-        // Fetch videos if settings allow (handled by UI, but we can pre-fetch a few)
+        // Fetch videos if settings allow
         final videos = await BackendApiService.searchVideos(newQuery);
 
         state = state.copyWith(

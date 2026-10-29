@@ -7,7 +7,7 @@ import 'package:it_feels_music/data/models/song_model.dart';
 class LocalCacheDataSource {
   final SharedPreferences? _prefs;
 
-  LocalCacheDataSource({SharedPreferences? prefs}) : _prefs = prefs;
+  LocalCacheDataSource({this._prefs});
 
   Future<SharedPreferences> _getPrefs() async {
     return _prefs ?? await SharedPreferences.getInstance();
