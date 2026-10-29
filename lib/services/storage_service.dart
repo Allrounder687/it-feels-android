@@ -321,7 +321,7 @@ class StorageService {
       'wifiQuality': prefs.getString(_wifiQualityKey) ?? '320 kbps (Very High)',
       'mobileQuality': prefs.getString(_mobileQualityKey) ?? '160 kbps (High)',
       'downloadQuality': prefs.getString(_downloadQualityKey) ?? '320 kbps (Very High)',
-      'theme': prefs.getString(_themeKey) ?? 'Glass (Desktop)',
+      'theme': prefs.getString(_themeKey) ?? 'Dynamic (Album Art)',
       'customDownloadPath': prefs.getString(_downloadPathKey) ?? '',
       'enableAndroidAuto': prefs.getBool('enable_android_auto') ?? false,
       'hapticsMode': prefs.getString('haptics_mode') ?? 'Off',

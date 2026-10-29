@@ -97,21 +97,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Use up to 5 songs for the hero carousel
     final carouselSongs = heroSongs.take(5).toList();
     
-    // Determine card dimensions
+    // Determine card dimensions adaptively from smallest to largest screen
     final screenWidth = MediaQuery.of(context).size.width;
-    // clamp(350px, 30vw, 600px) translates to:
-    final double cardWidth = (screenWidth * 0.32).clamp(300.0, 420.0);
-    // 16:9 Aspect Ratio
+    final hPadding = screenWidth < 600 ? 16.0 : 32.0;
+    final double cardWidth = screenWidth < 400
+        ? (screenWidth * 0.80).clamp(210.0, 280.0)
+        : (screenWidth < 600
+            ? (screenWidth * 0.72).clamp(260.0, 340.0)
+            : (screenWidth * 0.32).clamp(300.0, 460.0));
     final double cardHeight = cardWidth * (9 / 16);
 
     return SizedBox(
-      height: cardHeight + 40, // accommodate padding
+      height: cardHeight + (screenWidth < 600 ? 28 : 40),
       child: ScrollConfiguration(
         behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+          padding: EdgeInsets.symmetric(horizontal: hPadding),
           itemCount: carouselSongs.length,
           itemBuilder: (context, index) {
             final heroSong = carouselSongs[index];
@@ -278,11 +281,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.symmetric(horizontal: hPadding),
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 350,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: screenWidth >= 1400 ? 4 : (screenWidth >= 1000 ? 3 : (screenWidth >= 600 ? 2 : 1)),
               mainAxisExtent: 64,
               crossAxisSpacing: 16,
-              mainAxisSpacing: 12,
+              mainAxisSpacing: 10,
             ),
             itemCount: gridSongs.length,
             itemBuilder: (context, index) {
@@ -602,17 +605,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth >= 600;
+    final hPadding = isWide ? 32.0 : 16.0;
     
-    // clamp(150px, 15vw, 250px) translates to:
-    final double cardWidth = (screenWidth * 0.15).clamp(150.0, 250.0);
-    final carouselHeight = cardWidth + 50.0; // accommodate title
+    final double cardWidth = screenWidth < 360
+        ? 120.0
+        : (screenWidth < 600
+            ? 140.0
+            : (screenWidth * 0.16).clamp(160.0, 240.0));
+    final carouselHeight = cardWidth + 48.0;
 
     return SliverToBoxAdapter(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 20, right: 20, top: 40, bottom: 12),
+            padding: EdgeInsets.only(left: hPadding, right: hPadding, top: isWide ? 40 : 28, bottom: 12),
             child: Text(
               title,
               style: AppTypography.outfitExtraBold.copyWith(
@@ -1063,6 +1070,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ).withValues(alpha: 0.15); // Evening Indigo
         }
 
+        final screenWidth = MediaQuery.of(context).size.width;
+
         return Scaffold(
           backgroundColor: context.themeBackgroundColor,
           body: Stack(
@@ -1260,7 +1269,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: ListView.builder(
                             scrollDirection: Axis.horizontal,
                             clipBehavior: Clip.none,
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            padding: EdgeInsets.symmetric(horizontal: screenWidth < 600 ? 16.0 : 32.0),
                             itemCount: _filters.length,
                             itemBuilder: (context, index) {
                               final isSelected = index == _selectedFilterIndex;
@@ -1328,7 +1337,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             child: Builder(
                               builder: (context) {
                                 final screenWidth = MediaQuery.of(context).size.width;
-                                final double cardWidth = (screenWidth * 0.4).clamp(350.0, 600.0);
+                                final double cardWidth = screenWidth < 400
+                                    ? (screenWidth * 0.80).clamp(210.0, 280.0)
+                                    : (screenWidth < 600
+                                        ? (screenWidth * 0.72).clamp(260.0, 340.0)
+                                        : (screenWidth * 0.32).clamp(300.0, 460.0));
                                 final double cardHeight = cardWidth * (9 / 16);
                                 
                                 return Shimmer.fromColors(
@@ -1635,6 +1648,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     String title,
     List<Playlist> playlists,
   ) {
+    final screenWidth = MediaQuery.of(context).size.width;
     return [
       SliverToBoxAdapter(
           child: Padding(
@@ -1650,13 +1664,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 48),
+          padding: EdgeInsets.symmetric(horizontal: screenWidth < 600 ? 16.0 : 32.0),
           sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 240.0,
-              mainAxisSpacing: 24.0,
-              crossAxisSpacing: 24.0,
-              childAspectRatio: 0.8, // Accommodate image + title text
+            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: screenWidth < 600 ? 175.0 : 240.0,
+              mainAxisSpacing: screenWidth < 600 ? 12.0 : 20.0,
+              crossAxisSpacing: screenWidth < 600 ? 12.0 : 20.0,
+              childAspectRatio: 0.78,
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {

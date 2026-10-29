@@ -252,28 +252,38 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                               backgroundColor: context.themeCardColor.withValues(alpha: 0.8),
                               foregroundColor: context.themeTextColor,
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            icon: Icon(Icons.play_arrow_rounded, size: 24, color: context.themeAccentColor),
-                            label: Text("Play All", style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16)),
+                            icon: Icon(Icons.play_arrow_rounded, size: 22, color: context.themeAccentColor),
+                            label: Text(
+                              "Play All",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
+                            ),
                             onPressed: () {
                               if (songs.isNotEmpty) ref.read(audioPlayerProvider.notifier).playSong(songs.first, queue: songs, index: 0);
                             },
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: context.themeCardColor.withValues(alpha: 0.8),
                               foregroundColor: context.themeTextColor,
                               elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
                             icon: Icon(Icons.shuffle_rounded, size: 20, color: context.themeAccentColor),
-                            label: Text("Shuffle", style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 16)),
+                            label: Text(
+                              "Shuffle",
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 15),
+                            ),
                             onPressed: () {
                               if (songs.isNotEmpty) {
                                 final shuffled = List<Song>.from(songs)..shuffle();
@@ -282,23 +292,25 @@ class CustomPlaylistDetailScreen extends ConsumerWidget {
                             },
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        IconButton(
-                          tooltip: 'Download Playlist',
-                          onPressed: () async {
-                            if (songs.isEmpty) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Downloading ${songs.length} songs...")),
-                            );
-                            await ref.read(downloadProvider.notifier).downloadBatch(songs);
-                          },
-                          icon: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: context.themeCardColor.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 22),
+                        const SizedBox(width: 10),
+                        Container(
+                          height: 48,
+                          width: 48,
+                          decoration: BoxDecoration(
+                            color: context.themeCardColor.withValues(alpha: 0.8),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            tooltip: 'Download Playlist',
+                            onPressed: () async {
+                              if (songs.isEmpty) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Downloading ${songs.length} songs...")),
+                              );
+                              await ref.read(downloadProvider.notifier).downloadBatch(songs);
+                            },
+                            icon: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 22),
                           ),
                         ),
                       ],

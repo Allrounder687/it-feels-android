@@ -34,16 +34,17 @@ class MiniPlayer extends ConsumerWidget {
 
 
 
-        final bottomInset = MediaQuery.of(context).viewPadding.bottom;
-        return Padding(
-          padding: EdgeInsets.only(bottom: bottomInset),
-          child: ClipRRect(
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isNarrow = screenWidth < 600;
+        final miniHeight = isNarrow ? 56.0 : 64.0;
+        final thumbSize = isNarrow ? 38.0 : 44.0;
+        return ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: Builder(
               builder: (context) {
                 final child = Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  height: 72,
+                  margin: EdgeInsets.symmetric(horizontal: isNarrow ? 8 : 12, vertical: 2),
+                  height: miniHeight,
                   decoration: BoxDecoration(
                     color: playerProvider.themeSurfaceColor.withValues(alpha: 0.75),
                     borderRadius: BorderRadius.circular(16),
@@ -102,8 +103,19 @@ class MiniPlayer extends ConsumerWidget {
                               ),
                             ),
 
-                            // Main Mini Player Tap Area
-                            Material(
+                            // Main Mini Player Tap Area with Horizontal Swipe-to-Skip
+                            GestureDetector(
+                              behavior: HitTestBehavior.translucent,
+                              onHorizontalDragEnd: (details) {
+                                if (details.primaryVelocity != null) {
+                                  if (details.primaryVelocity! < -180) {
+                                    ref.read(audioPlayerProvider.notifier).skipToNext();
+                                  } else if (details.primaryVelocity! > 180) {
+                                    ref.read(audioPlayerProvider.notifier).skipToPrevious();
+                                  }
+                                }
+                              },
+                              child: Material(
                               color: Colors.transparent,
                               child: InkWell(
                                 onTap: onTap,
@@ -117,8 +129,8 @@ class MiniPlayer extends ConsumerWidget {
                                         child: ClipRRect(
                                           borderRadius: BorderRadius.circular(10),
                                           child: SizedBox(
-                                            width: 44,
-                                            height: 44,
+                                            width: thumbSize,
+                                            height: thumbSize,
                                             child: currentSong.coverArt.isNotEmpty
                                                 ? CustomImageWidget(
                                                     imageUrl: currentSong.coverArt,
@@ -217,6 +229,7 @@ class MiniPlayer extends ConsumerWidget {
                                 ),
                               ),
                             ),
+                            ),
                           ],
                         );
 
@@ -234,8 +247,7 @@ class MiniPlayer extends ConsumerWidget {
                 return child;
               },
             ),
-          ),
-        );
+          );
       },
     );
   }

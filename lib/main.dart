@@ -456,7 +456,14 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                 builder: (context, child) {
                   final isBanned = ref.watch(banProvider).isBanned;
                   if (isBanned) return const BannedScreen();
-                  return Focus(
+                  final mediaQuery = MediaQuery.of(context);
+                  final clampedScaler = mediaQuery.textScaler.clamp(
+                    minScaleFactor: 0.85,
+                    maxScaleFactor: 1.15,
+                  );
+                  return MediaQuery(
+                    data: mediaQuery.copyWith(textScaler: clampedScaler),
+                    child: Focus(
                     onKeyEvent: (node, event) {
                       if (event is KeyDownEvent) {
                         if (event.logicalKey == LogicalKeyboardKey.tab ||
@@ -487,7 +494,7 @@ class PixelPlayerSaavnApp extends ConsumerWidget {
                         child: InAppBroadcastListener(child: child ?? const SizedBox()),
                       ),
                     ),
-                  );
+                  ));
                 },
               );
             },

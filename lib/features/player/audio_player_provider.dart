@@ -381,19 +381,25 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   AppThemeMode _mapThemeString(String themeStr) {
     switch (themeStr) {
       case 'Dynamic (Album Art)':
+      case 'Dynamic':
         return AppThemeMode.dynamic;
       case 'Midnight Blue':
+      case 'Midnight Dark':
         return AppThemeMode.midnight;
       case 'Deep Burgundy':
+      case 'Burgundy Dark':
         return AppThemeMode.burgundy;
       case 'Pitch Black (AMOLED)':
         return AppThemeMode.amoled;
       case 'Light Theme':
+      case 'Light Mode':
         return AppThemeMode.light;
       case 'Glass (Desktop)':
         return AppThemeMode.glass;
-      default:
+      case 'System (Material You)':
         return AppThemeMode.materialYou;
+      default:
+        return AppThemeMode.dynamic;
     }
   }
 
@@ -910,8 +916,13 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
           appThemeMode: _mapThemeString(ref.read(settingsProvider).theme),
         );
       } else {
-        // Fallback for low-ram devices handling
-        state = state.copyWith(appThemeMode: AppThemeMode.midnight);
+        // Fallback for low-ram devices handling without destroying user's dynamic theme mode
+        state = state.copyWith(
+          themeBackgroundColor: AppColors.midnightBackground,
+          themeSurfaceColor: AppColors.midnightSurface,
+          themeAccentColor: AppColors.midnightAccent,
+          appThemeMode: _mapThemeString(ref.read(settingsProvider).theme),
+        );
       }
     });
 

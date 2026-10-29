@@ -1,3 +1,9 @@
+## v3.6.18+88
+- **Audio Engine Stability, Viewport Architecture & Playlist UI**:
+  - **Playlist Download Button Mobile Overflow & Tap Dead-Zone Fix**: Fixed the issue where the "Download Playlist" action button in `PlaylistDetailScreen` and `CustomPlaylistDetailScreen` overflowed the available screen width on mobile devices (<414px) and failed to respond to touch gestures. Replaced fixed 140px button constraints with responsive `Expanded` flex layouts for "Play" and "Shuffle", normalized horizontal mobile padding to 20px, and styled the Download Playlist button as a clean 42x42px container matching companion action buttons.
+  - **Library Half-Screen Void & Empty State Viewport Fix**: Fixed the severe half-screen bug on `LibraryScreen` (Songs, Favorites, and Downloads tabs) where the top half was constrained to ~340px and the bottom half was pitch black. Removed the conflicting fixed `SizedBox` beneath `Expanded`, allowing `Expanded` to fully utilize the viewport down to `MainNavigationWrapper`'s `bottomUiHeight`, and added 16px bottom padding to all library tab scrollables.
+  - **Zero-Latency Skip & Autoplay Flow**: Non-blocking recommendation queuing on track skip.
+
 ## v3.6.17+87
 - **Search Engine, Scoped Storage Downloads, Radio & Album Discovery Architecture**:
   - **Garbled Track Names & HTML Entity Sanitization**: Overhauled `StringUtils.cleanText` with decimal (`&#123;`), hexadecimal (`&#x1F;`), and named HTML entity decoding alongside double-UTF8 mojibake repair. Removed destructive multi-byte truncations, ensuring full fidelity for non-Latin scripts and special characters.

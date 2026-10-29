@@ -192,6 +192,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                                 context: context,
                                                 icon: Icons.play_arrow_rounded,
                                                 label: "Play",
+                                                width: 140,
                                                 onPressed: () {
                                                   if (_songs.isNotEmpty) ref.read(audioPlayerProvider.notifier).playSong(_songs[0], queue: _songs, index: 0);
                                                 },
@@ -201,6 +202,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                                 context: context,
                                                 icon: Icons.shuffle_rounded,
                                                 label: "Shuffle",
+                                                width: 140,
                                                 onPressed: () {
                                                   if (_songs.isNotEmpty) {
                                                     final shuffled = List<Song>.from(_songs)..shuffle();
@@ -209,21 +211,24 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                                 },
                                               ),
                                               const SizedBox(width: 16),
-                                              IconButton(
-                                                onPressed: () async {
-                                                  if (_songs.isEmpty) return;
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    SnackBar(content: Text("Downloading ${_songs.length} songs...")),
-                                                  );
-                                                  await ref.read(downloadProvider.notifier).downloadBatch(_songs);
-                                                },
-                                                icon: Container(
-                                                  padding: const EdgeInsets.all(8),
-                                                  decoration: BoxDecoration(
-                                                    color: context.themeCardColor,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 22),
+                                              Container(
+                                                height: 42,
+                                                width: 42,
+                                                decoration: BoxDecoration(
+                                                  color: context.themeCardColor.withValues(alpha: 0.8),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: IconButton(
+                                                  padding: EdgeInsets.zero,
+                                                  tooltip: "Download Playlist",
+                                                  onPressed: () async {
+                                                    if (_songs.isEmpty) return;
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(content: Text("Downloading ${_songs.length} songs...")),
+                                                    );
+                                                    await ref.read(downloadProvider.notifier).downloadBatch(_songs);
+                                                  },
+                                                  icon: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 22),
                                                 ),
                                               ),
                                             ],
@@ -276,47 +281,52 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                     ),
                                     const SizedBox(height: 24),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        _buildActionButton(
-                                          context: context,
-                                          icon: Icons.play_arrow_rounded,
-                                          label: "Play",
-                                          onPressed: () {
-                                            if (_songs.isNotEmpty) ref.read(audioPlayerProvider.notifier).playSong(_songs[0], queue: _songs, index: 0);
-                                          },
+                                        Expanded(
+                                          child: _buildActionButton(
+                                            context: context,
+                                            icon: Icons.play_arrow_rounded,
+                                            label: "Play",
+                                            onPressed: () {
+                                              if (_songs.isNotEmpty) ref.read(audioPlayerProvider.notifier).playSong(_songs[0], queue: _songs, index: 0);
+                                            },
+                                          ),
                                         ),
-                                        const SizedBox(width: 12),
-                                        _buildActionButton(
-                                          context: context,
-                                          icon: Icons.shuffle_rounded,
-                                          label: "Shuffle",
-                                          onPressed: () {
-                                            if (_songs.isNotEmpty) {
-                                              final shuffled = List<Song>.from(_songs)..shuffle();
-                                              ref.read(audioPlayerProvider.notifier).playSong(shuffled[0], queue: shuffled, index: 0);
-                                            }
-                                          },
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: _buildActionButton(
+                                            context: context,
+                                            icon: Icons.shuffle_rounded,
+                                            label: "Shuffle",
+                                            onPressed: () {
+                                              if (_songs.isNotEmpty) {
+                                                final shuffled = List<Song>.from(_songs)..shuffle();
+                                                ref.read(audioPlayerProvider.notifier).playSong(shuffled[0], queue: shuffled, index: 0);
+                                              }
+                                            },
+                                          ),
                                         ),
-                                         const SizedBox(width: 12),
-                                         IconButton(
-                                           tooltip: "Download Playlist",
-                                           onPressed: () async {
-                                             if (_songs.isEmpty) return;
-                                             ScaffoldMessenger.of(context).showSnackBar(
-                                               SnackBar(content: Text("Downloading ${_songs.length} songs...")),
-                                             );
-                                             await ref.read(downloadProvider.notifier).downloadBatch(_songs);
-                                           },
-                                           icon: Container(
-                                             padding: const EdgeInsets.all(8),
-                                             decoration: BoxDecoration(
-                                               color: context.themeCardColor,
-                                               shape: BoxShape.circle,
-                                             ),
-                                             child: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 22),
-                                           ),
-                                         ),
+                                        const SizedBox(width: 10),
+                                        Container(
+                                          height: 42,
+                                          width: 42,
+                                          decoration: BoxDecoration(
+                                            color: context.themeCardColor.withValues(alpha: 0.8),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: IconButton(
+                                            padding: EdgeInsets.zero,
+                                            tooltip: "Download Playlist",
+                                            onPressed: () async {
+                                              if (_songs.isEmpty) return;
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text("Downloading ${_songs.length} songs...")),
+                                              );
+                                              await ref.read(downloadProvider.notifier).downloadBatch(_songs);
+                                            },
+                                            icon: Icon(Icons.download_rounded, color: context.themeAccentColor, size: 22),
+                                          ),
+                                        ),
                                       ],
                                     )
                                   ],
@@ -621,22 +631,36 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     required IconData icon,
     required String label,
     required VoidCallback onPressed,
+    double? width,
   }) {
-    return SizedBox(
-      width: 140,
-      height: 36,
-      child: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: context.themeCardColor.withValues(alpha: 0.8),
-          foregroundColor: context.themeTextColor,
-          elevation: 0,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        icon: Icon(icon, size: 18, color: context.themeAccentColor),
-        label: Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14)),
-        onPressed: onPressed,
+    final button = ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: context.themeCardColor.withValues(alpha: 0.8),
+        foregroundColor: context.themeTextColor,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
+      icon: Icon(icon, size: 20, color: context.themeAccentColor),
+      label: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14),
+      ),
+      onPressed: onPressed,
+    );
+
+    if (width != null) {
+      return SizedBox(
+        width: width,
+        height: 42,
+        child: button,
+      );
+    }
+    return SizedBox(
+      height: 42,
+      child: button,
     );
   }
 }

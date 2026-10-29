@@ -637,11 +637,11 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                                     child: Builder(
                                       builder: (context) {
                                         final child = Container(
-                                          height: isNarrowScreen ? 70 : 76,
-                                          margin: const EdgeInsets.only(
-                                            left: 12,
-                                            right: 12,
-                                            bottom: 12,
+                                          height: isNarrowScreen ? 58 : 64,
+                                          margin: EdgeInsets.only(
+                                            left: isNarrowScreen ? 12 : 24,
+                                            right: isNarrowScreen ? 12 : 24,
+                                            bottom: isNarrowScreen ? 6 : 10,
                                           ),
                                           decoration: BoxDecoration(
                                             color: kDebugMode
