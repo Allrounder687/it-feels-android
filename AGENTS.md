@@ -13,6 +13,11 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Audio Engine Stability & Playback Pipeline Hardening (v3.6.18):**
+  - **Zero-Latency Skip & Autoplay Non-Blocking Flow**: Removed synchronous blocking network recommendations (`await getRecommendedSongs`) from `skipToNext()` in `AudioPlayerNotifier`. Skipping tracks is now instantaneous and free from UI isolate pauses or queue lockups.
+  - **Deezer Unresolvable Stream Purge**: Replaced external Deezer chart endpoints in `AddonManager.getCharts()` and `backend_addon.js` with native `/api/v1/charts/trending`. Home feeds and Music tabs now exclusively serve tracks with valid Saavn media IDs, preventing empty audio URL failures.
+  - **Direct Radio & Pre-Resolved Stream Pass-Through**: Patched `MusicRepository.getStreamUrl` to immediately bypass the addon worker for `radio:` stations and pre-resolved HTTP stream URLs, ensuring direct streaming to `AudioPlayerHandler`.
+  - **Queue State Concurrency Guard**: Prevented race conditions where short queues triggered concurrent background recommendation fetches that overwrote queue state during stream initialization.
 - **Search Engine, Scoped Storage Downloads, Radio & Album Discovery Architecture (v3.6.17):**
   - **Garbled Track Names & HTML Entity Sanitization**: Overhauled `StringUtils.cleanText` with decimal (`&#123;`), hexadecimal (`&#x1F;`), and named HTML entity decoding alongside double-UTF8 mojibake repair. Removed destructive multi-byte truncations (`.replaceAll('â€', '"')`), ensuring full fidelity for non-Latin scripts and special characters. Tested with unit tests.
   - **Album Search Relevance & Multi-Track Prioritization**: Added `_calculateAlbumRelevance` boosting multi-track albums (+50 for >1 song, +20 for >=5 songs) while heavily penalizing single-track releases (-40), ensuring full studio albums appear before single-song clutter.

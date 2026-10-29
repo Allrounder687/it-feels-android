@@ -562,7 +562,17 @@ class MusicRepository implements IMusicRepository {
 
   @override
   Future<String?> getStreamUrl(Song song) async {
-    // 1. If song has a local downloaded file path, return it directly for instant offline playback
+    // 0. Radio station direct stream
+    if (song.id.startsWith('radio:') && song.encryptedMediaUrl != null && song.encryptedMediaUrl!.isNotEmpty) {
+      return song.encryptedMediaUrl;
+    }
+
+    // 1. Direct streamUrl if present
+    if (song.streamUrl != null && song.streamUrl!.isNotEmpty) {
+      return song.streamUrl;
+    }
+
+    // 2. If song has a local downloaded file path, return it directly for instant offline playback
     if (song.encryptedMediaUrl != null && song.encryptedMediaUrl!.isNotEmpty) {
       if (!song.encryptedMediaUrl!.startsWith('http://') && !song.encryptedMediaUrl!.startsWith('https://')) {
         try {

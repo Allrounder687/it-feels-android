@@ -30,7 +30,7 @@ function getAlbumTracksUrl(id) {
 }
 
 function getChartsUrl() {
-    return "https://api.deezer.com/chart";
+    return BACKEND_URL + "/api/v1/charts/trending";
 }
 
 function getSearchPodcastsUrl(query) {

@@ -66,7 +66,7 @@ function getHomeFeedUrl() {
 }
 
 function getChartsUrl() {
-    return "https://api.deezer.com/chart";
+    return BACKEND_URL + "/api/v1/charts/trending";
 }
 
 function getLyricsUrl(track, artist) {
@@ -863,46 +863,13 @@ function getLyricsUrl(track, artist) {
         
         if (url != 'null' && url.isNotEmpty) {
           debugPrint('[AddonManager] Fetching charts from: $url');
-          final response = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 6));
+          final response = await http.get(Uri.parse(url));
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data['success'] == true && data['data'] != null) {
               final tracks = (data['data']['tracks'] as List? ?? []).map((e) => Song.fromJson(e)).toList();
               final playlists = (data['data']['playlists'] as List? ?? []).map((e) => Playlist.fromJson(e)).toList();
               allResults = {'tracks': tracks, 'playlists': playlists};
-            } else if (data['tracks'] != null) {
-              final List<Song> tracks = [];
-              final List<Playlist> playlists = [];
-              final rawTracks = data['tracks']?['data'] ?? (data['tracks'] is List ? data['tracks'] : []);
-              for (var item in rawTracks) {
-                if (item is Map<String, dynamic>) {
-                  tracks.add(Song(
-                    id: 'dz_${item['id']}',
-                    saavnId: '',
-                    title: StringUtils.cleanText(item['title']?.toString() ?? ''),
-                    artist: StringUtils.cleanText(item['artist']?['name']?.toString() ?? 'Unknown Artist'),
-                    album: StringUtils.cleanText(item['album']?['title']?.toString() ?? ''),
-                    duration: int.tryParse(item['duration']?.toString() ?? '0') ?? 0,
-                    coverArt: item['album']?['cover_medium']?.toString() ?? '',
-                    addedAt: DateTime.now(),
-                  ));
-                }
-              }
-              final rawPlaylists = data['playlists']?['data'] ?? (data['playlists'] is List ? data['playlists'] : []);
-              for (var item in rawPlaylists) {
-                if (item is Map<String, dynamic>) {
-                  playlists.add(Playlist(
-                    id: 'dz_${item['id']}',
-                    title: StringUtils.cleanText(item['title']?.toString() ?? ''),
-                    type: 'playlist',
-                    coverArt: item['picture_medium']?.toString() ?? '',
-                    songCount: int.tryParse(item['nb_tracks']?.toString() ?? '0') ?? 0,
-                  ));
-                }
-              }
-              if (tracks.isNotEmpty) {
-                allResults = {'tracks': tracks, 'playlists': playlists};
-              }
             }
           }
         }
@@ -910,50 +877,6 @@ function getLyricsUrl(track, artist) {
         debugPrint('[AddonManager] getCharts error in plugin: $e');
       }
     }
-
-    if ((allResults['tracks'] as List).isEmpty) {
-      try {
-        final response = await http.get(Uri.parse('https://api.deezer.com/chart')).timeout(const Duration(seconds: 6));
-        if (response.statusCode == 200) {
-          final data = jsonDecode(utf8.decode(response.bodyBytes));
-          final List<Song> tracks = [];
-          final List<Playlist> playlists = [];
-          final rawTracks = data['tracks']?['data'] ?? [];
-          for (var item in rawTracks) {
-            if (item is Map<String, dynamic>) {
-              tracks.add(Song(
-                id: 'dz_${item['id']}',
-                saavnId: '',
-                title: StringUtils.cleanText(item['title']?.toString() ?? ''),
-                artist: StringUtils.cleanText(item['artist']?['name']?.toString() ?? 'Unknown Artist'),
-                album: StringUtils.cleanText(item['album']?['title']?.toString() ?? ''),
-                duration: int.tryParse(item['duration']?.toString() ?? '0') ?? 0,
-                coverArt: item['album']?['cover_medium']?.toString() ?? '',
-                addedAt: DateTime.now(),
-              ));
-            }
-          }
-          final rawPlaylists = data['playlists']?['data'] ?? [];
-          for (var item in rawPlaylists) {
-            if (item is Map<String, dynamic>) {
-              playlists.add(Playlist(
-                id: 'dz_${item['id']}',
-                title: StringUtils.cleanText(item['title']?.toString() ?? ''),
-                type: 'playlist',
-                coverArt: item['picture_medium']?.toString() ?? '',
-                songCount: int.tryParse(item['nb_tracks']?.toString() ?? '0') ?? 0,
-              ));
-            }
-          }
-          if (tracks.isNotEmpty) {
-            allResults = {'tracks': tracks, 'playlists': playlists};
-          }
-        }
-      } catch (e) {
-        debugPrint('[AddonManager] Direct Deezer charts fallback error: $e');
-      }
-    }
-
     return allResults;
   }
 
