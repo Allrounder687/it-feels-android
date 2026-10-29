@@ -142,6 +142,8 @@ class _InAppBroadcastListenerState extends State<InAppBroadcastListener> {
           }
         }
       }
+    }, onError: (e) {
+      debugPrint('[InAppBroadcastListener] Premium listener error: $e');
     });
   }
 
@@ -175,6 +177,8 @@ class _InAppBroadcastListenerState extends State<InAppBroadcastListener> {
           await prefs.setString(_lastBroadcastKey, doc.id);
         }
       }
+    }, onError: (e) {
+      debugPrint('[InAppBroadcastListener] Premium listener error: $e');
     });
   }
 

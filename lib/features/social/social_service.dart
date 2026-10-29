@@ -318,7 +318,11 @@ class SocialService {
         .collection('inbox')
         .where('isRead', isEqualTo: false)
         .snapshots()
-        .map((snapshot) => snapshot.docs.length);
+        .map((snapshot) => snapshot.docs.length)
+        .handleError((e) {
+          debugPrint('[SocialService] Unread inbox count error: $e');
+          return 0;
+        });
   }
 
   // React to a message
@@ -368,22 +372,26 @@ class SocialService {
 
   // Update real-time presence (what they are listening to)
   Future<void> updatePresence(Song? song, bool isPlaying, {String? roomId}) async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
 
-    final presenceRef = _rtdb.ref('presence/${user.uid}');
-    
-    if (song != null && isPlaying) {
-      await presenceRef.set({
-        'is_playing': true,
-        'song_title': song.title,
-        'artist': song.artist,
-        'timestamp': ServerValue.timestamp,
-        'room_id': roomId,
-      });
-      presenceRef.onDisconnect().remove();
-    } else {
-      await presenceRef.remove();
+      final presenceRef = _rtdb.ref('presence/${user.uid}');
+      
+      if (song != null && isPlaying) {
+        await presenceRef.set({
+          'is_playing': true,
+          'song_title': song.title,
+          'artist': song.artist,
+          'timestamp': ServerValue.timestamp,
+          'room_id': roomId,
+        });
+        presenceRef.onDisconnect().remove();
+      } else {
+        await presenceRef.remove();
+      }
+    } catch (e) {
+      // Gracefully silence RTDB permission errors if security rules restrict presence
     }
   }
 

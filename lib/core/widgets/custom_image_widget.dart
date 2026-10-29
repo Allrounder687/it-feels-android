@@ -63,15 +63,23 @@ class CustomImageWidget extends ConsumerWidget {
         },
       );
     } else {
-      return Image.file(
-        File(imageUrl),
-        fit: fit,
-        width: width,
-        height: height,
-        cacheWidth: targetSize,
-        filterQuality: imageFilterQuality,
-        errorBuilder: (context, error, stackTrace) => errorWidget != null ? errorWidget!(context, imageUrl, error) : const Icon(Icons.music_note, color: Colors.grey),
-      );
+      try {
+        final file = File(imageUrl);
+        if (!file.existsSync()) {
+          return errorWidget != null ? errorWidget!(context, imageUrl, 'File not found') : const Icon(Icons.music_note, color: Colors.grey);
+        }
+        return Image.file(
+          file,
+          fit: fit,
+          width: width,
+          height: height,
+          cacheWidth: targetSize,
+          filterQuality: imageFilterQuality,
+          errorBuilder: (context, error, stackTrace) => errorWidget != null ? errorWidget!(context, imageUrl, error) : const Icon(Icons.music_note, color: Colors.grey),
+        );
+      } catch (e) {
+        return errorWidget != null ? errorWidget!(context, imageUrl, e) : const Icon(Icons.music_note, color: Colors.grey);
+      }
     }
   }
 }

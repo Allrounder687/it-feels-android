@@ -152,47 +152,60 @@ class DownloadService {
     return result;
   }
 
-  /// Returns the current directory where downloaded files are saved
+  /// Validates whether the application has write permissions to the specified directory
+  static Future<bool> isPathWritable(String path) async {
+    try {
+      final dir = Directory(path);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      final testFile = File('${dir.path}/.perm_test_${DateTime.now().millisecondsSinceEpoch}');
+      await testFile.writeAsString('test');
+      if (await testFile.exists()) {
+        await testFile.delete();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('[DownloadService] Path $path is not writable: $e');
+    }
+    return false;
+  }
+
+  /// Returns the current directory where downloaded files are saved, safely falling back to Scoped Storage
   Future<String> getDownloadDirectoryPath() async {
     final settings = await StorageService.loadSettings();
     final customPath = settings['customDownloadPath'] ?? '';
     
-    if (customPath.isNotEmpty) {
+    if (customPath.isNotEmpty && await isPathWritable(customPath)) {
       return customPath;
-    } else if (Platform.isAndroid) {
+    }
+    
+    if (Platform.isAndroid) {
       try {
         final extDirs = await getExternalStorageDirectories(type: StorageDirectory.music);
         if (extDirs != null && extDirs.isNotEmpty) {
-          return extDirs.first.path;
+          final scopedPath = extDirs.first.path;
+          if (await isPathWritable(scopedPath)) {
+            return scopedPath;
+          }
         }
       } catch (_) {}
-      final dir = await getApplicationDocumentsDirectory();
-      return '${dir.path}/downloaded_music';
-    } else {
-      final dir = await getApplicationDocumentsDirectory();
-      return '${dir.path}/downloaded_music';
     }
+    
+    final dir = await getApplicationDocumentsDirectory();
+    return '${dir.path}/downloaded_music';
   }
 
   /// Download a single song into its own dedicated folder containing audio, cover, lyrics, and metadata
   Future<bool> downloadSong(Song song, {Function(double)? onProgress}) async {
     try {
-      Directory musicDir;
-      final settings = await StorageService.loadSettings();
-      final customPath = settings['customDownloadPath'] ?? '';
-      
-      if (customPath.isNotEmpty) {
-        musicDir = Directory(customPath);
-      } else if (Platform.isAndroid) {
+      if (Platform.isAndroid) {
         try {
           await Permission.notification.request();
         } catch (_) {}
-        final path = await getDownloadDirectoryPath();
-        musicDir = Directory(path);
-      } else {
-        final dir = await getApplicationDocumentsDirectory();
-        musicDir = Directory('${dir.path}/downloaded_music');
       }
+      final path = await getDownloadDirectoryPath();
+      final musicDir = Directory(path);
 
       if (!await musicDir.exists()) {
         await musicDir.create(recursive: true);

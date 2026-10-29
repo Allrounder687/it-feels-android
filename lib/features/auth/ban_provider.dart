@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -46,6 +47,8 @@ class BanNotifier extends Notifier<BanState> {
           state = BanState(isBanned: isBanned);
         }
       }
+    }, onError: (e) {
+      debugPrint('[BanNotifier] User stream error: $e');
     });
   }
 

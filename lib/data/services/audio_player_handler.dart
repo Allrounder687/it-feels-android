@@ -148,6 +148,20 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     }
   }
 
+    Uri? _resolveArtUri(String coverArt) {
+    if (coverArt.isEmpty) return null;
+    if (coverArt.startsWith('http://') || coverArt.startsWith('https://')) {
+      return Uri.parse(coverArt);
+    }
+    try {
+      final file = File(coverArt);
+      if (file.existsSync()) {
+        return Uri.file(coverArt);
+      }
+    } catch (_) {}
+    return null;
+  }
+
   void notifyLoading(Song song) {
     _isLoadingTrack = true;
     final item = MediaItem(
@@ -156,11 +170,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       title: song.title,
       artist: song.artist,
       duration: Duration(seconds: song.duration),
-      artUri: song.coverArt.isNotEmpty
-          ? (song.coverArt.startsWith('http')
-              ? Uri.parse(song.coverArt)
-              : Uri.file(song.coverArt))
-          : null,
+      artUri: _resolveArtUri(song.coverArt),
     );
     mediaItem.add(item);
     if (_smtc != null) {
@@ -190,7 +200,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         title: song.title,
         artist: song.artist,
         duration: Duration(seconds: song.duration),
-        artUri: song.coverArt.isNotEmpty ? (song.coverArt.startsWith('http') ? Uri.parse(song.coverArt) : Uri.file(song.coverArt)) : null,
+        artUri: _resolveArtUri(song.coverArt),
       );
       mediaItem.add(item);
       
@@ -285,9 +295,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
               artist: s.artist,
               album: s.album,
               duration: Duration(seconds: s.duration),
-              artUri: s.coverArt.isNotEmpty
-                  ? (s.coverArt.startsWith('http') ? Uri.parse(s.coverArt) : Uri.file(s.coverArt))
-                  : null,
+              artUri: _resolveArtUri(s.coverArt),
               playable: true,
             )
           ];
@@ -309,9 +317,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
             artist: s.artist,
             album: s.album,
             duration: Duration(seconds: s.duration),
-            artUri: s.coverArt.isNotEmpty
-                ? (s.coverArt.startsWith('http') ? Uri.parse(s.coverArt) : Uri.file(s.coverArt))
-                : null,
+            artUri: _resolveArtUri(s.coverArt),
             playable: true,
           );
         }).toList();
@@ -386,9 +392,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
             artist: s.artist,
             album: s.album,
             duration: Duration(seconds: s.duration),
-            artUri: s.coverArt.isNotEmpty
-                ? (s.coverArt.startsWith('http') ? Uri.parse(s.coverArt) : Uri.file(s.coverArt))
-                : null,
+            artUri: _resolveArtUri(s.coverArt),
             playable: true,
           );
         }

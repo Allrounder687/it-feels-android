@@ -13,6 +13,16 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Scoped Storage Write Validation, Local Image Fault-Tolerance & Presence Guard (v3.6.23):**
+  - **Dynamic Scoped Storage Fallback (`isPathWritable`)**:
+    - Created `isPathWritable(path)` probing directories with temporary file operations before scheduling background download tasks.
+    - If a user-configured or legacy download path (`/storage/emulated/0/It Feels`, etc.) fails permissions on Android 11+ (`Operation not permitted`), `DownloadService` automatically falls back to Scoped Storage (`StorageDirectory.music` or app documents).
+  - **Local Album Art Safeguards & Crash Prevention**:
+    - Guarded `CustomImageWidget`, `PaletteExtractorService`, and `AudioPlayerHandler._resolveArtUri()` with `file.existsSync()` checks and error handlers.
+    - Prevents Android `AudioService` from crashing inside native `LruCache.put: NullPointerException` and UI image exceptions when legacy or missing album covers are requested.
+  - **Firebase RTDB Presence & Stream Error Handling**:
+    - Wrapped `SocialService.updatePresence()` in try/catch to silence unhandled RTDB `DatabaseError: Permission denied` on `/presence/${user.uid}`.
+    - Attached graceful error handlers (`.handleError()`, `onError:`) to unread message counts, Firestore broadcast listeners, and user ban streams to prevent background crash spam.
 - **Download Status Icon Reactivity, Deezer Purge & Curated Language Storefront (v3.6.22):**
   - **Download Status Icon Reactivity & Prefix Normalization**:
     - Normalized song ID matching (`saavn:xyz` vs `xyz`) in `DownloadState.isDownloaded`, `isDownloading`, `getProgress`, and `removeDownload`.

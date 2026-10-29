@@ -57,7 +57,11 @@ class PaletteExtractorService {
         }
       } else {
         // Fallback for local files
-        final ImageProvider imageProvider = FileImage(File(imageUrl));
+        final file = File(imageUrl);
+        if (!file.existsSync()) {
+          return null;
+        }
+        final ImageProvider imageProvider = FileImage(file);
         final palette = await PaletteGenerator.fromImageProvider(
           imageProvider,
           size: const Size(100, 100),

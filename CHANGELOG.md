@@ -1,3 +1,9 @@
+## v3.6.23+93
+- **Scoped Storage Write Validation, Local Image Fault-Tolerance & Presence Guard**:
+  - **Dynamic Scoped Storage Fallback (`isPathWritable`)**: Tested custom download directories (`/storage/emulated/0/It Feels`, etc.) for write permissions using a temporary probe file before initiating tasks. Automatically falls back to Scoped Storage (`StorageDirectory.music` or app documents) when custom paths are denied by Android 11+ (`Operation not permitted`).
+  - **Local Album Art Safeguards & Crash Prevention**: Added existence and accessibility checks in `CustomImageWidget`, `PaletteExtractorService`, and `AudioPlayerHandler._resolveArtUri()`. Missing or permission-restricted local image files gracefully fallback to placeholders, eliminating native `LruCache.put: NullPointerException` and palette extraction timeouts.
+  - **Firebase RTDB Presence & Stream Error Handling**: Wrapped `SocialService.updatePresence()` in try/catch and added `.handleError()` to unread counts, broadcast listeners, and ban streams, preventing unhandled `PERMISSION_DENIED` exceptions from polluting logs or crashing background tasks.
+
 ## v3.6.22+92
 - **Download Status Icon Reactivity, Deezer Purge & Curated Language Storefront**:
   - **Download Status Icon Reactivity & Prefix Normalization**: Normalized song ID prefix matching (`saavn:xyz` vs `xyz`) in `DownloadState.isDownloaded`, `isDownloading`, `getProgress`, and `removeDownload`. Added reactive Riverpod watchers to `NowPlayingActions`, `PlaylistDetailScreen`, and `CustomPlaylistDetailScreen` to immediately show `Icons.download_done_rounded` upon download completion.
