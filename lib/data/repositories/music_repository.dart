@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'package:it_feels_music/core/utils/string_utils.dart';
+import 'package:it_feels_music/core/utils/des_decryptor.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -593,6 +594,15 @@ class MusicRepository implements IMusicRepository {
           final localFile = File(song.encryptedMediaUrl!);
           if (await localFile.exists()) {
             return localFile.path;
+          }
+        } catch (_) {}
+
+        // 3. Instant TripleDES decryption for JioSaavn media
+        try {
+          final decryptedUrl = await DesDecryptor.decrypt(song.encryptedMediaUrl!);
+          if (decryptedUrl != null && decryptedUrl.isNotEmpty) {
+            _streamCache[song.id] = decryptedUrl;
+            return decryptedUrl;
           }
         } catch (_) {}
       }

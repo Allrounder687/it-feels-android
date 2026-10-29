@@ -38,11 +38,15 @@ function getSearchPodcastsUrl(query) {
 }
 
 // Return the direct stream API endpoint
-function getStreamUrl(id, query) {
-    if (query) {
-        return BACKEND_URL + "/api/v1/video/stream?id=" + encodeURIComponent(id) + "&query=" + encodeURIComponent(query);
+function getStreamUrl(id, query, encryptedUrl) {
+    if (encryptedUrl) {
+        return BACKEND_URL + "/api/v1/stream?encryptedUrl=" + encodeURIComponent(encryptedUrl);
     }
-    return BACKEND_URL + "/api/v1/video/stream?id=" + encodeURIComponent("search:" + id);
+    var cleanId = id ? id.replace('saavn:', '').replace('youtube:', '') : '';
+    if (query) {
+        return BACKEND_URL + "/api/v1/video/stream?id=" + encodeURIComponent(cleanId) + "&query=" + encodeURIComponent(query);
+    }
+    return BACKEND_URL + "/api/v1/video/stream?id=" + encodeURIComponent("search:" + cleanId);
 }
 
 function getHomeFeedUrl() {

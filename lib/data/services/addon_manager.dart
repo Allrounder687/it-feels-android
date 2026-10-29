@@ -56,11 +56,15 @@ function getSearchPodcastsUrl(query) {
     return BACKEND_URL + "/api/v1/search/podcasts?query=" + encodeURIComponent(query);
 }
 
-function getStreamUrl(id, query) {
-    if (query) {
-        return BACKEND_URL + "/api/v1/video/stream?id=" + encodeURIComponent(id) + "&query=" + encodeURIComponent(query);
+function getStreamUrl(id, query, encryptedUrl) {
+    if (encryptedUrl) {
+        return BACKEND_URL + "/api/v1/stream?encryptedUrl=" + encodeURIComponent(encryptedUrl);
     }
-    return BACKEND_URL + "/api/v1/video/stream?id=" + encodeURIComponent("search:" + id);
+    var cleanId = id ? id.replace('saavn:', '').replace('youtube:', '') : '';
+    if (query) {
+        return BACKEND_URL + "/api/v1/video/stream?id=" + encodeURIComponent(cleanId) + "&query=" + encodeURIComponent(query);
+    }
+    return BACKEND_URL + "/api/v1/video/stream?id=" + encodeURIComponent("search:" + cleanId);
 }
 
 function getHomeFeedUrl() {
@@ -990,16 +994,26 @@ function getLyricsUrl(track, artist) {
       try {
         final artistStr = song.artist == 'Unknown Artist' ? '' : song.artist;
         final query = '${song.title} $artistStr'.trim().replaceAll("'", "\\'");
-        final jsResult = runtime.evaluate("typeof getStreamUrl === 'function' ? getStreamUrl('${song.id.replaceAll("'", "\\'")}', '$query') : null");
+        final safeEncUrl = (song.encryptedMediaUrl ?? '').replaceAll("'", "\\'");
+        final safeId = song.id.replaceAll("'", "\\'");
+        final jsResult = runtime.evaluate(
+          "typeof getStreamUrl === 'function' ? getStreamUrl('$safeId', '$query', '$safeEncUrl') : null"
+        );
         final streamApiUrl = jsResult.stringResult.replaceAll('"', '');
         
         if (streamApiUrl != 'null' && streamApiUrl.isNotEmpty) {
+          // Direct CDN / audio link pass-through
+          if ((streamApiUrl.startsWith('http://') || streamApiUrl.startsWith('https://')) && !streamApiUrl.contains('/api/')) {
+            return streamApiUrl;
+          }
+
           debugPrint('[AddonManager] Fetching stream from: $streamApiUrl');
           final response = await http.get(Uri.parse(streamApiUrl));
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
-            if (data['success'] == true && data['audioUrl'] != null) {
-              return LocalProxyServer.getProxyUrl(data['audioUrl']);
+            final resolvedUrl = data['streamUrl'] ?? data['audioUrl'] ?? data['url'];
+            if (data['success'] == true && resolvedUrl != null) {
+              return LocalProxyServer.getProxyUrl(resolvedUrl.toString());
             }
           } else {
             debugPrint('[AddonManager] Stream failed with status: ${response.statusCode} from $streamApiUrl');

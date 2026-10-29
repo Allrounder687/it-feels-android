@@ -815,38 +815,6 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         .read(activeMediaProvider.notifier)
         .setActiveMedia(ActiveMediaType.audio);
 
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null && user.email != null && !_hasShownEmailVerification) {
-      user.reload().then((_) {
-        final reloadedUser = FirebaseAuth.instance.currentUser;
-        if (reloadedUser != null && !reloadedUser.emailVerified) {
-          _hasShownEmailVerification = true;
-          rootScaffoldMessengerKey.currentState?.clearSnackBars();
-          rootScaffoldMessengerKey.currentState?.showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Please verify your email to unlock exclusive features.',
-                style: TextStyle(color: Colors.white),
-              ),
-              backgroundColor: AppColors.midnightPrimary,
-              duration: const Duration(seconds: 4),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              action: SnackBarAction(
-                label: 'Send Link',
-                textColor: Colors.white,
-                onPressed: () {
-                  reloadedUser.sendEmailVerification();
-                },
-              ),
-            ),
-          );
-        }
-      });
-    }
-
     _preloadQueueLyricsAndMedia();
 
     List<Song> newQueue = List.from(state.queue);
@@ -984,18 +952,37 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       state = state.copyWith(isLoading: false);
       engine.cancelLoading();
 
-      // Resilience auto-skip: If this track failed to resolve (e.g. temporary network drop or dead stream),
-      // smoothly advance to the next song in the queue (up to 3 consecutive retries) instead of leaving user in silence.
-      if (retryCount < 3 && newQueue.length > 1) {
+      // Notify user of playback failure gracefully
+      rootScaffoldMessengerKey.currentState?.clearSnackBars();
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unable to stream "${song.title}". Please check your connection or choose another track.',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: AppColors.midnightSurface,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+
+      // Graceful single advance: only advance once if queue has other tracks, after a brief pause
+      if (retryCount == 0 && newQueue.length > 1) {
         final nextIndex = (newIndex + 1) % newQueue.length;
         if (nextIndex != newIndex) {
-          debugPrint('[AudioPlayerNotifier] Auto-skipping failed track to index $nextIndex (retry $retryCount)');
-          await playSong(
-            newQueue[nextIndex],
-            queue: newQueue,
-            index: nextIndex,
-            retryCount: retryCount + 1,
-          );
+          debugPrint('[AudioPlayerNotifier] Advancing to next track: ${newQueue[nextIndex].title}');
+          await Future.delayed(const Duration(milliseconds: 1500));
+          if (currentToken == _playSongGenerationToken) {
+            await playSong(
+              newQueue[nextIndex],
+              queue: newQueue,
+              index: nextIndex,
+              retryCount: 1,
+            );
+          }
         }
       }
     }
