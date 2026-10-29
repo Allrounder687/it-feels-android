@@ -13,9 +13,11 @@ class AddonManager {
   factory AddonManager() => _instance;
   AddonManager._internal();
 
-  final List<JavascriptRuntime> _activeRuntimes = [];
+  final Map<String, JavascriptRuntime> _activeRuntimesMap = {};
 
-  bool get hasPlugins => _activeRuntimes.isNotEmpty;
+  List<JavascriptRuntime> get _activeRuntimes => _activeRuntimesMap.values.toList();
+
+  bool get hasPlugins => _activeRuntimesMap.isNotEmpty;
   
   final ValueNotifier<bool> hasPluginsNotifier = ValueNotifier(false);
 
@@ -76,6 +78,8 @@ function getLyricsUrl(track, artist) {
 
   Future<void> initialize() async {
     try {
+      _activeRuntimesMap.clear();
+
       final dir = await getApplicationDocumentsDirectory();
       final pluginsDir = Directory('${dir.path}/plugins');
       if (!await pluginsDir.exists()) {
@@ -89,21 +93,34 @@ function getLyricsUrl(track, artist) {
         files = pluginsDir.listSync().where((f) => f.path.endsWith('.js')).toList();
       }
 
-      // Always initialize a baseline runtime with defaultPluginSource
-      try {
-        final baselineRuntime = getJavascriptRuntime();
-        baselineRuntime.evaluate(defaultPluginSource);
-        _activeRuntimes.add(baselineRuntime);
-      } catch (e) {
-        debugPrint('[AddonManager] Error loading baseline runtime: $e');
-      }
-
       for (var file in files) {
         await _loadPlugin(file);
       }
-      hasPluginsNotifier.value = _activeRuntimes.isNotEmpty;
+
+      // If no valid plugins could be loaded from disk, provide fallback baseline runtime
+      if (_activeRuntimesMap.isEmpty) {
+        _loadBaselineRuntime();
+      }
+
+      hasPluginsNotifier.value = _activeRuntimesMap.isNotEmpty;
     } catch (e) {
       debugPrint('[AddonManager] Init error: $e');
+      if (_activeRuntimesMap.isEmpty) {
+        _loadBaselineRuntime();
+      }
+      hasPluginsNotifier.value = _activeRuntimesMap.isNotEmpty;
+    }
+  }
+
+  void _loadBaselineRuntime() {
+    try {
+      if (_activeRuntimesMap.containsKey('__baseline__')) return;
+      final baselineRuntime = getJavascriptRuntime();
+      baselineRuntime.evaluate(defaultPluginSource);
+      _activeRuntimesMap['__baseline__'] = baselineRuntime;
+      debugPrint('[AddonManager] Loaded fallback baseline runtime');
+    } catch (e) {
+      debugPrint('[AddonManager] Error loading baseline runtime: $e');
     }
   }
 
@@ -119,8 +136,10 @@ function getLyricsUrl(track, artist) {
         }
         final file = File('${pluginsDir.path}/default_backend.js');
         await file.writeAsString(defaultPluginSource);
+        _activeRuntimesMap.remove(file.path);
+        _activeRuntimesMap.remove('__baseline__');
         await _loadPlugin(file);
-        hasPluginsNotifier.value = _activeRuntimes.isNotEmpty;
+        hasPluginsNotifier.value = _activeRuntimesMap.isNotEmpty;
         return true;
       } catch (e) {
         debugPrint('[AddonManager] Error writing fallback default plugin: $e');
@@ -143,8 +162,10 @@ function getLyricsUrl(track, artist) {
         final file = File('${pluginsDir.path}/$safeName');
         await file.writeAsString(response.body);
         
+        _activeRuntimesMap.remove(file.path);
+        _activeRuntimesMap.remove('__baseline__');
         await _loadPlugin(file);
-        hasPluginsNotifier.value = _activeRuntimes.isNotEmpty;
+        hasPluginsNotifier.value = _activeRuntimesMap.isNotEmpty;
         return true;
       }
     } catch (e) {
@@ -154,7 +175,7 @@ function getLyricsUrl(track, artist) {
   }
 
   Future<void> uninstallAllPlugins() async {
-    _activeRuntimes.clear();
+    _activeRuntimesMap.clear();
     try {
       final dir = await getApplicationDocumentsDirectory();
       final pluginsDir = Directory('${dir.path}/plugins');
@@ -171,6 +192,11 @@ function getLyricsUrl(track, artist) {
   }
 
   Future<void> _loadPlugin(FileSystemEntity file) async {
+    final key = file.path;
+    if (_activeRuntimesMap.containsKey(key)) {
+      debugPrint('[AddonManager] Plugin already loaded, skipping duplicate: $key');
+      return;
+    }
     try {
       String source = await File(file.path).readAsString();
 
@@ -214,7 +240,7 @@ function getLyricsUrl(track, artist) {
       final JavascriptRuntime runtime = getJavascriptRuntime();
       
       runtime.evaluate(source);
-      _activeRuntimes.add(runtime);
+      _activeRuntimesMap[key] = runtime;
       debugPrint('[AddonManager] Loaded plugin: ${file.path}');
     } catch (e) {
       debugPrint('[AddonManager] Error loading plugin ${file.path}: $e');

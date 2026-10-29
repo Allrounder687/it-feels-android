@@ -13,6 +13,10 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Addon Engine Runtime Deduplication & Single-Execution Pipeline (v3.6.20):**
+  - **Single Instance Runtime Registry (_activeRuntimesMap)**: Replaced the unbounded List<JavascriptRuntime> with a path-keyed map (Map<String, JavascriptRuntime>). Any plugin file (like default_backend.js) is strictly loaded once, preventing duplicate engines when initialize() is called multiple times or during hot restarts.
+  - **Conditional In-Memory Baseline Fallback**: Shifted _loadBaselineRuntime to execute strictly when _activeRuntimesMap.isEmpty. If default_backend.js is already present on disk or installed from network, the baseline runtime is excluded, permanently eliminating triplicate search, playlist, and chart HTTP requests.
+  - **Idempotent Plugin Installation & Update**: Patched installPluginFromUrl and installDefaultPlugin to purge prior entries for the file path and remove any temporary __baseline__ instance before loading the fresh plugin.
 - **Cross-Form-Factor Layout Adaptability & Dynamic Theme Default (v3.6.19):**
   - **Dynamic Theme as Universal Default**: Configured `'Dynamic (Album Art)'` as the universal default across `SettingsState`, `StorageService.loadSettings()`, and `AudioPlayerState`. Mapped all legacy and variant theme strings, set fallback mode to dynamic, and prevented palette extraction timeouts from silently resetting user theme to midnight.
   - **Magnified Display & Text Scaler Clamping**: Clamped `MediaQuery.of(context).textScaler` between `0.85` and `1.15` in `MaterialApp.router`. Prevents device accessibility zoom or high-DPI scaling from ballooning text sizes, blowing out container constraints, and truncating list titles.
