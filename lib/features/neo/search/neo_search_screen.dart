@@ -424,40 +424,20 @@ class _NeoSearchScreenState extends ConsumerState<NeoSearchScreen> {
                               ),
                             ],
                           ),
-                          child: Stack(
-                            children: [
-                              // Specular highlight rim
-                              Positioned(
-                                top: 0,
-                                left: 0,
-                                right: 0,
-                                height: 1.0,
-                                child: Container(
-                                  color: Colors.white.withValues(alpha: 0.30),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14.0),
+                            child: Align(
+                              alignment: Alignment.topLeft,
+                              child: Text(
+                                title,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 15.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  letterSpacing: -0.2,
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.all(14.0),
-                                child: Align(
-                                  alignment: Alignment.topLeft,
-                                  child: Text(
-                                    title,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 15.5,
-                                      fontWeight: FontWeight.w800,
-                                      color: Colors.white,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black.withValues(alpha: 0.40),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 1),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       );

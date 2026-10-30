@@ -73,5 +73,49 @@ void main() {
       expect(updatedSong.localFilePath, '/local/path');
       expect(updatedSong.id, song.id); // original should remain unchanged
     });
+
+    test('Playlist.fromJson handles search, featured, and contents-based contracts', () {
+      // 1. Search Result (listid, listname, count)
+      final searchJson = {
+        'listid': '1185452256',
+        'listname': 'Hollywood Instrumentals',
+        'count': '42',
+        'image': 'https://c.saavncdn.com/test.jpg',
+      };
+      final p1 = Playlist.fromJson(searchJson);
+      expect(p1.id, '1185452256');
+      expect(p1.title, 'Hollywood Instrumentals');
+      expect(p1.songCount, 42);
+
+      // 2. Featured Result (id, title, more_info.song_count)
+      final featuredJson = {
+        'id': '1302090358',
+        'title': 'Chartbusters 2026 - International',
+        'image': 'https://c.saavncdn.com/test2.jpg',
+        'more_info': {
+          'song_count': '50',
+          'follower_count': '2193',
+        },
+      };
+      final p2 = Playlist.fromJson(featuredJson);
+      expect(p2.id, '1302090358');
+      expect(p2.title, 'Chartbusters 2026 - International');
+      expect(p2.songCount, 50);
+
+      // 3. Detail Result with list_count: 0 but contents string
+      final detailJson = {
+        'id': '81399744',
+        'title': 'Heartbeats',
+        'list_count': '0',
+        'more_info': {
+          'contents': 'song1,song2,song3,song4,song5',
+          'follower_count': '112000',
+        },
+      };
+      final p3 = Playlist.fromJson(detailJson);
+      expect(p3.id, '81399744');
+      expect(p3.title, 'Heartbeats');
+      expect(p3.songCount, 5); // Must not be 0 despite list_count: 0
+    });
   });
 }

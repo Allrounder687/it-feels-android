@@ -273,7 +273,7 @@ class Playlist {
   });
 
   factory Playlist.fromJson(Map<String, dynamic> json) {
-    var rawImage = json['image']?.toString() ?? '';
+    var rawImage = json['image']?.toString() ?? json['coverArt']?.toString() ?? '';
     if (rawImage.isNotEmpty) {
       rawImage = ImageUtils.getSizedCoverArt(rawImage, size: 500);
     }
@@ -295,12 +295,61 @@ class Playlist {
       }
     }
 
+    // Determine robust song count across JioSaavn search, featured, and detail contracts
+    int resolvedSongCount = 0;
+    final moreInfo = json['more_info'] is Map<String, dynamic> ? json['more_info'] as Map<String, dynamic> : null;
+    final contentsStr = moreInfo?['contents']?.toString() ?? json['contents']?.toString() ?? '';
+    final contentsCount = contentsStr.isNotEmpty
+        ? contentsStr.split(',').where((x) => x.trim().isNotEmpty).length
+        : 0;
+
+    final candidates = [
+      moreInfo?['song_count'],
+      json['count'],
+      json['song_count'],
+      json['songCount'],
+      contentsCount > 0 ? contentsCount : null,
+      (json['songs'] is List) ? (json['songs'] as List).length : null,
+      (json['list'] is List) ? (json['list'] as List).length : null,
+      json['list_count'],
+    ];
+
+    for (final cand in candidates) {
+      if (cand != null) {
+        final val = int.tryParse(cand.toString().replaceAll(',', '').trim());
+        if (val != null && val > 0) {
+          resolvedSongCount = val;
+          break;
+        }
+      }
+    }
+
+    final pId = json['id']?.toString() ?? json['listid']?.toString() ?? '';
+    final pTitle = StringUtils.cleanText(
+      json['title']?.toString() ??
+      json['listname']?.toString() ??
+      json['name']?.toString() ??
+      'Playlist',
+    );
+
+    List<Song>? parsedSongs;
+    final rawSongs = json['songs'] ?? json['list'];
+    if (rawSongs is List && rawSongs.isNotEmpty) {
+      parsedSongs = [];
+      for (final s in rawSongs) {
+        if (s is Map<String, dynamic>) {
+          parsedSongs.add(Song.fromJson(s));
+        }
+      }
+    }
+
     return Playlist(
-      id: json['listid']?.toString() ?? json['id']?.toString() ?? '',
-      title: StringUtils.cleanText(json['title']?.toString() ?? json['listname']?.toString() ?? json['name']?.toString() ?? 'Playlist'),
+      id: pId,
+      title: pTitle,
       coverArt: rawImage,
-      songCount: int.tryParse(json['list_count']?.toString() ?? json['count']?.toString() ?? '0') ?? 0,
+      songCount: resolvedSongCount > 0 ? resolvedSongCount : (parsedSongs?.length ?? 0),
       type: json['type']?.toString() ?? 'playlist',
+      songs: parsedSongs,
       followerCount: parsedFollowerCount,
     );
   }

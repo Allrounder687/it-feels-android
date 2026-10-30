@@ -7,7 +7,7 @@ import json
 APK_PATH = r"build/app/outputs/flutter-apk/app-release.apk"
 BOT_TOKEN = "7977916547:AAET0iP-5DbTwlYlCAhBTtIwLS0e6ZAXdqM"
 CHAT_ID = "424256757"
-VERSION = "v3.6.30"
+VERSION = "v3.6.31"
 
 def main():
     if not os.path.exists(APK_PATH):
@@ -52,13 +52,12 @@ def main():
     try:
         print("Creating GitHub release...")
         notes = (
-            f"Release {VERSION} - Apple Neo Smartphone UI Suite, Curated Feed & Playback Architecture Hardening\n\n"
-            "- Apple Neo UI Suite: Editorial Listen Now Feed, Unified Frosted Island Dock, The Living Player with Dynamic Ambient Mesh, Neo Search with iOS 18 Genre Cards, and Neo Library with Contextual Drawers\n"
-            "- User Profile & Sign-In: Top-right header profile button navigates directly to Profile & Google/Cloud Authentication; duplicate settings removed\n"
-            "- Playback & Decryption Hardening: Direct client-side TripleDES decryption, fast Saavn details fetch, resolved Addon stream contract, permanently removed cascade skipping\n"
-            "- Curated Category Organization: Authentic language-specific hits, featured editorial playlists, and studio albums for Bollywood, Hollywood, Punjabi, Telugu, and Tamil\n"
-            "- 100% Classic UI Preservation: Parallel dual-UI routing for mobile smartphones while tablets and desktops remain untouched\n"
-            "- Zero static analysis issues across entire lib/ codebase (0 errors, 0 warnings)\n"
+            f"Release {VERSION} - Playlist Contract Hardening, Endless Autoplay Radio, Curated Mixes & UI Defect Polish\n\n"
+            "- Playlist '0 Songs' Contract Fix: Resolved JioSaavn search.getPlaylistResults and playlist.getDetails multi-token contents parsing, eliminating '0 Songs' across Hollywood, Bollywood, and regional playlists\n"
+            "- Continuous Autoplay & Radio Engine: Fixed JioSaavn reco.getreco dictionary PID mapping and integrated endless background queue pre-fetching when playing from Recently Played or reaching end of queue (no more track looping)\n"
+            "- Curated Daily Mixes 1-6: Rebuilt algorithmic mixes into authentic Spotify/Apple Music artist & genre clusters (Bollywood Romance, International Pop, Punjabi Beats, Hip-Hop, Acoustic/Indie, and Club/Dance)\n"
+            "- UI Polish & Bug Fixes: Completely eliminated 3.8px bottom overflow in Albums grid, removed rasterization line artifacts from Search genre cards, and integrated Car Mode (Driving Mode) into Now Playing utility bar and SongOptionsSheet\n"
+            "- Static Analysis & Unit Tests: 100% test pass rate (22/22 tests passed), 0 dart analyze errors\n"
         )
         cmd = [
             "gh", "release", "create", VERSION,
@@ -80,11 +79,11 @@ def main():
         f"🚀 *IT Feels {VERSION} Release APK is Ready!*",
         f"📦 Size: {apk_size_mb:.1f} MB\n",
         "*Key Highlights:*",
-        "• 🍏 *Apple Neo Smartphone UI Suite*: Editorial Listen Now Feed, Frosted Island Dock, The Living Player, Neo Search, and Neo Library",
-        "• 👤 *Restored Profile Sign-In*: Instant profile navigation with user avatar, duplicate settings removed",
-        "• 🎵 *Hardened Audio Core & JioSaavn Decryption*: Zero cascading skips, client-side TripleDES decryption, fixed Addon stream contract",
-        "• 🗂️ *Curated Category Feeds*: Organized Bollywood, Hollywood, Punjabi, Telugu, and Tamil shelves with real hits, playlists, and albums",
-        "• 🛡️ *100% Dual-UI Architecture*: Classic UI completely preserved for tablets and desktop\n",
+        "• 📋 *Resolved '0 Songs' Playlists*: Fixed JioSaavn API contract parsing across search and featured playlists",
+        "• ♾️ *Continuous Autoplay & Radio*: Endless queue pre-fetching when playing from Recently Played (zero repeating loops)",
+        "• 🔀 *Spotify/Apple Music Daily Mixes*: Clustered Daily Mixes 1-6 by authentic genre and artist anchors",
+        "• 🚗 *Car Mode (Driving Mode)*: Added one-tap launcher to Neo Now Playing utility bar and Song Options Sheet",
+        "• 🎨 *UI Polish*: Fixed 3.8px bottom overflow in Albums grid, eliminated white line artifacts from Search genre cards\n",
         "*Direct Download Links:*"
     ]
     for name, url in links.items():

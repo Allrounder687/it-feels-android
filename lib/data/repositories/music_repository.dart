@@ -297,22 +297,48 @@ class MusicRepository implements IMusicRepository {
   @override
   Future<List<Song>> getRecommendedSongs(Song song) async {
     List<Song> recommendations = [];
+    final cleanId = song.saavnId.isNotEmpty
+        ? song.saavnId
+        : (song.id.contains(':') ? song.id.split(':').last : song.id);
 
     // 1. Try JioSaavn direct song recommendations API (song station)
-    if (song.saavnId.isNotEmpty) {
+    if (cleanId.isNotEmpty) {
       try {
-        final recoUrl = 'https://www.jiosaavn.com/api.php?__call=reco.getrecos&_format=json&_marker=0&api_version=4&ctx=web6dot0&pid=${Uri.encodeComponent(song.saavnId)}';
-        final response = await http.get(Uri.parse(recoUrl)).timeout(const Duration(seconds: 5));
+        final recoUrl = 'https://www.jiosaavn.com/api.php?__call=reco.getreco&_format=json&_marker=0&ctx=android&pid=${Uri.encodeComponent(cleanId)}';
+        final response = await http.get(
+          Uri.parse(recoUrl),
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Referer': 'https://www.jiosaavn.com/',
+          },
+        ).timeout(const Duration(seconds: 6));
+
         if (response.statusCode == 200) {
           final data = jsonDecode(utf8.decode(response.bodyBytes));
-          final rawList = data is List ? data : (data['list'] ?? data['songs']);
+          dynamic rawList;
+          if (data is List) {
+            rawList = data;
+          } else if (data is Map<String, dynamic>) {
+            // JioSaavn reco.getreco returns a Map keyed by the PID: { "<pid>": [ songs... ] }
+            rawList = data[cleanId] ?? data['list'] ?? data['songs'];
+            if (rawList == null) {
+              for (final val in data.values) {
+                if (val is List && val.isNotEmpty) {
+                  rawList = val;
+                  break;
+                }
+              }
+            }
+          }
+
           if (rawList is List && rawList.isNotEmpty) {
             for (final item in rawList) {
               if (item is Map<String, dynamic>) {
                 final s = Song.fromJson(item);
-                // Filter out current song & instrumental/karaoke noise
                 final tLower = s.title.toLowerCase();
                 if (s.id != song.id &&
+                    !recommendations.any((r) => r.id == s.id) &&
                     !tLower.contains('instrumental') &&
                     !tLower.contains('karaoke') &&
                     !tLower.contains('ringtone')) {
@@ -323,24 +349,53 @@ class MusicRepository implements IMusicRepository {
           }
         }
       } catch (e) {
-        debugPrint('[MusicRepository] reco.getrecos error: $e');
+        debugPrint('[MusicRepository] reco.getreco error: $e');
       }
     }
 
-    // 2. If recommendations are still empty, search artist top hits
-    if (recommendations.isEmpty) {
-      final artist = song.artist.split(',').first.split('-').first.trim();
-      if (artist.isNotEmpty && artist != 'Unknown Artist') {
-        final artistHits = await searchSongs('$artist Hits', count: 20);
-        for (final s in artistHits) {
-          final tLower = s.title.toLowerCase();
-          if (s.id != song.id &&
-              !tLower.contains('instrumental') &&
-              !tLower.contains('karaoke') &&
-              !tLower.contains('ringtone')) {
-            recommendations.add(s);
+    // 2. High-affinity fallback: fetch top authentic hits by primary artist and similar mood
+    if (recommendations.length < 8) {
+      final primaryArtist = song.artist
+          .split(',')
+          .first
+          .split('&')
+          .first
+          .split('-')
+          .first
+          .trim();
+
+      if (primaryArtist.isNotEmpty && primaryArtist != 'Unknown Artist') {
+        try {
+          final artistHits = await searchSongs('$primaryArtist Top Hits', count: 20);
+          for (final s in artistHits) {
+            final tLower = s.title.toLowerCase();
+            if (s.id != song.id &&
+                !recommendations.any((r) => r.id == s.id) &&
+                !tLower.contains('instrumental') &&
+                !tLower.contains('karaoke') &&
+                !tLower.contains('ringtone')) {
+              recommendations.add(s);
+            }
           }
-        }
+        } catch (_) {}
+      }
+
+      // 3. Fallback: query regional/language trending hits
+      if (recommendations.length < 8) {
+        try {
+          final lang = song.language.isNotEmpty && song.language != 'unknown' ? song.language : 'Hindi';
+          final relatedHits = await searchSongs('$lang Top Trending Hits', count: 15);
+          for (final s in relatedHits) {
+            final tLower = s.title.toLowerCase();
+            if (s.id != song.id &&
+                !recommendations.any((r) => r.id == s.id) &&
+                !tLower.contains('instrumental') &&
+                !tLower.contains('karaoke') &&
+                !tLower.contains('ringtone')) {
+              recommendations.add(s);
+            }
+          }
+        } catch (_) {}
       }
     }
 

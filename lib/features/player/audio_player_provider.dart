@@ -595,7 +595,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       } else if (state.queue.isNotEmpty) {
         if (state.currentRoomId != null && !state.isHost) return;
 
-        if (state.currentIndex == state.queue.length - 1 &&
+        if (state.currentIndex >= state.queue.length - 2 &&
             state.isAutoplayEnabled) {
           try {
             final current = state.queue[state.currentIndex];
@@ -607,7 +607,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
                   .toList();
               if (newSongs.isNotEmpty) {
                 final updatedQ = List<Song>.from(state.queue)
-                  ..addAll(newSongs.take(10));
+                  ..addAll(newSongs.take(15));
                 state = state.copyWith(queue: updatedQ);
                 _saveMemory();
               }
@@ -769,14 +769,14 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Future<void> _fetchAutoplayRecommendations() async {
     if (state.queue.isEmpty) return;
     try {
-      final current = state.queue.last;
+      final current = state.currentSong ?? state.queue.last;
       final recommendations = await locator<IMusicRepository>().getRecommendedSongs(current);
       if (recommendations.isNotEmpty) {
         final newSongs = recommendations
             .where((s) => !state.queue.any((q) => q.id == s.id))
             .toList();
         if (newSongs.isNotEmpty) {
-          final updatedQ = List<Song>.from(state.queue)..addAll(newSongs.take(10));
+          final updatedQ = List<Song>.from(state.queue)..addAll(newSongs.take(15));
           state = state.copyWith(queue: updatedQ);
           _saveMemory();
         }
@@ -873,6 +873,11 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       isLoading: true,
     );
     _saveMemory();
+
+    // Trigger continuous autoplay recommendation seeding if queue is small (e.g. played single track from Recently Played or Search)
+    if (state.isAutoplayEnabled && (newQueue.length - newIndex) <= 2) {
+      _fetchAutoplayRecommendations();
+    }
 
     locator<PaletteExtractorService>().extract(song.coverArt).then((res) {
       if (res != null) {
@@ -1093,7 +1098,17 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     } else {
       nextIndex = state.currentIndex + 1;
       if (nextIndex >= state.queue.length) {
-        nextIndex = 0;
+        if (state.isAutoplayEnabled) {
+          // Continuous Autoplay: fetch next infinite radio tracks instead of looping back to 0
+          await _fetchAutoplayRecommendations();
+          if (state.currentIndex + 1 < state.queue.length) {
+            nextIndex = state.currentIndex + 1;
+          } else {
+            nextIndex = 0;
+          }
+        } else {
+          nextIndex = 0;
+        }
       }
     }
     await playSong(

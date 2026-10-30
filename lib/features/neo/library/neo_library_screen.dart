@@ -453,9 +453,9 @@ class _NeoLibraryScreenState extends ConsumerState<NeoLibraryScreen> {
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 0.78,
+                childAspectRatio: 0.64,
                 crossAxisSpacing: 14,
-                mainAxisSpacing: 14,
+                mainAxisSpacing: 16,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {
@@ -465,6 +465,7 @@ class _NeoLibraryScreenState extends ConsumerState<NeoLibraryScreen> {
                     subtitle: album.type == 'album' ? "Album" : "${album.songCount} Songs",
                     imageUrl: album.coverArt,
                     size: 155,
+                    margin: EdgeInsets.zero,
                     onTap: () {
                       Navigator.push(
                         context,

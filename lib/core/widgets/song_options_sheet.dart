@@ -6,6 +6,7 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/library/custom_playlist_provider.dart';
 import 'package:it_feels_music/features/library/artist_detail_screen.dart';
+import 'package:it_feels_music/features/home/driving_mode_screen.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/main.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
@@ -295,7 +296,23 @@ class SongOptionsSheet extends ConsumerWidget {
               },
             ),
 
-          // Action 7: Hide Song
+          // Action 7: Driving Mode
+          _buildOptionTile(context,
+            icon: Icons.directions_car_filled_rounded,
+            iconColor: Colors.amberAccent,
+            title: "Driving Mode",
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const DrivingModeScreen(),
+                ),
+              );
+            },
+          ),
+
+          // Action 8: Hide Song
           _buildOptionTile(context, 
             icon: Icons.visibility_off_outlined,
             iconColor: Colors.redAccent,

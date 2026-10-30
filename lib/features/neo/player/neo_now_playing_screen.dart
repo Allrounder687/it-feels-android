@@ -10,6 +10,7 @@ import 'package:it_feels_music/features/cast/cast_service.dart';
 import 'package:it_feels_music/features/player/lyrics_screen.dart';
 import 'package:it_feels_music/features/player/queue_bottom_sheet.dart';
 import 'package:it_feels_music/features/player/sleep_timer_sheet.dart';
+import 'package:it_feels_music/features/home/driving_mode_screen.dart';
 import 'package:it_feels_music/features/neo/theme/neo_ambient_mesh.dart';
 import 'package:it_feels_music/features/neo/player/widgets/neo_album_art.dart';
 import 'package:it_feels_music/features/neo/player/widgets/neo_scrubber.dart';
@@ -271,6 +272,19 @@ class _NeoNowPlayingScreenState extends ConsumerState<NeoNowPlayingScreen> {
                           );
                         },
                         tooltip: 'Sleep Timer',
+                      ),
+
+                      // Car / Driving Mode Button
+                      IconButton(
+                        icon: const Icon(Icons.directions_car_filled_rounded, color: Colors.white60, size: 22),
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const DrivingModeScreen()),
+                          );
+                        },
+                        tooltip: 'Driving Mode',
                       ),
 
                       // Download Status Button

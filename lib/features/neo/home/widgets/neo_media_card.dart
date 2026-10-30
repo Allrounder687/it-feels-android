@@ -8,6 +8,7 @@ class NeoMediaCard extends StatelessWidget {
   final String subtitle;
   final String imageUrl;
   final double size;
+  final EdgeInsetsGeometry? margin;
   final VoidCallback onTap;
   final VoidCallback? onLongPress;
 
@@ -17,6 +18,7 @@ class NeoMediaCard extends StatelessWidget {
     required this.subtitle,
     required this.imageUrl,
     this.size = 135.0,
+    this.margin,
     required this.onTap,
     this.onLongPress,
   });
@@ -25,7 +27,7 @@ class NeoMediaCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: size,
-      margin: const EdgeInsets.only(right: 14.0),
+      margin: margin ?? const EdgeInsets.only(right: 14.0),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
@@ -40,6 +42,7 @@ class NeoMediaCard extends StatelessWidget {
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             // 1:1 Squircle Artwork with dynamic depth
             Container(

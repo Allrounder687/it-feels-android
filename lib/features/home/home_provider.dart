@@ -466,7 +466,11 @@ class HomeNotifier extends Notifier<HomeState> {
       final searchPlaylists = await musicRepo.searchPlaylists('Bollywood Hits', count: 8);
       final plMap = <String, Playlist>{};
       for (var p in [...featuredPlaylists, ...searchPlaylists]) {
-        if (p.id.isNotEmpty) plMap[p.id] = p;
+        if (p.id.isNotEmpty) {
+          if (!plMap.containsKey(p.id) || (plMap[p.id]!.songCount == 0 && p.songCount > 0)) {
+            plMap[p.id] = p;
+          }
+        }
       }
       final playlists = plMap.values.toList();
 
@@ -498,7 +502,11 @@ class HomeNotifier extends Notifier<HomeState> {
       final searchPlaylists = await musicRepo.searchPlaylists('Telugu Hits', count: 8);
       final plMap = <String, Playlist>{};
       for (var p in [...featuredPlaylists, ...searchPlaylists]) {
-        if (p.id.isNotEmpty) plMap[p.id] = p;
+        if (p.id.isNotEmpty) {
+          if (!plMap.containsKey(p.id) || (plMap[p.id]!.songCount == 0 && p.songCount > 0)) {
+            plMap[p.id] = p;
+          }
+        }
       }
       final playlists = plMap.values.toList();
 
@@ -530,7 +538,11 @@ class HomeNotifier extends Notifier<HomeState> {
       final searchPlaylists = await musicRepo.searchPlaylists('Tamil Hits', count: 8);
       final plMap = <String, Playlist>{};
       for (var p in [...featuredPlaylists, ...searchPlaylists]) {
-        if (p.id.isNotEmpty) plMap[p.id] = p;
+        if (p.id.isNotEmpty) {
+          if (!plMap.containsKey(p.id) || (plMap[p.id]!.songCount == 0 && p.songCount > 0)) {
+            plMap[p.id] = p;
+          }
+        }
       }
       final playlists = plMap.values.toList();
 
@@ -562,7 +574,11 @@ class HomeNotifier extends Notifier<HomeState> {
       final searchPlaylists = await musicRepo.searchPlaylists('Punjabi Hits', count: 8);
       final plMap = <String, Playlist>{};
       for (var p in [...featuredPlaylists, ...searchPlaylists]) {
-        if (p.id.isNotEmpty) plMap[p.id] = p;
+        if (p.id.isNotEmpty) {
+          if (!plMap.containsKey(p.id) || (plMap[p.id]!.songCount == 0 && p.songCount > 0)) {
+            plMap[p.id] = p;
+          }
+        }
       }
       final playlists = plMap.values.toList();
 
@@ -594,7 +610,11 @@ class HomeNotifier extends Notifier<HomeState> {
       final searchPlaylists = await musicRepo.searchPlaylists('Today Top Hits International', count: 8);
       final plMap = <String, Playlist>{};
       for (var p in [...featuredPlaylists, ...searchPlaylists]) {
-        if (p.id.isNotEmpty) plMap[p.id] = p;
+        if (p.id.isNotEmpty) {
+          if (!plMap.containsKey(p.id) || (plMap[p.id]!.songCount == 0 && p.songCount > 0)) {
+            plMap[p.id] = p;
+          }
+        }
       }
       final playlists = plMap.values.toList();
 
@@ -677,74 +697,133 @@ class HomeNotifier extends Notifier<HomeState> {
   }
 
   Future<void> fetchYouSongs(List<String> historyArtists) async {
-    if (state.youSongs.isNotEmpty) return;
+    if (state.youSongs.isNotEmpty && state.youPlaylists.isNotEmpty) return;
     state = state.copyWith(isLoading: true);
 
     try {
       final favoriteArtists = await StorageService.getFavoriteArtists();
-      if (favoriteArtists.isNotEmpty) favoriteArtists.shuffle();
       
-      var queryArtists = favoriteArtists.isNotEmpty
-          ? favoriteArtists
-          : (historyArtists.isNotEmpty
-            ? historyArtists
-            : (state.trendingSongs.isNotEmpty
-                  ? state.trendingSongs
-                        .map((e) => e.artist.split(',').first.trim())
-                        .where((a) => a.isNotEmpty)
-                        .toSet()
-                        .toList()
-                  : ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift']));
+      // Curated Mix archetypes modeled after Spotify & Apple Music Daily Mixes
+      final mixArchetypes = [
+        {
+          'title': 'Daily Mix 1',
+          'defaultSubtitle': 'Arijit Singh, Pritam, Shreya Ghoshal and more',
+          'query': 'Bollywood Romantic Top Hits',
+          'artists': ['Arijit Singh', 'Pritam', 'Shreya Ghoshal', 'Atif Aslam'],
+        },
+        {
+          'title': 'Daily Mix 2',
+          'defaultSubtitle': 'The Weeknd, Taylor Swift, Dua Lipa and more',
+          'query': 'Today Top Hits International English',
+          'artists': ['The Weeknd', 'Taylor Swift', 'Dua Lipa', 'Ed Sheeran'],
+        },
+        {
+          'title': 'Daily Mix 3',
+          'defaultSubtitle': 'Diljit Dosanjh, Karan Aujla, AP Dhillon and more',
+          'query': 'Punjabi Top Hits 2026',
+          'artists': ['Diljit Dosanjh', 'Karan Aujla', 'AP Dhillon', 'Sidhu Moose Wala'],
+        },
+        {
+          'title': 'Daily Mix 4',
+          'defaultSubtitle': 'Drake, Travis Scott, DIVINE and more',
+          'query': 'Hip Hop Hits Rap',
+          'artists': ['Drake', 'Travis Scott', 'DIVINE', 'Kendrick Lamar'],
+        },
+        {
+          'title': 'Daily Mix 5',
+          'defaultSubtitle': 'Anuv Jain, Prateek Kuhad, Jasleen Royal and more',
+          'query': 'Acoustic Chill Indie Vibes',
+          'artists': ['Anuv Jain', 'Prateek Kuhad', 'Jasleen Royal', 'Mohit Chauhan'],
+        },
+        {
+          'title': 'Daily Mix 6',
+          'defaultSubtitle': 'Badshah, Honey Singh, Neha Kakkar and more',
+          'query': 'Bollywood Dance Club Anthems',
+          'artists': ['Badshah', 'Yo Yo Honey Singh', 'Neha Kakkar'],
+        },
+      ];
 
-      if (queryArtists.isEmpty) {
-        queryArtists = ['Arijit Singh', 'Pritam', 'The Weeknd', 'Taylor Swift'];
-      }
-      
-      // Shuffle to ensure daily changing mixes if there are many artists
-      queryArtists.shuffle();
-
-      final newSongs = <Song>[];
       final newPlaylists = <Playlist>[];
-
+      final newSongs = <Song>[];
       final Set<String> usedCovers = {};
 
-      for (var artist in queryArtists.take(10)) {
-        final res = await musicRepo.searchSongs(artist, count: 20);
-        if (res.isNotEmpty) {
+      for (var i = 0; i < mixArchetypes.length; i++) {
+        final archetype = mixArchetypes[i];
+        final query = archetype['query'] as String;
+        final artistsList = archetype['artists'] as List<String>;
+        String subtitle = archetype['defaultSubtitle'] as String;
+
+        // If user has personal favorite/history artists matching this genre, elevate them
+        if (i == 0 && (favoriteArtists.isNotEmpty || historyArtists.isNotEmpty)) {
+          final topUser = favoriteArtists.isNotEmpty ? favoriteArtists.first : historyArtists.first;
+          subtitle = '$topUser, ${artistsList.take(2).join(", ")} and more';
+        }
+
+        // 1. Fetch authentic tracks from the anchor artists for this cluster
+        final mixTracks = <Song>[];
+        for (final artist in artistsList.take(3)) {
+          try {
+            final aSongs = await musicRepo.searchSongs(artist, count: 6);
+            for (final s in aSongs) {
+              if (!mixTracks.any((m) => m.id == s.id) && !_isInstrumentalOrJunk(s)) {
+                mixTracks.add(s);
+              }
+            }
+          } catch (_) {}
+        }
+
+        // 2. Supplement with genre query if needed
+        if (mixTracks.length < 15) {
+          try {
+            final res = await musicRepo.searchSongs(query, count: 15);
+            for (final s in res) {
+              if (!mixTracks.any((m) => m.id == s.id) && !_isInstrumentalOrJunk(s)) {
+                mixTracks.add(s);
+              }
+            }
+          } catch (_) {}
+        }
+
+        final deduped = _deduplicate(mixTracks);
+        if (deduped.isNotEmpty) {
           String selectedCover = '';
-          for (var song in res) {
-            if (song.coverArt.isNotEmpty &&
-                !usedCovers.contains(song.coverArt)) {
-              selectedCover = song.coverArt;
-              usedCovers.add(song.coverArt);
+          for (var s in deduped) {
+            if (s.coverArt.isNotEmpty && !usedCovers.contains(s.coverArt)) {
+              selectedCover = s.coverArt;
+              usedCovers.add(s.coverArt);
               break;
             }
           }
           if (selectedCover.isEmpty) {
-            selectedCover = res.first.coverArt;
+            selectedCover = deduped.first.coverArt;
           }
 
-          final dedupedRes = _deduplicate(res);
           newPlaylists.add(
             Playlist(
-              id: 'mix_${artist.replaceAll(' ', '_')}',
-              title: 'Daily Mix: $artist',
+              id: 'daily_mix_${i + 1}',
+              title: archetype['title'] as String,
               type: 'playlist',
               coverArt: selectedCover,
-              songCount: dedupedRes.length,
-              songs: dedupedRes,
+              songCount: deduped.length,
+              songs: deduped,
+              followerCount: subtitle,
             ),
           );
-          newSongs.addAll(dedupedRes);
+
+          newSongs.addAll(deduped.take(5));
         }
       }
 
       var finalYou = newSongs.isEmpty
-          ? state.trendingSongs.take(10).toList()
+          ? state.trendingSongs.take(15).toList()
           : newSongs;
       finalYou = _deduplicate(finalYou);
 
-      state = state.copyWith(youSongs: finalYou, youPlaylists: newPlaylists, isLoading: false);
+      state = state.copyWith(
+        youSongs: finalYou,
+        youPlaylists: newPlaylists,
+        isLoading: false,
+      );
     } catch (_) {
       state = state.copyWith(isLoading: false);
     }

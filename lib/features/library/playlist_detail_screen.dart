@@ -63,13 +63,24 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       data = {'songs': []};
     }
 
+    var songs = List<Song>.from(data['songs'] ?? []);
+    if (songs.isEmpty && widget.playlist.title.isNotEmpty) {
+      try {
+        final cleanTitle = widget.playlist.title.replaceAll(RegExp(r'\s*-\s*.*$'), '').trim();
+        final fallback = await locator<IMusicRepository>().searchSongs(cleanTitle, count: 25);
+        if (fallback.isNotEmpty) {
+          songs = fallback;
+        }
+      } catch (_) {}
+    }
+
     if (mounted) {
       setState(() {
         _title = data['name'] ?? widget.playlist.title;
         _coverArt = (data['image'] as String?)?.isNotEmpty == true
             ? data['image']
             : widget.playlist.coverArt;
-        _songs = List<Song>.from(data['songs'] ?? []);
+        _songs = songs;
         _isLoading = false;
       });
     }

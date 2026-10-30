@@ -434,9 +434,14 @@ class _NeoHomeScreenState extends ConsumerState<NeoHomeScreen> {
                     itemCount: activePlaylists.length,
                     itemBuilder: (context, index) {
                       final playlist = activePlaylists[index];
+                      final subtitle = playlist.songCount > 0
+                          ? "${playlist.songCount} Songs"
+                          : (playlist.followerCount?.isNotEmpty == true
+                              ? playlist.followerCount!
+                              : "Curated Mix");
                       return NeoMediaCard(
                         title: playlist.title,
-                        subtitle: "${playlist.songCount} Songs",
+                        subtitle: subtitle,
                         imageUrl: playlist.coverArt,
                         size: 150,
                         onTap: () {

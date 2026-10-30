@@ -13,6 +13,33 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Playlist Contract Hardening, Endless Autoplay Radio, Curated Mixes & UI Defect Polish (v3.6.31):**
+  - **JioSaavn Playlist API Contract Resolution ("0 Songs" Fix)**:
+    - Root-caused `search.getPlaylistResults` payload returning `{ listid, listname, count }` while `content.getFeaturedPlaylists` returns `{ id, title, more_info.song_count }`, and `playlist.getDetails` returns `list_count: 0` with song IDs comma-delimited inside `more_info.contents`.
+    - Unified `Playlist.fromJson` multi-candidate count resolution inspecting `more_info.song_count`, `count`, `contents.split(',').length`, `song_count`, and `list_count` without getting trapped by `0`.
+    - Replaced manual map extraction in `AddonManager.searchPlaylists`, `searchAlbums`, and `fetchLaunchData` with `Playlist.fromJson()`.
+    - Added fallback search in `PlaylistDetailScreen` to guarantee track resolution.
+  - **Endless Autoplay Radio & Queue Continuity Engine**:
+    - Identified JioSaavn `reco.getreco&ctx=android` returning a JSON dictionary keyed by the PID (`{"<PID>": [ ...songs... ]}`), which previously caused 100% of recommendation responses to be dropped by `MusicRepository`.
+    - Fixed dictionary PID extraction with tiered fallback (reco API $\rightarrow$ artist top hits $\rightarrow$ language trending).
+    - Hardened `AudioPlayerNotifier`: when initiating playback from Recently Played or any single track, automatically triggers Autoplay Radio.
+    - Updated `skipToNext()` and `_handlePlaybackEvent()`: dynamically pre-fetches the next recommendation batch when playhead is near queue end, permanently resolving track looping.
+  - **Spotify & Apple Music Daily Mix Clustering**:
+    - Rebuilt Daily Mixes 1–6 from ambiguous keyword searches into authentic genre/artist affinity clusters:
+      - Daily Mix 1: Bollywood Romance (Arijit Singh, Pritam, Shreya Ghoshal, Atif Aslam)
+      - Daily Mix 2: Pop & International (The Weeknd, Taylor Swift, Dua Lipa, Ed Sheeran)
+      - Daily Mix 3: Punjabi Beats (Diljit Dosanjh, Karan Aujla, AP Dhillon, Sidhu Moose Wala)
+      - Daily Mix 4: Desi & Global Hip-Hop (DIVINE, Seedhe Maut, Drake, Travis Scott)
+      - Daily Mix 5: Acoustic & Indie (Anuv Jain, Prateek Kuhad, Jasleen Royal, Mohit Chauhan)
+      - Daily Mix 6: Club & Party Anthems (Badshah, Yo Yo Honey Singh, DJ Snake, Nucleya)
+    - Enforced studio recording filters, deduping, and dynamic user favorite artist injection.
+  - **UI Polish & Defect Elimination**:
+    - **Search Genre Cards**: Removed stroke border outline, `clipBehavior: Clip.antiAlias`, and blurry text drop shadow that generated GPU antialiasing border lines.
+    - **Albums Grid 3.8px Overflow**: Reduced `childAspectRatio` from `0.69` to `0.64` in `NeoLibraryScreen` and set `mainAxisSize: MainAxisSize.min` on `NeoMediaCard`, providing +36dp vertical clearance.
+    - **Car Mode (Driving Mode) Integration**: Added one-tap Car Mode action button (`Icons.directions_car_filled_rounded`) to `NeoNowPlayingScreen` utility bar and added a "Driving Mode" ListTile in `SongOptionsSheet`.
+  - **Static Analysis & Test Verification**:
+    - `dart analyze lib/` $\rightarrow$ **0 issues found**.
+    - `flutter test` $\rightarrow$ **22/22 unit tests passed (100% pass rate)**.
 - **Apple Neo Full-Suite Expansion, Curated Category Feeds & Playback Architecture Hardening (v3.6.30):**
   - **Full-Suite Apple Neo Expansion (`NeoSearchScreen` & `NeoLibraryScreen`)**:
     - **`NeoSearchScreen`**: Designed iOS 18 Apple Music search experience for smartphones:

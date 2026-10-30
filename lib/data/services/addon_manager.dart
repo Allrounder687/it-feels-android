@@ -298,14 +298,7 @@ function getLyricsUrl(track, artist) {
             if (rawList is List) {
               for (var item in rawList) {
                 if (item is Map<String, dynamic>) {
-                  allResults.add(Playlist(
-                    id: item['id']?.toString() ?? '',
-                    title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
-                    type: item['type']?.toString() ?? 'playlist',
-                    coverArt: item['image']?.toString() ?? item['coverArt']?.toString() ?? '',
-                    songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? item['songCount']?.toString() ?? '0') ?? 0,
-                    songs: [],
-                  ));
+                  allResults.add(Playlist.fromJson(item));
                 }
               }
             }
@@ -326,14 +319,7 @@ function getLyricsUrl(track, artist) {
           if (rawList is List) {
             for (var item in rawList) {
               if (item is Map<String, dynamic>) {
-                allResults.add(Playlist(
-                  id: item['id']?.toString() ?? '',
-                  title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
-                  type: item['type']?.toString() ?? 'playlist',
-                  coverArt: item['image']?.toString() ?? item['coverArt']?.toString() ?? '',
-                  songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? item['songCount']?.toString() ?? '0') ?? 0,
-                  songs: [],
-                ));
+                allResults.add(Playlist.fromJson(item));
               }
             }
           }
@@ -361,14 +347,7 @@ function getLyricsUrl(track, artist) {
             if (rawList is List) {
               for (var item in rawList) {
                 if (item is Map<String, dynamic>) {
-                  allResults.add(Playlist(
-                    id: item['id']?.toString() ?? '',
-                    title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
-                    type: 'album',
-                    coverArt: item['image']?.toString() ?? item['coverArt']?.toString() ?? '',
-                    songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? item['songCount']?.toString() ?? '0') ?? 0,
-                    songs: [],
-                  ));
+                  allResults.add(Playlist.fromJson({...item, 'type': 'album'}));
                 }
               }
             }
@@ -389,14 +368,7 @@ function getLyricsUrl(track, artist) {
           if (rawList is List) {
             for (var item in rawList) {
               if (item is Map<String, dynamic>) {
-                allResults.add(Playlist(
-                  id: item['id']?.toString() ?? '',
-                  title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
-                  type: 'album',
-                  coverArt: item['image']?.toString() ?? item['coverArt']?.toString() ?? '',
-                  songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? item['songCount']?.toString() ?? '0') ?? 0,
-                  songs: [],
-                ));
+                allResults.add(Playlist.fromJson({...item, 'type': 'album'}));
               }
             }
           }
@@ -672,12 +644,19 @@ function getLyricsUrl(track, artist) {
     return result;
   }
 
-    Future<List<Song>> _fetchSongsFromContents(String contents) async {
+  Future<List<Song>> _fetchSongsFromContents(String contents) async {
     final list = <Song>[];
     if (contents.isEmpty) return list;
     try {
       final songDetailsUrl = 'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=${Uri.encodeComponent(contents)}&_format=json&_marker=0&api_version=4&ctx=web6dot0';
-      final resp = await http.get(Uri.parse(songDetailsUrl)).timeout(const Duration(seconds: 8));
+      final resp = await http.get(
+        Uri.parse(songDetailsUrl),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          'Accept': 'application/json, text/plain, */*',
+          'Referer': 'https://www.jiosaavn.com/',
+        },
+      ).timeout(const Duration(seconds: 10));
       if (resp.statusCode == 200) {
         final sData = jsonDecode(utf8.decode(resp.bodyBytes));
         final sList = sData['songs'] ?? (sData is List ? sData : null);
@@ -703,14 +682,21 @@ function getLyricsUrl(track, artist) {
 
   Future<List<Song>> getPlaylistTracks(String id) async {
     List<Song> allResults = [];
+    final cleanId = id.replaceFirst('saavn:', '');
+    final headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Accept': 'application/json, text/plain, */*',
+      'Referer': 'https://www.jiosaavn.com/',
+    };
+
     for (var runtime in _activeRuntimes) {
       try {
-        final jsResult = runtime.evaluate("typeof getPlaylistTracksUrl === 'function' ? getPlaylistTracksUrl('${id.replaceAll("'", "\\'")}') : null");
+        final jsResult = runtime.evaluate("typeof getPlaylistTracksUrl === 'function' ? getPlaylistTracksUrl('${cleanId.replaceAll("'", "\\'")}') : null");
         final searchUrl = jsResult.stringResult.replaceAll('"', '');
         
         if (searchUrl != 'null' && searchUrl.isNotEmpty) {
           debugPrint('[AddonManager] Fetching playlist tracks from: $searchUrl');
-          final response = await http.get(Uri.parse(searchUrl));
+          final response = await http.get(Uri.parse(searchUrl), headers: headers);
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
             final rawList = data['tracks'] ?? data['list'] ?? data['songs'];
@@ -718,6 +704,12 @@ function getLyricsUrl(track, artist) {
               for (var item in rawList) {
                 if (item is Map<String, dynamic>) {
                   allResults.add(Song.fromJson(item));
+                }
+              }
+            } else if (data is Map<String, dynamic> && data.keys.any((k) => int.tryParse(k) != null)) {
+              for (var entry in data.entries) {
+                if (int.tryParse(entry.key) != null && entry.value is Map<String, dynamic>) {
+                  allResults.add(Song.fromJson(entry.value as Map<String, dynamic>));
                 }
               }
             } else {
@@ -733,11 +725,11 @@ function getLyricsUrl(track, artist) {
       }
     }
 
-    if (allResults.isEmpty && id.isNotEmpty) {
+    if (allResults.isEmpty && cleanId.isNotEmpty) {
       try {
-        final fallbackUrl = 'https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=${Uri.encodeComponent(id)}';
+        final fallbackUrl = 'https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=${Uri.encodeComponent(cleanId)}';
         debugPrint('[AddonManager] Fallback getPlaylistTracks from: $fallbackUrl');
-        final response = await http.get(Uri.parse(fallbackUrl));
+        final response = await http.get(Uri.parse(fallbackUrl), headers: headers);
         if (response.statusCode == 200) {
           final data = jsonDecode(utf8.decode(response.bodyBytes));
           final rawList = data['list'] ?? data['tracks'] ?? data['songs'];
@@ -747,10 +739,29 @@ function getLyricsUrl(track, artist) {
                 allResults.add(Song.fromJson(item));
               }
             }
+          } else if (data is Map<String, dynamic> && data.keys.any((k) => int.tryParse(k) != null)) {
+            for (var entry in data.entries) {
+              if (int.tryParse(entry.key) != null && entry.value is Map<String, dynamic>) {
+                allResults.add(Song.fromJson(entry.value as Map<String, dynamic>));
+              }
+            }
           } else {
             final contents = data['more_info']?['contents']?.toString() ?? data['contents']?.toString() ?? '';
             if (contents.isNotEmpty) {
               allResults = await _fetchSongsFromContents(contents);
+            }
+          }
+        }
+
+        // Secondary fallback: attempt token lookup if listid returned no tracks
+        if (allResults.isEmpty) {
+          final tokenUrl = 'https://www.jiosaavn.com/api.php?__call=webapi.get&token=${Uri.encodeComponent(cleanId)}&type=playlist&_format=json&_marker=0&api_version=4&ctx=web6dot0';
+          final tokenResp = await http.get(Uri.parse(tokenUrl), headers: headers);
+          if (tokenResp.statusCode == 200) {
+            final tData = jsonDecode(utf8.decode(tokenResp.bodyBytes));
+            final tContents = tData['more_info']?['contents']?.toString() ?? tData['contents']?.toString() ?? '';
+            if (tContents.isNotEmpty) {
+              allResults = await _fetchSongsFromContents(tContents);
             }
           }
         }
