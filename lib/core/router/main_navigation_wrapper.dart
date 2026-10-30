@@ -32,6 +32,7 @@ import 'package:it_feels_music/features/social/unread_count_provider.dart';
 import 'package:it_feels_music/services/config_service.dart';
 import 'package:it_feels_music/features/admin/force_update_screen.dart';
 import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
+import 'package:it_feels_music/features/neo/shell/neo_mobile_dock.dart';
 
 class MainNavigationWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -584,6 +585,12 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
                   }
 
                   // Mobile View
+                  final uiMode = ref.watch(settingsProvider).uiExperienceMode;
+                  if (uiMode == UiExperienceMode.appleNeo) {
+                    return NeoMobileDock(navigationShell: widget.navigationShell);
+                  }
+
+                  // Classic Mobile View
                   return Stack(
                     children: [
                       // Active Shell Route

@@ -268,6 +268,17 @@ class SettingsScreen extends ConsumerWidget {
               Divider(height: 1, thickness: 0.5, color: context.themeMutedTextColor.withValues(alpha: 0.15), indent: 16, endIndent: 16),
               _buildSelectableItem(
                 context: context,
+                title: "UI Experience Mode",
+                subtitle: settings.uiExperienceMode == UiExperienceMode.appleNeo ? "Apple Neo (Frosted Island)" : "Classic (Standard)",
+                options: ["Apple Neo (Frosted Island)", "Classic (Standard)"],
+                currentValue: settings.uiExperienceMode == UiExperienceMode.appleNeo ? "Apple Neo (Frosted Island)" : "Classic (Standard)",
+                onSelected: (val) {
+                  final mode = val.startsWith("Apple Neo") ? UiExperienceMode.appleNeo : UiExperienceMode.classic;
+                  ref.read(settingsProvider.notifier).setUiExperienceMode(mode);
+                },
+              ),
+              _buildSelectableItem(
+                context: context,
                 title: "App Theme",
                 subtitle: settings.theme,
                 options: ["System (Material You)", "Dynamic (Album Art)", "Light Mode", "Midnight Dark", "Burgundy Dark", "Pitch Black (AMOLED)", "Glass (Desktop)"],

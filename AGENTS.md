@@ -13,6 +13,29 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Apple-Esque Smartphone UI Suite, Parallel Dual-UI Architecture & Living Player Overhaul (v3.6.28):**
+  - **Zero-Cognitive Overload Research via Local Perplexity Deep Engine**:
+    - Dispatched automated research subagent leveraging `ncc_cli/perplexity.py` investigating Apple Music iOS 18, Tidal Mobile, Marvis Pro, and Dopamine.
+    - Derived 3-tier progressive disclosure model (Tier 1 Glance Surface, Tier 2 Contextual Drawers, Tier 3 Technical/Social metadata) and Steven Hoober bottom-35% thumb-zone ergonomics.
+  - **Parallel Dual-UI Architecture (100% Classic UI Preservation)**:
+    - Integrated `UiExperienceMode` enum (`classic` vs `appleNeo`) in `SettingsState` and persisted via `StorageService`.
+    - Added one-tap instant toggle in `SettingsScreen` (Appearance section) and `DevToolkitOverlay` allowing frictionless switching without restarting or data loss.
+    - Zero `if/else` inside existing widgets: Classic UI (`HomeScreen`, `NowPlayingScreen`, `MiniPlayer`) preserved 100% untouched; wide screens and desktops continue using classic UI.
+  - **Unified Frosted Island Dock (`NeoMobileDock`)**:
+    - Designed floating squircle dock combined with navigation for mobile smartphones (`< 600px`).
+    - Integrated top-rim 2px micro-progress glowing scrubber bound to `StreamBuilder<Duration>` position stream.
+    - Added horizontal swipe gesture support on MiniPlayer (swipe left $\rightarrow$ skip next, swipe right $\rightarrow$ skip previous) with tactile haptic feedback.
+    - Floating frosted glass navigation bar (`NeoTokens.dockNavBarHeight = 56.0`) with glowing pill active indicator.
+  - **"The Living Player" (`NeoNowPlayingScreen`)**:
+    - **`NeoAmbientMesh`**: Full-bleed dynamic multi-node ambient mesh backdrop isolated in `RepaintBoundary` with smooth orbital trigonometric drift.
+    - **`NeoAlbumArt`**: 1:1 squircle artwork with 28px superellipse curvature, spring-scaling on play/pause ($1.0\times$ vs $0.92\times$), and ambient palette glow shadow.
+    - **`NeoScrubber`**: Expanding timeline (4dp resting to 7dp active) with monospaced tabular timestamps (`FontFeature.tabularFigures()`).
+    - **`NeoPlaybackControls`**: 64dp centered Play/Pause with tactile spring scale and glowing aura, flanked by 44dp skip controls and repeat/shuffle toggles.
+    - **Utility Row**: One-tap quick access to Live Lyrics, Up Next Queue, Sleep Timer, and reactive Download Status indicator.
+  - **Static Analysis & Unit Test Verification**:
+    - `dart analyze lib/` $\rightarrow$ **No issues found (0 warnings, 0 errors, 0 lints)**.
+    - `flutter test` $\rightarrow$ **13/13 unit tests passed (100% pass rate)**.
+
 - **Canonical IconCraft Master Deployment, Service Modularization & Code Decoupling Suite (v3.6.27):**
   - **Universal App Icon Canonical Geometry Overhaul**:
     - Re-engineered `assets/icon.png` to exact `it-torrents` `IconCraftEngine` standard: full-bleed $1024\times 1024$ canvas with corner radius $rx=225$, touching outer bounds $(0, 512)$, $(1023, 512)$, $(512, 0)$, $(512, 1023)$.

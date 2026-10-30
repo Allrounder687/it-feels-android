@@ -5,7 +5,8 @@ import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
-enum GraphicsQuality { high, medium, low }
+enum GraphicsQuality { high, medium, low }
+enum UiExperienceMode { classic, appleNeo }
 
 @immutable
 class SettingsState {
@@ -30,7 +31,8 @@ class SettingsState {
   final bool enableSmartDownloads;
   final bool useSolidTitleBar;
   final bool launchAtStartup;
-  final bool adaptiveGlassTint;
+  final bool adaptiveGlassTint;
+  final UiExperienceMode uiExperienceMode;
 
   const SettingsState({
     this.wifiQuality = '320 kbps (Very High)',
@@ -52,7 +54,8 @@ class SettingsState {
     this.enableSmartDownloads = true,
     this.useSolidTitleBar = false,
     this.launchAtStartup = false,
-    this.adaptiveGlassTint = true,
+    this.adaptiveGlassTint = true,
+    this.uiExperienceMode = UiExperienceMode.appleNeo,
   });
 
   SettingsState copyWith({
@@ -75,7 +78,8 @@ class SettingsState {
     bool? enableSmartDownloads,
     bool? useSolidTitleBar,
     bool? launchAtStartup,
-    bool? adaptiveGlassTint,
+    bool? adaptiveGlassTint,
+    UiExperienceMode? uiExperienceMode,
   }) {
     return SettingsState(
       wifiQuality: wifiQuality ?? this.wifiQuality,
@@ -97,7 +101,8 @@ class SettingsState {
       enableSmartDownloads: enableSmartDownloads ?? this.enableSmartDownloads,
       useSolidTitleBar: useSolidTitleBar ?? this.useSolidTitleBar,
       launchAtStartup: launchAtStartup ?? this.launchAtStartup,
-      adaptiveGlassTint: adaptiveGlassTint ?? this.adaptiveGlassTint,
+      adaptiveGlassTint: adaptiveGlassTint ?? this.adaptiveGlassTint,
+      uiExperienceMode: uiExperienceMode ?? this.uiExperienceMode,
     );
   }
 }
@@ -119,6 +124,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
     BackendApiService.useProxyBackend = useProxy;
     BackendApiService.baseUrl = proxyUrlVal;
 
+    final loadedUiMode = UiExperienceMode.values.firstWhere(
+      (e) => e.name == settings['uiExperienceMode'],
+      orElse: () => UiExperienceMode.appleNeo,
+    );
+
     final loadedQuality = GraphicsQuality.values.firstWhere(
       (e) => e.name == settings['graphicsQuality'],
       orElse: () => GraphicsQuality.high,
@@ -144,7 +154,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
       useSolidTitleBar: settings['useSolidTitleBar'] ?? false,
       launchAtStartup: settings['launchAtStartup'] ?? false,
       adaptiveGlassTint: settings['adaptiveGlassTint'] ?? true,
-      defaultCategory: defaultCat,
+      defaultCategory: defaultCat,
+      uiExperienceMode: loadedUiMode,
     );
 
     _applyGraphicsQuality(loadedQuality);
@@ -183,6 +194,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
     _save();
   }
 
+  void setUiExperienceMode(UiExperienceMode mode) {
+    state = state.copyWith(uiExperienceMode: mode);
+    _save();
+  }
+
   void setGraphicsQuality(GraphicsQuality quality) {
     state = state.copyWith(graphicsQuality: quality);
     _applyGraphicsQuality(quality);
@@ -293,7 +309,8 @@ class SettingsNotifier extends Notifier<SettingsState> {
       enableSmartDownloads: state.enableSmartDownloads,
       useSolidTitleBar: state.useSolidTitleBar,
       launchAtStartup: state.launchAtStartup,
-      adaptiveGlassTint: state.adaptiveGlassTint,
+      adaptiveGlassTint: state.adaptiveGlassTint,
+      uiExperienceMode: state.uiExperienceMode.name,
     );
   }
 

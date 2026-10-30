@@ -207,3 +207,7 @@ dart_devtools_*.json
 
 performance/
 /android/build/
+
+# NCC CLI local session & task history
+.ncc/
+.ncc

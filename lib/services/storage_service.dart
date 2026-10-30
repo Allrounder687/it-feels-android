@@ -292,6 +292,7 @@ class StorageService {
     bool? useSolidTitleBar,
     bool? launchAtStartup,
     bool? adaptiveGlassTint,
+    String? uiExperienceMode,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_wifiQualityKey, wifiQuality);
@@ -313,6 +314,7 @@ class StorageService {
     if (useSolidTitleBar != null) await prefs.setBool('use_solid_title_bar', useSolidTitleBar);
     if (launchAtStartup != null) await prefs.setBool('launch_at_startup', launchAtStartup);
     if (adaptiveGlassTint != null) await prefs.setBool('adaptive_glass_tint', adaptiveGlassTint);
+    if (uiExperienceMode != null) await prefs.setString('ui_experience_mode', uiExperienceMode);
   }
 
   static Future<Map<String, dynamic>> loadSettings() async {
@@ -337,6 +339,7 @@ class StorageService {
       'useSolidTitleBar': prefs.getBool('use_solid_title_bar') ?? false,
       'launchAtStartup': prefs.getBool('launch_at_startup') ?? false,
       'adaptiveGlassTint': prefs.getBool('adaptive_glass_tint') ?? true,
+      'uiExperienceMode': prefs.getString('ui_experience_mode') ?? 'appleNeo',
     };
   }
 

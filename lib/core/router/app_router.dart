@@ -7,6 +7,8 @@ import 'package:it_feels_music/features/search/search_screen.dart';
 import 'package:it_feels_music/features/library/library_screen.dart';
 import 'package:it_feels_music/features/player/video_tab_screen.dart';
 import 'package:it_feels_music/features/player/now_playing_screen.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
+import 'package:it_feels_music/features/neo/player/neo_now_playing_screen.dart';
 import 'package:it_feels_music/features/player/video_player_screen.dart';
 import 'package:it_feels_music/features/social/social_screen.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
@@ -138,8 +140,15 @@ final GoRouter appRouter = GoRouter(
       path: '/now_playing',
       parentNavigatorKey: rootNavigatorKey,
       pageBuilder: (context, state) {
+        final settings = appProviderContainer.read(settingsProvider);
+        final isMobile = MediaQuery.of(context).size.width < 600;
+        final isAppleNeo = settings.uiExperienceMode == UiExperienceMode.appleNeo;
+        final Widget playerWidget = (isMobile && isAppleNeo)
+            ? const NeoNowPlayingScreen()
+            : const NowPlayingScreen();
+
         return CustomTransitionPage(
-          child: const NowPlayingScreen(),
+          child: playerWidget,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return SlideTransition(
               position: Tween<Offset>(

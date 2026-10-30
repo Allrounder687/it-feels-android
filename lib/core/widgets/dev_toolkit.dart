@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/core/router/app_router.dart';
 import 'package:it_feels_music/main.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:it_feels_music/features/settings/settings_provider.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 
 class DevToolkitOverlay extends StatefulWidget {
   const DevToolkitOverlay({super.key});
@@ -92,6 +95,23 @@ class _DevToolkitOverlayState extends State<DevToolkitOverlay> {
                           label: "Force Go to Onboarding",
                           onTap: () {
                             appRouter.go('/onboarding');
+                          },
+                        ),
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final uiMode = ref.watch(settingsProvider).uiExperienceMode;
+                            final isNeo = uiMode == UiExperienceMode.appleNeo;
+                            return _buildToolButton(
+                              icon: isNeo ? Icons.phone_iphone_rounded : Icons.dashboard_customize_rounded,
+                              label: 'UI: ${isNeo ? "Apple Neo" : "Classic"}',
+                              onTap: () {
+                                final next = isNeo ? UiExperienceMode.classic : UiExperienceMode.appleNeo;
+                                ref.read(settingsProvider.notifier).setUiExperienceMode(next);
+                                rootScaffoldMessengerKey.currentState?.showSnackBar(
+                                  SnackBar(content: Text('Switched UI Mode to ${next == UiExperienceMode.appleNeo ? "Apple Neo" : "Classic"}')),
+                                );
+                              },
+                            );
                           },
                         ),
                       ],
