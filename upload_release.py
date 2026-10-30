@@ -7,7 +7,7 @@ import json
 APK_PATH = r"build/app/outputs/flutter-apk/app-release.apk"
 BOT_TOKEN = "7977916547:AAET0iP-5DbTwlYlCAhBTtIwLS0e6ZAXdqM"
 CHAT_ID = "424256757"
-VERSION = "v3.6.28"
+VERSION = "v3.6.29"
 
 def main():
     if not os.path.exists(APK_PATH):

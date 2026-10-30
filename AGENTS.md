@@ -13,6 +13,21 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Apple-Esque "Listen Now" Editorial Feed & Modernized Smartphone Home Experience (v3.6.29):**
+  - **Editorial "Listen Now" Feed (`NeoHomeScreen`)**:
+    - Built Apple Music iOS 18 editorial feed for mobile smartphones (`< 600px`).
+    - Dynamic editorial greeting header ("Good Morning", "Good Afternoon", "Good Evening", "Late Night") with large typography ("Listen Now" 32sp) and profile launcher.
+    - Frosted glass horizontal category filter capsules ("For You", "Bollywood", "Hollywood", "Punjabi", "Telugu", "Tamil", "Charts", "Moods") with smooth animated selection and tactile haptic feedback.
+    - **`NeoEditorialCard`**: Apple Music spotlight cards with dynamic eyebrow badges ("FEATURED SPOTLIGHT", "POPULAR PICK", "TRENDING NOW"), high-contrast typography, and floating circular play actions.
+    - **`NeoMediaCard`**: 1:1 elevated squircle artwork cards (18px radius) with specular rim highlights for handpicked tracks and curated playlists.
+    - **`NeoShelfHeader`**: Clean editorial shelf typography with uppercase category subtitles and glass "See All" triggers.
+    - Dynamic bottom clearance calculated via `bottomUiProvider + 36px`, ensuring seamless scrolling above the floating `NeoMobileDock`.
+  - **Parallel Router Binding**:
+    - Conditioned the `/home` route in `app_router.dart`: renders `NeoHomeScreen` when on mobile smartphones with `UiExperienceMode.appleNeo`, while preserving the Classic `HomeScreen` 100% untouched for desktop/tablets and classic mode.
+  - **Static Analysis & Unit Test Verification**:
+    - `dart analyze lib/` $\rightarrow$ **No issues found (0 warnings, 0 errors, 0 lints)**.
+    - `flutter test` $\rightarrow$ **13/13 unit tests passed (100% pass rate)**.
+
 - **Apple-Esque Smartphone UI Suite, Parallel Dual-UI Architecture & Living Player Overhaul (v3.6.28):**
   - **Zero-Cognitive Overload Research via Local Perplexity Deep Engine**:
     - Dispatched automated research subagent leveraging `ncc_cli/perplexity.py` investigating Apple Music iOS 18, Tidal Mobile, Marvis Pro, and Dopamine.

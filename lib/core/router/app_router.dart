@@ -9,6 +9,7 @@ import 'package:it_feels_music/features/player/video_tab_screen.dart';
 import 'package:it_feels_music/features/player/now_playing_screen.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/features/neo/player/neo_now_playing_screen.dart';
+import 'package:it_feels_music/features/neo/home/neo_home_screen.dart';
 import 'package:it_feels_music/features/player/video_player_screen.dart';
 import 'package:it_feels_music/features/social/social_screen.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
@@ -58,9 +59,17 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/home',
-              pageBuilder: (context, state) => NoTransitionPage(
-                child: HomeScreen(openFullPlayer: () => context.push('/now_playing')),
-              ),
+              pageBuilder: (context, state) {
+                final settings = appProviderContainer.read(settingsProvider);
+                final isMobile = MediaQuery.of(context).size.width < 600;
+                final isAppleNeo = settings.uiExperienceMode == UiExperienceMode.appleNeo;
+
+                return NoTransitionPage(
+                  child: (isMobile && isAppleNeo)
+                      ? NeoHomeScreen(openFullPlayer: () => context.push('/now_playing'))
+                      : HomeScreen(openFullPlayer: () => context.push('/now_playing')),
+                );
+              },
             ),
           ],
         ),
