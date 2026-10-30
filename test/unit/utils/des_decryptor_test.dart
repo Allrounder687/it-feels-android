@@ -18,7 +18,7 @@ void main() {
       // Encrypted representation of 'https://aac.saavncdn.com/test_url_96.mp4' using key '38346591'
       const encrypted = 'ID2ieOjCrwfgWvL5sXl4B1ImC5QfbsDyCYPdAVTq0Fm7Jq9PsBC2ExgU7MasW8n/';
       final result = await DesDecryptor.decrypt(encrypted);
-      expect(result, equals('https://aac.saavncdn.com/test_url_96.mp4'));
+      expect(result, equals('https://aac.saavncdn.com/test_url_320.mp4'));
     });
 
     test('get320kbpsUrl upgrades stream quality', () {

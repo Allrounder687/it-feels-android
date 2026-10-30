@@ -7,7 +7,7 @@ import json
 APK_PATH = r"build/app/outputs/flutter-apk/app-release.apk"
 BOT_TOKEN = "7977916547:AAET0iP-5DbTwlYlCAhBTtIwLS0e6ZAXdqM"
 CHAT_ID = "424256757"
-VERSION = "v3.6.29"
+VERSION = "v3.6.30"
 
 def main():
     if not os.path.exists(APK_PATH):
@@ -52,13 +52,13 @@ def main():
     try:
         print("Creating GitHub release...")
         notes = (
-            f"Release {VERSION} - Canonical IconCraft Deployment, Codebase Modularization & High-Reliability Playback\n\n"
-            "- Universal App Icon Canonical Calibration: Full-bleed squircle (rx=225) matching it-torrents IconCraft master geometry, zero black borders, and boosted neon vibrance\n"
-            "- Codebase Modularization: Decoupled DownloadService into specialized DownloadScannerService and MetadataRestorationService (10/10 unit tests passing)\n"
-            "- Home View Optimization: Extracted dedicated sub-widgets (HomeHeroBanner, HomeCompactTrackGrid, GlassmorphicChip) for smoother UI rendering\n"
-            "- Decoupled Audio Core: Permanently removed unused flags and verification blocks from playSong(); resilient fallback stream resolution\n"
-            "- Instant JioSaavn TripleDES Client-Side Stream Decryption: Resolves 320kbps MP4 CDN links in <1ms without backend reliance\n"
-            "- Zero static analysis issues across entire lib/ codebase\n"
+            f"Release {VERSION} - Apple Neo Smartphone UI Suite, Curated Feed & Playback Architecture Hardening\n\n"
+            "- Apple Neo UI Suite: Editorial Listen Now Feed, Unified Frosted Island Dock, The Living Player with Dynamic Ambient Mesh, Neo Search with iOS 18 Genre Cards, and Neo Library with Contextual Drawers\n"
+            "- User Profile & Sign-In: Top-right header profile button navigates directly to Profile & Google/Cloud Authentication; duplicate settings removed\n"
+            "- Playback & Decryption Hardening: Direct client-side TripleDES decryption, fast Saavn details fetch, resolved Addon stream contract, permanently removed cascade skipping\n"
+            "- Curated Category Organization: Authentic language-specific hits, featured editorial playlists, and studio albums for Bollywood, Hollywood, Punjabi, Telugu, and Tamil\n"
+            "- 100% Classic UI Preservation: Parallel dual-UI routing for mobile smartphones while tablets and desktops remain untouched\n"
+            "- Zero static analysis issues across entire lib/ codebase (0 errors, 0 warnings)\n"
         )
         cmd = [
             "gh", "release", "create", VERSION,
@@ -80,10 +80,11 @@ def main():
         f"🚀 *IT Feels {VERSION} Release APK is Ready!*",
         f"📦 Size: {apk_size_mb:.1f} MB\n",
         "*Key Highlights:*",
-        "• 🎨 *Universal AI Icon Calibrated*: Single full-bleed squircle matching it-torrents IconCraft geometry, zero black borders, boosted vibrance",
-        "• 🏗️ *Codebase Modularization*: Decoupled DownloadScannerService & MetadataRestorationService; extracted home sub-widgets",
-        "• 🎵 *Hardened Audio Core*: Instant 0.5ms Saavn stream TripleDES decryption, clean contract, zero cascading skips",
-        "• 📁 *Deep Download Recovery & Metadata Restoration*: Rescan ~1000 songs with 500x500 covers and synced lyrics\n",
+        "• 🍏 *Apple Neo Smartphone UI Suite*: Editorial Listen Now Feed, Frosted Island Dock, The Living Player, Neo Search, and Neo Library",
+        "• 👤 *Restored Profile Sign-In*: Instant profile navigation with user avatar, duplicate settings removed",
+        "• 🎵 *Hardened Audio Core & JioSaavn Decryption*: Zero cascading skips, client-side TripleDES decryption, fixed Addon stream contract",
+        "• 🗂️ *Curated Category Feeds*: Organized Bollywood, Hollywood, Punjabi, Telugu, and Tamil shelves with real hits, playlists, and albums",
+        "• 🛡️ *100% Dual-UI Architecture*: Classic UI completely preserved for tablets and desktop\n",
         "*Direct Download Links:*"
     ]
     for name, url in links.items():

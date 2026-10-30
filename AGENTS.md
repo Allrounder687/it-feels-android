@@ -13,6 +13,39 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Apple Neo Full-Suite Expansion, Curated Category Feeds & Playback Architecture Hardening (v3.6.30):**
+  - **Full-Suite Apple Neo Expansion (`NeoSearchScreen` & `NeoLibraryScreen`)**:
+    - **`NeoSearchScreen`**: Designed iOS 18 Apple Music search experience for smartphones:
+      - 32sp editorial typography header with "EXPLORE & DISCOVER" eyebrow.
+      - 48dp frosted glass search bar with real-time query dispatch, clear trigger, and soft glowing border.
+      - Filter capsules: "All", "Songs", "Artists", "Albums", "Playlists".
+      - 10 vibrant Apple Music-style 2-column genre browse cards with curated gradients (Bollywood & Desi, Pop & International, Hip-Hop & Rap, Dance & EDM, Punjabi Beats, Chill & Acoustic, Romance & Love, Tollywood & Telugu, Kollywood & Tamil, Workout & Energy).
+      - Recent searches chips with one-tap query dispatch and instant deletion.
+      - Top Artist match circular cards, song rows with 3-dot `SongOptionsSheet`, album/playlist cards.
+    - **`NeoLibraryScreen`**: Designed iOS 18 Apple Music library experience for smartphones:
+      - 32sp editorial typography header with "YOUR COLLECTION" eyebrow.
+      - 5 Apple Music-style contextual drawers: "Playlists", "Downloaded Music", "Favorites", "Artists", "Albums" with reactive item counters and subtle chevron indicators.
+      - In-tab storage rescan button wired directly to `downloadProvider.notifier.scanAndSync()`.
+      - Active list slivers with 1:1 elevated squircle artwork and full song action menus.
+    - **Parallel Dual-UI Router Binding**: Conditioned `/search` and `/library` in `app_router.dart`: renders `NeoSearchScreen` and `NeoLibraryScreen` when `isMobile && isAppleNeo`, preserving classic screens 100% untouched for tablets and desktops.
+  - **User Profile & Sign-In Restoration**:
+    - Replaced top-right settings icon on `NeoHomeScreen` with user avatar button watching `ref.watch(profileProvider)`.
+    - Displays custom local avatar image or default user icon, navigating directly to `ProfileScreen()` for Google/Cloud account authentication.
+    - Permanently eliminated duplicate Settings access (Settings is exclusively docked at bottom index 5).
+  - **Playback Architecture Hardening & Random Song Bug Resolution**:
+    - **`MusicRepository.getStreamUrl`**:
+      - Cached URL lookup prioritized at the top of the function for instant $<1\text{ms}$ return.
+      - If `encryptedMediaUrl` is already an unencrypted `http://` or `https://` link, upgrades to 320kbps via `DesDecryptor.get320kbpsUrl` and returns immediately.
+      - Integrated fast client-side JioSaavn metadata resolution for songs without `encryptedMediaUrl`: queries `song.getDetails&pids=${song.saavnId}` using `http.get`, decrypts `more_info.encrypted_media_url` via `DesDecryptor.decrypt()`, caches, and returns direct 320kbps stream.
+    - **`AddonManager.getStreamUrl`**: Fixed contract parsing: Cloudflare backend returns `data['streams']` array containing `[{ "quality": "audio", "url": "..." }]`. Added `data['streams']` extraction, resolving the contract mismatch that caused streams to return null.
+    - **`AudioPlayerNotifier.playSong`**: Permanently removed recursive automatic cascade-skipping (`if (retryCount == 0 && newQueue.length > 1) playSong(nextIndex)`). If a track cannot be streamed, the player notifies the user and halts gracefully instead of silently hopping to a random song with mismatched artwork.
+  - **Curated Category Shelves & Authentic Language Feeds**:
+    - Added `bollywoodAlbums`, `hollywoodAlbums`, `punjabiAlbums`, `teluguAlbums`, `tamilAlbums` to `HomeState`.
+    - Refactored `fetchBollywoodSongs`, `fetchTeluguSongs`, `fetchTamilSongs`, `fetchPunjabiSongs`, and `fetchHollywoodSongs` to query authentic `getFeaturedPlaylistsByLanguage(lang)` combined with `searchPlaylists("$lang Hits")`, `searchSongs("$lang Top Hits")`, and `searchAlbums(lang)`.
+    - Organized category feeds into distinct shelves: Spotlight Carousel (Top 4 tracks with dynamic badges), Recently Played (in "For You"), Category Hits / Top Picks, Curated Playlists, and Essential Albums.
+  - **Static Analysis & Unit Test Verification**:
+    - `dart analyze lib/` $\rightarrow$ **No issues found (0 warnings, 0 errors, 0 lints)**.
+    - `flutter test` $\rightarrow$ **18/18 unit tests passed (100% pass rate)**.
 - **Apple-Esque "Listen Now" Editorial Feed & Modernized Smartphone Home Experience (v3.6.29):**
   - **Editorial "Listen Now" Feed (`NeoHomeScreen`)**:
     - Built Apple Music iOS 18 editorial feed for mobile smartphones (`< 600px`).

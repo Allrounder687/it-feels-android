@@ -49,7 +49,11 @@ class DesDecryptor {
         .replaceFirst('http://', 'https://')
         .replaceAll('preview.saavncdn.com', 'aac.saavncdn.com')
         .replaceAll('_96.mp4', '_320.mp4')
-        .replaceAll('_160.mp4', '_320.mp4');
+        .replaceAll('_160.mp4', '_320.mp4')
+        .replaceAll('_96.mp3', '_320.mp4')
+        .replaceAll('_160.mp3', '_320.mp4')
+        .replaceAll('_160.m4a', '_320.mp4')
+        .replaceAll('_96.m4a', '_320.mp4');
   }
 
   static String? get96kbpsUrl(String? originalLink) {

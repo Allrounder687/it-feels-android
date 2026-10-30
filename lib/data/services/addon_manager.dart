@@ -1011,7 +1011,17 @@ function getLyricsUrl(track, artist) {
           final response = await http.get(Uri.parse(streamApiUrl));
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
-            final resolvedUrl = data['streamUrl'] ?? data['audioUrl'] ?? data['url'];
+            String? resolvedUrl = data['streamUrl'] ?? data['audioUrl'] ?? data['url'];
+            if (resolvedUrl == null && data['streams'] is List && (data['streams'] as List).isNotEmpty) {
+              final streamsList = data['streams'] as List;
+              final audioStream = streamsList.firstWhere(
+                (s) => s is Map && s['quality'] == 'audio',
+                orElse: () => streamsList.first,
+              );
+              if (audioStream is Map && audioStream['url'] != null) {
+                resolvedUrl = audioStream['url'].toString();
+              }
+            }
             if (data['success'] == true && resolvedUrl != null) {
               return LocalProxyServer.getProxyUrl(resolvedUrl.toString());
             }

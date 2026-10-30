@@ -577,40 +577,92 @@ class MusicRepository implements IMusicRepository {
 
   @override
   Future<String?> getStreamUrl(Song song) async {
-    // 0. Radio station direct stream
+    // 0. Cache check
+    if (_streamCache.containsKey(song.id)) {
+      return _streamCache[song.id];
+    }
+
+    // 1. Radio station direct stream
     if (song.id.startsWith('radio:') && song.encryptedMediaUrl != null && song.encryptedMediaUrl!.isNotEmpty) {
       return song.encryptedMediaUrl;
     }
 
-    // 1. Direct streamUrl if present
+    // 2. Direct streamUrl if present
     if (song.streamUrl != null && song.streamUrl!.isNotEmpty) {
+      _streamCache[song.id] = song.streamUrl!;
       return song.streamUrl;
     }
 
-    // 2. If song has a local downloaded file path, return it directly for instant offline playback
+    // 3. Encrypted media url resolution
     if (song.encryptedMediaUrl != null && song.encryptedMediaUrl!.isNotEmpty) {
-      if (!song.encryptedMediaUrl!.startsWith('http://') && !song.encryptedMediaUrl!.startsWith('https://')) {
-        try {
-          final localFile = File(song.encryptedMediaUrl!);
-          if (await localFile.exists()) {
-            return localFile.path;
-          }
-        } catch (_) {}
+      final enc = song.encryptedMediaUrl!.trim();
+      if (enc.startsWith('http://') || enc.startsWith('https://')) {
+        final upgraded = DesDecryptor.get320kbpsUrl(enc) ?? enc;
+        _streamCache[song.id] = upgraded;
+        return upgraded;
+      }
 
-        // 3. Instant TripleDES decryption for JioSaavn media
-        try {
-          final decryptedUrl = await DesDecryptor.decrypt(song.encryptedMediaUrl!);
-          if (decryptedUrl != null && decryptedUrl.isNotEmpty) {
-            _streamCache[song.id] = decryptedUrl;
-            return decryptedUrl;
+      // Check if it is a local downloaded file path
+      try {
+        final localFile = File(enc);
+        if (await localFile.exists()) {
+          return localFile.path;
+        }
+      } catch (_) {}
+
+      // Instant TripleDES decryption for JioSaavn media
+      try {
+        final decryptedUrl = await DesDecryptor.decrypt(enc);
+        if (decryptedUrl != null && decryptedUrl.isNotEmpty) {
+          _streamCache[song.id] = decryptedUrl;
+          return decryptedUrl;
+        }
+      } catch (_) {}
+    }
+
+    // 4. Client-side resolution for Saavn tracks missing encryptedMediaUrl
+    final saavnId = song.saavnId.isNotEmpty
+        ? song.saavnId
+        : (song.id.startsWith('saavn:') ? song.id.replaceFirst('saavn:', '') : '');
+
+    if (saavnId.isNotEmpty && !saavnId.startsWith('http')) {
+      try {
+        final detailsUrl =
+            'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=${Uri.encodeComponent(saavnId)}&_format=json&_marker=0&api_version=4&ctx=web6dot0';
+        final res = await http.get(
+          Uri.parse(detailsUrl),
+          headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
+        ).timeout(const Duration(seconds: 6));
+
+        if (res.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(res.bodyBytes));
+          Map<String, dynamic>? songObj;
+          if (data is Map<String, dynamic>) {
+            if (data['songs'] is List && (data['songs'] as List).isNotEmpty) {
+              songObj = (data['songs'] as List).first as Map<String, dynamic>;
+            } else if (data.containsKey(saavnId)) {
+              songObj = data[saavnId] as Map<String, dynamic>?;
+            } else if (data.values.isNotEmpty && data.values.first is Map) {
+              songObj = data.values.first as Map<String, dynamic>?;
+            }
           }
-        } catch (_) {}
+
+          final encFromDetails = songObj?['encrypted_media_url'] ??
+              songObj?['more_info']?['encrypted_media_url'];
+          if (encFromDetails != null && encFromDetails.toString().isNotEmpty) {
+            final decryptedUrl = await DesDecryptor.decrypt(encFromDetails.toString());
+            if (decryptedUrl != null && decryptedUrl.isNotEmpty) {
+              _streamCache[song.id] = decryptedUrl;
+              return decryptedUrl;
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[MusicRepository] Fast Saavn details fetch error: $e');
       }
     }
 
-    if (_streamCache.containsKey(song.id)) {
-      return _streamCache[song.id];
-    }
+    // 5. Addon Manager resolution
     final addonManager = AddonManager();
     final addonStream = await addonManager.getStreamUrl(song);
     if (addonStream != null && addonStream.isNotEmpty) {

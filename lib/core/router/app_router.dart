@@ -10,6 +10,8 @@ import 'package:it_feels_music/features/player/now_playing_screen.dart';
 import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/features/neo/player/neo_now_playing_screen.dart';
 import 'package:it_feels_music/features/neo/home/neo_home_screen.dart';
+import 'package:it_feels_music/features/neo/search/neo_search_screen.dart';
+import 'package:it_feels_music/features/neo/library/neo_library_screen.dart';
 import 'package:it_feels_music/features/player/video_player_screen.dart';
 import 'package:it_feels_music/features/social/social_screen.dart';
 import 'package:it_feels_music/features/settings/settings_screen.dart';
@@ -80,8 +82,14 @@ final GoRouter appRouter = GoRouter(
               path: '/search',
               pageBuilder: (context, state) {
                 final q = state.uri.queryParameters['q'];
+                final settings = appProviderContainer.read(settingsProvider);
+                final isMobile = MediaQuery.of(context).size.width < 600;
+                final isAppleNeo = settings.uiExperienceMode == UiExperienceMode.appleNeo;
+
                 return NoTransitionPage(
-                  child: SearchScreen(initialQuery: q),
+                  child: (isMobile && isAppleNeo)
+                      ? NeoSearchScreen(initialQuery: q)
+                      : SearchScreen(initialQuery: q),
                 );
               },
             ),
@@ -92,9 +100,17 @@ final GoRouter appRouter = GoRouter(
           routes: [
             GoRoute(
               path: '/library',
-              pageBuilder: (context, state) => const NoTransitionPage(
-                child: LibraryScreen(),
-              ),
+              pageBuilder: (context, state) {
+                final settings = appProviderContainer.read(settingsProvider);
+                final isMobile = MediaQuery.of(context).size.width < 600;
+                final isAppleNeo = settings.uiExperienceMode == UiExperienceMode.appleNeo;
+
+                return NoTransitionPage(
+                  child: (isMobile && isAppleNeo)
+                      ? const NeoLibraryScreen()
+                      : const LibraryScreen(),
+                );
+              },
             ),
           ],
         ),

@@ -19,14 +19,19 @@ class HomeState {
   final List<Playlist> topAlbums;
   final List<Song> bollywoodSongs;
   final List<Playlist> bollywoodPlaylists;
+  final List<Playlist> bollywoodAlbums;
   final List<Song> teluguSongs;
   final List<Playlist> teluguPlaylists;
+  final List<Playlist> teluguAlbums;
   final List<Song> tamilSongs;
   final List<Playlist> tamilPlaylists;
+  final List<Playlist> tamilAlbums;
   final List<Song> punjabiSongs;
   final List<Playlist> punjabiPlaylists;
+  final List<Playlist> punjabiAlbums;
   final List<Song> hollywoodSongs;
   final List<Playlist> hollywoodPlaylists;
+  final List<Playlist> hollywoodAlbums;
   final List<Song> podcastSongs;
   final List<Playlist> podcastPlaylists;
   final List<Song> youSongs;
@@ -49,14 +54,19 @@ class HomeState {
     this.topAlbums = const [],
     this.bollywoodSongs = const [],
     this.bollywoodPlaylists = const [],
+    this.bollywoodAlbums = const [],
     this.teluguSongs = const [],
     this.teluguPlaylists = const [],
+    this.teluguAlbums = const [],
     this.tamilSongs = const [],
     this.tamilPlaylists = const [],
+    this.tamilAlbums = const [],
     this.punjabiSongs = const [],
     this.punjabiPlaylists = const [],
+    this.punjabiAlbums = const [],
     this.hollywoodSongs = const [],
     this.hollywoodPlaylists = const [],
+    this.hollywoodAlbums = const [],
     this.podcastSongs = const [],
     this.podcastPlaylists = const [],
     this.youSongs = const [],
@@ -107,14 +117,19 @@ class HomeState {
     List<Playlist>? topAlbums,
     List<Song>? bollywoodSongs,
     List<Playlist>? bollywoodPlaylists,
+    List<Playlist>? bollywoodAlbums,
     List<Song>? teluguSongs,
     List<Playlist>? teluguPlaylists,
+    List<Playlist>? teluguAlbums,
     List<Song>? tamilSongs,
     List<Playlist>? tamilPlaylists,
+    List<Playlist>? tamilAlbums,
     List<Song>? punjabiSongs,
     List<Playlist>? punjabiPlaylists,
+    List<Playlist>? punjabiAlbums,
     List<Song>? hollywoodSongs,
     List<Playlist>? hollywoodPlaylists,
+    List<Playlist>? hollywoodAlbums,
     List<Song>? podcastSongs,
     List<Playlist>? podcastPlaylists,
     List<Song>? youSongs,
@@ -137,14 +152,19 @@ class HomeState {
       topAlbums: topAlbums ?? this.topAlbums,
       bollywoodSongs: bollywoodSongs ?? this.bollywoodSongs,
       bollywoodPlaylists: bollywoodPlaylists ?? this.bollywoodPlaylists,
+      bollywoodAlbums: bollywoodAlbums ?? this.bollywoodAlbums,
       teluguSongs: teluguSongs ?? this.teluguSongs,
       teluguPlaylists: teluguPlaylists ?? this.teluguPlaylists,
+      teluguAlbums: teluguAlbums ?? this.teluguAlbums,
       tamilSongs: tamilSongs ?? this.tamilSongs,
       tamilPlaylists: tamilPlaylists ?? this.tamilPlaylists,
+      tamilAlbums: tamilAlbums ?? this.tamilAlbums,
       punjabiSongs: punjabiSongs ?? this.punjabiSongs,
       punjabiPlaylists: punjabiPlaylists ?? this.punjabiPlaylists,
+      punjabiAlbums: punjabiAlbums ?? this.punjabiAlbums,
       hollywoodSongs: hollywoodSongs ?? this.hollywoodSongs,
       hollywoodPlaylists: hollywoodPlaylists ?? this.hollywoodPlaylists,
+      hollywoodAlbums: hollywoodAlbums ?? this.hollywoodAlbums,
       podcastSongs: podcastSongs ?? this.podcastSongs,
       podcastPlaylists: podcastPlaylists ?? this.podcastPlaylists,
       youSongs: youSongs ?? this.youSongs,
@@ -442,15 +462,16 @@ class HomeNotifier extends Notifier<HomeState> {
 
   Future<void> fetchBollywoodSongs() async {
     try {
-      final data = await musicRepo.getChartsByLanguage('hindi');
-      var tracks = (data['tracks'] as List<Song>? ?? [])
-          .where((s) => !_isInstrumentalOrJunk(s))
-          .toList();
-      var playlists = data['playlists'] as List<Playlist>? ?? [];
-
-      if (playlists.isEmpty) {
-        playlists = await musicRepo.getFeaturedPlaylistsByLanguage('hindi');
+      final featuredPlaylists = await musicRepo.getFeaturedPlaylistsByLanguage('hindi');
+      final searchPlaylists = await musicRepo.searchPlaylists('Bollywood Hits', count: 8);
+      final plMap = <String, Playlist>{};
+      for (var p in [...featuredPlaylists, ...searchPlaylists]) {
+        if (p.id.isNotEmpty) plMap[p.id] = p;
       }
+      final playlists = plMap.values.toList();
+
+      var tracks = await musicRepo.searchSongs("Bollywood Top Hits", count: 30);
+      tracks = _deduplicate(tracks).where((s) => !_isInstrumentalOrJunk(s)).toList();
 
       if (tracks.length < 15 && playlists.isNotEmpty) {
         final moreTracks = await musicRepo.getPlaylistTracks(playlists.first.id);
@@ -459,9 +480,12 @@ class HomeNotifier extends Notifier<HomeState> {
             .toList();
       }
 
+      final albums = await musicRepo.searchAlbums("Hindi", count: 15);
+
       state = state.copyWith(
         bollywoodSongs: tracks.isNotEmpty ? tracks : state.bollywoodSongs,
         bollywoodPlaylists: playlists.isNotEmpty ? playlists : state.bollywoodPlaylists,
+        bollywoodAlbums: albums.isNotEmpty ? albums : state.bollywoodAlbums,
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchBollywoodSongs error: $e');
@@ -470,15 +494,16 @@ class HomeNotifier extends Notifier<HomeState> {
 
   Future<void> fetchTeluguSongs() async {
     try {
-      final data = await musicRepo.getChartsByLanguage('telugu');
-      var tracks = (data['tracks'] as List<Song>? ?? [])
-          .where((s) => !_isInstrumentalOrJunk(s))
-          .toList();
-      var playlists = data['playlists'] as List<Playlist>? ?? [];
-
-      if (playlists.isEmpty) {
-        playlists = await musicRepo.getFeaturedPlaylistsByLanguage('telugu');
+      final featuredPlaylists = await musicRepo.getFeaturedPlaylistsByLanguage('telugu');
+      final searchPlaylists = await musicRepo.searchPlaylists('Telugu Hits', count: 8);
+      final plMap = <String, Playlist>{};
+      for (var p in [...featuredPlaylists, ...searchPlaylists]) {
+        if (p.id.isNotEmpty) plMap[p.id] = p;
       }
+      final playlists = plMap.values.toList();
+
+      var tracks = await musicRepo.searchSongs("Telugu Top Hits 2026", count: 30);
+      tracks = _deduplicate(tracks).where((s) => !_isInstrumentalOrJunk(s)).toList();
 
       if (tracks.length < 15 && playlists.isNotEmpty) {
         final moreTracks = await musicRepo.getPlaylistTracks(playlists.first.id);
@@ -487,9 +512,12 @@ class HomeNotifier extends Notifier<HomeState> {
             .toList();
       }
 
+      final albums = await musicRepo.searchAlbums("Telugu", count: 15);
+
       state = state.copyWith(
         teluguSongs: tracks.isNotEmpty ? tracks : state.teluguSongs,
         teluguPlaylists: playlists.isNotEmpty ? playlists : state.teluguPlaylists,
+        teluguAlbums: albums.isNotEmpty ? albums : state.teluguAlbums,
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchTeluguSongs error: $e');
@@ -498,15 +526,16 @@ class HomeNotifier extends Notifier<HomeState> {
 
   Future<void> fetchTamilSongs() async {
     try {
-      final data = await musicRepo.getChartsByLanguage('tamil');
-      var tracks = (data['tracks'] as List<Song>? ?? [])
-          .where((s) => !_isInstrumentalOrJunk(s))
-          .toList();
-      var playlists = data['playlists'] as List<Playlist>? ?? [];
-
-      if (playlists.isEmpty) {
-        playlists = await musicRepo.getFeaturedPlaylistsByLanguage('tamil');
+      final featuredPlaylists = await musicRepo.getFeaturedPlaylistsByLanguage('tamil');
+      final searchPlaylists = await musicRepo.searchPlaylists('Tamil Hits', count: 8);
+      final plMap = <String, Playlist>{};
+      for (var p in [...featuredPlaylists, ...searchPlaylists]) {
+        if (p.id.isNotEmpty) plMap[p.id] = p;
       }
+      final playlists = plMap.values.toList();
+
+      var tracks = await musicRepo.searchSongs("Tamil Top Hits 2026", count: 30);
+      tracks = _deduplicate(tracks).where((s) => !_isInstrumentalOrJunk(s)).toList();
 
       if (tracks.length < 15 && playlists.isNotEmpty) {
         final moreTracks = await musicRepo.getPlaylistTracks(playlists.first.id);
@@ -515,9 +544,12 @@ class HomeNotifier extends Notifier<HomeState> {
             .toList();
       }
 
+      final albums = await musicRepo.searchAlbums("Tamil", count: 15);
+
       state = state.copyWith(
         tamilSongs: tracks.isNotEmpty ? tracks : state.tamilSongs,
         tamilPlaylists: playlists.isNotEmpty ? playlists : state.tamilPlaylists,
+        tamilAlbums: albums.isNotEmpty ? albums : state.tamilAlbums,
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchTamilSongs error: $e');
@@ -526,15 +558,16 @@ class HomeNotifier extends Notifier<HomeState> {
 
   Future<void> fetchPunjabiSongs() async {
     try {
-      final data = await musicRepo.getChartsByLanguage('punjabi');
-      var tracks = (data['tracks'] as List<Song>? ?? [])
-          .where((s) => !_isInstrumentalOrJunk(s))
-          .toList();
-      var playlists = data['playlists'] as List<Playlist>? ?? [];
-
-      if (playlists.isEmpty) {
-        playlists = await musicRepo.getFeaturedPlaylistsByLanguage('punjabi');
+      final featuredPlaylists = await musicRepo.getFeaturedPlaylistsByLanguage('punjabi');
+      final searchPlaylists = await musicRepo.searchPlaylists('Punjabi Hits', count: 8);
+      final plMap = <String, Playlist>{};
+      for (var p in [...featuredPlaylists, ...searchPlaylists]) {
+        if (p.id.isNotEmpty) plMap[p.id] = p;
       }
+      final playlists = plMap.values.toList();
+
+      var tracks = await musicRepo.searchSongs("Punjabi Top Hits 2026", count: 30);
+      tracks = _deduplicate(tracks).where((s) => !_isInstrumentalOrJunk(s)).toList();
 
       if (tracks.length < 15 && playlists.isNotEmpty) {
         final moreTracks = await musicRepo.getPlaylistTracks(playlists.first.id);
@@ -543,9 +576,12 @@ class HomeNotifier extends Notifier<HomeState> {
             .toList();
       }
 
+      final albums = await musicRepo.searchAlbums("Punjabi", count: 15);
+
       state = state.copyWith(
         punjabiSongs: tracks.isNotEmpty ? tracks : state.punjabiSongs,
         punjabiPlaylists: playlists.isNotEmpty ? playlists : state.punjabiPlaylists,
+        punjabiAlbums: albums.isNotEmpty ? albums : state.punjabiAlbums,
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchPunjabiSongs error: $e');
@@ -554,15 +590,18 @@ class HomeNotifier extends Notifier<HomeState> {
 
   Future<void> fetchHollywoodSongs() async {
     try {
-      final data = await musicRepo.getChartsByLanguage('english');
-      var tracks = (data['tracks'] as List<Song>? ?? [])
+      final featuredPlaylists = await musicRepo.getFeaturedPlaylistsByLanguage('english');
+      final searchPlaylists = await musicRepo.searchPlaylists('Today Top Hits International', count: 8);
+      final plMap = <String, Playlist>{};
+      for (var p in [...featuredPlaylists, ...searchPlaylists]) {
+        if (p.id.isNotEmpty) plMap[p.id] = p;
+      }
+      final playlists = plMap.values.toList();
+
+      var tracks = await musicRepo.searchSongs("Top International Pop Hits 2026", count: 30);
+      tracks = _deduplicate(tracks)
           .where((s) => s.language.toLowerCase() == 'english' && !_isInstrumentalOrJunk(s))
           .toList();
-      var playlists = data['playlists'] as List<Playlist>? ?? [];
-
-      if (playlists.isEmpty) {
-        playlists = await musicRepo.getFeaturedPlaylistsByLanguage('english');
-      }
 
       if (tracks.length < 15 && playlists.isNotEmpty) {
         final moreTracks = await musicRepo.getPlaylistTracks(playlists.first.id);
@@ -571,9 +610,12 @@ class HomeNotifier extends Notifier<HomeState> {
             .toList();
       }
 
+      final albums = await musicRepo.searchAlbums("English Pop", count: 15);
+
       state = state.copyWith(
         hollywoodSongs: tracks.isNotEmpty ? tracks : state.hollywoodSongs,
         hollywoodPlaylists: playlists.isNotEmpty ? playlists : state.hollywoodPlaylists,
+        hollywoodAlbums: albums.isNotEmpty ? albums : state.hollywoodAlbums,
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchHollywoodSongs error: $e');

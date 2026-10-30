@@ -968,22 +968,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
         ),
       );
 
-      // Graceful single advance: only advance once if queue has other tracks, after a brief pause
-      if (retryCount == 0 && newQueue.length > 1) {
-        final nextIndex = (newIndex + 1) % newQueue.length;
-        if (nextIndex != newIndex) {
-          debugPrint('[AudioPlayerNotifier] Advancing to next track: ${newQueue[nextIndex].title}');
-          await Future.delayed(const Duration(milliseconds: 1500));
-          if (currentToken == _playSongGenerationToken) {
-            await playSong(
-              newQueue[nextIndex],
-              queue: newQueue,
-              index: nextIndex,
-              retryCount: 1,
-            );
-          }
-        }
-      }
+      debugPrint('[AudioPlayerNotifier] Playback halted for ${song.title}');
     }
 
     _updateHomeWidget();

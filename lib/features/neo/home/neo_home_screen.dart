@@ -1,12 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:it_feels_music/core/providers/bottom_ui_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/library/playlist_detail_screen.dart';
+import 'package:it_feels_music/features/settings/profile_screen.dart';
 import 'package:it_feels_music/features/neo/home/widgets/neo_editorial_card.dart';
 import 'package:it_feels_music/features/neo/home/widgets/neo_media_card.dart';
 import 'package:it_feels_music/features/neo/home/widgets/neo_shelf_header.dart';
@@ -41,6 +42,9 @@ class _NeoHomeScreenState extends ConsumerState<NeoHomeScreen> {
       final homeProv = ref.read(homeProvider);
       final historyProvider = ref.read(listeningHistoryProvider);
 
+      if (homeProv.trendingSongs.isEmpty) {
+        ref.read(homeProvider.notifier).loadHomepageData();
+      }
       if (homeProv.youSongs.isEmpty) {
         ref.read(homeProvider.notifier).fetchYouSongs(historyProvider.getTopArtists());
       }
@@ -101,53 +105,66 @@ class _NeoHomeScreenState extends ConsumerState<NeoHomeScreen> {
     final homeState = ref.watch(homeProvider);
     final historyState = ref.watch(listeningHistoryProvider);
     final playerState = ref.watch(audioPlayerProvider);
+    final profile = ref.watch(profileProvider);
     final bottomUiHeight = ref.watch(bottomUiProvider);
     final accentColor = playerState.themeAccentColor;
 
     final selectedCat = _categories[_selectedCategoryIndex];
 
-    // Pick active song list based on category selection
+    // Pick active lists based on category selection
     List<Song> activeSongs;
     List<Playlist> activePlaylists;
+    List<Playlist> activeAlbums;
 
     switch (selectedCat) {
       case "Bollywood":
         activeSongs = homeState.bollywoodSongs.isNotEmpty ? homeState.bollywoodSongs : homeState.trendingSongs;
         activePlaylists = homeState.bollywoodPlaylists.isNotEmpty ? homeState.bollywoodPlaylists : homeState.topPlaylists;
+        activeAlbums = homeState.bollywoodAlbums.isNotEmpty ? homeState.bollywoodAlbums : homeState.topAlbums;
         break;
       case "Hollywood":
         activeSongs = homeState.hollywoodSongs.isNotEmpty ? homeState.hollywoodSongs : homeState.trendingSongs;
         activePlaylists = homeState.hollywoodPlaylists.isNotEmpty ? homeState.hollywoodPlaylists : homeState.topPlaylists;
+        activeAlbums = homeState.hollywoodAlbums.isNotEmpty ? homeState.hollywoodAlbums : homeState.topAlbums;
         break;
       case "Punjabi":
         activeSongs = homeState.punjabiSongs.isNotEmpty ? homeState.punjabiSongs : homeState.trendingSongs;
         activePlaylists = homeState.punjabiPlaylists.isNotEmpty ? homeState.punjabiPlaylists : homeState.topPlaylists;
+        activeAlbums = homeState.punjabiAlbums.isNotEmpty ? homeState.punjabiAlbums : homeState.topAlbums;
         break;
       case "Telugu":
         activeSongs = homeState.teluguSongs.isNotEmpty ? homeState.teluguSongs : homeState.trendingSongs;
         activePlaylists = homeState.teluguPlaylists.isNotEmpty ? homeState.teluguPlaylists : homeState.topPlaylists;
+        activeAlbums = homeState.teluguAlbums.isNotEmpty ? homeState.teluguAlbums : homeState.topAlbums;
         break;
       case "Tamil":
         activeSongs = homeState.tamilSongs.isNotEmpty ? homeState.tamilSongs : homeState.trendingSongs;
         activePlaylists = homeState.tamilPlaylists.isNotEmpty ? homeState.tamilPlaylists : homeState.topPlaylists;
+        activeAlbums = homeState.tamilAlbums.isNotEmpty ? homeState.tamilAlbums : homeState.topAlbums;
         break;
       case "Charts":
         activeSongs = homeState.trendingSongs;
         activePlaylists = homeState.chartPlaylists.isNotEmpty ? homeState.chartPlaylists : homeState.topPlaylists;
+        activeAlbums = homeState.topAlbums;
         break;
       case "Moods":
         activeSongs = homeState.trendingSongs;
         activePlaylists = homeState.moodPlaylists.isNotEmpty ? homeState.moodPlaylists : homeState.topPlaylists;
+        activeAlbums = homeState.topAlbums;
         break;
       case "For You":
       default:
         activeSongs = homeState.youSongs.isNotEmpty ? homeState.youSongs : homeState.trendingSongs;
         activePlaylists = homeState.youPlaylists.isNotEmpty ? homeState.youPlaylists : homeState.topPlaylists;
+        activeAlbums = homeState.topAlbums;
         break;
     }
 
     final recentSongs = historyState.recentlyPlayed.take(10).toList();
     final spotlightSongs = activeSongs.take(4).toList();
+    final shelfSongs = activeSongs.length > 4 ? activeSongs.skip(4).toList() : activeSongs;
+
+    final hasAvatar = profile.userAvatar.isNotEmpty && File(profile.userAvatar).existsSync();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0A0E18),
@@ -157,7 +174,7 @@ class _NeoHomeScreenState extends ConsumerState<NeoHomeScreen> {
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // ── Editorial Header ──
+            // ── Editorial Header with Profile Launcher ──
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 12.0, bottom: 4.0),
@@ -189,29 +206,47 @@ class _NeoHomeScreenState extends ConsumerState<NeoHomeScreen> {
                         ),
                       ],
                     ),
-                    IconButton(
-                      icon: Container(
-                        width: 36,
-                        height: 36,
+                    // Profile & Sign-in Launcher (No duplicate Settings!)
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ProfileScreen(),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 40,
+                        height: 40,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.10),
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            width: 1,
+                            color: Colors.white.withValues(alpha: 0.20),
+                            width: 1.5,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accentColor.withValues(alpha: 0.25),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        child: const Icon(
-                          Icons.person_outline_rounded,
-                          color: Colors.white,
-                          size: 20,
+                        child: CircleAvatar(
+                          radius: 18,
+                          backgroundColor: Colors.white.withValues(alpha: 0.12),
+                          backgroundImage: hasAvatar ? FileImage(File(profile.userAvatar)) : null,
+                          child: hasAvatar
+                              ? null
+                              : const Icon(
+                                  Icons.person_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                         ),
                       ),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        context.push('/settings');
-                      },
-                      tooltip: 'Settings & Profile',
                     ),
                   ],
                 ),
@@ -303,8 +338,8 @@ class _NeoHomeScreenState extends ConsumerState<NeoHomeScreen> {
               ),
             ],
 
-            // ── Shelf: Recently Played ──
-            if (recentSongs.isNotEmpty) ...[
+            // ── Shelf: Recently Played (Exclusive to "For You") ──
+            if (selectedCat == "For You" && recentSongs.isNotEmpty) ...[
               const SliverToBoxAdapter(
                 child: NeoShelfHeader(
                   title: "Recently Played",
@@ -340,8 +375,8 @@ class _NeoHomeScreenState extends ConsumerState<NeoHomeScreen> {
               ),
             ],
 
-            // ── Shelf: Top Picks For You ──
-            if (activeSongs.isNotEmpty) ...[
+            // ── Shelf: Category Hits & Top Picks ──
+            if (shelfSongs.isNotEmpty) ...[
               SliverToBoxAdapter(
                 child: NeoShelfHeader(
                   title: selectedCat == "For You" ? "Top Picks" : "$selectedCat Hits",
@@ -355,9 +390,9 @@ class _NeoHomeScreenState extends ConsumerState<NeoHomeScreen> {
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    itemCount: activeSongs.length,
+                    itemCount: shelfSongs.length,
                     itemBuilder: (context, index) {
-                      final song = activeSongs[index];
+                      final song = shelfSongs[index];
                       return NeoMediaCard(
                         title: song.title,
                         subtitle: song.artist,
@@ -366,7 +401,7 @@ class _NeoHomeScreenState extends ConsumerState<NeoHomeScreen> {
                         onTap: () {
                           ref.read(audioPlayerProvider.notifier).playSong(
                                 song,
-                                queue: activeSongs,
+                                queue: shelfSongs,
                                 index: index,
                               );
                         },
@@ -379,9 +414,13 @@ class _NeoHomeScreenState extends ConsumerState<NeoHomeScreen> {
 
             // ── Shelf: Curated Playlists & Mixes ──
             if (activePlaylists.isNotEmpty) ...[
-              const SliverToBoxAdapter(
+              SliverToBoxAdapter(
                 child: NeoShelfHeader(
-                  title: "Featured Playlists",
+                  title: selectedCat == "For You"
+                      ? "Daily Mixes"
+                      : (selectedCat == "Moods"
+                          ? "Moods & Vibes"
+                          : (selectedCat == "Charts" ? "Top Charts" : "$selectedCat Playlists")),
                   subtitle: "CURATED EXPERIENCES",
                 ),
               ),
@@ -415,11 +454,11 @@ class _NeoHomeScreenState extends ConsumerState<NeoHomeScreen> {
               ),
             ],
 
-            // ── Shelf: Top Albums ──
-            if (homeState.topAlbums.isNotEmpty) ...[
-              const SliverToBoxAdapter(
+            // ── Shelf: Essential Albums ──
+            if (activeAlbums.isNotEmpty) ...[
+              SliverToBoxAdapter(
                 child: NeoShelfHeader(
-                  title: "Essential Albums",
+                  title: selectedCat == "For You" ? "Essential Albums" : "$selectedCat Albums",
                   subtitle: "STUDIO RECORDINGS",
                 ),
               ),
@@ -430,9 +469,9 @@ class _NeoHomeScreenState extends ConsumerState<NeoHomeScreen> {
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                    itemCount: homeState.topAlbums.length,
+                    itemCount: activeAlbums.length,
                     itemBuilder: (context, index) {
-                      final album = homeState.topAlbums[index];
+                      final album = activeAlbums[index];
                       return NeoMediaCard(
                         title: album.title,
                         subtitle: album.type == 'album' ? "Album" : "${album.songCount} Songs",
