@@ -181,6 +181,7 @@ class LyricsService {
     }
     
     unawaited(_fetchLrcLib(song).then(tryComplete).catchError((_) {}));
+    unawaited(_fetchSaavn(song).then(tryComplete).catchError((_) {}));
   }
 
   Future<LyricsResult?> _fetchProxy(Song song) async {
@@ -229,6 +230,37 @@ class LyricsService {
   }
 
   Future<LyricsResult?> _fetchSaavn(Song song) async {
+    try {
+      final cleanLyricsId = song.saavnId.isNotEmpty
+          ? song.saavnId
+          : song.id.replaceFirst('saavn:', '');
+      if (cleanLyricsId.isEmpty) return null;
+
+      final rawSaavn = 'https://www.jiosaavn.com/api.php?__call=lyrics.getLyrics&lyrics_id=$cleanLyricsId&_format=json&ctx=web6dot0';
+      final lyricsUri = Uri.parse(
+        'https://it-feels-proxy.cleverfox687.workers.dev/api/v1/image-proxy?url=${Uri.encodeComponent(rawSaavn)}',
+      );
+      final resp = await http.get(lyricsUri, headers: {'User-Agent': 'Mozilla/5.0'}).timeout(const Duration(seconds: 4));
+      if (resp.statusCode == 200) {
+        final lyrData = jsonDecode(utf8.decode(resp.bodyBytes));
+        final rawLyrics = lyrData['lyrics']?.toString();
+        if (rawLyrics != null && rawLyrics.trim().isNotEmpty) {
+          final cleaned = _cleanText(rawLyrics);
+          final transliterated = HinglishTransliterator.transliterate(cleaned);
+          return LyricsResult(
+            staticLyrics: transliterated,
+            syncedLyrics: const [],
+            source: 'Saavn',
+          );
+        }
+      }
+    } on HandshakeException {
+      // Direct Saavn TLS handshake blocked by regional ISP DPI; handled gracefully
+    } on SocketException {
+      // Handled gracefully
+    } catch (e) {
+      debugPrint('[LyricsService] Saavn direct lyrics error: $e');
+    }
     return null;
   }
 

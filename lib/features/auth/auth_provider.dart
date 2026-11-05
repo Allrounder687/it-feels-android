@@ -66,11 +66,13 @@ class AuthNotifier extends Notifier<AuthState> {
         state = state.copyWith(viewState: AuthViewState.login);
         _cloudSyncService.stopSync();
         _telemetryService.stopTracking();
-        // Automatically sign in anonymously if no user is present (Guest mode)
-        try {
-          _authService.signInAnonymously();
-        } catch (e) {
-          debugPrint('Anonymous sign-in failed: $e');
+        // Attempt anonymous sign-in only if supported by Firebase Console
+        if (_authService.isAnonymousSupported) {
+          try {
+            _authService.signInAnonymously();
+          } catch (e) {
+            debugPrint('Anonymous sign-in failed: $e');
+          }
         }
       }
     });

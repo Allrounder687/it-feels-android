@@ -6,6 +6,7 @@ import 'package:it_feels_music/core/utils/string_utils.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/services/download_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
+import 'package:it_feels_music/services/database_service.dart';
 
 /// Discovers, validates, and recursively indexes downloaded songs across device storage,
 /// Scoped Storage paths, public Music directories, and custom folders.
@@ -140,6 +141,11 @@ class DownloadScannerService {
     final finalSongsList = discoveredSongs.values.toList();
     debugPrint('[DownloadScannerService] scanAllDownloads completed. Total songs discovered: ${finalSongsList.length}');
     await StorageService.saveDownloads(finalSongsList);
+    try {
+      await DatabaseService().saveSongs(finalSongsList);
+    } catch (e) {
+      debugPrint('[DownloadScannerService] DatabaseService saveSongs error: $e');
+    }
     return finalSongsList;
   }
 
@@ -231,6 +237,7 @@ class DownloadScannerService {
                 duration: int.tryParse(meta['duration']?.toString() ?? '0') ?? 0,
                 coverArt: coverPath,
                 encryptedMediaUrl: audioFile.path,
+                localFilePath: audioFile.path,
                 hasLyrics: lyricsLrcFile != null || meta['hasLyrics'] == true,
                 addedAt: meta['downloadedAt'] != null ? DateTime.tryParse(meta['downloadedAt']) ?? DateTime.now() : DateTime.now(),
                 offlineStatus: OfflineStatus.downloaded,
@@ -279,6 +286,7 @@ class DownloadScannerService {
           duration: 0,
           coverArt: foundCover,
           encryptedMediaUrl: audioFile.path,
+          localFilePath: audioFile.path,
           hasLyrics: lyricsLrcFile != null,
           addedAt: audioFile.lastModifiedSync(),
           offlineStatus: OfflineStatus.downloaded,

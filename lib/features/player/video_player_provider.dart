@@ -240,19 +240,28 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
     state = state.copyWith(onVideoStarted: callback);
   }
 
+  Player? _player;
+  VideoController? _controller;
+
+  Player _ensurePlayer() {
+    if (state.player != null) return state.player!;
+    final config = const PlayerConfiguration(pitch: true, vo: 'gpu');
+    _player = customPlayerFactory?.call(config) ?? Player(configuration: config);
+    _controller = customVideoControllerFactory?.call(_player!) ?? VideoController(_player!);
+    state = state.copyWith(player: _player, videoController: _controller);
+    return _player!;
+  }
+
   @override
   VideoPlayerState build() {
     _initSystemControls();
-    final config = const PlayerConfiguration(pitch: true, vo: 'gpu');
-    final player = customPlayerFactory?.call(config) ?? Player(configuration: config);
-    final controller = customVideoControllerFactory?.call(player) ?? VideoController(player);
 
     ref.onDispose(() {
       _hostSyncTimer?.cancel();
       _roomSubscription?.cancel();
       _positionSubscription?.cancel();
       _trackerSubscription?.cancel();
-      player.dispose();
+      _player?.dispose();
     });
 
     // React to external audio player state changes (like Notification/Headset controls)
@@ -327,8 +336,8 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
 
     final defaultQuality = ref.read(settingsProvider).defaultVideoQuality;
     return VideoPlayerState(
-      player: player, 
-      videoController: controller, 
+      player: null, 
+      videoController: null, 
       selectedQuality: defaultQuality
     );
   }
@@ -377,6 +386,7 @@ class VideoPlayerNotifier extends Notifier<VideoPlayerState> {
   }
 
   Future<void> playVideo(String videoId, String title, String uploader, {String? localPath, String? query, Duration? startPosition, bool isBackgroundHandoff = false, void Function(String)? onToastMessage, bool forceReload = false, bool? forceMute}) async {
+    _ensurePlayer();
     final String originalId = videoId;
     // Check for custom overridden YouTube ID for this song
     final customVideoId = await StorageService.getCustomVideoLink(videoId);

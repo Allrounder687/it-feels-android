@@ -20,15 +20,30 @@ class InAppBroadcastListener extends StatefulWidget {
 
 class _InAppBroadcastListenerState extends State<InAppBroadcastListener> {
   static const String _lastBroadcastKey = 'last_seen_broadcast_id';
+  StreamSubscription<User?>? _authSubscription;
+  StreamSubscription? _broadcastSubscription;
   StreamSubscription? _premiumSubscription;
   bool _wasPremium = false;
 
   @override
   void initState() {
     super.initState();
-    _listenForBroadcasts();
-    _listenForPremiumUpgrades();
     _checkForSoftUpdates();
+    _setupAuthListener();
+  }
+
+  void _setupAuthListener() {
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        _listenForBroadcasts();
+        _listenForPremiumUpgrades(user);
+      } else {
+        _broadcastSubscription?.cancel();
+        _broadcastSubscription = null;
+        _premiumSubscription?.cancel();
+        _premiumSubscription = null;
+      }
+    });
   }
 
   void _checkForSoftUpdates() async {
@@ -95,10 +110,8 @@ class _InAppBroadcastListenerState extends State<InAppBroadcastListener> {
     }
   }
 
-  void _listenForPremiumUpgrades() {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
+  void _listenForPremiumUpgrades(User user) {
+    _premiumSubscription?.cancel();
     bool isInitialized = false;
 
     _premiumSubscription = FirebaseFirestore.instance
@@ -149,12 +162,15 @@ class _InAppBroadcastListenerState extends State<InAppBroadcastListener> {
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
+    _broadcastSubscription?.cancel();
     _premiumSubscription?.cancel();
     super.dispose();
   }
 
   void _listenForBroadcasts() {
-    FirebaseFirestore.instance
+    _broadcastSubscription?.cancel();
+    _broadcastSubscription = FirebaseFirestore.instance
         .collection('broadcasts')
         .orderBy('timestamp', descending: true)
         .limit(1)
@@ -178,7 +194,7 @@ class _InAppBroadcastListenerState extends State<InAppBroadcastListener> {
         }
       }
     }, onError: (e) {
-      debugPrint('[InAppBroadcastListener] Premium listener error: $e');
+      debugPrint('[InAppBroadcastListener] Broadcasts listener error: $e');
     });
   }
 

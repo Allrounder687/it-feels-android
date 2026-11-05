@@ -16,6 +16,7 @@ import 'package:it_feels_music/features/settings/storage_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:it_feels_music/features/settings/audio_settings_screen.dart';
+import 'package:it_feels_music/features/settings/keyboard_shortcuts_screen.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:it_feels_music/services/config_service.dart';
 import 'package:it_feels_music/features/admin/force_update_screen.dart';
@@ -219,6 +220,14 @@ class SettingsScreen extends ConsumerWidget {
                 subtitle: "Crossfade, Equalizer, and Audio Effects",
                 icon: Icons.tune_rounded,
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AudioSettingsScreen())),
+                showDivider: true,
+              ),
+              _buildActionItem(
+                context: context,
+                title: "Keyboard Shortcuts",
+                subtitle: "Custom player hotkeys & Windows overlap detection",
+                icon: Icons.keyboard_rounded,
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const KeyboardShortcutsScreen())),
                 showDivider: false,
               ),
             ],

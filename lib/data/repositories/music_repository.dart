@@ -1,6 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'package:it_feels_music/core/utils/string_utils.dart';
 import 'package:it_feels_music/core/utils/des_decryptor.dart';
+import 'package:it_feels_music/core/utils/track_validation_engine.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -296,65 +297,79 @@ class MusicRepository implements IMusicRepository {
 
   @override
   Future<List<Song>> getRecommendedSongs(Song song) async {
-    List<Song> recommendations = [];
+    final List<Song> rawCandidates = [];
     final cleanId = song.saavnId.isNotEmpty
         ? song.saavnId
         : (song.id.contains(':') ? song.id.split(':').last : song.id);
 
-    // 1. Try JioSaavn direct song recommendations API (song station)
+    // 1. Try Cloudflare Edge proxy recommendations first (avoids regional DPI resets)
     if (cleanId.isNotEmpty) {
       try {
-        final recoUrl = 'https://www.jiosaavn.com/api.php?__call=reco.getreco&_format=json&_marker=0&ctx=android&pid=${Uri.encodeComponent(cleanId)}';
-        final response = await http.get(
-          Uri.parse(recoUrl),
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Referer': 'https://www.jiosaavn.com/',
-          },
-        ).timeout(const Duration(seconds: 6));
-
+        final edgeRecoUrl = 'https://it-feels-proxy.cleverfox687.workers.dev/api/v1/recommendations?songId=saavn:${Uri.encodeComponent(cleanId)}';
+        final response = await http.get(Uri.parse(edgeRecoUrl)).timeout(const Duration(seconds: 6));
         if (response.statusCode == 200) {
           final data = jsonDecode(utf8.decode(response.bodyBytes));
-          dynamic rawList;
-          if (data is List) {
-            rawList = data;
-          } else if (data is Map<String, dynamic>) {
-            // JioSaavn reco.getreco returns a Map keyed by the PID: { "<pid>": [ songs... ] }
-            rawList = data[cleanId] ?? data['list'] ?? data['songs'];
-            if (rawList == null) {
-              for (final val in data.values) {
-                if (val is List && val.isNotEmpty) {
-                  rawList = val;
-                  break;
-                }
-              }
-            }
-          }
-
-          if (rawList is List && rawList.isNotEmpty) {
-            for (final item in rawList) {
+          final list = data['recommendations'] ?? data['results'] ?? (data is List ? data : null);
+          if (list is List && list.isNotEmpty) {
+            for (final item in list) {
               if (item is Map<String, dynamic>) {
-                final s = Song.fromJson(item);
-                final tLower = s.title.toLowerCase();
-                if (s.id != song.id &&
-                    !recommendations.any((r) => r.id == s.id) &&
-                    !tLower.contains('instrumental') &&
-                    !tLower.contains('karaoke') &&
-                    !tLower.contains('ringtone')) {
-                  recommendations.add(s);
-                }
+                rawCandidates.add(Song.fromJson(item));
               }
             }
           }
         }
-      } catch (e) {
-        debugPrint('[MusicRepository] reco.getreco error: $e');
+      } catch (_) {}
+
+      // Secondary direct upstream fallback
+      if (rawCandidates.isEmpty) {
+        try {
+          final recoUrl = 'https://www.jiosaavn.com/api.php?__call=reco.getreco&_format=json&_marker=0&ctx=android&pid=${Uri.encodeComponent(cleanId)}';
+          final response = await http.get(
+            Uri.parse(recoUrl),
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+              'Accept': 'application/json, text/plain, */*',
+              'Referer': 'https://www.jiosaavn.com/',
+            },
+          ).timeout(const Duration(seconds: 6));
+
+          if (response.statusCode == 200) {
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
+            dynamic rawList;
+            if (data is List) {
+              rawList = data;
+            } else if (data is Map<String, dynamic>) {
+              rawList = data[cleanId] ?? data['list'] ?? data['songs'];
+              if (rawList == null) {
+                for (final val in data.values) {
+                  if (val is List && val.isNotEmpty) {
+                    rawList = val;
+                    break;
+                  }
+                }
+              }
+            }
+
+            if (rawList is List && rawList.isNotEmpty) {
+              for (final item in rawList) {
+                if (item is Map<String, dynamic>) {
+                  rawCandidates.add(Song.fromJson(item));
+                }
+              }
+            }
+          }
+        } on HandshakeException {
+          // Direct Saavn TLS handshake blocked by regional ISP DPI; handled gracefully
+        } on SocketException {
+          // Handled gracefully
+        } catch (e) {
+          debugPrint('[MusicRepository] reco.getreco error: $e');
+        }
       }
     }
 
-    // 2. High-affinity fallback: fetch top authentic hits by primary artist and similar mood
-    if (recommendations.length < 8) {
+    // 2. High-affinity fallback: fetch top authentic hits by primary artist
+    if (rawCandidates.length < 8) {
       final primaryArtist = song.artist
           .split(',')
           .first
@@ -367,39 +382,30 @@ class MusicRepository implements IMusicRepository {
       if (primaryArtist.isNotEmpty && primaryArtist != 'Unknown Artist') {
         try {
           final artistHits = await searchSongs('$primaryArtist Top Hits', count: 20);
-          for (final s in artistHits) {
-            final tLower = s.title.toLowerCase();
-            if (s.id != song.id &&
-                !recommendations.any((r) => r.id == s.id) &&
-                !tLower.contains('instrumental') &&
-                !tLower.contains('karaoke') &&
-                !tLower.contains('ringtone')) {
-              recommendations.add(s);
-            }
-          }
+          rawCandidates.addAll(artistHits);
         } catch (_) {}
       }
 
       // 3. Fallback: query regional/language trending hits
-      if (recommendations.length < 8) {
+      if (rawCandidates.length < 8) {
         try {
           final lang = song.language.isNotEmpty && song.language != 'unknown' ? song.language : 'Hindi';
           final relatedHits = await searchSongs('$lang Top Trending Hits', count: 15);
-          for (final s in relatedHits) {
-            final tLower = s.title.toLowerCase();
-            if (s.id != song.id &&
-                !recommendations.any((r) => r.id == s.id) &&
-                !tLower.contains('instrumental') &&
-                !tLower.contains('karaoke') &&
-                !tLower.contains('ringtone')) {
-              recommendations.add(s);
-            }
-          }
+          rawCandidates.addAll(relatedHits);
         } catch (_) {}
       }
     }
 
-    return recommendations.take(15).toList();
+    // Centralized contextual validation and ranking: eliminates unwanted instrumentals,
+    // karaoke, ringtones, and duplicate tracks while preserving context
+    final validated = TrackValidationEngine.filterAndRank(
+      rawCandidates.where((s) => s.id != song.id).toList(),
+      queryContext: song.title,
+      expectedArtist: song.artist,
+      expectedAlbum: song.album,
+    );
+
+    return validated.take(15).toList();
   }
 
   @override
@@ -607,7 +613,12 @@ class MusicRepository implements IMusicRepository {
     }
 
     final addonManager = AddonManager();
-    final addonResults = await addonManager.search(query);
+    final rawResults = await addonManager.search(query);
+    final addonResults = TrackValidationEngine.filterAndRank(
+      rawResults,
+      queryContext: query,
+      preserveOriginalOrderIfValid: true,
+    );
     if (addonResults.isNotEmpty) {
       final cacheObj = CachedSearch()
         ..queryKey = queryKey
@@ -681,13 +692,30 @@ class MusicRepository implements IMusicRepository {
         : (song.id.startsWith('saavn:') ? song.id.replaceFirst('saavn:', '') : '');
 
     if (saavnId.isNotEmpty && !saavnId.startsWith('http')) {
+      // 4a. Cloudflare Edge stream resolution (Priority 1)
       try {
-        final detailsUrl =
+        final edgeStreamUrl = 'https://it-feels-proxy.cleverfox687.workers.dev/api/v1/stream?id=saavn:${Uri.encodeComponent(saavnId)}';
+        final edgeRes = await http.get(Uri.parse(edgeStreamUrl)).timeout(const Duration(seconds: 5));
+        if (edgeRes.statusCode == 200) {
+          final edgeData = jsonDecode(utf8.decode(edgeRes.bodyBytes));
+          final streamUrl = edgeData['streamUrl'] ?? edgeData['url'];
+          if (streamUrl != null && streamUrl.toString().isNotEmpty) {
+            final upgraded = DesDecryptor.get320kbpsUrl(streamUrl.toString()) ?? streamUrl.toString();
+            _streamCache[song.id] = upgraded;
+            return upgraded;
+          }
+        }
+      } catch (_) {}
+
+      // 4b. Upstream fallback with Edge proxy resilience (Priority 2)
+      try {
+        final rawDetailsUrl =
             'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=${Uri.encodeComponent(saavnId)}&_format=json&_marker=0&api_version=4&ctx=web6dot0';
+        final detailsUrl = 'https://it-feels-proxy.cleverfox687.workers.dev/api/v1/image-proxy?url=${Uri.encodeComponent(rawDetailsUrl)}';
         final res = await http.get(
           Uri.parse(detailsUrl),
           headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
-        ).timeout(const Duration(seconds: 6));
+        ).timeout(const Duration(seconds: 4));
 
         if (res.statusCode == 200) {
           final data = jsonDecode(utf8.decode(res.bodyBytes));
@@ -712,6 +740,12 @@ class MusicRepository implements IMusicRepository {
             }
           }
         }
+      } on HandshakeException catch (e) {
+        debugPrint('[MusicRepository] JioSaavn TLS handshake reset (geo/ISP blocked): $e');
+      } on SocketException catch (e) {
+        debugPrint('[MusicRepository] JioSaavn network socket error: $e');
+      } on TimeoutException catch (e) {
+        debugPrint('[MusicRepository] JioSaavn details request timed out: $e');
       } catch (e) {
         debugPrint('[MusicRepository] Fast Saavn details fetch error: $e');
       }

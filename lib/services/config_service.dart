@@ -67,6 +67,25 @@ class ConfigService {
             updateUrl: '',
           );
         }
+      } on FirebaseException catch (e) {
+        if (e.code == 'permission-denied') {
+          debugPrint('[ConfigService] client_config/$_platformConfigDoc permission denied. Falling back to default app config.');
+          return AppConfig(
+            minVersion: 1,
+            latestVersionCode: 1,
+            latestVersion: '1.0.0',
+            updateUrl: '',
+          );
+        }
+        if (i == 2) {
+          return AppConfig(
+            minVersion: 1,
+            latestVersionCode: 1,
+            latestVersion: '1.0.0',
+            updateUrl: '',
+          );
+        }
+        await Future.delayed(const Duration(milliseconds: 500));
       } catch (e) {
         if (i == 2) {
           // If all retries fail, return a safe fallback to prevent hanging the splash screen

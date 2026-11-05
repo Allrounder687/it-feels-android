@@ -29,6 +29,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   String _title = '';
   String _coverArt = '';
   List<Song> _songs = [];
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -37,6 +38,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   }
 
   Future<void> _loadDetails() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
     if (widget.playlist.songs != null && widget.playlist.songs!.isNotEmpty) {
       if (mounted) {
         setState(() {
@@ -49,6 +55,22 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       return;
     }
 
+    if (widget.playlist.id.startsWith('daily_mix_')) {
+      final homePlaylists = ref.read(homeProvider).youPlaylists;
+      final match = homePlaylists.where((p) => p.id == widget.playlist.id).firstOrNull;
+      if (match != null && match.songs != null && match.songs!.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _title = match.title;
+            _coverArt = match.coverArt;
+            _songs = match.songs!;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+    }
+
     Map<String, dynamic> data;
 
     try {
@@ -59,20 +81,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         data = await api.fetchPlaylistDetails(widget.playlist.id);
       }
     } catch (e) {
-      debugPrint('Error fetching playlist details: $e');
+      debugPrint('[PlaylistDetailScreen] Error fetching details: $e');
       data = {'songs': []};
     }
 
-    var songs = List<Song>.from(data['songs'] ?? []);
-    if (songs.isEmpty && widget.playlist.title.isNotEmpty) {
-      try {
-        final cleanTitle = widget.playlist.title.replaceAll(RegExp(r'\s*-\s*.*$'), '').trim();
-        final fallback = await locator<IMusicRepository>().searchSongs(cleanTitle, count: 25);
-        if (fallback.isNotEmpty) {
-          songs = fallback;
-        }
-      } catch (_) {}
-    }
+    final songs = List<Song>.from(data['songs'] ?? []);
 
     if (mounted) {
       setState(() {
@@ -82,6 +95,9 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
             : widget.playlist.coverArt;
         _songs = songs;
         _isLoading = false;
+        if (songs.isEmpty) {
+          _errorMessage = "We couldn't load tracks for this playlist right now.";
+        }
       });
     }
   }
@@ -123,7 +139,12 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final isWide = constraints.maxWidth >= 700;
-                        final horizontalPadding = isWide ? (constraints.maxWidth > 1400 ? (constraints.maxWidth - 1400) / 2 : 48.0) : 32.0;
+                        final coverSize = constraints.maxWidth >= 1000 ? 300.0 : (constraints.maxWidth >= 850 ? 240.0 : 200.0);
+                        final titleFontSize = constraints.maxWidth >= 1000 ? 56.0 : (constraints.maxWidth >= 850 ? 40.0 : 32.0);
+                        final artSpacing = constraints.maxWidth >= 900 ? 40.0 : 24.0;
+                        final horizontalPadding = isWide
+                            ? (constraints.maxWidth > 1400 ? (constraints.maxWidth - 1400) / 2 : (constraints.maxWidth >= 900 ? 48.0 : 24.0))
+                            : 24.0;
 
                         return Padding(
                           padding: EdgeInsets.only(left: horizontalPadding, right: horizontalPadding, top: 32, bottom: 40),
@@ -133,8 +154,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                   children: [
                                     // Massive left-aligned cover art
                                     Container(
-                                      width: 320,
-                                      height: 320,
+                                      width: coverSize,
+                                      height: coverSize,
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(16),
                                         boxShadow: [
@@ -152,7 +173,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                             : Container(color: context.themeCardColor),
                                       ),
                                     ),
-                                    const SizedBox(width: 48),
+                                    SizedBox(width: artSpacing),
                                     // Typography and Actions
                                     Expanded(
                                       child: Column(
@@ -174,7 +195,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                             style: GoogleFonts.outfit(
-                                              fontSize: 64,
+                                              fontSize: titleFontSize,
                                               fontWeight: FontWeight.w900,
                                               color: context.themeTextColor,
                                               height: 1.05,
@@ -190,24 +211,26 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                               fontWeight: FontWeight.w500,
                                             ),
                                           ),
-                                          const SizedBox(height: 32),
-                                          Row(
+                                          const SizedBox(height: 24),
+                                          Wrap(
+                                            spacing: 12,
+                                            runSpacing: 12,
+                                            crossAxisAlignment: WrapCrossAlignment.center,
                                             children: [
                                               _buildActionButton(
                                                 context: context,
                                                 icon: Icons.play_arrow_rounded,
                                                 label: "Play",
-                                                width: 140,
+                                                width: constraints.maxWidth >= 850 ? 140 : 120,
                                                 onPressed: () {
                                                   if (_songs.isNotEmpty) ref.read(audioPlayerProvider.notifier).playSong(_songs[0], queue: _songs, index: 0);
                                                 },
                                               ),
-                                              const SizedBox(width: 16),
                                               _buildActionButton(
                                                 context: context,
                                                 icon: Icons.shuffle_rounded,
                                                 label: "Shuffle",
-                                                width: 140,
+                                                width: constraints.maxWidth >= 850 ? 140 : 120,
                                                 onPressed: () {
                                                   if (_songs.isNotEmpty) {
                                                     final shuffled = List<Song>.from(_songs)..shuffle();
@@ -215,7 +238,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                                                   }
                                                 },
                                               ),
-                                              const SizedBox(width: 16),
                                               Container(
                                                 height: 42,
                                                 width: 42,
@@ -341,113 +363,164 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                     ),
                   ),
 
-                  // Table Header
-                  SliverToBoxAdapter(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isWide = constraints.maxWidth >= 700;
-                        final horizontalPadding = isWide ? (constraints.maxWidth > 1400 ? (constraints.maxWidth - 1400) / 2 : 48.0) : 32.0;
-                        
-                        return Padding(
-                          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
-                          child: Row(
+                  // Error / Empty State or Table Header + Songs List
+                  if (_songs.isEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 48.0),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              SizedBox(
-                                width: 40,
-                                child: Text(
-                                  "#",
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                              Icon(
+                                Icons.queue_music_rounded,
+                                size: 56,
+                                color: context.themeMutedTextColor.withValues(alpha: 0.5),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _errorMessage ?? "No tracks available in this playlist.",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.themeTextColor,
                                 ),
                               ),
-                              const SizedBox(width: 24),
-                              Expanded(
-                                flex: isWide ? 6 : 1,
-                                child: Text(
-                                  "Title",
-                                  style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Check your connection or try refreshing the playlist.",
+                                textAlign: TextAlign.center,
+                                style: GoogleFonts.inter(
+                                  fontSize: 13,
+                                  color: context.themeMutedTextColor,
                                 ),
                               ),
-                              if (isWide)
-                                Expanded(
-                                  flex: 4,
-                                  child: Text(
-                                    "Artist",
-                                    style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
-                                  ),
+                              const SizedBox(height: 24),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: context.themeAccentColor,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
-                              if (isWide)
-                                Expanded(
-                                  flex: 3,
-                                  child: Text(
-                                    "Album",
-                                    style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
-                                  ),
-                                ),
-                              SizedBox(
-                                width: 60,
-                                child: Icon(Icons.access_time_rounded, size: 16, color: context.themeMutedTextColor),
+                                icon: const Icon(Icons.refresh_rounded, size: 18),
+                                label: Text("Retry", style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+                                onPressed: _loadDetails,
                               ),
-                              const SizedBox(width: 60), // Actions spacing
                             ],
                           ),
-                        );
-                      }
+                        ),
+                      ),
+                    )
+                  else ...[
+                    // Table Header
+                    SliverToBoxAdapter(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isWide = constraints.maxWidth >= 700;
+                          final horizontalPadding = isWide ? (constraints.maxWidth > 1400 ? (constraints.maxWidth - 1400) / 2 : 48.0) : 32.0;
+                          
+                          return Padding(
+                            padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 8),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 40,
+                                  child: Text(
+                                    "#",
+                                    textAlign: TextAlign.center,
+                                    style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  flex: isWide ? 6 : 1,
+                                  child: Text(
+                                    "Title",
+                                    style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                                if (isWide)
+                                  Expanded(
+                                    flex: 4,
+                                    child: Text(
+                                      "Artist",
+                                      style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                if (isWide)
+                                  Expanded(
+                                    flex: 3,
+                                    child: Text(
+                                      "Album",
+                                      style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                SizedBox(
+                                  width: 60,
+                                  child: Icon(Icons.access_time_rounded, size: 16, color: context.themeMutedTextColor),
+                                ),
+                                const SizedBox(width: 60), // Actions spacing
+                              ],
+                            ),
+                          );
+                        }
+                      ),
                     ),
-                  ),
 
-                  // Divider
-                  SliverToBoxAdapter(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final isWide = constraints.maxWidth >= 700;
-                        final horizontalPadding = isWide ? (constraints.maxWidth > 1400 ? (constraints.maxWidth - 1400) / 2 : 48.0) : 32.0;
-                        return Padding(
-                          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                          child: Divider(color: context.themeMutedTextColor.withValues(alpha: 0.2), height: 1),
-                        );
-                      }
+                    // Divider
+                    SliverToBoxAdapter(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isWide = constraints.maxWidth >= 700;
+                          final horizontalPadding = isWide ? (constraints.maxWidth > 1400 ? (constraints.maxWidth - 1400) / 2 : 48.0) : 32.0;
+                          return Padding(
+                            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                            child: Divider(color: context.themeMutedTextColor.withValues(alpha: 0.2), height: 1),
+                          );
+                        }
+                      ),
                     ),
-                  ),
 
-                  // Songs List
-                  SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final song = _songs[index];
-                        final isDown = downloadProv.isDownloaded(song.id);
-                        final screenWidth = MediaQuery.of(context).size.width;
-                        final isWide = screenWidth >= 700;
-                        final horizontalPadding = isWide ? (screenWidth > 1400 ? (screenWidth - 1400) / 2 : 48.0) : 8.0;
-                        
-                        final artists = song.artist.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
-                        final minutes = song.duration ~/ 60;
-                        final seconds = song.duration % 60;
-                        final timeString = '$minutes:${seconds.toString().padLeft(2, '0')}';
+                    // Songs List
+                    SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final song = _songs[index];
+                          final isDown = downloadProv.isDownloaded(song.id);
+                          final screenWidth = MediaQuery.of(context).size.width;
+                          final isWide = screenWidth >= 700;
+                          final horizontalPadding = isWide ? (screenWidth > 1400 ? (screenWidth - 1400) / 2 : 48.0) : 8.0;
+                          
+                          final artists = song.artist.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+                          final minutes = song.duration ~/ 60;
+                          final seconds = song.duration % 60;
+                          final timeString = '$minutes:${seconds.toString().padLeft(2, '0')}';
 
-                        return Consumer(
-                          builder: (context, ref, child) {
-                            final playerProvider = ref.watch(audioPlayerProvider);
-                            final isCurrentSong = playerProvider.currentSong?.id == song.id;
-                            final downloadState = ref.watch(downloadProvider);
-                            final isSongDown = downloadState.isDownloaded(song.id);
-                            final isSongDownloading = downloadState.isDownloading(song.id);
-                            
-                            return Padding(
-                              padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 2),
-                              child: InkWell(
-                                onTap: () => ref.read(audioPlayerProvider.notifier).playSong(song, queue: _songs, index: index),
-                                onLongPress: () => SongOptionsSheet.show(context, song, playlistContext: _songs),
-                                borderRadius: BorderRadius.circular(8),
-                                hoverColor: Colors.white.withValues(alpha: 0.05),
-                                highlightColor: Colors.white.withValues(alpha: 0.1),
-                                splashColor: Colors.transparent,
-                                child: Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: isWide ? 16 : 8, vertical: isWide ? 12 : 8),
-                                  child: Row(
-                                    children: [
-                                      // Track Number / Equalizer
-                                      SizedBox(
+                          return Consumer(
+                            builder: (context, ref, child) {
+                              final playerProvider = ref.watch(audioPlayerProvider);
+                              final isCurrentSong = playerProvider.currentSong?.id == song.id;
+                              final downloadState = ref.watch(downloadProvider);
+                              final isSongDown = downloadState.isDownloaded(song.id);
+                              final isSongDownloading = downloadState.isDownloading(song.id);
+                              
+                              return Padding(
+                                padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 2),
+                                child: InkWell(
+                                  onTap: () => ref.read(audioPlayerProvider.notifier).playSong(song, queue: _songs, index: index),
+                                  onLongPress: () => SongOptionsSheet.show(context, song, playlistContext: _songs),
+                                  borderRadius: BorderRadius.circular(8),
+                                  hoverColor: Colors.white.withValues(alpha: 0.05),
+                                  highlightColor: Colors.white.withValues(alpha: 0.1),
+                                  splashColor: Colors.transparent,
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: isWide ? 16 : 8, vertical: isWide ? 12 : 8),
+                                    child: Row(
+                                      children: [
+                                        // Track Number / Equalizer
+                                        SizedBox(
                                         width: isWide ? 40 : 26,
                                         child: Center(
                                           child: isCurrentSong && playerProvider.isPlaying
@@ -630,10 +703,11 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                       childCount: _songs.length,
                     ),
                   ),
-
-                  SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom)),
                 ],
-              ),
+
+                SliverToBoxAdapter(child: SizedBox(height: AppDimensions.bottomClearance + MediaQuery.of(context).viewPadding.bottom)),
+              ],
+            ),
           ],
         ),
       ),

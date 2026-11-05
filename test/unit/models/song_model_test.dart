@@ -117,5 +117,31 @@ void main() {
       expect(p3.title, 'Heartbeats');
       expect(p3.songCount, 5); // Must not be 0 despite list_count: 0
     });
+
+    test('Song.fromJson and toJson round-trip preserves offlineStatus and localFilePath', () {
+      final original = Song(
+        id: 'saavn:999',
+        saavnId: '999',
+        title: 'Offline Masterpiece',
+        artist: 'Offline Artist',
+        album: 'Offline Album',
+        duration: 210,
+        coverArt: '/storage/cover.jpg',
+        localFilePath: '/storage/music/Offline Masterpiece.m4a',
+        offlineStatus: OfflineStatus.downloaded,
+        isFavorite: true,
+        playCount: 12,
+        addedAt: DateTime(2026, 1, 1),
+      );
+
+      final json = original.toJson();
+      final restored = Song.fromJson(json);
+
+      expect(restored.id, 'saavn:999');
+      expect(restored.localFilePath, '/storage/music/Offline Masterpiece.m4a');
+      expect(restored.offlineStatus, OfflineStatus.downloaded);
+      expect(restored.isFavorite, true);
+      expect(restored.playCount, 12);
+    });
   });
 }

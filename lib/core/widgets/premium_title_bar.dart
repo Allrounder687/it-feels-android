@@ -252,8 +252,14 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 150),
         child: song != null
-            ? _buildNowPlayingIndicator(song)
-            : _buildGlobalSearch(),
+            ? KeyedSubtree(
+                key: ValueKey('title_now_playing_${song.id}'),
+                child: _buildNowPlayingIndicator(song),
+              )
+            : KeyedSubtree(
+                key: const ValueKey('title_global_search'),
+                child: _buildGlobalSearch(),
+              ),
       ),
     );
   }
@@ -300,7 +306,7 @@ class _PremiumTitleBarState extends ConsumerState<PremiumTitleBar>
               bottom: 0,
               left: 0,
               right: 0,
-              child: ExcludeSemantics(child: _PulsingAudioVisualizer(isFocused: _isFocused)),
+              child: _PulsingAudioVisualizer(isFocused: _isFocused),
             ),
           ],
         ),
@@ -496,25 +502,22 @@ class _TitleBarIconButtonState extends State<_TitleBarIconButton> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: Semantics(
-        label: widget.tooltip,
-        button: true,
+    return Tooltip(
+      message: widget.tooltip,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
         child: GestureDetector(
           onTap: widget.onTap,
           behavior: HitTestBehavior.opaque,
-          child: ExcludeSemantics(
-            child: Tooltip(
-              message: widget.tooltip,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                height: 48,
-                color: _isHovered ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
-                child: Icon(widget.icon, size: 16, color: widget.color),
-              ),
-            ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            height: 48,
+            color: _isHovered
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.transparent,
+            child: Icon(widget.icon, size: 16, color: widget.color),
           ),
         ),
       ),

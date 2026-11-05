@@ -16,16 +16,35 @@ class AuthService {
 
   late final GoogleSignIn _googleSignIn = GoogleSignIn();
 
+  bool _anonymousSignInSupported = true;
+  bool get isAnonymousSupported => _anonymousSignInSupported;
+
   // Sign In Anonymously
   Future<UserCredential?> signInAnonymously() async {
+    if (!_anonymousSignInSupported) return null;
     try {
       final cred = await _auth.signInAnonymously();
       if (cred.user != null) {
         await _syncUserToFirestore(cred.user!);
       }
       return cred;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'admin-restricted-operation' ||
+          e.code == 'operation-not-allowed' ||
+          e.message?.contains('restricted to administrators only') == true) {
+        _anonymousSignInSupported = false;
+        debugPrint('[AuthService] Anonymous sign-in disabled in Firebase Console. Operating in local Guest Mode.');
+      } else {
+        debugPrint('[AuthService] Anonymous sign-in error: ${e.code} - ${e.message}');
+      }
+      return null;
     } catch (e) {
-      debugPrint('[AuthService] Anonymous sign-in disabled in Firebase Console: $e');
+      if (e.toString().contains('restricted to administrators only')) {
+        _anonymousSignInSupported = false;
+        debugPrint('[AuthService] Anonymous sign-in disabled in Firebase Console. Operating in local Guest Mode.');
+      } else {
+        debugPrint('[AuthService] Anonymous sign-in error: $e');
+      }
       return null;
     }
   }
@@ -153,7 +172,7 @@ class AuthService {
         }
       }
     } catch (e) {
-      print('Error syncing user to Firestore: $e');
+      debugPrint('[AuthService] Error syncing user to Firestore: $e');
     }
   }
 }

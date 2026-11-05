@@ -6,6 +6,7 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/models/feed_shelf.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/repositories/music_repository.dart';
+import 'package:it_feels_music/core/utils/track_validation_engine.dart';
 
 import 'package:it_feels_music/services/lastfm_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
@@ -186,13 +187,12 @@ class HomeState {
 
 class HomeNotifier extends Notifier<HomeState> {
   late final IMusicRepository musicRepo;
-  
   late final LastfmService lastfmService;
+  final Set<String> _sessionSeenPlaylistIds = {};
 
   @override
   HomeState build() {
     musicRepo = locator<IMusicRepository>();
-    
     lastfmService = locator<LastfmService>();
     Future.microtask(() {
       _initCategory();
@@ -274,70 +274,62 @@ class HomeNotifier extends Notifier<HomeState> {
 
     try {
       if (category == 'Music') {
-        // Endless scrolling through Curated Categories
-        final offsets = [
-          ['Pop', 'Hip Hop', 'R&B', 'Electronic', 'Rock'],
-          ['Indie', 'Jazz', 'Classical', 'K-Pop', 'Chill'],
-          ['Gaming', 'Workout', 'Romance', 'Party', 'Acoustic'],
-          ['Country', 'Folk', 'Metal', 'Punk', 'Focus']
+        // Broad, non-repeating genre curriculum across 8 distinct pages
+        final curriculum = [
+          ['Pop', 'Hip Hop', 'R&B'],
+          ['Bollywood Romance', 'Punjabi Beats', 'Desi Hip Hop'],
+          ['Synthwave & EDM', 'Indie & Acoustic', 'Soul & Chill'],
+          ['Rock & Alt', 'K-Pop', 'Latin Hits'],
+          ['Gaming Vibes', 'Workout Energy', 'Party Anthems'],
+          ['Focus & Study', 'Acoustic Morning', 'Late Night Beats'],
+          ['90s Nostalgia', '2000s Pop', 'Classic Melodies'],
+          ['Devotional & Sufi', 'Ghazals', 'Coke Studio'],
         ];
-        final idx = page % offsets.length;
-        final queries = offsets[idx];
-        
+        if (page >= curriculum.length) return []; // Stop infinite duplication
+        final queries = curriculum[page];
         for (var query in queries) {
           final playlists = await musicRepo.searchPlaylists(query, count: 10);
-          if (playlists.isNotEmpty) {
-            newShelves.add(FeedShelf(title: '$query Trending', type: ShelfType.playlistCarousel, items: playlists));
+          final dedupedPlaylists = playlists.where((p) => p.songCount > 0 && _sessionSeenPlaylistIds.add(p.id)).toList();
+          if (dedupedPlaylists.isNotEmpty) {
+            newShelves.add(FeedShelf(title: '$query Hits', type: ShelfType.playlistCarousel, items: dedupedPlaylists));
           }
         }
       } else if (category == 'For You') {
         // Multi-source Recommendation Engine: Personal Mixes + Onboarding
-        
         final favoriteArtists = await StorageService.getFavoriteArtists();
-        final baseArtists = favoriteArtists.isNotEmpty 
-            ? List<String>.from(favoriteArtists)
-            : ['Arijit Singh', 'The Weeknd', 'Taylor Swift', 'Pritam', 'Travis Scott'];
+        final history = await StorageService.loadListeningHistory();
+        final dynamicPool = <String>[...favoriteArtists, ...history.keys];
+        if (dynamicPool.isEmpty) {
+          dynamicPool.addAll(['Arijit Singh', 'The Weeknd', 'Taylor Swift', 'Pritam', 'Diljit Dosanjh', 'Travis Scott', 'Anuv Jain', 'DIVINE']);
+        }
 
-        // Removed Last.fm integration for legal compliance
-        
-        // Mix in some vibe queries for variety
-        final moodQueries = ['Daily Mix', 'New Releases', 'Discover', 'Chill', 'Acoustic', 'Top Hits', 'Focus', 'Workout'];
-        
-        // Randomly shuffle our pool to ensure infinite dynamic generation
-        baseArtists.shuffle();
-        moodQueries.shuffle();
-        
-        // Pick 2 artists and 2 moods per page to ensure enough content fills the screen for scrolling
-        final selectedArtists = baseArtists.isNotEmpty ? baseArtists.take(2).toList() : ['Pop', 'Rock'];
-        final selectedMoods = moodQueries.take(2).toList();
-        
-        for (int i = 0; i < 2; i++) {
-           final artist = selectedArtists[i % selectedArtists.length];
-           final mood = selectedMoods[i % selectedMoods.length];
-           
-           // Shelf 1: Artist based
-           final artistPlaylists = await musicRepo.searchPlaylists(artist, count: 10);
-           if (artistPlaylists.isNotEmpty) {
-              newShelves.add(FeedShelf(
-                 title: 'Because you like $artist',
-                 type: ShelfType.playlistCarousel,
-                 items: artistPlaylists,
-              ));
-           }
-           
-           // Shelf 2: Mood based or Dynamic combo
-           final isCombo = (page + i) % 3 != 0;
-           final dynamicQuery = isCombo ? '$artist $mood' : mood;
-           final dynamicPlaylists = await musicRepo.searchPlaylists(dynamicQuery, count: 10);
-           
-           if (dynamicPlaylists.isNotEmpty) {
-              final title = isCombo ? '$mood for $artist fans' : mood;
-              newShelves.add(FeedShelf(
-                 title: title,
-                 type: ShelfType.playlistCarousel,
-                 items: dynamicPlaylists,
-              ));
-           }
+        final startIndex = (page * 2) % dynamicPool.length;
+        final selectedArtists = dynamicPool.skip(startIndex).take(2).toList();
+        final moodOptions = ['Chill & Acoustic', 'Workout Mix', 'Late Night', 'Top Hits', 'Radio Mix'];
+        final mood = moodOptions[page % moodOptions.length];
+
+        for (final artist in selectedArtists) {
+          final artistPlaylists = await musicRepo.searchPlaylists(artist, count: 8);
+          final deduped = artistPlaylists.where((p) => p.songCount > 0 && _sessionSeenPlaylistIds.add(p.id)).toList();
+          if (deduped.isNotEmpty) {
+            newShelves.add(FeedShelf(
+              title: 'Because you like $artist',
+              type: ShelfType.playlistCarousel,
+              items: deduped,
+            ));
+          }
+        }
+
+        if (page < 6) {
+          final moodPlaylists = await musicRepo.searchPlaylists(mood, count: 8);
+          final dedupedMood = moodPlaylists.where((p) => p.songCount > 0 && _sessionSeenPlaylistIds.add(p.id)).toList();
+          if (dedupedMood.isNotEmpty) {
+            newShelves.add(FeedShelf(
+              title: '$mood Mixes',
+              type: ShelfType.playlistCarousel,
+              items: dedupedMood,
+            ));
+          }
         }
       } else if (category == 'Podcasts') {
         final ytIMusicRepository = locator<IMusicRepository>();
@@ -360,7 +352,12 @@ class HomeNotifier extends Notifier<HomeState> {
         if (page == 0) {
           final charts = await musicRepo.getCharts();
           if (charts['playlists'] != null && charts['playlists'].isNotEmpty) {
-             newShelves.add(FeedShelf(title: 'The Global Soundscape', type: ShelfType.playlistCarousel, items: charts['playlists']));
+            final dedupedCharts = (charts['playlists'] as List<Playlist>)
+                .where((p) => p.songCount > 0 && _sessionSeenPlaylistIds.add(p.id))
+                .toList();
+            if (dedupedCharts.isNotEmpty) {
+              newShelves.add(FeedShelf(title: 'The Global Soundscape', type: ShelfType.playlistCarousel, items: dedupedCharts));
+            }
           }
         }
         final offsets = [
@@ -376,13 +373,14 @@ class HomeNotifier extends Notifier<HomeState> {
           ]
         ];
         
-        final idx = page % offsets.length;
-        final queries = offsets[idx];
-        
-        for (var item in queries) {
-          final playlists = await musicRepo.searchPlaylists(item['q']!, count: 10);
-          if (playlists.isNotEmpty) {
-             newShelves.add(FeedShelf(title: item['t']!, type: ShelfType.playlistCarousel, items: playlists));
+        if (page < offsets.length) {
+          final queries = offsets[page];
+          for (var item in queries) {
+            final playlists = await musicRepo.searchPlaylists(item['q']!, count: 10);
+            final deduped = playlists.where((p) => p.songCount > 0 && _sessionSeenPlaylistIds.add(p.id)).toList();
+            if (deduped.isNotEmpty) {
+              newShelves.add(FeedShelf(title: item['t']!, type: ShelfType.playlistCarousel, items: deduped));
+            }
           }
         }
       }
@@ -394,70 +392,16 @@ class HomeNotifier extends Notifier<HomeState> {
     return newShelves;
   }
 
-    bool _isInstrumentalOrJunk(Song s) {
-    final title = s.title.toLowerCase();
-    const junk = [
-      'instrumental',
-      'karaoke',
-      'ringtone',
-      'flute version',
-      'flute cover',
-      'flute',
-      'piano version',
-      'piano cover',
-      'guitar cover',
-      'background score',
-      'bgm',
-      'soundtrack version',
-      'theme music',
-      'tribute to',
-      'meditation',
-      'sleep music',
-      'relaxing music',
-      'slowed reverb',
-      'slowed+reverb',
-      'lofi flip',
-      'orchestral version',
-      'synthesizer',
-      'shehnai',
-      'tabla solo',
-      'santoor',
-      'sitar',
-    ];
-    for (final j in junk) {
-      if (title.contains(j)) return true;
-    }
-    return false;
+  bool _isInstrumentalOrJunk(Song s) {
+    return !TrackValidationEngine.isValidTrack(s);
   }
 
   List<Song> _deduplicate(List<Song> songs) {
-    final Map<String, Song> unique = {};
-    for (var s in songs) {
-      if (s.title.isEmpty) continue;
-      String cleanTitle = s.title
-          .replaceAll(RegExp(r'\s*\([^)]*\)'), '')
-          .replaceAll(RegExp(r'\s*-\s*.*'), '')
-          .toLowerCase()
-          .replaceAll(RegExp(r'[^a-z0-9]'), '')
-          .trim();
-      if (cleanTitle.isEmpty) {
-        cleanTitle = s.title
-            .toLowerCase()
-            .replaceAll(RegExp(r'[^a-z0-9]'), '')
-            .trim();
-      }
-      String artistClean = s.artist
-          .split(',')
-          .first
-          .toLowerCase()
-          .replaceAll(RegExp(r'[^a-z0-9]'), '')
-          .trim();
-      String uniqueKey = '${cleanTitle}_$artistClean';
-      if (uniqueKey.isNotEmpty && !unique.containsKey(uniqueKey)) {
-        unique[uniqueKey] = s;
-      }
-    }
-    return unique.values.toList();
+    return TrackValidationEngine.filterAndRank(
+      songs,
+      preserveOriginalOrderIfValid: true,
+      minPassingScore: 30.0,
+    );
   }
 
   Future<void> fetchBollywoodSongs() async {
@@ -948,6 +892,13 @@ class HomeNotifier extends Notifier<HomeState> {
       continueWatching: continueWatchingList,
       isLoading: false,
     );
+
+    // Immediate cold-start initialization for "For You", Moods, and Charts
+    final history = await StorageService.loadListeningHistory();
+    final topArtists = history.keys.toList();
+    fetchYouSongs(topArtists);
+    fetchMoods();
+    fetchCharts();
 
     fetchBollywoodSongs();
     fetchTeluguSongs();

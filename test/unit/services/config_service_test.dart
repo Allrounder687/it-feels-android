@@ -1,3 +1,4 @@
+// ignore_for_file: subtype_of_sealed_class
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -69,6 +70,26 @@ void main() {
       expect(config, isNotNull);
       expect(config!.minVersion, 1);
       expect(config.latestVersionCode, 1);
+    });
+
+    test('returns fallback immediately when Firestore throws permission-denied', () async {
+      when(() => mockDoc.get(any())).thenThrow(
+        FirebaseException(
+          plugin: 'cloud_firestore',
+          code: 'permission-denied',
+          message: 'Missing or insufficient permissions.',
+        ),
+      );
+
+      final stopwatch = Stopwatch()..start();
+      final config = await ConfigService.fetchRemoteConfig();
+      stopwatch.stop();
+
+      expect(config, isNotNull);
+      expect(config!.minVersion, 1);
+      expect(config.latestVersionCode, 1);
+      expect(stopwatch.elapsedMilliseconds, lessThan(400));
+      verify(() => mockDoc.get(any())).called(1);
     });
   });
 

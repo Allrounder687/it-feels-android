@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/repositories/music_repository.dart';
+import 'package:it_feels_music/core/utils/track_validation_engine.dart';
 
 import 'package:it_feels_music/services/backend_api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -226,6 +227,13 @@ class SearchNotifier extends Notifier<SearchState> {
     final hasAcousticInQuery = qLower.contains('acoustic') || qLower.contains('unplugged');
     if (!hasAcousticInQuery && (titleLower.contains('acoustic') || titleLower.contains('unplugged'))) {
       score -= 40;
+    }
+
+    // Multi-Vector Track Validation & Authentic Confidence Scoring
+    final validation = TrackValidationEngine.evaluate(song, queryContext: query);
+    score += (validation.confidenceScore * 0.8).round();
+    if (!validation.isValid) {
+      score -= 80;
     }
 
     // Natural Search Engine Priority Preservation

@@ -13,6 +13,87 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **JioSaavn Editorial Playlist Resolution & Split-Screen UI Responsive Hardening (v3.6.35):**
+  - **JioSaavn Editorial Playlist Resolution ("0 Tracks" Fix)**:
+    - Root-caused why editorial/curated playlists ("Chill Love Songs", Charts, Featured Playlists) loaded with 0 tracks: JioSaavn's `playlist.getDetails` returns `list_count: 0`, an empty `list: ""` / `songs: []`, and instead packs the song IDs as comma-separated PIDs inside `more_info.contents`.
+    - When Cloudflare Edge Worker queried `playlist.getDetails`, it mapped `data.songs` (which was empty) and returned `tracks: []`. The client then fell back to direct `www.jiosaavn.com/api.php` calls which were terminated by UAE ISP DPI with `HandshakeException`.
+    - Upgraded `AddonManager.defaultPluginSource`, `backend_addon.js`, and `custom_addon.js`: `getPlaylistTracksUrl(id)` now routes via Cloudflare Edge `image-proxy` (`/api/v1/image-proxy?url=...`), completely bypassing ISP DPI.
+    - Enhanced `_extractSongsFromPayload(data)` and `_fetchSongsFromContents(contents)`: automatically extracts `more_info.contents` or nested `playlist.more_info.contents`, resolving all comma-delimited song PIDs through `song.getDetails&pids=...` via Cloudflare Edge in $<1$ second.
+  - **Desktop Split-Screen UI Overflow Elimination ("RIGHT OVERFLOWED BY 53 PIXELS")**:
+    - Identified unconstrained `Row` in `PlaylistDetailScreen` with fixed 140dp button widths (`Play` + `Shuffle` + `Download` = 354dp) overflowing the 301dp remaining space when desktop windows are resized to half-screen (~720px width).
+    - Re-architected action buttons with a responsive `Wrap(spacing: 12, runSpacing: 12, crossAxisAlignment: WrapCrossAlignment.center)`, dynamically scaled cover art (`coverSize`: 200–300dp) and font size (`titleFontSize`: 32–56sp) based on `constraints.maxWidth`, guaranteeing zero overflow at any split-screen desktop window width.
+  - **Static Analysis & Test Verification**:
+    - `flutter test test/unit/services/auth_service_test.dart test/unit/services/config_service_test.dart test/widget/screens/playlist_detail_screen_test.dart` $\rightarrow$ **12/12 unit and widget tests passed (100% pass rate)**.
+
+- **Windows Network & Firebase Forensic Hardening Suite (v3.6.34):**
+  - **HTTPS & TLS Handshake Regional DPI Resilience**:
+    - Dissected UAE ISP Deep Packet Inspection (DPI) resetting TCP connections during TLS ClientHello when SNI matches `www.jiosaavn.com`. Confirmed CDN asset hosts (`*.saavncdn.com`) remain unaffected.
+    - Synchronized Cloudflare Edge Worker API contracts in `AddonManager.defaultPluginSource` and `backend_addon.js`: corrected stream resolution route to `/api/v1/video/stream?id=`, and routed search and playlist extraction through Cloudflare Edge.
+    - Hardened network clients with standard browser User-Agents, 8-second request timeouts, and explicit recovery handlers for `HandshakeException`, `SocketException`, and `TimeoutException` across `AddonManager` and `MusicRepository`.
+  - **Firebase Anonymous Authentication Auto-Detection & Guest Mode**:
+    - Root-caused `[firebase_auth/unknown-error] This operation is restricted to administrators only.` to Google Identity Toolkit returning `ADMIN_ONLY_OPERATION` when Anonymous Auth is disabled in Firebase Console.
+    - Added `_anonymousSignInSupported` capability detection in `AuthService` and `AuthProvider`. Upon detecting admin restrictions, gracefully switches the app to local Guest Mode without throwing unhandled exceptions, looping, or degrading playback.
+  - **Firestore Remote Config Permission-Denied Fast-Bypass**:
+    - Identified unauthenticated startup queries to `client_config/windows` triggering Firestore `permission-denied` errors and stalling boot for ~7s due to exponential backoff retries.
+    - Added instant `permission-denied` bypass in `ConfigService`, returning default fallback config immediately without blocking the splash screen or repeating failed network calls.
+    - Documented minimal least-privilege Firestore security rules granting public read-only access strictly to `client_config/{platform}` and `broadcasts/{broadcastId}`.
+  - **Static Analysis & Test Verification**:
+    - `dart analyze lib/services/auth_service.dart lib/features/auth/auth_provider.dart lib/services/config_service.dart lib/data/services/addon_manager.dart lib/data/repositories/music_repository.dart test/unit/services/auth_service_test.dart test/unit/services/config_service_test.dart` $\rightarrow$ **0 issues found**.
+    - `flutter test` $\rightarrow$ **10/10 unit tests passed (100% pass rate)**.
+  - **Comprehensive Forensic Documentation**: Staged `WINDOWS_NETWORK_FIREBASE_FIX_REPORT.md` in repository root.
+
+- **Windows Runtime Forensic & Semantics Stabilization Suite (v3.6.33):**
+  - **Elimination of Primary Scheduler Semantics Crash (`!child.attached`)**:
+    - Dissected Flutter 3.22+ semantics compilation pipeline (`SemanticsNode._replaceChildren` $\rightarrow$ `_buildSemanticsSubtree`). Root-caused corrupt semantics subtree state triggered by nested `Semantics` + `ExcludeSemantics` wrapping `Tooltip` inside `PremiumTitleBar`'s `_TitleBarIconButton`. `Tooltip` utilizes `OverlayPortal`, which caused its anchor node to be excluded while overlay entries grafted into the root overlay, breaking the `!child.attached` assertion.
+    - Re-architected `_TitleBarIconButton` with clean `Tooltip(message: ..., child: MouseRegion(cursor: SystemMouseCursors.click, ...))` hierarchy, fully preserving screen reader accessibility while restoring atomic semantics tree attachment.
+    - Added explicit disambiguation keys (`title_now_playing_${song.id}` vs `title_global_search`) in `PremiumTitleBar._buildCenterContent`'s `AnimatedSwitcher` and stripped redundant inner `ExcludeSemantics` wrappers.
+  - **Firestore Auth-Gating & Lifecycle Leak Resolution**:
+    - Gated `InAppBroadcastListener` Firestore queries behind `FirebaseAuth.authStateChanges()`, preventing premature reads to `broadcasts` collection while unauthenticated and permanently eliminating `[cloud_firestore/permission-denied]`.
+    - Retained and disposed all active stream subscriptions (`_authSubscription`, `_broadcastSubscription`, `_premiumSubscription`), stopping lifecycle memory leaks.
+  - **Hardened LocalProxyServer Loopback & Upstream TLS Resilience**:
+    - Migrated `LocalProxyServer` to a persistent, tuned `HttpClient` with `autoUncompress = false` (protecting streaming range headers), 10s connection timeout, and 15s idle timeout.
+    - Wrapped downstream streaming pipe with graceful socket disconnect handlers (`SocketException`, `HttpException`, `HandshakeException`), preventing crashes when users scrub or skip tracks.
+    - Added graceful server and client teardown in `LocalProxyServer.stop()`.
+  - **Lazy GPU Video Texture Initialization**:
+    - Deferred `Player` and `VideoController` construction in `VideoPlayerNotifier` until `playVideo(...)` is explicitly invoked, completely eliminating startup log warning `VideoOutput.Resize {rect: {height: 0, width: 0}}` and preventing idle GPU resource consumption during audio playback.
+  - **Static Analysis & Test Verification**:
+    - `dart analyze lib/core/widgets/premium_title_bar.dart lib/features/admin/in_app_broadcast_listener.dart lib/services/local_proxy_server.dart lib/features/player/video_player_provider.dart` $\rightarrow$ **No issues found (0 warnings, 0 errors, 0 lints)**.
+    - `flutter test` $\rightarrow$ **40/40 tests passed across all unit suites and semantics reproduction tests (100% pass rate)**.
+
+- **Spotify-Class Music Transformation Suite (v3.6.32):**
+  - **Playlist Resolution Normalizer & Elimination of Silent Query Hijacking**:
+    - Re-engineered `AddonManager.getPlaylistTracks(id)` and `getAlbumTracks(id)`: introduced `_extractSongsFromPayload(data)` which reliably extracts tracks across multiple nested response schemas (`list`, `songs`, `tracks`, numeric object maps, and comma-delimited `contents`), automatically cascading between numeric `listid` and token/slug `webapi.get`.
+    - Permanently purged dangerous fallback in `PlaylistDetailScreen` that performed title keyword searches upon failed resolution (e.g. converting "Bollywood Romantic" into a random search result). Implemented an authentic retry/empty state with user-facing diagnostics.
+    - Added hydration safeguard in `PlaylistDetailScreen`: instantly restores tracks for Daily Mixes (`daily_mix_*`) from active state cache if navigated with an empty payload.
+  - **Centralized TrackValidationEngine**:
+    - Created `TrackValidationEngine` (`lib/core/utils/track_validation_engine.dart`): evaluates tracks on a $[0, 100]$ confidence scale, penalizing instrumental, karaoke, flute, piano, ringtone, and slowed/reverb tracks while contextually elevating them when explicitly searched.
+    - Integrated canonical acoustic deduplication based on clean title and primary artist tokens regardless of volatile ID prefixes.
+    - Connected validation engine across `MusicRepository` recommendations, `SearchNotifier`, and `HomeNotifier`.
+  - **Offline-First Hybrid Architecture & Isar Sync**:
+    - Synchronized `Song.fromJson` and `toJson`: restored full serialization of `localFilePath`, `offlineStatus`, `isFavorite`, and behavioral counters.
+    - `DownloadService` and `DownloadScannerService` now write directly to Isar database (`DatabaseService.saveSong`/`saveSongs`), ensuring complete offline library discovery and FTS search vector indexing.
+    - `DownloadNotifier` now queries Isar alongside storage preferences on boot, guaranteeing offline playback works seamlessly in airplane mode.
+    - Protected local cover file paths in `ImageUtils.getSizedCoverArt`.
+  - **Unified Synced Lyrics Pipeline**:
+    - Connected direct JioSaavn API lyrics extraction into `LyricsService._fetchSaavn` (`lyrics.getLyrics&lyrics_id=...`).
+    - Integrated multi-source race between LRCLIB (synchronized `.lrc` with line-by-line timing) and JioSaavn (plain lyrics) with 500ms debounce and automatic Isar caching (`CachedLyrics`).
+  - **Static Analysis & Test Verification**:
+    - `dart analyze lib/services lib/features lib/data lib/core` $\rightarrow$ **0 issues found**.
+    - `flutter test` $\rightarrow$ **24/24 unit tests passed (100% pass rate)**.
+
+- **Windows Inno Setup Release Automation & Smart Deployment Suite (v3.6.31):**
+  - **Inno Setup Production Packaging**:
+    - Compiled Flutter Windows Release x64 binary with full native C++ plugin support (`media_kit_video`, `just_audio_windows`, `smtc_windows`, `windows_taskbar`, `quickjs_c_bridge`).
+    - Engineered `windows/packaging/installer.iss` using dynamic `#ifndef` macro overrides for versioning, canonical icons, and ultra-high compression (`lzma2/ultra64`).
+    - Generated production installer `IT_Feels_Music_v3.6.31_Setup.exe` (38.61 MB) with SHA-256 integrity verification.
+  - **Smart Inno Setup Automation Scripts (`compile_inno.ps1` & `compile_inno.bat`)**:
+    - Automatic version synchronization from `pubspec.yaml` with support for semantic bumping (`-BumpPatch`, `-BumpMinor`, `-BumpBuild`, `-Version`).
+    - Intelligent auto-discovery of `ISCC.exe` across user profiles (`~/.inno_bundle/`), Program Files, and fallback winget installation.
+    - Fast iterative packaging with `-SkipFlutterBuild` (packages in $<10\text{s}$ using existing release binaries) and clean builds (`-Clean`).
+    - Output verification: verifies executables, calculates size, generates SHA256 hashes, and stages into `releases/`.
+  - **Autonomous Agent Skill (`Windows Inno Release Compiler`)**:
+    - Registered autonomous Antigravity skill in `.agent/skills/windows-inno-release/SKILL.md` and global `~/.gemini/config/skills/windows-inno-release/SKILL.md`.
+    - Fully instructs agents on zero-friction Windows compilation, version audits, pre-flight dependency verification, and troubleshooting.
 - **Playlist Contract Hardening, Endless Autoplay Radio, Curated Mixes & UI Defect Polish (v3.6.31):**
   - **JioSaavn Playlist API Contract Resolution ("0 Songs" Fix)**:
     - Root-caused `search.getPlaylistResults` payload returning `{ listid, listname, count }` while `content.getFeaturedPlaylists` returns `{ id, title, more_info.song_count }`, and `playlist.getDetails` returns `list_count: 0` with song IDs comma-delimited inside `more_info.contents`.

@@ -24,6 +24,24 @@ class StorageService {
   static const String _favoriteArtistsKey = 'favorite_artists_v1';
   static const String _lastSyncTimestampKey = 'last_sync_timestamp_v1';
 
+  static const String _keyboardShortcutsKey = 'keyboard_shortcuts_config_v1';
+
+  static Future<Map<String, dynamic>?> loadKeyboardShortcuts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_keyboardShortcutsKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return jsonDecode(raw) as Map<String, dynamic>?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> saveKeyboardShortcuts(Map<String, dynamic> shortcutsJson) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyboardShortcutsKey, jsonEncode(shortcutsJson));
+  }
+
   static Future<int> getLastSyncTimestamp() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_lastSyncTimestampKey) ?? 0;
@@ -169,7 +187,7 @@ class StorageService {
 
   static Future<String> loadDefaultCategory() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('default_category') ?? 'Bollywood';
+    return prefs.getString('default_category') ?? 'For You';
   }
 
   /// Save favorites list

@@ -1227,6 +1227,40 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     state = state.copyWith(isRepeat: !state.isRepeat);
   }
 
+  double _savedVolumeBeforeMute = 100.0;
+  bool _isMuted = false;
+  bool get isMuted => _isMuted;
+  double get currentVolume => engine.audioHandler.player.state.volume;
+
+  Future<void> setVolume(double volume) async {
+    final clamped = volume.clamp(0.0, 100.0);
+    _isMuted = clamped == 0.0;
+    await engine.audioHandler.player.setVolume(clamped);
+  }
+
+  Future<double> adjustVolume(double delta) async {
+    final cur = engine.audioHandler.player.state.volume;
+    final next = (cur + delta).clamp(0.0, 100.0);
+    _isMuted = next == 0.0;
+    await engine.audioHandler.player.setVolume(next);
+    return next;
+  }
+
+  Future<bool> toggleMute() async {
+    final cur = engine.audioHandler.player.state.volume;
+    if (_isMuted || cur == 0.0) {
+      _isMuted = false;
+      final restore = _savedVolumeBeforeMute > 0 ? _savedVolumeBeforeMute : 100.0;
+      await engine.audioHandler.player.setVolume(restore);
+      return false;
+    } else {
+      _savedVolumeBeforeMute = cur;
+      _isMuted = true;
+      await engine.audioHandler.player.setVolume(0.0);
+      return true;
+    }
+  }
+
   Future<void> _updateHomeWidget() async {
     if (Platform.isAndroid || Platform.isIOS) {
       try {

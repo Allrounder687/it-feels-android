@@ -34,6 +34,7 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:it_feels_music/core/utils/system_tray_manager.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
+import 'package:it_feels_music/services/keyboard_shortcut_service.dart';
 import 'package:app_links/app_links.dart';
 import 'package:protocol_registry/protocol_registry.dart';
 import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
@@ -59,7 +60,7 @@ Future<void> main(List<String> args) async {
   
   await LocalProxyServer.start();
 
-  if (Platform.isWindows) {
+  if (Platform.isWindows && !kDebugMode) {
     await WindowsSingleInstance.ensureSingleInstance(
       args,
       "it_feels_music_instance",
@@ -233,34 +234,8 @@ Future<void> main(List<String> args) async {
       },
     );
 
-    // Ctrl+Alt+Space: Play/Pause
-    await hotKeyManager.register(
-      HotKey(key: LogicalKeyboardKey.space, modifiers: [HotKeyModifier.control, HotKeyModifier.alt], scope: HotKeyScope.system),
-      keyDownHandler: (HotKey hotKey) async {
-        final engine = locator<AudioEngineService>();
-        if (engine.isPlaying) {
-          await engine.pause();
-        } else {
-          await engine.play();
-        }
-      },
-    );
-
-    // Ctrl+Alt+Right: Next
-    await hotKeyManager.register(
-      HotKey(key: LogicalKeyboardKey.arrowRight, modifiers: [HotKeyModifier.control, HotKeyModifier.alt], scope: HotKeyScope.system),
-      keyDownHandler: (HotKey hotKey) async {
-        await locator<AudioEngineService>().skipToNext();
-      },
-    );
-
-    // Ctrl+Alt+Left: Previous
-    await hotKeyManager.register(
-      HotKey(key: LogicalKeyboardKey.arrowLeft, modifiers: [HotKeyModifier.control, HotKeyModifier.alt], scope: HotKeyScope.system),
-      keyDownHandler: (HotKey hotKey) async {
-        await locator<AudioEngineService>().skipToPrevious();
-      },
-    );
+    // Initialize custom keyboard controls & Windows overlap detection
+    await KeyboardShortcutService().initialize();
 
     await windowManager.ensureInitialized();
     

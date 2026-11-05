@@ -7,6 +7,7 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/repositories/music_repository.dart';
 import 'package:it_feels_music/services/download_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
+import 'package:it_feels_music/services/database_service.dart';
 
 @immutable
 class DownloadState {
@@ -107,6 +108,17 @@ class DownloadNotifier extends Notifier<DownloadState> {
 
   Future<void> _init() async {
     final songs = await StorageService.loadDownloads();
+    try {
+      final isarSongs = await DatabaseService().getDownloadedSongs(limit: 500);
+      if (isarSongs.isNotEmpty) {
+        final existingIds = songs.map((s) => s.id).toSet();
+        for (final isarSong in isarSongs) {
+          if (!existingIds.contains(isarSong.id)) {
+            songs.add(isarSong);
+          }
+        }
+      }
+    } catch (_) {}
     state = state.copyWith(downloadedSongs: songs);
     // Background scan for any downloads from older/debug/other app builds
     unawaited(scanAndSync());
@@ -173,6 +185,9 @@ class DownloadNotifier extends Notifier<DownloadState> {
         final existing = await StorageService.loadDownloads();
         final updated = existing.map((s) => s.id == song.id ? restored : s).toList();
         await StorageService.saveDownloads(updated);
+        try {
+          await DatabaseService().saveSong(restored);
+        } catch (_) {}
         state = state.copyWith(downloadedSongs: updated);
         return true;
       }
@@ -278,6 +293,14 @@ class DownloadNotifier extends Notifier<DownloadState> {
     });
     state = state.copyWith(downloadedSongs: updated);
     await StorageService.saveDownloads(updated);
+    try {
+      final dbSong = await DatabaseService().getSong(song.id);
+      if (dbSong != null) {
+        dbSong.offlineStatus = OfflineStatus.none;
+        dbSong.localFilePath = null;
+        await DatabaseService().saveSong(dbSong);
+      }
+    } catch (_) {}
   }
 
   Future<void> clearAllDownloads() async {

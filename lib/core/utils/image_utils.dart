@@ -7,6 +7,11 @@ class ImageUtils {
   static String getSizedCoverArt(String url, {int size = 500}) {
     if (url.isEmpty) return '';
 
+    // If it's a local file path or data URI, do not modify or regex replace it
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return url;
+    }
+
     // Handle YouTube Thumbnails (i.ytimg.com)
     if (url.contains('i.ytimg.com')) {
       if (size <= 200) {

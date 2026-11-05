@@ -40,6 +40,7 @@ local.properties
 # ===============================
 /build/
 /bin/
+/releases/
 *.dSYM/
 *.apk
 *.aab

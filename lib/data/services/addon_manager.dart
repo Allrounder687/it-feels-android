@@ -1,4 +1,5 @@
 import 'package:it_feels_music/core/utils/string_utils.dart';
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -22,34 +23,42 @@ class AddonManager {
   final ValueNotifier<bool> hasPluginsNotifier = ValueNotifier(false);
 
   static const String defaultPluginSource = '''
+const PROXY_URL = "https://it-feels-proxy.cleverfox687.workers.dev";
 const BACKEND_URL = "https://it-feels-backend.cleverfox687.workers.dev";
 
 function getSearchUrl(query) {
-    return BACKEND_URL + "/api/v1/search?query=" + encodeURIComponent(query);
+    return PROXY_URL + "/api/v1/search?query=" + encodeURIComponent(query);
 }
 
 function getSearchPlaylistsUrl(query) {
-    return "https://www.jiosaavn.com/api.php?__call=search.getPlaylistResults&_format=json&_marker=0&api_version=4&p=1&n=20&q=" + encodeURIComponent(query);
+    return BACKEND_URL + "/api/v1/search/playlists?query=" + encodeURIComponent(query);
 }
 
 function getSearchAlbumsUrl(query) {
-    return "https://www.jiosaavn.com/api.php?__call=search.getAlbumResults&_format=json&_marker=0&api_version=4&p=1&n=20&q=" + encodeURIComponent(query);
+    return PROXY_URL + "/api/v1/search?provider=saavn&query=" + encodeURIComponent(query);
 }
 
 function getSearchAllUrl(query) {
-    return "https://www.jiosaavn.com/api.php?__call=autocomplete.get&_format=json&_marker=0&api_version=4&ctx=web6dot0&query=" + encodeURIComponent(query);
+    return PROXY_URL + "/api/v1/search?query=" + encodeURIComponent(query);
 }
 
 function getArtistDetailsUrl(id) {
-    return "https://www.jiosaavn.com/api.php?__call=artist.getArtistPageDetails&_format=json&_marker=0&api_version=4&artistId=" + encodeURIComponent(id);
+    var cleanId = id ? id.replace('saavn:', '') : '';
+    return PROXY_URL + "/api/v1/saavn/artist?id=" + encodeURIComponent(cleanId);
 }
 
 function getPlaylistTracksUrl(id) {
-    return "https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=" + encodeURIComponent(id);
+    var cleanId = id ? id.replace('saavn:', '') : '';
+    var isNumeric = /^\\d+\$/.test(cleanId);
+    var saavnUrl = isNumeric
+        ? "https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=" + encodeURIComponent(cleanId)
+        : "https://www.jiosaavn.com/api.php?__call=webapi.get&token=" + encodeURIComponent(cleanId) + "&type=playlist&_format=json&_marker=0&api_version=4&ctx=web6dot0";
+    return PROXY_URL + "/api/v1/image-proxy?url=" + encodeURIComponent(saavnUrl);
 }
 
 function getAlbumTracksUrl(id) {
-    return "https://www.jiosaavn.com/api.php?__call=content.getAlbumDetails&_format=json&_marker=0&api_version=4&albumid=" + encodeURIComponent(id);
+    var cleanId = id ? id.replace('saavn:', '') : '';
+    return PROXY_URL + "/api/v1/saavn/album?id=" + encodeURIComponent(cleanId);
 }
 
 function getSearchPodcastsUrl(query) {
@@ -57,26 +66,26 @@ function getSearchPodcastsUrl(query) {
 }
 
 function getStreamUrl(id, query, encryptedUrl) {
-    if (encryptedUrl) {
-        return BACKEND_URL + "/api/v1/stream?encryptedUrl=" + encodeURIComponent(encryptedUrl);
-    }
     var cleanId = id ? id.replace('saavn:', '').replace('youtube:', '') : '';
     if (query) {
         return BACKEND_URL + "/api/v1/video/stream?id=" + encodeURIComponent(cleanId) + "&query=" + encodeURIComponent(query);
     }
-    return BACKEND_URL + "/api/v1/video/stream?id=" + encodeURIComponent("search:" + cleanId);
+    if (encryptedUrl) {
+        return PROXY_URL + "/api/v1/stream?encryptedUrl=" + encodeURIComponent(encryptedUrl);
+    }
+    return PROXY_URL + "/api/v1/stream?id=" + encodeURIComponent(cleanId);
 }
 
 function getHomeFeedUrl() {
-    return BACKEND_URL + "/api/v1/home";
+    return PROXY_URL + "/api/v1/saavn/home";
 }
 
 function getChartsUrl() {
-    return BACKEND_URL + "/api/v1/charts/trending";
+    return PROXY_URL + "/api/v1/charts/trending";
 }
 
 function getLyricsUrl(track, artist) {
-    return BACKEND_URL + "/api/v1/lyrics?track=" + encodeURIComponent(track) + "&artist=" + encodeURIComponent(artist);
+    return PROXY_URL + "/api/v1/lyrics?track=" + encodeURIComponent(track) + "&artist=" + encodeURIComponent(artist);
 }
 ''';
 
@@ -208,35 +217,38 @@ function getLyricsUrl(track, artist) {
       if (!source.contains('getPlaylistTracksUrl')) {
         source += '''
           function getPlaylistTracksUrl(id) {
-              return "https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=" + encodeURIComponent(id);
+              var cleanId = id ? id.replace('saavn:', '') : '';
+              return "https://it-feels-proxy.cleverfox687.workers.dev/api/v1/saavn/playlist?id=" + encodeURIComponent(cleanId);
           }
         ''';
       }
       if (!source.contains('getAlbumTracksUrl')) {
         source += '''
           function getAlbumTracksUrl(id) {
-              return "https://www.jiosaavn.com/api.php?__call=content.getAlbumDetails&_format=json&_marker=0&api_version=4&albumid=" + encodeURIComponent(id);
+              var cleanId = id ? id.replace('saavn:', '') : '';
+              return "https://it-feels-proxy.cleverfox687.workers.dev/api/v1/saavn/album?id=" + encodeURIComponent(cleanId);
           }
         ''';
       }
       if (!source.contains('getSearchAlbumsUrl')) {
         source += '''
           function getSearchAlbumsUrl(query) {
-              return "https://www.jiosaavn.com/api.php?__call=search.getAlbumResults&_format=json&_marker=0&api_version=4&p=1&n=20&q=" + encodeURIComponent(query);
+              return "https://it-feels-proxy.cleverfox687.workers.dev/api/v1/search?provider=saavn&query=" + encodeURIComponent(query);
           }
         ''';
       }
       if (!source.contains('getSearchAllUrl')) {
         source += '''
           function getSearchAllUrl(query) {
-              return "https://www.jiosaavn.com/api.php?__call=autocomplete.get&_format=json&_marker=0&api_version=4&ctx=web6dot0&query=" + encodeURIComponent(query);
+              return "https://it-feels-proxy.cleverfox687.workers.dev/api/v1/search?query=" + encodeURIComponent(query);
           }
         ''';
       }
       if (!source.contains('getArtistDetailsUrl')) {
         source += '''
           function getArtistDetailsUrl(id) {
-              return "https://www.jiosaavn.com/api.php?__call=artist.getArtistPageDetails&_format=json&_marker=0&api_version=4&artistId=" + encodeURIComponent(id);
+              var cleanId = id ? id.replace('saavn:', '') : '';
+              return "https://it-feels-proxy.cleverfox687.workers.dev/api/v1/saavn/artist?id=" + encodeURIComponent(cleanId);
           }
         ''';
       }
@@ -311,8 +323,8 @@ function getLyricsUrl(track, artist) {
 
     if (allResults.isEmpty && query.isNotEmpty) {
       try {
-        final fallbackUrl = 'https://www.jiosaavn.com/api.php?__call=search.getPlaylistResults&_format=json&_marker=0&api_version=4&p=1&n=20&q=${Uri.encodeComponent(query)}';
-        final response = await http.get(Uri.parse(fallbackUrl));
+        final fallbackUrl = 'https://it-feels-backend.cleverfox687.workers.dev/api/v1/search/playlists?query=${Uri.encodeComponent(query)}';
+        final response = await http.get(Uri.parse(fallbackUrl)).timeout(const Duration(seconds: 6));
         if (response.statusCode == 200) {
           final data = jsonDecode(utf8.decode(response.bodyBytes));
           final rawList = data['results'] ?? data['playlists']?['data'] ?? (data is List ? data : null);
@@ -340,7 +352,7 @@ function getLyricsUrl(track, artist) {
         
         if (searchUrl != 'null' && searchUrl.isNotEmpty) {
           debugPrint('[AddonManager] Fetching searchAlbums from: $searchUrl');
-          final response = await http.get(Uri.parse(searchUrl));
+          final response = await http.get(Uri.parse(searchUrl)).timeout(const Duration(seconds: 8));
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
             final rawList = data['results'] ?? data['albums']?['data'] ?? (data is List ? data : null);
@@ -360,8 +372,8 @@ function getLyricsUrl(track, artist) {
 
     if (allResults.isEmpty && query.isNotEmpty) {
       try {
-        final fallbackUrl = 'https://www.jiosaavn.com/api.php?__call=search.getAlbumResults&_format=json&_marker=0&api_version=4&p=1&n=20&q=${Uri.encodeComponent(query)}';
-        final response = await http.get(Uri.parse(fallbackUrl));
+        final fallbackUrl = 'https://it-feels-proxy.cleverfox687.workers.dev/api/v1/search?provider=saavn&query=${Uri.encodeComponent(query)}';
+        final response = await http.get(Uri.parse(fallbackUrl)).timeout(const Duration(seconds: 6));
         if (response.statusCode == 200) {
           final data = jsonDecode(utf8.decode(response.bodyBytes));
           final rawList = data['results'] ?? data['albums']?['data'] ?? (data is List ? data : null);
@@ -648,7 +660,9 @@ function getLyricsUrl(track, artist) {
     final list = <Song>[];
     if (contents.isEmpty) return list;
     try {
-      final songDetailsUrl = 'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=${Uri.encodeComponent(contents)}&_format=json&_marker=0&api_version=4&ctx=web6dot0';
+      final rawSaavnUrl = 'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=${Uri.encodeComponent(contents)}&_format=json&_marker=0&api_version=4&ctx=web6dot0';
+      // Route through Edge proxy to bypass regional ISP DPI blocks
+      final songDetailsUrl = 'https://it-feels-proxy.cleverfox687.workers.dev/api/v1/image-proxy?url=${Uri.encodeComponent(rawSaavnUrl)}';
       final resp = await http.get(
         Uri.parse(songDetailsUrl),
         headers: {
@@ -674,49 +688,108 @@ function getLyricsUrl(track, artist) {
           }
         }
       }
+    } on HandshakeException {
+      // Direct Saavn TLS handshake blocked by regional ISP DPI; handled gracefully
+    } on SocketException {
+      // Handled gracefully
     } catch (e) {
       debugPrint('[AddonManager] Failed fetching song IDs from contents: $e');
     }
     return list;
   }
 
+  Future<List<Song>> _extractSongsFromPayload(dynamic data) async {
+    final List<Song> results = [];
+    if (data == null) return results;
+
+    if (data is Map<String, dynamic>) {
+      // 1. Direct song array candidates
+      final rawList = data['list'] ?? data['songs'] ?? data['tracks'];
+      if (rawList is List && rawList.isNotEmpty) {
+        for (var item in rawList) {
+          if (item is Map<String, dynamic>) {
+            results.add(Song.fromJson(item));
+          }
+        }
+        if (results.isNotEmpty) return results;
+      }
+
+      // Check nested 'playlist' or 'data' or 'album' map if present
+      final nestedMap = (data['playlist'] is Map<String, dynamic>)
+          ? data['playlist']
+          : ((data['data'] is Map<String, dynamic>) ? data['data'] : null);
+      if (nestedMap != null) {
+        final nestedTracks = nestedMap['list'] ?? nestedMap['songs'] ?? nestedMap['tracks'];
+        if (nestedTracks is List && nestedTracks.isNotEmpty) {
+          for (var item in nestedTracks) {
+            if (item is Map<String, dynamic>) {
+              results.add(Song.fromJson(item));
+            }
+          }
+          if (results.isNotEmpty) return results;
+        }
+        final nestedContents = nestedMap['more_info']?['contents']?.toString() ?? nestedMap['contents']?.toString() ?? '';
+        if (nestedContents.isNotEmpty) {
+          final contentSongs = await _fetchSongsFromContents(nestedContents);
+          if (contentSongs.isNotEmpty) return contentSongs;
+        }
+      }
+
+      // 2. Numeric dictionary keys (e.g. { "0": {...}, "1": {...} })
+      final numericKeys = data.keys.where((k) => int.tryParse(k) != null).toList();
+      if (numericKeys.isNotEmpty) {
+        numericKeys.sort((a, b) => (int.tryParse(a) ?? 0).compareTo(int.tryParse(b) ?? 0));
+        for (var k in numericKeys) {
+          final val = data[k];
+          if (val is Map<String, dynamic>) {
+            results.add(Song.fromJson(val));
+          }
+        }
+        if (results.isNotEmpty) return results;
+      }
+
+      // 3. Comma-delimited PID contents in more_info or root
+      final contents = data['more_info']?['contents']?.toString() ?? data['contents']?.toString() ?? '';
+      if (contents.isNotEmpty) {
+        final contentSongs = await _fetchSongsFromContents(contents);
+        if (contentSongs.isNotEmpty) return contentSongs;
+      }
+    } else if (data is List) {
+      for (var item in data) {
+        if (item is Map<String, dynamic>) {
+          results.add(Song.fromJson(item));
+        }
+      }
+    }
+    return results;
+  }
+
   Future<List<Song>> getPlaylistTracks(String id) async {
     List<Song> allResults = [];
-    final cleanId = id.replaceFirst('saavn:', '');
+    final cleanId = id.replaceFirst('saavn:', '').trim();
+    if (cleanId.isEmpty) return allResults;
+
     final headers = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
       'Accept': 'application/json, text/plain, */*',
       'Referer': 'https://www.jiosaavn.com/',
     };
 
+    // 1. Active plugin runtimes (if any installed)
     for (var runtime in _activeRuntimes) {
       try {
         final jsResult = runtime.evaluate("typeof getPlaylistTracksUrl === 'function' ? getPlaylistTracksUrl('${cleanId.replaceAll("'", "\\'")}') : null");
         final searchUrl = jsResult.stringResult.replaceAll('"', '');
         
         if (searchUrl != 'null' && searchUrl.isNotEmpty) {
-          debugPrint('[AddonManager] Fetching playlist tracks from: $searchUrl');
-          final response = await http.get(Uri.parse(searchUrl), headers: headers);
+          debugPrint('[AddonManager] Fetching playlist tracks from plugin: $searchUrl');
+          final response = await http.get(Uri.parse(searchUrl), headers: headers).timeout(const Duration(seconds: 10));
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
-            final rawList = data['tracks'] ?? data['list'] ?? data['songs'];
-            if (rawList is List && rawList.isNotEmpty) {
-              for (var item in rawList) {
-                if (item is Map<String, dynamic>) {
-                  allResults.add(Song.fromJson(item));
-                }
-              }
-            } else if (data is Map<String, dynamic> && data.keys.any((k) => int.tryParse(k) != null)) {
-              for (var entry in data.entries) {
-                if (int.tryParse(entry.key) != null && entry.value is Map<String, dynamic>) {
-                  allResults.add(Song.fromJson(entry.value as Map<String, dynamic>));
-                }
-              }
-            } else {
-              final contents = data['more_info']?['contents']?.toString() ?? data['contents']?.toString() ?? '';
-              if (contents.isNotEmpty) {
-                allResults = await _fetchSongsFromContents(contents);
-              }
+            final extracted = await _extractSongsFromPayload(data);
+            if (extracted.isNotEmpty) {
+              allResults.addAll(extracted);
+              break;
             }
           }
         }
@@ -725,72 +798,84 @@ function getLyricsUrl(track, artist) {
       }
     }
 
-    if (allResults.isEmpty && cleanId.isNotEmpty) {
-      try {
-        final fallbackUrl = 'https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=${Uri.encodeComponent(cleanId)}';
-        debugPrint('[AddonManager] Fallback getPlaylistTracks from: $fallbackUrl');
-        final response = await http.get(Uri.parse(fallbackUrl), headers: headers);
-        if (response.statusCode == 200) {
-          final data = jsonDecode(utf8.decode(response.bodyBytes));
-          final rawList = data['list'] ?? data['tracks'] ?? data['songs'];
-          if (rawList is List && rawList.isNotEmpty) {
-            for (var item in rawList) {
-              if (item is Map<String, dynamic>) {
-                allResults.add(Song.fromJson(item));
-              }
-            }
-          } else if (data is Map<String, dynamic> && data.keys.any((k) => int.tryParse(k) != null)) {
-            for (var entry in data.entries) {
-              if (int.tryParse(entry.key) != null && entry.value is Map<String, dynamic>) {
-                allResults.add(Song.fromJson(entry.value as Map<String, dynamic>));
-              }
-            }
-          } else {
-            final contents = data['more_info']?['contents']?.toString() ?? data['contents']?.toString() ?? '';
-            if (contents.isNotEmpty) {
-              allResults = await _fetchSongsFromContents(contents);
-            }
-          }
-        }
+    // 2. Direct fallback resolution (Primary & Secondary endpoint cascade)
+    if (allResults.isEmpty) {
+      final isNumeric = int.tryParse(cleanId) != null;
+      final endpoints = <String>[];
 
-        // Secondary fallback: attempt token lookup if listid returned no tracks
-        if (allResults.isEmpty) {
-          final tokenUrl = 'https://www.jiosaavn.com/api.php?__call=webapi.get&token=${Uri.encodeComponent(cleanId)}&type=playlist&_format=json&_marker=0&api_version=4&ctx=web6dot0';
-          final tokenResp = await http.get(Uri.parse(tokenUrl), headers: headers);
-          if (tokenResp.statusCode == 200) {
-            final tData = jsonDecode(utf8.decode(tokenResp.bodyBytes));
-            final tContents = tData['more_info']?['contents']?.toString() ?? tData['contents']?.toString() ?? '';
-            if (tContents.isNotEmpty) {
-              allResults = await _fetchSongsFromContents(tContents);
+      // Edge Proxy endpoints (Priority 1: Proxied raw JioSaavn payload containing contents/lists + Worker endpoint)
+      if (isNumeric) {
+        final saavnUrl = 'https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=${Uri.encodeComponent(cleanId)}';
+        endpoints.add('https://it-feels-proxy.cleverfox687.workers.dev/api/v1/image-proxy?url=${Uri.encodeComponent(saavnUrl)}');
+        endpoints.add('https://it-feels-proxy.cleverfox687.workers.dev/api/v1/saavn/playlist?id=${Uri.encodeComponent(cleanId)}');
+      } else {
+        final saavnUrl = 'https://www.jiosaavn.com/api.php?__call=webapi.get&token=${Uri.encodeComponent(cleanId)}&type=playlist&_format=json&_marker=0&api_version=4&ctx=web6dot0';
+        endpoints.add('https://it-feels-proxy.cleverfox687.workers.dev/api/v1/image-proxy?url=${Uri.encodeComponent(saavnUrl)}');
+        endpoints.add('https://it-feels-proxy.cleverfox687.workers.dev/api/v1/saavn/playlist?id=${Uri.encodeComponent(cleanId)}');
+      }
+      endpoints.add('https://it-feels-backend.cleverfox687.workers.dev/api/v1/playlist?id=${Uri.encodeComponent(cleanId)}');
+
+      // Upstream endpoints (Priority 2: Direct Saavn fallback for non-DPI networks)
+      if (isNumeric) {
+        endpoints.add('https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=${Uri.encodeComponent(cleanId)}');
+        endpoints.add('https://www.jiosaavn.com/api.php?__call=webapi.get&token=${Uri.encodeComponent(cleanId)}&type=playlist&_format=json&_marker=0&api_version=4&ctx=web6dot0');
+      } else {
+        endpoints.add('https://www.jiosaavn.com/api.php?__call=webapi.get&token=${Uri.encodeComponent(cleanId)}&type=playlist&_format=json&_marker=0&api_version=4&ctx=web6dot0');
+        endpoints.add('https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0&api_version=4&ctx=web6dot0&listid=${Uri.encodeComponent(cleanId)}');
+      }
+
+      for (final url in endpoints) {
+        try {
+          debugPrint('[AddonManager] Resolving playlist tracks from: $url');
+          final response = await http.get(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 8));
+          if (response.statusCode == 200) {
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
+            final extracted = await _extractSongsFromPayload(data);
+            if (extracted.isNotEmpty) {
+              allResults = extracted;
+              break;
             }
           }
+        } on HandshakeException {
+          // Regional ISP DPI blocks direct TLS handshake; suppressed gracefully
+        } on SocketException {
+          // Suppressed gracefully
+        } catch (e) {
+          debugPrint('[AddonManager] Playlist endpoint error ($url): $e');
         }
-      } catch (e) {
-        debugPrint('[AddonManager] Fallback getPlaylistTracks error: $e');
       }
     }
-    return allResults;
+
+    // 3. Deduplicate by canonical song identity while strictly preserving order
+    final seen = <String>{};
+    return allResults.where((s) => s.id.isNotEmpty && seen.add(s.id)).toList();
   }
 
   Future<List<Song>> getAlbumTracks(String id) async {
     List<Song> allResults = [];
+    final cleanId = id.replaceFirst('saavn:', '').trim();
+    if (cleanId.isEmpty) return allResults;
+
+    final headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Accept': 'application/json, text/plain, */*',
+      'Referer': 'https://www.jiosaavn.com/',
+    };
+
     for (var runtime in _activeRuntimes) {
       try {
-        final jsResult = runtime.evaluate("typeof getAlbumTracksUrl === 'function' ? getAlbumTracksUrl('${id.replaceAll("'", "\\'")}') : null");
+        final jsResult = runtime.evaluate("typeof getAlbumTracksUrl === 'function' ? getAlbumTracksUrl('${cleanId.replaceAll("'", "\\'")}') : null");
         final searchUrl = jsResult.stringResult.replaceAll('"', '');
         
         if (searchUrl != 'null' && searchUrl.isNotEmpty) {
           debugPrint('[AddonManager] Fetching album tracks from: $searchUrl');
-          final response = await http.get(Uri.parse(searchUrl));
+          final response = await http.get(Uri.parse(searchUrl), headers: headers).timeout(const Duration(seconds: 10));
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
-            final rawList = data['tracks'] ?? data['list'] ?? data['songs'] ?? (data is List ? data : null);
-            if (rawList is List) {
-              for (var item in rawList) {
-                if (item is Map<String, dynamic>) {
-                  allResults.add(Song.fromJson(item));
-                }
-              }
+            final extracted = await _extractSongsFromPayload(data);
+            if (extracted.isNotEmpty) {
+              allResults.addAll(extracted);
+              break;
             }
           }
         }
@@ -799,32 +884,54 @@ function getLyricsUrl(track, artist) {
       }
     }
 
-    if (allResults.isEmpty && id.isNotEmpty) {
-      try {
-        final fallbackUrl = 'https://www.jiosaavn.com/api.php?__call=content.getAlbumDetails&_format=json&_marker=0&api_version=4&albumid=${Uri.encodeComponent(id)}';
-        debugPrint('[AddonManager] Fallback getAlbumTracks from: $fallbackUrl');
-        final response = await http.get(Uri.parse(fallbackUrl));
-        if (response.statusCode == 200) {
-          final data = jsonDecode(utf8.decode(response.bodyBytes));
-          final rawList = data['list'] ?? data['songs'] ?? data['tracks'];
-          if (rawList is List && rawList.isNotEmpty) {
-            for (var item in rawList) {
-              if (item is Map<String, dynamic>) {
-                allResults.add(Song.fromJson(item));
-              }
-            }
-          } else {
-            final contents = data['more_info']?['contents']?.toString() ?? data['contents']?.toString() ?? '';
-            if (contents.isNotEmpty) {
-              allResults = await _fetchSongsFromContents(contents);
+    if (allResults.isEmpty) {
+      final isNumeric = int.tryParse(cleanId) != null;
+      final endpoints = <String>[];
+
+      // Edge Proxy endpoints (Priority 1: Proxied raw JioSaavn payload + Worker endpoint)
+      if (isNumeric) {
+        final saavnUrl = 'https://www.jiosaavn.com/api.php?__call=content.getAlbumDetails&_format=json&_marker=0&api_version=4&ctx=web6dot0&albumid=${Uri.encodeComponent(cleanId)}';
+        endpoints.add('https://it-feels-proxy.cleverfox687.workers.dev/api/v1/image-proxy?url=${Uri.encodeComponent(saavnUrl)}');
+        endpoints.add('https://it-feels-proxy.cleverfox687.workers.dev/api/v1/saavn/album?id=${Uri.encodeComponent(cleanId)}');
+      } else {
+        final saavnUrl = 'https://www.jiosaavn.com/api.php?__call=webapi.get&token=${Uri.encodeComponent(cleanId)}&type=album&_format=json&_marker=0&api_version=4&ctx=web6dot0';
+        endpoints.add('https://it-feels-proxy.cleverfox687.workers.dev/api/v1/image-proxy?url=${Uri.encodeComponent(saavnUrl)}');
+        endpoints.add('https://it-feels-proxy.cleverfox687.workers.dev/api/v1/saavn/album?id=${Uri.encodeComponent(cleanId)}');
+      }
+
+      // Upstream endpoints (Priority 2)
+      if (isNumeric) {
+        endpoints.add('https://www.jiosaavn.com/api.php?__call=content.getAlbumDetails&_format=json&_marker=0&api_version=4&albumid=${Uri.encodeComponent(cleanId)}');
+        endpoints.add('https://www.jiosaavn.com/api.php?__call=webapi.get&token=${Uri.encodeComponent(cleanId)}&type=album&_format=json&_marker=0&api_version=4&ctx=web6dot0');
+      } else {
+        endpoints.add('https://www.jiosaavn.com/api.php?__call=webapi.get&token=${Uri.encodeComponent(cleanId)}&type=album&_format=json&_marker=0&api_version=4&ctx=web6dot0');
+        endpoints.add('https://www.jiosaavn.com/api.php?__call=content.getAlbumDetails&_format=json&_marker=0&api_version=4&albumid=${Uri.encodeComponent(cleanId)}');
+      }
+
+      for (final url in endpoints) {
+        try {
+          debugPrint('[AddonManager] Resolving album tracks from: $url');
+          final response = await http.get(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 8));
+          if (response.statusCode == 200) {
+            final data = jsonDecode(utf8.decode(response.bodyBytes));
+            final extracted = await _extractSongsFromPayload(data);
+            if (extracted.isNotEmpty) {
+              allResults = extracted;
+              break;
             }
           }
+        } on HandshakeException {
+          // Handshake exception handled gracefully
+        } on SocketException {
+          // Socket exception handled gracefully
+        } catch (e) {
+          debugPrint('[AddonManager] Album endpoint error ($url): $e');
         }
-      } catch (e) {
-        debugPrint('[AddonManager] Fallback getAlbumTracks error: $e');
       }
     }
-    return allResults;
+
+    final seen = <String>{};
+    return allResults.where((s) => s.id.isNotEmpty && seen.add(s.id)).toList();
   }
 
   Future<List<Song>> searchPodcasts(String query) async {
@@ -938,7 +1045,7 @@ function getLyricsUrl(track, artist) {
           'Cookie': 'L=$lang;',
           'Accept': 'application/json',
         },
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(const Duration(seconds: 4));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -964,6 +1071,10 @@ function getLyricsUrl(track, artist) {
           'playlists': playlists,
         };
       }
+    } on HandshakeException {
+      // Direct Saavn TLS handshake blocked by regional ISP DPI; handled gracefully
+    } on SocketException {
+      // Handled gracefully
     } catch (e) {
       debugPrint('[AddonManager] getChartsByLanguage error: $e');
     }
@@ -972,16 +1083,38 @@ function getLyricsUrl(track, artist) {
 
   Future<List<Playlist>> getFeaturedPlaylistsByLanguage(String language) async {
     final lang = language.toLowerCase();
+    // 1. Edge Proxy search for language hits (avoids DPI reset)
     try {
-      final url = 'https://www.jiosaavn.com/api.php?__call=content.getFeaturedPlaylists&_format=json&cc=in&api_version=4';
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Cookie': 'L=$lang;',
-          'Accept': 'application/json',
-        },
-      ).timeout(const Duration(seconds: 10));
+      final edgeHits = await searchPlaylists('$language Hits');
+      if (edgeHits.isNotEmpty) {
+        return edgeHits;
+      }
+    } catch (_) {}
+
+    // 2. Upstream fallback with Edge Proxy resilience
+    try {
+      final rawUrl = 'https://www.jiosaavn.com/api.php?__call=content.getFeaturedPlaylists&_format=json&cc=in&api_version=4';
+      final proxyUrl = 'https://it-feels-proxy.cleverfox687.workers.dev/api/v1/image-proxy?url=${Uri.encodeComponent(rawUrl)}';
+      http.Response response;
+      try {
+        response = await http.get(
+          Uri.parse(rawUrl),
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Cookie': 'L=$lang;',
+            'Accept': 'application/json',
+          },
+        ).timeout(const Duration(seconds: 4));
+      } on HandshakeException {
+        response = await http.get(
+          Uri.parse(proxyUrl),
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Cookie': 'L=$lang;',
+            'Accept': 'application/json',
+          },
+        ).timeout(const Duration(seconds: 6));
+      }
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
@@ -994,6 +1127,10 @@ function getLyricsUrl(track, artist) {
         }
         return playlists;
       }
+    } on HandshakeException {
+      // Direct Saavn TLS handshake blocked by regional ISP DPI; handled gracefully
+    } on SocketException {
+      // Handled gracefully
     } catch (e) {
       debugPrint('[AddonManager] getFeaturedPlaylistsByLanguage error: $e');
     }
@@ -1019,7 +1156,11 @@ function getLyricsUrl(track, artist) {
           }
 
           debugPrint('[AddonManager] Fetching stream from: $streamApiUrl');
-          final response = await http.get(Uri.parse(streamApiUrl));
+          final response = await http.get(
+            Uri.parse(streamApiUrl),
+            headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'},
+          ).timeout(const Duration(seconds: 8));
+
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
             String? resolvedUrl = data['streamUrl'] ?? data['audioUrl'] ?? data['url'];
@@ -1040,6 +1181,12 @@ function getLyricsUrl(track, artist) {
             debugPrint('[AddonManager] Stream failed with status: ${response.statusCode} from $streamApiUrl');
           }
         }
+      } on HandshakeException catch (e) {
+        debugPrint('[AddonManager] TLS handshake failed for stream: $e');
+      } on SocketException catch (e) {
+        debugPrint('[AddonManager] Network socket error for stream: $e');
+      } on TimeoutException catch (e) {
+        debugPrint('[AddonManager] Stream request timed out: $e');
       } catch (e) {
         debugPrint('[AddonManager] getStreamUrl error in plugin: $e');
       }

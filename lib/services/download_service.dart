@@ -12,6 +12,7 @@ import 'package:it_feels_music/core/utils/string_utils.dart';
 import 'storage_service.dart';
 import 'package:it_feels_music/services/metadata_restoration_service.dart';
 import 'package:it_feels_music/services/download_scanner_service.dart';
+import 'package:it_feels_music/services/database_service.dart';
 
 class DownloadService {
   @visibleForTesting
@@ -422,6 +423,9 @@ class DownloadService {
           duration: song.duration,
           coverArt: hasCover ? coverLocalPath : song.coverArt,
           encryptedMediaUrl: savedFilePath,
+          localFilePath: savedFilePath,
+          offlineStatus: OfflineStatus.downloaded,
+          searchVector: Song.generateSearchVector(song.title, song.artist, song.album),
           hasLyrics: hasLyricsFile || song.hasLyrics,
           addedAt: DateTime.now(),
         );
@@ -438,6 +442,11 @@ class DownloadService {
         currentDownloads.add(downloadedSong);
 
         await StorageService.saveDownloads(currentDownloads);
+        try {
+          await DatabaseService().saveSong(downloadedSong);
+        } catch (e) {
+          debugPrint('[DownloadService] DatabaseService saveSong error: $e');
+        }
         debugPrint('[DownloadService] Successfully downloaded: ${song.title} to $savedFilePath');
         return true;
       } else {

@@ -132,4 +132,29 @@ void main() {
     expect(find.text("Downloading 1 songs..."), findsOneWidget);
     expect(fakeDownloadNotifier.batchDownloaded.length, 1);
   });
+
+  testWidgets('PlaylistDetailScreen renders header without overflow on split-screen desktop viewport (720px width)', (tester) async {
+    // Desktop split-screen viewport (720x900 logical pixels)
+    tester.view.physicalSize = const Size(720 * 1.5, 900 * 1.5);
+    tester.view.devicePixelRatio = 1.5;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    await tester.pumpWidget(createWidgetUnderTest('playlist123'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PlaylistDetailScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    // Verify Play, Shuffle, Download buttons are all rendered and within horizontal bounds
+    final playBtnFinder = find.widgetWithText(ElevatedButton, 'Play');
+    final shuffleBtnFinder = find.widgetWithText(ElevatedButton, 'Shuffle');
+    final downloadBtnFinder = find.byTooltip('Download Playlist');
+
+    expect(playBtnFinder, findsOneWidget);
+    expect(shuffleBtnFinder, findsOneWidget);
+    expect(downloadBtnFinder, findsOneWidget);
+
+    final downloadRect = tester.getRect(downloadBtnFinder);
+    expect(downloadRect.right <= 720, isTrue);
+  });
 }

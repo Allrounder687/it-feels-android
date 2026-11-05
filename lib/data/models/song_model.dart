@@ -150,6 +150,28 @@ class Song {
     final cleanArtist = StringUtils.cleanText(artistName);
     final cleanAlbum = StringUtils.cleanText(albumTitle.toString());
 
+    OfflineStatus offStatus = OfflineStatus.none;
+    if (json['offlineStatus'] != null) {
+      if (json['offlineStatus'] is int) {
+        final idx = json['offlineStatus'] as int;
+        if (idx >= 0 && idx < OfflineStatus.values.length) {
+          offStatus = OfflineStatus.values[idx];
+        }
+      } else if (json['offlineStatus'] == 'downloaded' || json['offlineStatus'] == 'OfflineStatus.downloaded') {
+        offStatus = OfflineStatus.downloaded;
+      }
+    } else if (json['localFilePath'] != null && json['localFilePath'].toString().isNotEmpty) {
+      offStatus = OfflineStatus.downloaded;
+    }
+
+    final localPath = json['localFilePath']?.toString();
+    final isFav = json['isFavorite'] == true || json['isFavorite'] == 'true';
+    final pCount = int.tryParse(json['playCount']?.toString() ?? '0') ?? 0;
+    final sCount = int.tryParse(json['skipCount']?.toString() ?? '0') ?? 0;
+    final posMs = int.tryParse(json['playbackPositionMs']?.toString() ?? '');
+    final lastPlayed = json['lastPlayedAt'] != null ? DateTime.tryParse(json['lastPlayedAt'].toString()) : null;
+    final addedDate = json['addedAt'] != null ? DateTime.tryParse(json['addedAt'].toString()) ?? DateTime.now() : DateTime.now();
+
     return Song(
       id: (id.startsWith('saavn:') || id.startsWith('youtube:')) ? id : 'saavn:$id',
       saavnId: saavnId,
@@ -163,7 +185,15 @@ class Song {
       language: json['language']?.toString() ?? (json['more_info'] != null ? json['more_info']['language']?.toString() : null) ?? 'unknown',
       year: int.tryParse(json['year']?.toString() ?? '2024') ?? 2024,
       isExplicit: json['explicit_content'] == '1' || json['explicit_content'] == 1,
-      addedAt: DateTime.now(),
+      genre: json['genre']?.toString() ?? 'Unknown',
+      playCount: pCount,
+      skipCount: sCount,
+      playbackPositionMs: posMs,
+      lastPlayedAt: lastPlayed,
+      addedAt: addedDate,
+      isFavorite: isFav,
+      localFilePath: localPath,
+      offlineStatus: offStatus,
       searchVector: generateSearchVector(cleanTitle, cleanArtist, cleanAlbum),
       isDirty: false,
     );
