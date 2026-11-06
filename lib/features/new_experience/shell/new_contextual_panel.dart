@@ -262,7 +262,9 @@ class _NewContextualPanelState extends ConsumerState<NewContextualPanel> {
     }
 
     return StreamBuilder<Duration>(
-      stream: locator<AudioEngineService>().positionStream,
+      stream: locator.isRegistered<AudioEngineService>()
+          ? locator<AudioEngineService>().positionStream
+          : const Stream.empty(),
       builder: (context, snapshot) {
         final position = snapshot.data ?? Duration.zero;
         final activeIndex = lyricsState.getActiveLineIndex(position);

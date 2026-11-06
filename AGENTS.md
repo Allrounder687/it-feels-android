@@ -13,6 +13,29 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Interactive Synchronized Lyrics, Default Roman English & Player Bar Controls Suite (v3.7.1):**
+  - **Default Roman English (Hinglish) Transliteration**:
+    - Configured `LyricsState.showRomanized` to default to `true`.
+    - Fixed state reset bug by preserving `showRomanized: state.showRomanized` across track changes in `loadLyricsIfNeeded` and `fetchLyrics`.
+    - Added persistent preference in `StorageService` (`getLyricsRomanized` / `saveLyricsRomanized`) loaded during `LyricsNotifier` startup.
+    - Both synchronized lyrics and unsynced static lyrics now render in Roman English phonetics by default with original script subtitles.
+  - **Interactive Synchronized Lyrics Sidebar (`NewContextualPanel`)**:
+    - Added visible "Aa Roman" toggle pill in the contextual panel header with active cyan state and tooltips.
+    - Added Click-to-Seek: tapping any lyric line immediately seeks playback to `line.time`.
+    - Implemented smooth auto-scrolling with `ScrollablePositionedList` maintaining the active line at 35% viewport alignment.
+    - Added active line styling: left cyan accent bar indicator, highlighted typography, and pointer cursor states.
+  - **Desktop Player Bar Restored Controls (`NewDesktopPlayerBar`)**:
+    - Added reactive **Download Button** with offline caching state (`isDownloaded`, `isDownloading` spinner, checkmark, and snackbar feedback).
+    - Added **Share Button** beside download with deep link generation.
+    - Added **Sleep Timer Button** with active cyan indicator opening `SleepTimerSheet`.
+    - Added **Full Player Expand Button** (`Icons.open_in_full_rounded`) opening `NewNowPlayingScreen`.
+  - **Mobile Player Parity (`NewNowPlayingScreen`)**:
+    - Added Download button directly beside the favorite heart in the track title row for Android and iOS.
+    - Added Share button to the bottom utility drawer beside lyrics, sleep timer, and queue.
+  - **Static Analysis & Test Verification**:
+    - `dart analyze lib/ test/` -> **0 issues found (0 warnings, 0 errors, 0 lints)**.
+    - `test/views/lyrics/lyrics_screen_test.dart` and `test/widget/screens/new_experience_shell_test.dart` passed (100% pass rate).
+
 - **Music Intelligence, Dynamic Feed & Recommendation Platform (v3.7.0):**
   - **Phase 0: Forensic Architecture Audit & Migration Plan**:
     - Completed forensic audit across all models, services, repositories, and UI layers.

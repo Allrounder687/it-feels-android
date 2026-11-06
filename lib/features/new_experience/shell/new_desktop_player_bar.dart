@@ -36,10 +36,14 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        final current = ref.read(audioPlayerProvider.notifier).currentVolume;
-        setState(() {
-          _volume = (current / 100.0).clamp(0.0, 1.0);
-        });
+        try {
+          if (locator.isRegistered<AudioEngineService>()) {
+            final current = ref.read(audioPlayerProvider.notifier).currentVolume;
+            setState(() {
+              _volume = (current / 100.0).clamp(0.0, 1.0);
+            });
+          }
+        } catch (_) {}
       }
     });
   }
@@ -295,7 +299,9 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
 
                 // Scrubber Bar
                 StreamBuilder<Duration>(
-                  stream: locator<AudioEngineService>().positionStream,
+                  stream: locator.isRegistered<AudioEngineService>()
+                      ? locator<AudioEngineService>().positionStream
+                      : const Stream.empty(),
                   builder: (context, snapshot) {
                     final position = snapshot.data ?? Duration.zero;
                     final total = Duration(seconds: song.duration);
@@ -410,23 +416,14 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                   },
                 ),
                 const SizedBox(width: 6),
-                IconButton(
-                  tooltip: _volume == 0 ? 'Unmute' : 'Mute',
-                  icon: Icon(
-                    _volume == 0
-                        ? Icons.volume_off_rounded
-                        : _volume < 0.5
-                            ? Icons.volume_down_rounded
-                            : Icons.volume_up_rounded,
-                    color: NewExperienceTokens.textMuted,
-                    size: 20,
-                  ),
-                  onPressed: () async {
-                    final isMuted = await notifier.toggleMute();
-                    setState(() {
-                      _volume = isMuted ? 0.0 : (notifier.currentVolume / 100.0).clamp(0.0, 1.0);
-                    });
-                  },
+                Icon(
+                  _volume == 0
+                      ? Icons.volume_off_rounded
+                      : _volume < 0.5
+                          ? Icons.volume_down_rounded
+                          : Icons.volume_up_rounded,
+                  color: NewExperienceTokens.textMuted,
+                  size: 20,
                 ),
                 SizedBox(
                   width: 85,
@@ -440,12 +437,10 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                       thumbColor: Colors.white,
                     ),
                     child: Slider(
-                      value: _volume.clamp(0.0, 1.0),
-                      min: 0.0,
-                      max: 1.0,
+                      value: _volume,
                       onChanged: (v) {
                         setState(() => _volume = v);
-                        notifier.setVolume(v * 100.0);
+                        notifier.setVolume(v);
                       },
                     ),
                   ),
