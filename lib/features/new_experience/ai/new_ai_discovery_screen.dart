@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
-import 'package:it_feels_music/core/utils/service_locator.dart';
-import 'package:it_feels_music/data/repositories/music_repository.dart';
-import 'package:it_feels_music/core/utils/track_validation_engine.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
+import 'package:it_feels_music/core/intelligence/ai/ai_discovery_orchestrator.dart';
+import 'package:it_feels_music/core/intelligence/taste/taste_profile_service.dart';
 import '../theme/new_experience_tokens.dart';
 import '../theme/new_ambient_canvas.dart';
 import '../widgets/new_action_button.dart';
@@ -42,18 +41,18 @@ class _NewAIDiscoveryScreenState extends ConsumerState<NewAIDiscoveryScreen> {
     });
 
     try {
-      final repo = locator<IMusicRepository>();
-      final songs = await repo.searchSongs(cleanPrompt);
-
-      // Validate and acoustically rank tracks
-      final filtered = songs.where((s) {
-        final result = TrackValidationEngine.evaluate(s, queryContext: cleanPrompt);
-        return result.confidenceScore >= 50;
-      }).toList();
+      final orchestrator = AIDiscoveryOrchestrator();
+      final tasteProfile = TasteProfileService.instance.profile;
+      final result = await orchestrator.discoverAndValidate(
+        prompt: cleanPrompt,
+        profile: tasteProfile,
+        count: 20,
+      );
 
       if (mounted) {
         setState(() {
-          _curatedSongs = filtered.isNotEmpty ? filtered : songs.take(15).toList();
+          _curatedSongs = result.songs;
+          _generatedTitle = result.title;
           _isGenerating = false;
         });
       }

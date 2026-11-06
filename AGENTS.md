@@ -13,6 +13,49 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Music Intelligence, Dynamic Feed & Recommendation Platform (v3.7.0):**
+  - **Phase 0: Forensic Architecture Audit & Migration Plan**:
+    - Completed forensic audit across all models, services, repositories, and UI layers.
+    - Staged `ARCHITECTURE_AUDIT_AND_MIGRATION_PLAN.md` documenting gap analysis, mathematical formulas, 18 feed section types, and zero-disruption migration roadmap.
+  - **Phase 1: Canonical Music Identity & Event Contracts**:
+    - Architected immutable canonical models (`CanonicalTrack`, `CanonicalArtist`, `CanonicalAlbum`, `CanonicalPlaylist`, `ProviderTrackRef`, `PlaybackCandidate`) decoupling ephemeral provider IDs from internal identities.
+    - Developed `MusicIdentityResolver`: multi-vector reconciliation engine linking provider references and deduplicating tracks acoustically via `TrackValidationEngine`.
+    - Standardized 17 typed listening event contracts (`ListeningEvent`) with mathematical engagement weighting (immediate skips -0.35, mid-skips -0.05, late skips +0.40, completion +1.00, likes +2.50, hides -10.00).
+    - Built `ListeningEventBuffer`: offline SQLite/SharedPreferences batching queue with live broadcast streaming.
+  - **Phase 2: Dynamic Home Feed Engine & Caching**:
+    - Created `HomeFeedEngine` supporting 18 generic section types (`quickPicks`, `dailyMix`, `trackList`, `trending`, `playlistCarousel`, `albumCarousel`, `personalizedDiscovery`, etc.) with deterministic priority ordering.
+    - Integrated stale-while-revalidate snapshot caching for instant zero-latency cold starts and offline resilience.
+    - Implemented `homeFeedProvider` and refactored `NewHomeScreen` with pull-to-refresh (`RefreshIndicator`) and reactive category filtering.
+  - **Phase 3: Music Taste Intelligence**:
+    - Developed `UserTasteProfile`: multi-vector taste profile tracking short-term ($t_{1/2} = 21\text{d}$) and long-term ($t_{1/2} = 180\text{d}$) artist and genre affinities, explicit exclusions, and novelty tolerance.
+    - Engineered `TasteDecayEngine` computing exponential time-decay affinity sums: $A_{\text{entity}}(t) = \sum w(e_i) e^{-\lambda (t - t_i)}$.
+    - Built `TasteProfileService` continuously updating profile from event streams and persisting to local storage.
+    - Hooked real-time listening event telemetry into `AudioPlayerNotifier` (`playbackStarted`, `meaningfulPlayback`, `playbackCompleted`, `playbackSkipped`, `trackLiked`, `trackUnliked`).
+  - **Phase 4: Multi-Vector Recommendation Engine**:
+    - Implemented multi-vector recommendation scorer (`RecommendationScorer`):
+      $$\text{Score}(T) = w_a A_{\text{artist}} + w_g A_{\text{genre}} + w_m M_{\text{mood}} + w_r R_{\text{recency}} + w_n N_{\text{novelty}} - P_{\text{repetition}}$$
+    - Created `CandidateGenerator` aggregating from favorites, high-affinity seeds, and repository endpoints.
+    - Developed 11-step `RecommendationPipeline` enforcing quality filtering, exclusion guards, deduplication, scoring, artist diversity caps (<= 2 tracks/artist), and human-readable explanation generation.
+    - Upgraded `AudioPlayerNotifier._fetchAutoplayRecommendations` to route through `RecommendationPipeline`.
+  - **Phase 5: Dynamic Playlist Lifecycle & Versioning**:
+    - Designed versioned dynamic playlist contracts (`DynamicPlaylist`, `PlaylistVersionSnapshot`).
+    - Engineered `PlaylistVersionEngine` with user override preservation: user-added tracks survive scheduled refreshes while user-deleted tracks are permanently excluded from automated re-addition.
+    - Built `DynamicPlaylistService` with scheduled and on-demand generation recipes for Daily Mixes 1–6, Discover Weekly, and Release Radar.
+  - **Phase 6: Queue Intelligence & Endless Discovery**:
+    - Created `QueueIntelligenceService` enforcing strict priority of explicit user queue over automated continuation recommendations.
+    - Integrated request generation tokens (`_generationToken`) to eliminate async race conditions during rapid track skipping.
+  - **Phase 7: AI Discovery Orchestrator**:
+    - Created `AIDiscoveryOrchestrator` extracting structured musical constraints (`genres`, `moods`, `tempo`, `era`, `targetArtists`, `searchKeywords`) from natural-language prompts.
+    - Enforced architectural principle: AI is never the source of truth for metadata or media; all discoveries are validated and resolved against live catalogue repositories via `TrackValidationEngine`.
+    - Integrated into `NewAIDiscoveryScreen`.
+  - **Phase 8: Quality of Life & Taste Profile Editor**:
+    - Created `TasteProfileScreen` (`lib/features/new_experience/settings/taste_profile_screen.dart`): interactive novelty tolerance slider, affinity visualization bars, excluded artists & genres management, and profile reset dialog.
+    - Linked from `NewSettingsScreen` under "MUSIC INTELLIGENCE & TASTE".
+  - **Phase 9: Verification & Rollout**:
+    - Added remote feature flags in `ConfigService` (`dynamic_home_enabled`, `recommendation_engine_enabled`, `endless_playback_enabled`).
+    - `dart analyze lib/ test/` -> **0 issues found (0 warnings, 0 errors, 0 lints)**.
+    - All 8 foundation and intelligence test suites passed: **26/26 tests passed (100% pass rate)**.
+
 - **Next-Generation UI Hardening, Desktop Controls, Lyrics Pipeline & Obsidian Settings (v3.6.38):**
   - **Dynamic Interactive Filter Capsules on Home Screen**:
     - Transformed static category pills into active reactive filters (`All`, `For You`, `Bollywood`, `International`, `Punjabi`, `Acoustic`, `Charts`).

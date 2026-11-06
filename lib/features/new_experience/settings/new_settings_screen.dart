@@ -8,6 +8,7 @@ import 'package:it_feels_music/features/settings/settings_provider.dart';
 import 'package:it_feels_music/features/settings/app_experience_selector_screen.dart';
 import 'package:it_feels_music/features/settings/keyboard_shortcuts_screen.dart';
 import 'package:it_feels_music/features/settings/profile_screen.dart';
+import 'package:it_feels_music/features/new_experience/settings/taste_profile_screen.dart';
 import 'package:it_feels_music/services/download_scanner_service.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import '../theme/new_experience_tokens.dart';
@@ -153,6 +154,56 @@ class NewSettingsScreen extends ConsumerWidget {
                               ),
                             );
                           }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // ── Group: Music Taste & Personalization ──
+                  _buildSectionHeader('MUSIC INTELLIGENCE & TASTE'),
+                  NewGlassContainer(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const TasteProfileScreen()),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: NewExperienceTokens.accentViolet.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.auto_awesome_rounded, color: NewExperienceTokens.accentViolet, size: 20),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Music Taste Profile', style: NewExperienceTokens.sectionTitle(fontSize: 15)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'View learned affinities, tune discovery balance & manage exclusions',
+                                        style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white70),
+                              ],
+                            ),
+                          ),
                         ),
                       ],
                     ),

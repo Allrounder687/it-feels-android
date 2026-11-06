@@ -16,6 +16,9 @@ import 'package:it_feels_music/features/auth/ban_provider.dart';
 import 'package:it_feels_music/features/player/video_player_provider.dart';
 import 'package:it_feels_music/features/subscription/subscription_provider.dart';
 
+// Next-Gen Dynamic Home Feed Provider
+export 'package:it_feels_music/core/intelligence/feed/home_feed_provider.dart';
+
 // -------------------------------------------------------------------------
 // RIVERPOD ARCHITECTURE LAYER - ALL NOTIFIERS & IMMUTABLE STATES
 // -------------------------------------------------------------------------

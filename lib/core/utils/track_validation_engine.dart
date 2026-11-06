@@ -274,22 +274,30 @@ class TrackValidationEngine {
   }
 
   /// Generates a normalized canonical key to deduplicate identical recordings.
-  static String _generateCanonicalKey(Song s) {
-    final cleanT = StringUtils.cleanText(s.title)
+  static String normalizeTrackKey(String title, String artist) {
+    final cleanT = StringUtils.cleanText(title)
         .toLowerCase()
         .replaceAll(RegExp(r'\s*\([^)]*\)'), '')
         .replaceAll(RegExp(r'\s*\[[^\]]*\]'), '')
         .replaceAll(RegExp(r'[^a-z0-9]'), '');
-    final cleanA = StringUtils.cleanText(s.artist)
+    final cleanA = StringUtils.cleanText(artist)
         .toLowerCase()
         .split(',')
         .first
         .split('&')
         .first
+        .split('/')
+        .first
         .replaceAll(RegExp(r'[^a-z0-9]'), '');
     if (cleanT.isEmpty) {
-      return s.id;
+      return '';
     }
     return '${cleanT}_$cleanA';
+  }
+
+  /// Generates a normalized canonical key to deduplicate identical recordings.
+  static String _generateCanonicalKey(Song s) {
+    final key = normalizeTrackKey(s.title, s.artist);
+    return key.isNotEmpty ? key : s.id;
   }
 }

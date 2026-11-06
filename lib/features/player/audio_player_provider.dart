@@ -28,6 +28,10 @@ import 'package:it_feels_music/features/player/palette_extractor_service.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/services/cloud_sync_service.dart';
 import 'package:it_feels_music/features/social/listen_together_service.dart';
+import 'package:it_feels_music/core/intelligence/events/listening_event.dart';
+import 'package:it_feels_music/core/intelligence/events/listening_event_buffer.dart';
+import 'package:it_feels_music/core/intelligence/taste/taste_profile_service.dart';
+import 'package:it_feels_music/core/intelligence/recommendations/recommendation_pipeline.dart';
 
 enum AppThemeMode { dynamic, midnight, burgundy, amoled, materialYou, light, glass }
 
@@ -541,6 +545,15 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
           pos.inSeconds >= 30) {
         state = state.copyWith(hasSentTelemetryForCurrentSong: true);
         BackendApiService.sendTelemetryPlay(state.currentSong!);
+        _recordListeningEvent(
+          ListeningEventType.meaningfulPlayback,
+          state.currentSong!,
+          playedMs: pos.inMilliseconds,
+          totalMs: state.duration.inMilliseconds,
+          completionRatio: state.duration.inMilliseconds > 0
+              ? (pos.inMilliseconds / state.duration.inMilliseconds).clamp(0.0, 1.0)
+              : 0.0,
+        );
       }
 
       // Pre-warm next song stream URL early in playback so transitions are instantaneous
@@ -579,11 +592,45 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     _loadFavorites();
   }
 
+
+  void _recordListeningEvent(
+    ListeningEventType type,
+    Song song, {
+    int playedMs = 0,
+    int totalMs = 0,
+    double completionRatio = 0.0,
+    String? sourceContext,
+  }) {
+    final event = ListeningEvent(
+      eventId: 'evt_${DateTime.now().microsecondsSinceEpoch}',
+      eventType: type,
+      canonicalTrackId: song.id,
+      trackTitle: song.title,
+      artistName: song.artist,
+      genre: song.genre,
+      durationPlayedMs: playedMs,
+      totalDurationMs: totalMs > 0 ? totalMs : (song.duration * 1000),
+      completionRatio: completionRatio,
+      timestamp: DateTime.now(),
+      sourceContext: sourceContext,
+    );
+    ListeningEventBuffer.instance.recordEvent(event);
+  }
+
   bool _isHandlingCompletion = false;
 
   Future<void> _handleTrackCompleted() async {
     if (_isHandlingCompletion) return;
     _isHandlingCompletion = true;
+    if (state.currentSong != null) {
+      _recordListeningEvent(
+        ListeningEventType.playbackCompleted,
+        state.currentSong!,
+        playedMs: state.duration.inMilliseconds,
+        totalMs: state.duration.inMilliseconds,
+        completionRatio: 1.0,
+      );
+    }
 
     try {
       if (state.sleepAfterCurrentTrack) {
@@ -731,6 +778,10 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     triggerHaptic();
     final list = List<Song>.from(state.favoriteSongs);
     final isFav = state.isFavorite(song.id);
+    _recordListeningEvent(
+      isFav ? ListeningEventType.trackUnliked : ListeningEventType.trackLiked,
+      song,
+    );
     
     if (isFav) {
       list.removeWhere((s) => s.id == song.id);
@@ -772,11 +823,21 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       final current = state.currentSong ?? state.queue.last;
       final recommendations = await locator<IMusicRepository>().getRecommendedSongs(current);
       if (recommendations.isNotEmpty) {
-        final newSongs = recommendations
+        final profile = TasteProfileService.instance.profile;
+        final pipeline = RecommendationPipeline();
+        final scored = pipeline.processCandidates(
+          candidates: recommendations,
+          profile: profile,
+          targetCount: 15,
+        );
+
+        final newSongs = scored
+            .map((s) => s.song)
             .where((s) => !state.queue.any((q) => q.id == s.id))
             .toList();
+
         if (newSongs.isNotEmpty) {
-          final updatedQ = List<Song>.from(state.queue)..addAll(newSongs.take(15));
+          final updatedQ = List<Song>.from(state.queue)..addAll(newSongs);
           state = state.copyWith(queue: updatedQ);
           _saveMemory();
         }

@@ -45,41 +45,11 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
 
   void _onSelectFilter(String filter) {
     setState(() => _activeFilter = filter);
-    final homeNotifier = ref.read(homeProvider.notifier);
-    final homeState = ref.read(homeProvider);
-
-    switch (filter) {
-      case 'Bollywood':
-        if (homeState.bollywoodSongs.isEmpty) {
-          homeNotifier.fetchBollywoodSongs();
-        }
-        break;
-      case 'International':
-        if (homeState.hollywoodSongs.isEmpty) {
-          homeNotifier.fetchHollywoodSongs();
-        }
-        break;
-      case 'Punjabi':
-        if (homeState.punjabiSongs.isEmpty) {
-          homeNotifier.fetchPunjabiSongs();
-        }
-        break;
-      case 'Charts':
-        if (homeState.chartPlaylists.isEmpty) {
-          homeNotifier.fetchCharts();
-        }
-        break;
-      case 'For You':
-        if (homeState.youPlaylists.isEmpty) {
-          final history = ref.read(listeningHistoryProvider);
-          homeNotifier.fetchYouSongs(history.recentlyPlayed.map((s) => s.artist).toSet().toList());
-        }
-        break;
-    }
+    ref.read(homeFeedProvider.notifier).setFilter(filter);
   }
 
   String _getMixCover(int index, HomeState homeState) {
-    final mixId = 'daily_mix_';
+    final mixId = 'daily_mix_${index + 1}';
     for (final p in homeState.youPlaylists) {
       if (p.id == mixId && p.coverArt.isNotEmpty) {
         return p.coverArt;
@@ -120,8 +90,12 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
         backgroundColor: Colors.transparent,
         body: SafeArea(
           bottom: false,
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
+          child: RefreshIndicator(
+            color: NewExperienceTokens.accentViolet,
+            backgroundColor: NewExperienceTokens.midnightSurface,
+            onRefresh: () => ref.read(homeFeedProvider.notifier).refresh(),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
             slivers: [
               // ── Header Bar ──
               SliverToBoxAdapter(
@@ -311,7 +285,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                           width: 154,
                           onTap: () {
                             final playlist = Playlist(
-                              id: 'daily_mix_',
+                              id: 'daily_mix_${index + 1}',
                               title: mix['title'] as String,
                               subtitle: mix['subtitle'] as String,
                               image: cover,
@@ -664,6 +638,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
               // Bottom clearance so content never collides with docked playback bar
               const SliverToBoxAdapter(child: SizedBox(height: 120)),
             ],
+            ),
           ),
         ),
       ),

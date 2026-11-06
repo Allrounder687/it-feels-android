@@ -11,6 +11,9 @@ class AppConfig {
   final String? releaseNotes;
   final String? iosUpdateUrl;
   final String? windowsUpdateUrl;
+  final bool dynamicHomeEnabled;
+  final bool recommendationEngineEnabled;
+  final bool endlessPlaybackEnabled;
 
   AppConfig({
     required this.minVersion,
@@ -20,6 +23,9 @@ class AppConfig {
     this.releaseNotes,
     this.iosUpdateUrl,
     this.windowsUpdateUrl,
+    this.dynamicHomeEnabled = true,
+    this.recommendationEngineEnabled = true,
+    this.endlessPlaybackEnabled = true,
   });
 
   factory AppConfig.fromMap(Map<String, dynamic> data) {
@@ -31,11 +37,18 @@ class AppConfig {
       releaseNotes: data['release_notes'],
       iosUpdateUrl: data['ios_update_url'],
       windowsUpdateUrl: data['windows_update_url'],
+      dynamicHomeEnabled: data['dynamic_home_enabled'] ?? true,
+      recommendationEngineEnabled: data['recommendation_engine_enabled'] ?? true,
+      endlessPlaybackEnabled: data['endless_playback_enabled'] ?? true,
     );
   }
 }
 
 class ConfigService {
+  static bool dynamicHomeEnabled = true;
+  static bool recommendationEngineEnabled = true;
+  static bool endlessPlaybackEnabled = true;
+
   @visibleForTesting
   static FirebaseFirestore? customFirestore;
 
@@ -57,7 +70,11 @@ class ConfigService {
             .timeout(const Duration(seconds: 5));
         
         if (doc.exists && doc.data() != null) {
-          return AppConfig.fromMap(doc.data()!);
+          final cfg = AppConfig.fromMap(doc.data()!);
+          dynamicHomeEnabled = cfg.dynamicHomeEnabled;
+          recommendationEngineEnabled = cfg.recommendationEngineEnabled;
+          endlessPlaybackEnabled = cfg.endlessPlaybackEnabled;
+          return cfg;
         } else {
           // If the document doesn't exist, it means no forced updates are configured for this platform.
           return AppConfig(
