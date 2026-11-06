@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -307,7 +308,6 @@ class AppExperienceSelectorScreen extends ConsumerWidget {
                     onPressed: () {
                       HapticFeedback.mediumImpact();
                       ref.read(appExperienceProvider.notifier).setExperience(experience);
-                      // Also sync legacy SettingsNotifier if needed
                       final legacyMode = experience == AppExperience.newExperience
                           ? UiExperienceMode.appleNeo
                           : UiExperienceMode.classic;
@@ -316,7 +316,7 @@ class AppExperienceSelectorScreen extends ConsumerWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'Switched to ${experience.displayName}. Playback continues uninterrupted.',
+                            'Switched to . Returning to Home...',
                             style: GoogleFonts.inter(fontWeight: FontWeight.w600),
                           ),
                           backgroundColor: tagColor.withValues(alpha: 0.95),
@@ -324,6 +324,16 @@ class AppExperienceSelectorScreen extends ConsumerWidget {
                           duration: const Duration(seconds: 2),
                         ),
                       );
+
+                      // Automatically navigate user back to Home screen of the selected experience
+                      Future.microtask(() {
+                        if (context.mounted) {
+                          Navigator.of(context).popUntil((route) => route.isFirst);
+                          try {
+                            context.go('/home');
+                          } catch (_) {}
+                        }
+                      });
                     },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,

@@ -222,17 +222,21 @@ Future<void> main(List<String> args) async {
   );
 
   if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
-    await hotKeyManager.unregisterAll();
-    
-    // Ctrl+Space: Raycast Search
-    await hotKeyManager.register(
-      HotKey(key: LogicalKeyboardKey.space, modifiers: [HotKeyModifier.control], scope: HotKeyScope.system),
-      keyDownHandler: (HotKey hotKey) async {
-        await windowManager.show();
-        await windowManager.focus();
-        appRouter.push('/raycast');
-      },
-    );
+    try {
+      await hotKeyManager.unregisterAll();
+      
+      // Ctrl+Space: Raycast Search
+      await hotKeyManager.register(
+        HotKey(key: LogicalKeyboardKey.space, modifiers: [HotKeyModifier.control], scope: HotKeyScope.system),
+        keyDownHandler: (HotKey hotKey) async {
+          await windowManager.show();
+          await windowManager.focus();
+          appRouter.push('/raycast');
+        },
+      );
+    } catch (e) {
+      debugPrint('[hotKeyManager] Raycast registration error: ');
+    }
 
     // Initialize custom keyboard controls & Windows overlap detection
     await KeyboardShortcutService().initialize();

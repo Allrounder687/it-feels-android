@@ -2,10 +2,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:it_feels_music/core/models/keyboard_shortcut_models.dart';
 import 'package:it_feels_music/core/router/app_router.dart';
-import 'package:it_feels_music/core/utils/windows_shortcut_detector.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/main.dart';
 import 'package:it_feels_music/services/storage_service.dart';
@@ -216,49 +214,11 @@ class KeyboardShortcutService extends ChangeNotifier {
   }
 
   Future<void> _syncSystemGlobalHotkeys() async {
-    if (kIsWeb) return;
-    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
-    try {
-      await hotKeyManager.unregisterAll();
-
-      // Register background global hotkeys for primary actions if they have modifiers
-      for (final entry in _bindings.entries) {
-        final action = entry.key;
-        final combo = entry.value;
-
-        // Only register global OS hotkeys if modifiers are present to prevent capturing generic keys globally
-        if (!combo.hasModifiers) continue;
-
-        // Skip dangerous combinations like Alt+F4 or Win+L
-        final conflict = WindowsShortcutDetector.checkConflict(combo, currentAction: action);
-        if (conflict.severity == ConflictSeverity.critical) continue;
-
-        final hotKeyModifiers = <HotKeyModifier>[];
-        if (combo.alt) hotKeyModifiers.add(HotKeyModifier.alt);
-        if (combo.ctrl) hotKeyModifiers.add(HotKeyModifier.control);
-        if (combo.shift) hotKeyModifiers.add(HotKeyModifier.shift);
-        if (combo.meta) hotKeyModifiers.add(HotKeyModifier.meta);
-
-        if (hotKeyModifiers.isEmpty) continue;
-
-        try {
-          await hotKeyManager.register(
-            HotKey(
-              key: combo.logicalKey,
-              modifiers: hotKeyModifiers,
-              scope: HotKeyScope.system,
-            ),
-            keyDownHandler: (HotKey hotKey) async {
-              await executeAction(action);
-            },
-          );
-        } catch (e) {
-          debugPrint('[KeyboardShortcutService] Could not register OS hotkey for ${action.id}: $e');
-        }
-      }
-    } catch (e) {
-      debugPrint('[KeyboardShortcutService] System hotkey sync error: $e');
-    }
+    // In-app keyboard shortcuts are fully handled via HardwareKeyboard.instance.addHandler
+    // which operates cross-platform without native hotkey_manager plugin crashes.
+    // Background OS hotkey registration is bypassed to prevent hotkey_manager_windows_plugin.dll
+    // 0xc0000409 buffer overrun crashes on Windows 10/11.
+    return;
   }
 
   @override

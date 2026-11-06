@@ -56,7 +56,14 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _currentIndex != 0) {
+          _onSelectTab(0);
+        }
+      },
+      child: LayoutBuilder(
       builder: (context, constraints) {
         final isDesktop = constraints.maxWidth >= NewExperienceTokens.breakpointMedium;
         final isMobile = constraints.maxWidth < NewExperienceTokens.breakpointCompact;
@@ -72,6 +79,7 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
         // Tablet / Mobile Landscape layout
         return _buildTabletLandscapeLayout();
       },
+    ),
     );
   }
 
@@ -225,7 +233,7 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
         return const NewSpotifyImportScreen();
       case 6:
       default:
-        return const SettingsScreen();
+        return SettingsScreen(onNavigateHome: () => _onSelectTab(0));
     }
   }
 }

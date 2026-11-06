@@ -824,7 +824,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     if (scrollInfo.metrics.axis == Axis.vertical &&
                         scrollInfo.metrics.pixels >=
                             scrollInfo.metrics.maxScrollExtent - 500) {
-                      ref.read(homeProvider.notifier).loadMoreFeed();
+                      Future.microtask(() {
+                        if (mounted) {
+                          ref.read(homeProvider.notifier).loadMoreFeed();
+                        }
+                      });
                     }
                     return false;
                   },

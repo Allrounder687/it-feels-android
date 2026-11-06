@@ -33,7 +33,8 @@ import 'package:it_feels_music/core/appearance/app_experience_provider.dart';
 import 'package:it_feels_music/features/settings/app_experience_selector_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({super.key});
+  final VoidCallback? onNavigateHome;
+  const SettingsScreen({super.key, this.onNavigateHome});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -51,12 +52,19 @@ class SettingsScreen extends ConsumerWidget {
             : (isDesktop ? const DragToMoveArea(child: SizedBox.expand()) : null),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: context.canPop()
-            ? IconButton(
-                icon: Icon(Icons.arrow_back, color: context.themeTextColor),
-                onPressed: () => context.pop(),
-              )
-            : null,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: context.themeTextColor),
+          tooltip: 'Back to Home',
+          onPressed: () {
+            if (onNavigateHome != null) {
+              onNavigateHome!();
+            } else if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
+        ),
         title: Text(
           "Settings",
           style: GoogleFonts.outfit(
