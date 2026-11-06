@@ -38,88 +38,101 @@ class NewDesktopSidebar extends StatelessWidget {
         child: Column(
           children: [
             // Header / App Logo
+            // Header / App Logo
             Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: isCollapsed ? 12 : 16,
                 vertical: 20,
               ),
-              child: Row(
-                mainAxisAlignment:
-                    isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: const LinearGradient(
-                              colors: [
-                                NewExperienceTokens.accentViolet,
-                                NewExperienceTokens.accentCyan,
-                              ],
+              child: isCollapsed
+                  ? InkWell(
+                      onTap: onToggleCollapse,
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [
+                              NewExperienceTokens.accentViolet,
+                              NewExperienceTokens.accentCyan,
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: NewExperienceTokens.accentViolet.withValues(alpha: 0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: NewExperienceTokens.accentViolet.withValues(alpha: 0.3),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Icon(Icons.headphones_rounded, color: Colors.white, size: 20),
+                        ),
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      NewExperienceTokens.accentViolet,
+                                      NewExperienceTokens.accentCyan,
+                                    ],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: NewExperienceTokens.accentViolet.withValues(alpha: 0.3),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Icon(Icons.headphones_rounded, color: Colors.white, size: 20),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Flexible(
+                                child: Text(
+                                  'IT FEELS',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.5,
+                                    color: NewExperienceTokens.textPrimary,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                          child: const Center(
-                            child: Icon(Icons.headphones_rounded, color: Colors.white, size: 20),
-                          ),
                         ),
-                        if (!isCollapsed) ...[
-                          const SizedBox(width: 10),
-                          Flexible(
-                            child: Text(
-                              'IT FEELS',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.outfit(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 1.5,
-                                color: NewExperienceTokens.textPrimary,
-                              ),
-                            ),
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          icon: const Icon(
+                            Icons.menu_open_rounded,
+                            color: NewExperienceTokens.textMuted,
+                            size: 20,
                           ),
-                        ],
+                          splashRadius: 16,
+                          onPressed: onToggleCollapse,
+                        ),
                       ],
                     ),
-                  ),
-                  if (!isCollapsed)
-                    IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                      icon: const Icon(
-                        Icons.menu_open_rounded,
-                        color: NewExperienceTokens.textMuted,
-                        size: 20,
-                      ),
-                      splashRadius: 16,
-                      onPressed: onToggleCollapse,
-                    ),
-                ],
-              ),
             ),
-
-            if (isCollapsed)
-              IconButton(
-                icon: const Icon(
-                  Icons.menu_rounded,
-                  color: NewExperienceTokens.textMuted,
-                  size: 20,
-                ),
-                splashRadius: 18,
-                onPressed: onToggleCollapse,
-              ),
-
             const SizedBox(height: 12),
 
             // Navigation Items
@@ -304,36 +317,43 @@ class NewDesktopSidebar extends StatelessWidget {
                     : Colors.transparent,
               ),
             ),
-            child: Row(
-              mainAxisAlignment:
-                  isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
-              children: [
-                Icon(
-                  icon,
-                  size: 20,
-                  color: isSelected
-                      ? NewExperienceTokens.accentViolet
-                      : NewExperienceTokens.textSecondary,
-                ),
-                if (!isCollapsed) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: NewExperienceTokens.bodyMedium(
-                        color: isSelected
-                            ? NewExperienceTokens.textPrimary
-                            : NewExperienceTokens.textSecondary,
-                      ).copyWith(
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                      ),
+            child: isCollapsed
+                ? Center(
+                    child: Icon(
+                      icon,
+                      size: 20,
+                      color: isSelected
+                          ? NewExperienceTokens.accentViolet
+                          : NewExperienceTokens.textSecondary,
                     ),
+                  )
+                : Row(
+                    children: [
+                      Icon(
+                        icon,
+                        size: 20,
+                        color: isSelected
+                            ? NewExperienceTokens.accentViolet
+                            : NewExperienceTokens.textSecondary,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: NewExperienceTokens.bodyMedium(
+                            color: isSelected
+                                ? NewExperienceTokens.textPrimary
+                                : NewExperienceTokens.textSecondary,
+                          ).copyWith(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ],
-            ),
+
           ),
         ),
       ),

@@ -6,6 +6,7 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/lyrics_service.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/services/translation_service.dart';
 import 'dart:async';
 
@@ -109,7 +110,7 @@ class LyricsNotifier extends Notifier<LyricsState> {
 
   @override
   LyricsState build() {
-    _lyricsService = LyricsService();
+    _lyricsService = locator<LyricsService>();
     final engine = locator<AudioEngineService>();
     engine.positionStream.listen((position) {
       if (state.lyricsResult != null && state.lyricsResult!.hasSynced) {
@@ -120,6 +121,21 @@ class LyricsNotifier extends Notifier<LyricsState> {
         }
       }
     });
+
+    ref.listen<Song?>(
+      audioPlayerProvider.select((p) => p.currentSong),
+      (prev, next) {
+        if (next != null && next.id != state.loadedSongId) {
+          loadLyricsIfNeeded(next);
+        }
+      },
+    );
+
+    final current = ref.read(audioPlayerProvider).currentSong;
+    if (current != null) {
+      Future.microtask(() => loadLyricsIfNeeded(current));
+    }
+
     return const LyricsState();
   }
 

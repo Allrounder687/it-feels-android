@@ -392,15 +392,16 @@ class _NewSearchScreenState extends ConsumerState<NewSearchScreen> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 220,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 1.75,
+            childAspectRatio: 2.1,
           ),
           itemCount: _genreBrowseCards.length,
           itemBuilder: (context, index) {
             final card = _genreBrowseCards[index];
+            final gradientColors = card['gradient'] as List<Color>;
             return InkWell(
               onTap: () {
                 _searchController.text = card['query'] as String;
@@ -410,39 +411,52 @@ class _NewSearchScreenState extends ConsumerState<NewSearchScreen> {
               child: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: card['gradient'] as List<Color>,
+                    colors: [
+                      gradientColors.first,
+                      gradientColors.last.withValues(alpha: 0.7),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(NewExperienceTokens.radiusMedium),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    width: 1,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: (card['gradient'] as List<Color>).first.withValues(alpha: 0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      color: gradientColors.first.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 child: Stack(
+                  clipBehavior: Clip.antiAlias,
                   children: [
                     Align(
                       alignment: Alignment.topLeft,
                       child: Text(
                         card['title'] as String,
                         style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.2,
                           color: Colors.white,
                         ),
                       ),
                     ),
-                    Align(
-                      alignment: Alignment.bottomRight,
-                      child: Icon(
-                        card['icon'] as IconData,
-                        color: Colors.white.withValues(alpha: 0.8),
-                        size: 28,
+                    Positioned(
+                      right: -4,
+                      bottom: -4,
+                      child: Transform.rotate(
+                        angle: -0.15,
+                        child: Icon(
+                          card['icon'] as IconData,
+                          color: Colors.white.withValues(alpha: 0.4),
+                          size: 32,
+                        ),
                       ),
                     ),
                   ],

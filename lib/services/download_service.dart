@@ -110,11 +110,13 @@ class DownloadService {
         duration: song.duration,
       );
       if (lyricsData != null) {
-        if (lyricsData['synced'] != null && lyricsData['synced'].toString().trim().isNotEmpty) {
-          syncedLyrics = lyricsData['synced'].toString().trim();
+        final rawSynced = lyricsData['syncedLyrics'] ?? lyricsData['synced'] ?? lyricsData['lrc'];
+        if (rawSynced != null && rawSynced.toString().trim().isNotEmpty) {
+          syncedLyrics = rawSynced.toString().trim();
         }
-        if (lyricsData['plain'] != null && lyricsData['plain'].toString().trim().isNotEmpty) {
-          plainLyrics = lyricsData['plain'].toString().trim();
+        final rawPlain = lyricsData['plainLyrics'] ?? lyricsData['plain'] ?? lyricsData['lyrics'];
+        if (rawPlain != null && rawPlain.toString().trim().isNotEmpty) {
+          plainLyrics = rawPlain.toString().trim();
         }
       }
     } catch (e) {

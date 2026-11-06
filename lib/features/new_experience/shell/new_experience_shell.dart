@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
-import 'package:it_feels_music/features/settings/settings_screen.dart';
+import 'new_desktop_title_bar.dart';
+import '../settings/new_settings_screen.dart';
 import '../theme/new_experience_tokens.dart';
 import '../home/new_home_screen.dart';
 import '../search/new_search_screen.dart';
@@ -88,6 +89,7 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
       backgroundColor: NewExperienceTokens.obsidianBackground,
       body: Column(
         children: [
+          const NewDesktopTitleBar(),
           Expanded(
             child: Row(
               children: [
@@ -152,6 +154,7 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
       backgroundColor: NewExperienceTokens.obsidianBackground,
       body: Column(
         children: [
+          const NewDesktopTitleBar(),
           Expanded(
             child: Row(
               children: [
@@ -233,7 +236,7 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
         return const NewSpotifyImportScreen();
       case 6:
       default:
-        return SettingsScreen(onNavigateHome: () => _onSelectTab(0));
+        return NewSettingsScreen(onNavigateHome: () => _onSelectTab(0));
     }
   }
 }

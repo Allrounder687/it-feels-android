@@ -133,13 +133,37 @@ class _NewContextualPanelState extends ConsumerState<NewContextualPanel> {
     }
 
     final lines = lyricsState.lyricsResult?.syncedLyrics ?? [];
+    final staticText = lyricsState.lyricsResult?.staticLyrics;
+
     if (lines.isEmpty) {
+      if (staticText != null && staticText.trim().isNotEmpty) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Text(
+            staticText,
+            style: NewExperienceTokens.bodyMedium(
+              color: NewExperienceTokens.textSecondary,
+            ).copyWith(height: 1.6),
+          ),
+        );
+      }
       return Center(
-        child: Text(
-          lyricsState.lyricsNotFound
-              ? 'No lyrics found for this track'
-              : 'No synchronized lyrics available',
-          style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.lyrics_outlined, size: 36, color: NewExperienceTokens.textMuted),
+              const SizedBox(height: 8),
+              Text(
+                lyricsState.lyricsNotFound
+                    ? 'No lyrics found for this track'
+                    : 'Searching for lyrics...',
+                textAlign: TextAlign.center,
+                style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+              ),
+            ],
+          ),
         ),
       );
     }

@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:it_feels_music/data/models/song_model.dart';
-import 'package:it_feels_music/features/settings/profile_screen.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/features/home/home_provider.dart';
+import 'package:it_feels_music/features/settings/profile_screen.dart';
 import '../theme/new_experience_tokens.dart';
 import '../theme/new_ambient_canvas.dart';
-import '../widgets/new_card.dart';
 import '../widgets/new_section_header.dart';
+import '../widgets/new_card.dart';
+import '../widgets/new_media_tile.dart';
 import '../playlist/new_playlist_detail_screen.dart';
 
 class NewHomeScreen extends ConsumerStatefulWidget {
-  final VoidCallback? onOpenFullPlayer;
+  final VoidCallback onOpenFullPlayer;
 
-  const NewHomeScreen({super.key, this.onOpenFullPlayer});
+  const NewHomeScreen({
+    super.key,
+    required this.onOpenFullPlayer,
+  });
 
   @override
   ConsumerState<NewHomeScreen> createState() => _NewHomeScreenState();
@@ -33,10 +38,73 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 5) return 'Late Night Vibe';
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  void _onSelectFilter(String filter) {
+    setState(() => _activeFilter = filter);
+    final homeNotifier = ref.read(homeProvider.notifier);
+    final homeState = ref.read(homeProvider);
+
+    switch (filter) {
+      case 'Bollywood':
+        if (homeState.bollywoodSongs.isEmpty) {
+          homeNotifier.fetchBollywoodSongs();
+        }
+        break;
+      case 'International':
+        if (homeState.hollywoodSongs.isEmpty) {
+          homeNotifier.fetchHollywoodSongs();
+        }
+        break;
+      case 'Punjabi':
+        if (homeState.punjabiSongs.isEmpty) {
+          homeNotifier.fetchPunjabiSongs();
+        }
+        break;
+      case 'Charts':
+        if (homeState.chartPlaylists.isEmpty) {
+          homeNotifier.fetchCharts();
+        }
+        break;
+      case 'For You':
+        if (homeState.youPlaylists.isEmpty) {
+          final history = ref.read(listeningHistoryProvider);
+          homeNotifier.fetchYouSongs(history.recentlyPlayed.map((s) => s.artist).toSet().toList());
+        }
+        break;
+    }
+  }
+
+  String _getMixCover(int index, HomeState homeState) {
+    final mixId = 'daily_mix_';
+    for (final p in homeState.youPlaylists) {
+      if (p.id == mixId && p.coverArt.isNotEmpty) {
+        return p.coverArt;
+      }
+    }
+    switch (index) {
+      case 0:
+        if (homeState.bollywoodSongs.isNotEmpty) return homeState.bollywoodSongs.first.coverArt;
+        if (homeState.trendingSongs.isNotEmpty) return homeState.trendingSongs.first.coverArt;
+        return 'https://c.saavncdn.com/152/Arijit-Singh-Broken-Heart-Hindi-2022-20220422171542-500x500.jpg';
+      case 1:
+        if (homeState.hollywoodSongs.isNotEmpty) return homeState.hollywoodSongs.first.coverArt;
+        return 'https://c.saavncdn.com/830/Starboy-English-2016-500x500.jpg';
+      case 2:
+        if (homeState.punjabiSongs.isNotEmpty) return homeState.punjabiSongs.first.coverArt;
+        return 'https://c.saavncdn.com/269/Ghost-Punjabi-2023-20230929054714-500x500.jpg';
+      case 3:
+        return 'https://c.saavncdn.com/568/Kohinoor-Hindi-2019-20191008064504-500x500.jpg';
+      case 4:
+        return 'https://c.saavncdn.com/131/Alag-Aasman-Hindi-2020-20200730073539-500x500.jpg';
+      case 5:
+        return 'https://c.saavncdn.com/712/Badshah-Greatest-Hits-Hindi-2022-20220317053036-500x500.jpg';
+      default:
+        return '';
+    }
   }
 
   @override
@@ -44,11 +112,10 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
     final homeState = ref.watch(homeProvider);
     final historyState = ref.watch(listeningHistoryProvider);
     final playerNotifier = ref.read(audioPlayerProvider.notifier);
-    final authState = ref.watch(authProvider);
-    final user = authState.currentUser;
+    final user = ref.watch(authProvider).currentUser;
 
     return NewAmbientCanvas(
-      intensity: 0.38,
+      intensity: 0.45,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
@@ -56,10 +123,10 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // ── Header / Editorial Greeting ──
+              // ── Header Bar ──
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 20, right: 20, top: 18, bottom: 8),
+                  padding: const EdgeInsets.only(left: 20, right: 20, top: 18, bottom: 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -138,7 +205,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                       final isSelected = _activeFilter == filter;
 
                       return InkWell(
-                        onTap: () => setState(() => _activeFilter = filter),
+                        onTap: () => _onSelectFilter(filter),
                         borderRadius: BorderRadius.circular(20),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
@@ -173,8 +240,9 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
 
               const SliverToBoxAdapter(child: SizedBox(height: 12)),
 
-              // ── Section 1: Recently Played / Jump Back In ──
-              if (historyState.recentlyPlayed.isNotEmpty) ...[
+              // ── Section: Recently Played / Jump Back In ──
+              if ((_activeFilter == 'All' || _activeFilter == 'For You') &&
+                  historyState.recentlyPlayed.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -211,59 +279,259 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
               ],
 
-              // ── Section 2: Made For You / Daily Mixes 1-6 ──
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: NewSectionHeader(
-                    title: 'Made For You',
-                    eyebrow: 'DAILY CLUSTERS',
-                    onAction: () {},
+              // ── Section: Made For You / Daily Mixes 1-6 ──
+              if (_activeFilter == 'All' || _activeFilter == 'For You') ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Made For You',
+                      eyebrow: 'DAILY CLUSTERS',
+                      onAction: () {},
+                    ),
                   ),
                 ),
-              ),
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 228,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    itemCount: _dailyMixes.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 14),
-                    itemBuilder: (context, index) {
-                      final mix = _dailyMixes[index];
-                      return NewCard(
-                        title: mix['title'] as String,
-                        subtitle: mix['subtitle'] as String,
-                        imageUrl: mix['imageUrl'] as String?,
-                        badgeText: 'MIX ${index + 1}',
-                        width: 154,
-                        onTap: () {
-                          // Navigate to playlist detail
-                          final playlist = Playlist(
-                            id: 'daily_mix_${index + 1}',
-                            title: mix['title'] as String,
-                            subtitle: mix['subtitle'] as String,
-                            image: mix['imageUrl'] as String? ?? '',
-                            songCount: 20,
-                          );
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => NewPlaylistDetailScreen(playlist: playlist),
-                            ),
-                          );
-                        },
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 228,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: _dailyMixes.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final mix = _dailyMixes[index];
+                        final cover = _getMixCover(index, homeState);
+                        return NewCard(
+                          title: mix['title'] as String,
+                          subtitle: mix['subtitle'] as String,
+                          imageUrl: cover.isNotEmpty ? cover : null,
+                          badgeText: 'MIX ',
+                          width: 154,
+                          onTap: () {
+                            final playlist = Playlist(
+                              id: 'daily_mix_',
+                              title: mix['title'] as String,
+                              subtitle: mix['subtitle'] as String,
+                              image: cover,
+                              songCount: 20,
+                            );
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => NewPlaylistDetailScreen(playlist: playlist),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
+              // ── Section: For You Tracks ──
+              if (_activeFilter == 'For You' && homeState.youSongs.isNotEmpty) ...[
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Recommended For You',
+                      eyebrow: 'PERSONALIZED PICKS',
+                    ),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final song = homeState.youSongs[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: NewMediaTile(
+                          song: song,
+                          index: index,
+                          onTap: () => playerNotifier.playSong(
+                            song,
+                            queue: homeState.youSongs,
+                            index: index,
+                          ),
+                        ),
                       );
                     },
+                    childCount: homeState.youSongs.take(20).length,
                   ),
                 ),
-              ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
 
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              // ── Section: Bollywood Hits (Filtered or All) ──
+              if ((_activeFilter == 'All' || _activeFilter == 'Bollywood') &&
+                  homeState.bollywoodSongs.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Bollywood Hits',
+                      eyebrow: 'DESI FAVORITES',
+                      onAction: () {},
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 220,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: homeState.bollywoodSongs.take(15).length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final song = homeState.bollywoodSongs[index];
+                        return NewCard(
+                          title: song.title,
+                          subtitle: song.artist,
+                          imageUrl: song.image,
+                          width: 148,
+                          onTap: () => playerNotifier.playSong(song),
+                          onPlay: () => playerNotifier.playSong(song),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
 
-              // ── Section 3: Trending Now & Fresh Releases ──
-              if (homeState.trendingSongs.isNotEmpty) ...[
+              // ── Section: Pop & International Hits ──
+              if ((_activeFilter == 'All' || _activeFilter == 'International') &&
+                  homeState.hollywoodSongs.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Pop & Global Hits',
+                      eyebrow: 'INTERNATIONAL',
+                      onAction: () {},
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 220,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: homeState.hollywoodSongs.take(15).length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final song = homeState.hollywoodSongs[index];
+                        return NewCard(
+                          title: song.title,
+                          subtitle: song.artist,
+                          imageUrl: song.image,
+                          width: 148,
+                          onTap: () => playerNotifier.playSong(song),
+                          onPlay: () => playerNotifier.playSong(song),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
+              // ── Section: Punjabi Beats ──
+              if ((_activeFilter == 'All' || _activeFilter == 'Punjabi') &&
+                  homeState.punjabiSongs.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Punjabi Beats',
+                      eyebrow: 'HIGH ENERGY',
+                      onAction: () {},
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 220,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: homeState.punjabiSongs.take(15).length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final song = homeState.punjabiSongs[index];
+                        return NewCard(
+                          title: song.title,
+                          subtitle: song.artist,
+                          imageUrl: song.image,
+                          width: 148,
+                          onTap: () => playerNotifier.playSong(song),
+                          onPlay: () => playerNotifier.playSong(song),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
+              // ── Section: Charts (When Filtered or In All) ──
+              if ((_activeFilter == 'All' || _activeFilter == 'Charts') &&
+                  homeState.chartPlaylists.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Global Charts',
+                      eyebrow: 'TOP RANKINGS',
+                      onAction: () {},
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 228,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: homeState.chartPlaylists.take(15).length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final chart = homeState.chartPlaylists[index];
+                        final sub = chart.songCount > 0
+                            ? '${chart.songCount} Tracks'
+                            : (chart.customSubtitle ?? 'Official Chart');
+                        return NewCard(
+                          title: chart.title,
+                          subtitle: sub,
+                          imageUrl: chart.image,
+                          width: 154,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => NewPlaylistDetailScreen(playlist: chart),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
+              // ── Section: Trending Hits ──
+              if ((_activeFilter == 'All' || _activeFilter == 'Charts') &&
+                  homeState.trendingSongs.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -289,7 +557,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                           title: song.title,
                           subtitle: song.artist,
                           imageUrl: song.image,
-                          badgeText: '#${index + 1}',
+                          badgeText: '#',
                           width: 148,
                           onTap: () => playerNotifier.playSong(song),
                           onPlay: () => playerNotifier.playSong(song),
@@ -301,8 +569,8 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
               ],
 
-              // ── Section 4: Curated Playlists ──
-              if (homeState.topPlaylists.isNotEmpty) ...[
+              // ── Section: Curated Playlists ──
+              if (_activeFilter == 'All' && homeState.topPlaylists.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -324,16 +592,18 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                       separatorBuilder: (_, _) => const SizedBox(width: 14),
                       itemBuilder: (context, index) {
                         final playlist = homeState.topPlaylists[index];
+                        final sub = playlist.songCount > 0
+                            ? '${playlist.songCount} Tracks'
+                            : (playlist.customSubtitle ?? 'Curated Playlist');
                         return NewCard(
                           title: playlist.title,
-                          subtitle: '${playlist.songCount} Tracks',
+                          subtitle: sub,
                           imageUrl: playlist.image,
                           width: 154,
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    NewPlaylistDetailScreen(playlist: playlist),
+                                builder: (context) => NewPlaylistDetailScreen(playlist: playlist),
                               ),
                             );
                           },
@@ -345,8 +615,8 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
               ],
 
-              // ── Section 5: Essential Albums ──
-              if (homeState.topAlbums.isNotEmpty) ...[
+              // ── Section: Essential Albums ──
+              if (_activeFilter == 'All' && homeState.topAlbums.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -368,16 +638,18 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                       separatorBuilder: (_, _) => const SizedBox(width: 14),
                       itemBuilder: (context, index) {
                         final album = homeState.topAlbums[index];
+                        final sub = album.songCount > 0
+                            ? '${album.songCount} Tracks'
+                            : (album.customSubtitle ?? 'Masterpiece Album');
                         return NewCard(
                           title: album.title,
-                          subtitle: album.subtitle,
+                          subtitle: sub,
                           imageUrl: album.image,
                           width: 154,
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    NewPlaylistDetailScreen(playlist: album),
+                                builder: (context) => NewPlaylistDetailScreen(playlist: album),
                               ),
                             );
                           },
@@ -402,32 +674,26 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
     {
       'title': 'Bollywood Romance',
       'subtitle': 'Arijit Singh, Pritam, Shreya Ghoshal',
-      'imageUrl': 'https://c.saavncdn.com/editorial/RomanticHits2023Hindi_20231208053738.jpg',
     },
     {
       'title': 'Pop & International',
       'subtitle': 'The Weeknd, Taylor Swift, Dua Lipa',
-      'imageUrl': 'https://c.saavncdn.com/editorial/PopHits2023_20231208053805.jpg',
     },
     {
       'title': 'Punjabi Beats',
       'subtitle': 'Diljit Dosanjh, Karan Aujla, AP Dhillon',
-      'imageUrl': 'https://c.saavncdn.com/editorial/PunjabiHits2023_20231208053820.jpg',
     },
     {
       'title': 'Desi Hip-Hop',
       'subtitle': 'DIVINE, Seedhe Maut, King, MC Stan',
-      'imageUrl': 'https://c.saavncdn.com/editorial/DesiHipHop_20231208053835.jpg',
     },
     {
       'title': 'Acoustic & Indie',
       'subtitle': 'Anuv Jain, Prateek Kuhad, Jasleen Royal',
-      'imageUrl': 'https://c.saavncdn.com/editorial/IndieHits_20231208053850.jpg',
     },
     {
       'title': 'Club & Party Anthems',
       'subtitle': 'Badshah, Yo Yo Honey Singh, DJ Snake',
-      'imageUrl': 'https://c.saavncdn.com/editorial/PartyHits2023_20231208053905.jpg',
     },
   ];
 }

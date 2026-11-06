@@ -176,26 +176,45 @@ class LyricsService {
       }
     }
 
-    if (BackendApiService.useProxyBackend) {
-      unawaited(_fetchProxy(song).then(tryComplete).catchError((_) {}));
-    }
-    
+    // Concurrently trigger Edge Proxy, LRCLIB, and direct Saavn lyrics
+    unawaited(_fetchProxy(song).then(tryComplete).catchError((_) {}));
     unawaited(_fetchLrcLib(song).then(tryComplete).catchError((_) {}));
     unawaited(_fetchSaavn(song).then(tryComplete).catchError((_) {}));
   }
 
   Future<LyricsResult?> _fetchProxy(Song song) async {
     try {
-      final proxyResult = await BackendApiService.getLyrics(
-        song.title,
-        song.artist,
+      final cleanTitle = song.title
+          .replaceAll(RegExp(r'\s*\([^)]*\)'), '')
+          .replaceAll(RegExp(r'\s*\[[^\]]*\]'), '')
+          .replaceAll(RegExp(r'\s*-\s*.*$'), '')
+          .trim();
+      final cleanArtist = song.artist.split(',').first.split('&').first.trim();
+
+      var proxyResult = await BackendApiService.getLyrics(
+        cleanTitle.isNotEmpty ? cleanTitle : song.title,
+        cleanArtist.isNotEmpty ? cleanArtist : song.artist,
         album: song.album,
         duration: song.duration,
       );
 
+      // If primary artist failed, retry with full artist string
+      if (proxyResult == null && cleanArtist != song.artist) {
+        proxyResult = await BackendApiService.getLyrics(
+          cleanTitle.isNotEmpty ? cleanTitle : song.title,
+          song.artist,
+          album: song.album,
+          duration: song.duration,
+        );
+      }
+
       if (proxyResult != null) {
-        final syncedStr = proxyResult['synced'];
-        final plainStr = proxyResult['plain'];
+        final syncedStr = proxyResult['syncedLyrics']?.toString() ??
+            proxyResult['synced']?.toString() ??
+            proxyResult['lrc']?.toString();
+        final plainStr = proxyResult['plainLyrics']?.toString() ??
+            proxyResult['plain']?.toString() ??
+            proxyResult['lyrics']?.toString();
 
         List<LyricLine> parsedSynced = [];
         if (syncedStr != null && syncedStr.isNotEmpty) {
@@ -216,15 +235,16 @@ class LyricsService {
             : null;
 
         if (parsedSynced.isNotEmpty || staticText != null) {
+          final src = proxyResult['source']?.toString().toUpperCase() ?? 'SAAVN';
           return LyricsResult(
             staticLyrics: staticText,
             syncedLyrics: parsedSynced,
-            source: 'Saavn',
+            source: src,
           );
         }
       }
     } catch (e) {
-      debugPrint('[LyricsService] Backend proxy lyrics error: $e');
+      debugPrint('[LyricsService] Backend proxy lyrics error: ');
     }
     return null;
   }
@@ -302,6 +322,7 @@ class LyricsService {
         final data = await compute(jsonDecode, response.body);
         if (data is List && data.isNotEmpty) {
           String? bestLrc;
+          String? bestPlain;
           for (var item in data) {
             final trackName = item['trackName']?.toString() ?? '';
             final artistName = item['artistName']?.toString() ?? '';
@@ -325,6 +346,10 @@ class LyricsService {
                 bestLrc ??= rawSynced;
               }
             }
+            final rawPlain = item['plainLyrics']?.toString();
+            if (rawPlain != null && rawPlain.isNotEmpty) {
+              bestPlain ??= rawPlain;
+            }
           }
 
           if (bestLrc != null) {
@@ -340,6 +365,9 @@ class LyricsService {
                 })
                 .toList();
             return LyricsResult(syncedLyrics: syncedLrc, source: 'LRCLIB');
+          } else if (bestPlain != null && bestPlain.trim().isNotEmpty) {
+            final translit = HinglishTransliterator.transliterate(bestPlain);
+            return LyricsResult(staticLyrics: translit, source: 'LRCLIB');
           }
         }
       }

@@ -426,14 +426,7 @@ function getLyricsUrl(track, artist) {
             if (rawAlbums is List) {
               for (var item in rawAlbums) {
                 if (item is Map<String, dynamic>) {
-                  result['albums'].add(Playlist(
-                    id: item['id']?.toString() ?? '',
-                    title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
-                    type: 'album',
-                    coverArt: item['image']?.toString() ?? '',
-                    songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? '0') ?? 0,
-                    songs: [],
-                  ));
+                  result['albums'].add(Playlist.fromJson({...item, 'type': 'album'}));
                 }
               }
             }
@@ -443,14 +436,7 @@ function getLyricsUrl(track, artist) {
             if (rawPlaylists is List) {
               for (var item in rawPlaylists) {
                 if (item is Map<String, dynamic>) {
-                  result['playlists'].add(Playlist(
-                    id: item['id']?.toString() ?? '',
-                    title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
-                    type: 'playlist',
-                    coverArt: item['image']?.toString() ?? '',
-                    songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? '0') ?? 0,
-                    songs: [],
-                  ));
+                  result['playlists'].add(Playlist.fromJson({...item, 'type': 'playlist'}));
                 }
               }
             }
@@ -510,14 +496,7 @@ function getLyricsUrl(track, artist) {
           if (rawAlbums is List) {
             for (var item in rawAlbums) {
               if (item is Map<String, dynamic>) {
-                result['albums'].add(Playlist(
-                  id: item['id']?.toString() ?? '',
-                  title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
-                  type: 'album',
-                  coverArt: item['image']?.toString() ?? '',
-                  songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? '0') ?? 0,
-                  songs: [],
-                ));
+                result['albums'].add(Playlist.fromJson({...item, 'type': 'album'}));
               }
             }
           }
@@ -525,14 +504,7 @@ function getLyricsUrl(track, artist) {
           if (rawPlaylists is List) {
             for (var item in rawPlaylists) {
               if (item is Map<String, dynamic>) {
-                result['playlists'].add(Playlist(
-                  id: item['id']?.toString() ?? '',
-                  title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
-                  type: 'playlist',
-                  coverArt: item['image']?.toString() ?? '',
-                  songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? '0') ?? 0,
-                  songs: [],
-                ));
+                result['playlists'].add(Playlist.fromJson({...item, 'type': 'playlist'}));
               }
             }
           }
@@ -596,14 +568,7 @@ function getLyricsUrl(track, artist) {
             if (rawAlbums is List) {
               for (var item in rawAlbums) {
                 if (item is Map<String, dynamic>) {
-                  result['albums'].add(Playlist(
-                    id: item['id']?.toString() ?? '',
-                    title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
-                    type: 'album',
-                    coverArt: item['image']?.toString() ?? '',
-                    songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? '0') ?? 0,
-                    songs: [],
-                  ));
+                  result['albums'].add(Playlist.fromJson({...item, 'type': 'album'}));
                 }
               }
             }
@@ -637,14 +602,7 @@ function getLyricsUrl(track, artist) {
           if (rawAlbums is List) {
             for (var item in rawAlbums) {
               if (item is Map<String, dynamic>) {
-                result['albums'].add(Playlist(
-                  id: item['id']?.toString() ?? '',
-                  title: StringUtils.cleanText(item['title']?.toString() ?? item['name']?.toString() ?? ''),
-                  type: 'album',
-                  coverArt: item['image']?.toString() ?? '',
-                  songCount: int.tryParse(item['more_info']?['song_count']?.toString() ?? '0') ?? 0,
-                  songs: [],
-                ));
+                result['albums'].add(Playlist.fromJson({...item, 'type': 'album'}));
               }
             }
           }

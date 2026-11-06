@@ -13,7 +13,34 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
-- **2026 Next-Generation Dual-Experience UI Redevelopment (v3.6.37):**
+- **Next-Generation UI Hardening, Desktop Controls, Lyrics Pipeline & Obsidian Settings (v3.6.38):**
+  - **Dynamic Interactive Filter Capsules on Home Screen**:
+    - Transformed static category pills into active reactive filters (`All`, `For You`, `Bollywood`, `International`, `Punjabi`, `Acoustic`, `Charts`).
+    - Clicking any pill now dynamically fetches required songs if unpopulated and displays dedicated genre feeds with zero disruption.
+  - **Daily Mixes Cover Art Resolution & Subtitle Elimination of "0 Tracks"**:
+    - Connected Made For You (Mixes 1-6) cards to `homeState.youPlaylists` dynamically pulling lead track artwork with high-reliability cluster artist fallbacks, permanently eliminating dark empty square placeholders.
+    - Updated `Playlist.fromJson` to parse `subtitle`, `header_desc`, `music`, and `artist_map`.
+    - Hardened `Playlist.subtitle` getter to prioritize authentic artist and album metadata over `"0 Tracks"`.
+  - **Responsive Search Browse Cards**:
+    - Replaced unconstrained 2-column grid with `SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 220, childAspectRatio: 2.1)`.
+    - Category cards scale elegantly to 4-5 columns on desktop and 2 columns on mobile with sleek angled icons and modern Obsidian gradients.
+  - **Windows Desktop TitleBar, Drag Area & Window Controls**:
+    - Engineered `NewDesktopTitleBar` with `DragToMoveArea` wrapping the entire top bar on Windows, macOS, and Linux.
+    - Integrated double-click maximize/unmaximize and minimize, maximize/restore, and close caption buttons with red hover animations.
+  - **Hits & Trending Feed Recovery**:
+    - Migrated `NewHitsScreen` to `ConsumerStatefulWidget` with cascading fallbacks (`trendingSongs` $\rightarrow$ `youSongs` $\rightarrow$ `bollywoodSongs` $\rightarrow$ `hollywoodSongs`) and automatic cold-start fetch.
+  - **End-to-End Lyrics Pipeline Fix**:
+    - Resolved schema mismatch in `LyricsService._fetchProxy` and `DownloadService.fetchLyricsForSong` to support both `syncedLyrics`/`plainLyrics` and `synced`/`plain`.
+    - Added title/artist cleaning before edge queries so songs with movie names (e.g. `(From "Dhurandhar")`) match immediately on LRCLIB and Edge Proxy.
+    - Wired `LyricsNotifier` to listen to `audioPlayerProvider.select((p) => p.currentSong)` directly, pre-fetching lyrics automatically for any playing song across all app experiences.
+    - Added static lyrics fallback to `NewContextualPanel`.
+  - **2026 Obsidian Settings Screen (`NewSettingsScreen`)**:
+    - Created dedicated modern settings screen styled with `NewExperienceTokens`: experience switcher, audio streaming quality, serverless edge proxy toggle, Windows keyboard shortcut manager link, offline download rescan, and guest/account info.
+  - **Sidebar Collapse RenderFlex Overflow Elimination**:
+    - Replaced `Row` layout inside `_buildNavItem` with centered icon when `isCollapsed` is true, permanently fixing `RenderFlex overflowed by 11 pixels`.
+  - **Static Analysis & Test Verification**:
+    - `dart analyze lib/` $\rightarrow$ **0 issues found (0 warnings, 0 errors, 0 lints)**.
+    - `flutter test` $\rightarrow$ **23/23 tests passed across all test suites (100% pass rate)**.
   - **Absolute Classic UI Preservation & Dual Presentation Architecture**:
     - Architected two independent, parallel visual layers: **Classic UI** (original interface, preserved 100% untouched as permanent default) and **New Experience** (2026 redesigned premium music interface).
     - Established centralized `AppExperience` enum (`classic` vs `newExperience`), persistent storage via `AppExperienceStorage` (`SharedPreferences`), and live reactive `appExperienceProvider`.

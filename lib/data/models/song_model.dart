@@ -296,7 +296,18 @@ class Playlist {
   final String? customSubtitle;
 
   String get image => coverArt;
-  String get subtitle => customSubtitle ?? '$songCount Tracks';
+  String get subtitle {
+    if (customSubtitle != null &&
+        customSubtitle!.trim().isNotEmpty &&
+        customSubtitle != '0 Tracks' &&
+        customSubtitle != '0 Songs') {
+      return customSubtitle!;
+    }
+    if (songCount > 0) {
+      return '$songCount Tracks';
+    }
+    return type.toLowerCase() == 'album' ? 'Album' : 'Curated Playlist';
+  }
 
   Playlist({
     required this.id,
@@ -382,6 +393,22 @@ class Playlist {
       }
     }
 
+    // Extract informative subtitle from available metadata
+    String? parsedSubtitle;
+    final rawSub = json['subtitle'] ??
+        json['header_desc'] ??
+        moreInfo?['subtitle'] ??
+        moreInfo?['music'] ??
+        moreInfo?['header_desc'] ??
+        moreInfo?['artist_map']?['primary_artists'];
+    if (rawSub != null) {
+      if (rawSub is List && rawSub.isNotEmpty) {
+        parsedSubtitle = rawSub.map((a) => a is Map ? a['name'] : a.toString()).join(', ');
+      } else if (rawSub is String && rawSub.trim().isNotEmpty) {
+        parsedSubtitle = StringUtils.cleanText(rawSub);
+      }
+    }
+
     return Playlist(
       id: pId,
       title: pTitle,
@@ -390,6 +417,7 @@ class Playlist {
       type: json['type']?.toString() ?? 'playlist',
       songs: parsedSongs,
       followerCount: parsedFollowerCount,
+      subtitle: parsedSubtitle,
     );
   }
 
