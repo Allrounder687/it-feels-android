@@ -179,12 +179,113 @@ class HomeFeedSection {
   }
 }
 
+/// Typed model managing feed pagination cursors and page limits (Section 9).
+class FeedPagination {
+  final int currentPage;
+  final int totalPages;
+  final bool hasMore;
+  final String? nextCursor;
+
+  const FeedPagination({
+    this.currentPage = 1,
+    this.totalPages = 1,
+    this.hasMore = false,
+    this.nextCursor,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'currentPage': currentPage,
+    'totalPages': totalPages,
+    'hasMore': hasMore,
+    'nextCursor': nextCursor,
+  };
+
+  factory FeedPagination.fromJson(Map<String, dynamic> json) {
+    return FeedPagination(
+      currentPage: json['currentPage'] is int ? json['currentPage'] as int : 1,
+      totalPages: json['totalPages'] is int ? json['totalPages'] as int : 1,
+      hasMore: json['hasMore'] == true,
+      nextCursor: json['nextCursor']?.toString(),
+    );
+  }
+}
+
+/// Status of feed refresh operations (Section 9).
+enum FeedRefreshStatus { idle, refreshing, success, failed }
+
+/// Typed model tracking feed refresh lifecycle (Section 9).
+class FeedRefreshState {
+  final FeedRefreshStatus status;
+  final DateTime? lastRefreshed;
+  final String? errorMessage;
+
+  const FeedRefreshState({
+    this.status = FeedRefreshStatus.idle,
+    this.lastRefreshed,
+    this.errorMessage,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'status': status.name,
+    'lastRefreshed': lastRefreshed?.toIso8601String(),
+    'errorMessage': errorMessage,
+  };
+
+  factory FeedRefreshState.fromJson(Map<String, dynamic> json) {
+    return FeedRefreshState(
+      status: FeedRefreshStatus.values.firstWhere(
+        (e) => e.name == json['status'],
+        orElse: () => FeedRefreshStatus.idle,
+      ),
+      lastRefreshed: json['lastRefreshed'] != null
+          ? DateTime.tryParse(json['lastRefreshed'].toString())
+          : null,
+      errorMessage: json['errorMessage']?.toString(),
+    );
+  }
+}
+
+/// Typed model encapsulating feed metadata (Section 9).
+class FeedMetadata {
+  final String feedId;
+  final String targetAudience;
+  final int totalSections;
+  final Map<String, dynamic> customProperties;
+
+  const FeedMetadata({
+    this.feedId = 'main_home_feed',
+    this.targetAudience = 'all',
+    this.totalSections = 0,
+    this.customProperties = const {},
+  });
+
+  Map<String, dynamic> toJson() => {
+    'feedId': feedId,
+    'targetAudience': targetAudience,
+    'totalSections': totalSections,
+    'customProperties': customProperties,
+  };
+
+  factory FeedMetadata.fromJson(Map<String, dynamic> json) {
+    return FeedMetadata(
+      feedId: json['feedId']?.toString() ?? 'main_home_feed',
+      targetAudience: json['targetAudience']?.toString() ?? 'all',
+      totalSections: json['totalSections'] is int ? json['totalSections'] as int : 0,
+      customProperties: json['customProperties'] is Map<String, dynamic>
+          ? json['customProperties'] as Map<String, dynamic>
+          : {},
+    );
+  }
+}
+
 /// Complete personalized Home Feed snapshot.
 class HomeFeed {
   final String version;
   final DateTime generatedAt;
   final List<HomeFeedSection> sections;
   final bool isFromCache;
+  final FeedPagination pagination;
+  final FeedRefreshState refreshState;
   final Map<String, dynamic> metadata;
 
   const HomeFeed({
@@ -192,6 +293,8 @@ class HomeFeed {
     required this.generatedAt,
     required this.sections,
     this.isFromCache = false,
+    this.pagination = const FeedPagination(),
+    this.refreshState = const FeedRefreshState(),
     this.metadata = const {},
   });
 
@@ -200,6 +303,8 @@ class HomeFeed {
     'generatedAt': generatedAt.toIso8601String(),
     'sections': sections.map((s) => s.toJson()).toList(),
     'isFromCache': isFromCache,
+    'pagination': pagination.toJson(),
+    'refreshState': refreshState.toJson(),
     'metadata': metadata,
   };
 
@@ -214,6 +319,12 @@ class HomeFeed {
               .toList() ??
           [],
       isFromCache: json['isFromCache'] == true,
+      pagination: json['pagination'] is Map<String, dynamic>
+          ? FeedPagination.fromJson(json['pagination'] as Map<String, dynamic>)
+          : const FeedPagination(),
+      refreshState: json['refreshState'] is Map<String, dynamic>
+          ? FeedRefreshState.fromJson(json['refreshState'] as Map<String, dynamic>)
+          : const FeedRefreshState(),
       metadata: json['metadata'] is Map<String, dynamic>
           ? json['metadata'] as Map<String, dynamic>
           : {},

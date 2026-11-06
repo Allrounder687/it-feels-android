@@ -1,16 +1,26 @@
-/// Enumeration of the 17 standardized listening and engagement events.
+/// Enumeration of the standardized listening and engagement events (Section 6).
 enum ListeningEventType {
   playbackStarted,
   meaningfulPlayback,
   playbackCompleted,
   playbackSkipped,
+  trackReplayed,
   trackLiked,
   trackUnliked,
+  trackSaved,
   trackHidden,
-  trackUnhidden,
-  trackReplayed,
+  artistHidden,
+  artistFollowed,
+  trackAddedToPlaylist,
   playlistAdded,
   playlistRemoved,
+  playlistSaved,
+  playlistOpened,
+  recommendationImpression,
+  recommendationClicked,
+  recommendationDismissed,
+  searchAndPlay,
+  trackUnhidden,
   queueAppended,
   sharedTrack,
   seekPerformed,
@@ -53,13 +63,13 @@ class ListeningEvent {
     this.metadata = const {},
   });
 
-  /// Evaluates mathematical engagement weight based on Section 5.1 specifications:
+  /// Evaluates mathematical engagement weight based on Section 5.1 & Section 6 specifications:
   /// - Immediate Skip (< 15s or < 10%): -0.35
   /// - Mid-Track Skip (15s <= t <= 50%): -0.05
   /// - Late Skip (50% < t < 85%): +0.40
   /// - Completion (>= 85%): +1.00
   /// - Replay: +1.75
-  /// - Explicit Actions: Like (+2.50), Add to Playlist (+2.00), Hide (-10.00)
+  /// - Explicit Actions: Like (+2.50), Save (+2.25), Add to Playlist (+2.00), Hide Track (-10.00), Hide Artist (-15.00)
   double get engagementScore {
     switch (eventType) {
       case ListeningEventType.playbackStarted:
@@ -92,17 +102,45 @@ class ListeningEvent {
       case ListeningEventType.trackUnliked:
         return -1.50;
 
+      case ListeningEventType.trackSaved:
+        return 2.25;
+
       case ListeningEventType.trackHidden:
         return -10.00; // Hard negative preference
 
-      case ListeningEventType.trackUnhidden:
-        return 5.00; // Reversal of hard penalty
+      case ListeningEventType.artistHidden:
+        return -15.00; // Hard negative artist preference
 
+      case ListeningEventType.artistFollowed:
+        return 3.00;
+
+      case ListeningEventType.trackAddedToPlaylist:
       case ListeningEventType.playlistAdded:
         return 2.00;
 
       case ListeningEventType.playlistRemoved:
         return -0.50;
+
+      case ListeningEventType.playlistSaved:
+        return 2.50;
+
+      case ListeningEventType.playlistOpened:
+        return 0.30;
+
+      case ListeningEventType.recommendationImpression:
+        return 0.00; // Impression only, does not count as play
+
+      case ListeningEventType.recommendationClicked:
+        return 0.75;
+
+      case ListeningEventType.recommendationDismissed:
+        return -0.50;
+
+      case ListeningEventType.searchAndPlay:
+        return 1.25;
+
+      case ListeningEventType.trackUnhidden:
+        return 5.00; // Reversal of hard penalty
 
       case ListeningEventType.queueAppended:
         return 1.00;
