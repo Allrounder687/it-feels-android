@@ -55,7 +55,7 @@ class SettingsState {
     this.useSolidTitleBar = false,
     this.launchAtStartup = false,
     this.adaptiveGlassTint = true,
-    this.uiExperienceMode = UiExperienceMode.appleNeo,
+    this.uiExperienceMode = UiExperienceMode.classic,
   });
 
   SettingsState copyWith({

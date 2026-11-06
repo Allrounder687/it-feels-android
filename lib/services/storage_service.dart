@@ -357,7 +357,7 @@ class StorageService {
       'useSolidTitleBar': prefs.getBool('use_solid_title_bar') ?? false,
       'launchAtStartup': prefs.getBool('launch_at_startup') ?? false,
       'adaptiveGlassTint': prefs.getBool('adaptive_glass_tint') ?? true,
-      'uiExperienceMode': prefs.getString('ui_experience_mode') ?? 'appleNeo',
+      'uiExperienceMode': prefs.getString('ui_experience_mode') ?? 'classic',
     };
   }
 

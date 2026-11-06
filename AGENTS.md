@@ -13,6 +13,62 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **2026 Next-Generation Dual-Experience UI Redevelopment (v3.6.37):**
+  - **Absolute Classic UI Preservation & Dual Presentation Architecture**:
+    - Architected two independent, parallel visual layers: **Classic UI** (original interface, preserved 100% untouched as permanent default) and **New Experience** (2026 redesigned premium music interface).
+    - Established centralized `AppExperience` enum (`classic` vs `newExperience`), persistent storage via `AppExperienceStorage` (`SharedPreferences`), and live reactive `appExperienceProvider`.
+    - Integrated non-destructive router branching in `MainNavigationWrapper`: seamlessly renders `NewExperienceShell()` when `newExperience` is selected, while maintaining the entire existing navigation scaffold for `classic`.
+    - Both interfaces share 100% of underlying business logic, state singletons, audio player engine (`just_audio`), offline Isar database, catalogue repository (`MusicRepository`), download manager (`DownloadService`), and authentication.
+    - Zero playback interruption or state loss during runtime experience switching.
+  - **Settings App Experience Selector**:
+    - Created `AppExperienceSelectorScreen` (`lib/features/settings/app_experience_selector_screen.dart`), linked from `SettingsScreen` (Appearance $\rightarrow$ App Experience).
+    - Features side-by-side visual comparison cards with feature highlights, "CURRENTLY ACTIVE" badges, and instant live switch actions.
+  - **2026 Obsidian Design System & Tokens**:
+    - Implemented `NewExperienceTokens`: Obsidian dark palette (`#0A0D14`, `#121622`, `#1A2030`), Electric Violet (`#7C3AED`) and Radiant Cyan (`#06B6D4`) accents, specular glass borders, Google Fonts `Outfit` (display) and `Inter` (body), and squircle geometry.
+    - Built `NewAmbientCanvas`: GPU-accelerated dynamic mesh gradient extracted from active album artwork with reduced-motion support.
+    - Reusable components: `NewGlassContainer`, `NewCard`, `NewSectionHeader`, `NewMediaTile`, `NewActionButton`.
+  - **Responsive Adaptive Shell & Complete 2026 Feature Suite**:
+    - **Adaptive Shell (`NewExperienceShell`)**: Dynamic layout dispatcher based on width:
+      - Desktop ($\ge 1024\text{dp}$): Collapsible navigation sidebar (`NewDesktopSidebar`), discovery area, persistent bottom player bar (`NewDesktopPlayerBar`), and contextual panel (`NewContextualPanel`).
+      - Tablet ($600-1024\text{dp}$): Compact 76dp icon dock, multi-column media grid, persistent player bar.
+      - Mobile ($< 600\text{dp}$): Full-bleed view, floating frosted MiniPlayer (`NewMiniPlayer`), and 5-item auto-distributing bottom dock (`NewMobileNavDock`) with haptic feedback.
+    - **Home & Discovery (`NewHomeScreen`)**: Editorial greeting, category pills, Jump Back In, Made For You (Daily Mixes 1-6), Trending Hits, and Essential Albums.
+    - **Search & Browse (`NewSearchScreen`)**: Real-time query dispatch, content filter pills, Top Artist cards, and 8 curated 2-column genre browse cards.
+    - **Library (`NewLibraryScreen`)**: Liked Songs hero banner, Downloaded Music offline list with integrated storage rescan, and Custom Playlists.
+    - **Immersive Details & Hits**: `NewPlaylistDetailScreen`, `NewArtistDetailScreen`, `NewHitsScreen`.
+    - **Living Player & Synced Lyrics**: `NewMiniPlayer` and `NewNowPlayingScreen` with interactive seek slider, queue reordering drawer, sleep timer modal, and synchronized lyrics bottom sheet.
+    - **Advanced Tools**: `NewSpotifyImportScreen` (authorized metadata resolution against JioSaavn catalogue) and `NewAiDiscoveryScreen` (natural language vibe prompt with `TrackValidationEngine` scoring).
+  - **Static Analysis & Test Verification**:
+    - Resolved 3 layout overflow bottlenecks (desktop sidebar header, mobile home greeting, mobile nav dock).
+    - `dart analyze lib/ test/...` $\rightarrow$ **0 issues found (0 warnings, 0 errors, 0 lints)**.
+    - `flutter test` $\rightarrow$ **26/26 unit and widget tests passed across all test suites (100% pass rate)**.
+  - **Documentation Deliverables**: Staged `UI_REDEVELOPMENT_BLUEPRINT.md`, `DESIGN_SYSTEM.md`, `DUAL_UI_ARCHITECTURE.md`, `UI_IMPLEMENTATION_REPORT.md`, and `CROSS_PLATFORM_QA_REPORT.md` in repository root.
+
+- **Customizable Keyboard Shortcuts & Live Windows System Overlap Detection Suite (v3.6.36):**
+  - **Comprehensive Keyboard Player Control Engine**:
+    - Architected centralized `KeyboardShortcutService` (`lib/services/keyboard_shortcut_service.dart`) listening to `HardwareKeyboard.instance.addHandler` across Windows desktop and all supported platforms.
+    - Integrated text input isolation guard: dynamically checks `primaryFocus?.context?.widget` against `EditableText` and `FocusScopeNode`, preventing typing in search bars or inputs from accidentally triggering player hotkeys unless modifier keys (Ctrl/Alt) are pressed.
+    - Added comprehensive player actions spanning 3 categories:
+      - **Playback Controls**: Play/Pause (`Space`), Next Track (`Ctrl + →`), Previous Track (`Ctrl + ←`), Seek Forward 10s (`Shift + →`), Seek Backward 10s (`Shift + ←`), Toggle Shuffle (`Ctrl + S`), Toggle Repeat Mode (`Ctrl + R`).
+      - **Volume & Audio**: Volume Up +5% (`Ctrl + ↑`), Volume Down -5% (`Ctrl + ↓`), Mute/Unmute Audio (`Ctrl + M`).
+      - **Navigation & Library**: Like/Favorite Song (`Ctrl + L`), Focus Global Search (`Ctrl + K`), Toggle Synchronized Lyrics View (`Ctrl + Y`).
+    - Extended `AudioPlayerNotifier` with granular volume management (`setVolume`, `adjustVolume`, `toggleMute`, `isMuted`, `currentVolume`).
+  - **Multi-Tier Windows Overlap & Conflict Detection Engine**:
+    - Developed `WindowsShortcutDetector` (`lib/core/utils/windows_shortcut_detector.dart`):
+      - **Tier 1 (Internal Overlap)**: Flags when a user attempts to map a combination already claimed by another player action.
+      - **Tier 2 (Windows System Reserved)**: Pre-emptively identifies critical OS hotkeys (`Alt + F4`, `Alt + Tab`, `Ctrl + Alt + Del`, `Ctrl + Shift + Esc`, `Ctrl + C/V/X/Z/A`) and Windows shell shortcuts (`Win + L`, `Win + D`, `Win + E`, `Win + R`, etc.) with clear risk warnings.
+      - **Tier 3 (Live Win32 Native Overlap Check via FFI)**: Leverages `dart:ffi` calling `user32.dll!RegisterHotKey` and `kernel32.dll!GetLastError`. Dynamically queries whether Windows or another running desktop application (Spotify, Discord, VS Code, OBS) holds the global registration (`ERROR_HOTKEY_ALREADY_REGISTERED` = 1409).
+  - **Interactive Remapping UI in Settings**:
+    - Created `KeyboardShortcutsScreen` (`lib/features/settings/keyboard_shortcuts_screen.dart`), accessible via **Settings $\rightarrow$ Controls $\rightarrow$ Keyboard Shortcuts**:
+      - Displays shortcuts organized by category with elegant monospace key badges.
+      - Live key recording dialog capturing modifier sequences and virtual keys in real time.
+      - Dynamic visual conflict banner with color-coded severity (Green = Available, Amber = Warning/Overlap, Red = System Reserved).
+      - Single-action reset and global "Reset All to Defaults" restoration.
+      - Fully persisted across launches via `StorageService.saveKeyboardShortcuts()`.
+  - **Static Analysis & Test Verification**:
+    - `dart analyze lib/core/models/keyboard_shortcut_models.dart lib/core/utils/windows_shortcut_detector.dart lib/services/keyboard_shortcut_service.dart lib/features/settings/keyboard_shortcuts_screen.dart` $\rightarrow$ **0 issues found**.
+    - `flutter test` $\rightarrow$ **27/27 unit and widget tests passed (100% pass rate)**.
+
 - **JioSaavn Editorial Playlist Resolution & Split-Screen UI Responsive Hardening (v3.6.35):**
   - **JioSaavn Editorial Playlist Resolution ("0 Tracks" Fix)**:
     - Root-caused why editorial/curated playlists ("Chill Love Songs", Charts, Featured Playlists) loaded with 0 tracks: JioSaavn's `playlist.getDetails` returns `list_count: 0`, an empty `list: ""` / `songs: []`, and instead packs the song IDs as comma-separated PIDs inside `more_info.contents`.

@@ -77,6 +77,8 @@ class Song {
     this.isDirty = false,
   });
 
+  String get image => coverArt;
+
   static String cleanText(String text) {
     return StringUtils.cleanText(text);
   }
@@ -291,16 +293,23 @@ class Playlist {
   final String type; // 'playlist' or 'album'
   final List<Song>? songs;
   final String? followerCount;
+  final String? customSubtitle;
+
+  String get image => coverArt;
+  String get subtitle => customSubtitle ?? '$songCount Tracks';
 
   Playlist({
     required this.id,
     required this.title,
-    required this.coverArt,
+    String? coverArt,
+    String? image,
     required this.songCount,
     this.type = 'playlist',
     this.songs,
     this.followerCount,
-  });
+    String? subtitle,
+  })  : coverArt = coverArt ?? image ?? '',
+        customSubtitle = subtitle;
 
   factory Playlist.fromJson(Map<String, dynamic> json) {
     var rawImage = json['image']?.toString() ?? json['coverArt']?.toString() ?? '';

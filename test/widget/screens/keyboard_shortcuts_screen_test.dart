@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeAudioPlayerNotifier extends AudioPlayerNotifier {
   @override
-  AudioPlayerState build() => AudioPlayerState(isLoading: false);
+  AudioPlayerState build() => const AudioPlayerState(isLoading: false);
 }
 
 void main() {

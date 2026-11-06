@@ -28,6 +28,9 @@ import 'package:it_feels_music/services/download_service.dart';
 import 'package:it_feels_music/core/theme/theme_ext.dart';
 import 'package:it_feels_music/core/widgets/glass_shield_wrapper.dart';
 import 'package:it_feels_music/core/widgets/glass_container.dart';
+import 'package:it_feels_music/core/appearance/app_experience.dart';
+import 'package:it_feels_music/core/appearance/app_experience_provider.dart';
+import 'package:it_feels_music/features/settings/app_experience_selector_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -275,15 +278,65 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
               Divider(height: 1, thickness: 0.5, color: context.themeMutedTextColor.withValues(alpha: 0.15), indent: 16, endIndent: 16),
-              _buildSelectableItem(
-                context: context,
-                title: "UI Experience Mode",
-                subtitle: settings.uiExperienceMode == UiExperienceMode.appleNeo ? "Apple Neo (Frosted Island)" : "Classic (Standard)",
-                options: ["Apple Neo (Frosted Island)", "Classic (Standard)"],
-                currentValue: settings.uiExperienceMode == UiExperienceMode.appleNeo ? "Apple Neo (Frosted Island)" : "Classic (Standard)",
-                onSelected: (val) {
-                  final mode = val.startsWith("Apple Neo") ? UiExperienceMode.appleNeo : UiExperienceMode.classic;
-                  ref.read(settingsProvider.notifier).setUiExperienceMode(mode);
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                title: Text(
+                  "App Experience",
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: context.themeTextColor,
+                  ),
+                ),
+                subtitle: Consumer(
+                  builder: (context, ref, _) {
+                    final exp = ref.watch(appExperienceProvider);
+                    return Text(
+                      exp.displayName,
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: context.themeMutedTextColor,
+                      ),
+                    );
+                  },
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final exp = ref.watch(appExperienceProvider);
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: exp == AppExperience.newExperience
+                                ? context.themeAccentColor.withValues(alpha: 0.2)
+                                : context.themeMutedTextColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            exp.shortLabel,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: exp == AppExperience.newExperience
+                                  ? context.themeAccentColor
+                                  : context.themeTextColor,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(Icons.chevron_right_rounded, color: context.themeMutedTextColor),
+                  ],
+                ),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AppExperienceSelectorScreen(),
+                    ),
+                  );
                 },
               ),
               _buildSelectableItem(

@@ -1,0 +1,330 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:it_feels_music/data/services/audio_engine_service.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
+import 'package:it_feels_music/core/utils/string_utils.dart';
+import '../theme/new_experience_tokens.dart';
+
+class NewDesktopPlayerBar extends ConsumerStatefulWidget {
+  final VoidCallback? onToggleLyrics;
+  final VoidCallback? onToggleQueue;
+  final bool isLyricsActive;
+  final bool isQueueActive;
+
+  const NewDesktopPlayerBar({
+    super.key,
+    this.onToggleLyrics,
+    this.onToggleQueue,
+    this.isLyricsActive = false,
+    this.isQueueActive = false,
+  });
+
+  @override
+  ConsumerState<NewDesktopPlayerBar> createState() => _NewDesktopPlayerBarState();
+}
+
+class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
+  double _volume = 1.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final playerState = ref.watch(audioPlayerProvider);
+    final notifier = ref.read(audioPlayerProvider.notifier);
+    final song = playerState.currentSong;
+
+    if (song == null) {
+      return const SizedBox.shrink();
+    }
+
+    final isFav = playerState.favoriteSongs.any((s) => s.id == song.id);
+
+    return Container(
+      height: 84,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: NewExperienceTokens.midnightSurface.withValues(alpha: 0.95),
+        border: Border(
+          top: BorderSide(color: NewExperienceTokens.specularBorder, width: 1),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // ── Left: Track Metadata & Heart ──
+          Expanded(
+            flex: 3,
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(NewExperienceTokens.radiusSmall),
+                    border: Border.all(color: NewExperienceTokens.specularBorder),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(NewExperienceTokens.radiusSmall),
+                    child: song.image.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: song.image,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, _, _) => const Icon(
+                              Icons.music_note_rounded,
+                              color: NewExperienceTokens.textMuted,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.music_note_rounded,
+                            color: NewExperienceTokens.textMuted,
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        song.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: NewExperienceTokens.bodyMedium(
+                          color: NewExperienceTokens.textPrimary,
+                        ).copyWith(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        song.artist,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: NewExperienceTokens.bodySmall(
+                          color: NewExperienceTokens.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: Icon(
+                    isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    color: isFav ? NewExperienceTokens.accentRose : NewExperienceTokens.textMuted,
+                    size: 20,
+                  ),
+                  onPressed: () => notifier.toggleFavorite(song),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Center: Transport Controls & Scrubber ──
+          Expanded(
+            flex: 5,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Transport buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.shuffle_rounded,
+                        color: playerState.isShuffle
+                            ? NewExperienceTokens.accentViolet
+                            : NewExperienceTokens.textMuted,
+                        size: 18,
+                      ),
+                      onPressed: () => notifier.toggleShuffle(),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.skip_previous_rounded,
+                        color: NewExperienceTokens.textPrimary,
+                        size: 24,
+                      ),
+                      onPressed: () => notifier.skipToPrevious(),
+                    ),
+                    const SizedBox(width: 8),
+                    // Big Play/Pause Button
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => notifier.togglePlayPause(),
+                        borderRadius: BorderRadius.circular(22),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: NewExperienceTokens.accentViolet,
+                            boxShadow: [
+                              BoxShadow(
+                                color: NewExperienceTokens.accentViolet.withValues(alpha: 0.4),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            playerState.isPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.skip_next_rounded,
+                        color: NewExperienceTokens.textPrimary,
+                        size: 24,
+                      ),
+                      onPressed: () => notifier.skipToNext(),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.repeat_rounded,
+                        color: playerState.isRepeat
+                            ? NewExperienceTokens.accentViolet
+                            : NewExperienceTokens.textMuted,
+                        size: 18,
+                      ),
+                      onPressed: () => notifier.toggleRepeat(),
+                    ),
+                  ],
+                ),
+
+                // Scrubber Bar
+                StreamBuilder<Duration>(
+                  stream: locator<AudioEngineService>().positionStream,
+                  builder: (context, snapshot) {
+                    final position = snapshot.data ?? Duration.zero;
+                    final total = Duration(seconds: song.duration);
+                    final maxMs = total.inMilliseconds > 0
+                        ? total.inMilliseconds.toDouble()
+                        : 1.0;
+                    final posMs = position.inMilliseconds.toDouble().clamp(0.0, maxMs);
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          StringUtils.formatDuration(position),
+                          style: NewExperienceTokens.numericTimer(
+                            color: NewExperienceTokens.textMuted,
+                          ).copyWith(fontSize: 11),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              trackHeight: 3.5,
+                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                              activeTrackColor: NewExperienceTokens.accentViolet,
+                              inactiveTrackColor: Colors.white.withValues(alpha: 0.12),
+                              thumbColor: Colors.white,
+                            ),
+                            child: Slider(
+                              value: posMs,
+                              max: maxMs,
+                              onChanged: (val) {
+                                notifier.seek(Duration(milliseconds: val.toInt()));
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          StringUtils.formatDuration(total),
+                          style: NewExperienceTokens.numericTimer(
+                            color: NewExperienceTokens.textMuted,
+                          ).copyWith(fontSize: 11),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          // ── Right: Volume & Drawer Toggles ──
+          Expanded(
+            flex: 3,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  tooltip: 'Live Synchronized Lyrics',
+                  icon: Icon(
+                    Icons.lyrics_rounded,
+                    color: widget.isLyricsActive
+                        ? NewExperienceTokens.accentCyan
+                        : NewExperienceTokens.textMuted,
+                    size: 20,
+                  ),
+                  onPressed: widget.onToggleLyrics,
+                ),
+                IconButton(
+                  tooltip: 'Up Next Queue',
+                  icon: Icon(
+                    Icons.queue_music_rounded,
+                    color: widget.isQueueActive
+                        ? NewExperienceTokens.accentViolet
+                        : NewExperienceTokens.textMuted,
+                    size: 20,
+                  ),
+                  onPressed: widget.onToggleQueue,
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  _volume == 0
+                      ? Icons.volume_off_rounded
+                      : _volume < 0.5
+                          ? Icons.volume_down_rounded
+                          : Icons.volume_up_rounded,
+                  color: NewExperienceTokens.textMuted,
+                  size: 20,
+                ),
+                SizedBox(
+                  width: 90,
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 3.0,
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
+                      activeTrackColor: NewExperienceTokens.textPrimary,
+                      inactiveTrackColor: Colors.white.withValues(alpha: 0.12),
+                      thumbColor: Colors.white,
+                    ),
+                    child: Slider(
+                      value: _volume,
+                      onChanged: (v) {
+                        setState(() => _volume = v);
+                        notifier.setVolume(v);
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

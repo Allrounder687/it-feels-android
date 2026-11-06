@@ -33,6 +33,9 @@ import 'package:it_feels_music/services/config_service.dart';
 import 'package:it_feels_music/features/admin/force_update_screen.dart';
 import 'package:it_feels_music/core/widgets/tv_focusable_card.dart';
 import 'package:it_feels_music/features/neo/shell/neo_mobile_dock.dart';
+import 'package:it_feels_music/core/appearance/app_experience.dart';
+import 'package:it_feels_music/core/appearance/app_experience_provider.dart';
+import 'package:it_feels_music/features/new_experience/shell/new_experience_shell.dart';
 
 class MainNavigationWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -370,6 +373,11 @@ class _MainNavigationWrapperState extends ConsumerState<MainNavigationWrapper>
           
     final bool showVideoPiP =
         activeMediaType == ActiveMediaType.video && !isMutedCanvas;
+
+    final appExperience = ref.watch(appExperienceProvider);
+    if (appExperience == AppExperience.newExperience) {
+      return const NewExperienceShell();
+    }
 
     return PopScope(
       canPop: false,
