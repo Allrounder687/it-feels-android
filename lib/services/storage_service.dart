@@ -361,6 +361,17 @@ class StorageService {
     };
   }
 
+  /// Lyrics Romanized Preference (Default: true)
+  static Future<bool> getLyricsRomanized() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('lyrics_show_romanized') ?? true;
+  }
+
+  static Future<void> saveLyricsRomanized(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('lyrics_show_romanized', value);
+  }
+
   /// Save Downloaded Offline Video
   static Future<void> saveDownloadedVideo(Map<String, dynamic> videoData) async {
     final prefs = await SharedPreferences.getInstance();

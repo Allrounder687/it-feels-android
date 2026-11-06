@@ -11,6 +11,7 @@ import 'package:it_feels_music/features/player/sleep_timer_sheet.dart';
 import 'package:it_feels_music/core/widgets/song_options_sheet.dart';
 import 'package:it_feels_music/features/player/queue_bottom_sheet.dart';
 import 'package:it_feels_music/features/player/lyrics_screen.dart';
+import 'package:share_plus/share_plus.dart';
 import '../theme/new_experience_tokens.dart';
 import '../theme/new_ambient_canvas.dart';
 
@@ -45,6 +46,9 @@ class _NewNowPlayingScreenState extends ConsumerState<NewNowPlayingScreen> {
     }
 
     final isFav = playerState.favoriteSongs.any((s) => s.id == song.id);
+    final downloadState = ref.watch(downloadProvider);
+    final isDown = downloadState.isDownloaded(song.id);
+    final isDownloading = downloadState.isDownloading(song.id);
 
     return NewAmbientCanvas(
       intensity: 0.65,
@@ -181,6 +185,7 @@ class _NewNowPlayingScreenState extends ConsumerState<NewNowPlayingScreen> {
                       ),
                     ),
                     IconButton(
+                      tooltip: isFav ? 'Remove from favorites' : 'Add to favorites',
                       icon: Icon(
                         isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                         color: isFav ? NewExperienceTokens.accentRose : Colors.white70,
@@ -189,6 +194,50 @@ class _NewNowPlayingScreenState extends ConsumerState<NewNowPlayingScreen> {
                       onPressed: () {
                         HapticFeedback.lightImpact();
                         notifier.toggleFavorite(song);
+                      },
+                    ),
+                    IconButton(
+                      tooltip: isDown
+                          ? 'Downloaded (Click to remove)'
+                          : isDownloading
+                              ? 'Downloading...'
+                              : 'Download for offline playback',
+                      icon: isDownloading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Icon(
+                              isDown ? Icons.download_done_rounded : Icons.download_rounded,
+                              color: isDown ? NewExperienceTokens.accentCyan : Colors.white70,
+                              size: 25,
+                            ),
+                      onPressed: () async {
+                        HapticFeedback.lightImpact();
+                        if (isDown) {
+                          await ref.read(downloadProvider.notifier).removeDownload(song);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Removed "${song.title}" from downloads')),
+                            );
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Downloading "${song.title}"...')),
+                          );
+                          final ok = await ref.read(downloadProvider.notifier).downloadSong(song);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(ok ? 'Downloaded "${song.title}"' : 'Download failed'),
+                              ),
+                            );
+                          }
+                        }
                       },
                     ),
                   ],
@@ -370,6 +419,19 @@ class _NewNowPlayingScreenState extends ConsumerState<NewNowPlayingScreen> {
                           backgroundColor: Colors.transparent,
                           isScrollControlled: true,
                           builder: (context) => const QueueBottomSheet(),
+                        );
+                      },
+                    ),
+
+                    // Share Button
+                    IconButton(
+                      tooltip: 'Share',
+                      icon: const Icon(Icons.share_outlined, color: Colors.white70, size: 22),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        final exp = DateTime.now().add(const Duration(hours: 24)).millisecondsSinceEpoch;
+                        Share.share(
+                          'Listening to "${song.title}" by ${song.artist} on It Feels Music! 🎧\nhttps://allrounder687.github.io/room/${song.id}?exp=$exp',
                         );
                       },
                     ),

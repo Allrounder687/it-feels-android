@@ -26,6 +26,18 @@ class NewHomeScreen extends ConsumerStatefulWidget {
 class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
   String _activeFilter = 'All';
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final homeState = ref.read(homeProvider);
+      if (homeState.youPlaylists.isEmpty) {
+        final topArtists = ref.read(listeningHistoryProvider).getTopArtists();
+        ref.read(homeProvider.notifier).fetchYouSongs(topArtists);
+      }
+    });
+  }
+
   final List<String> _filters = [
     'All',
     'For You',
@@ -277,23 +289,31 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                       itemBuilder: (context, index) {
                         final mix = _dailyMixes[index];
                         final cover = _getMixCover(index, homeState);
+                        final mixId = 'daily_mix_${index + 1}';
+                        final match = homeState.youPlaylists.where((p) => p.id == mixId).firstOrNull;
+                        final songs = (match?.songs != null && match!.songs!.isNotEmpty) ? match.songs : null;
+
                         return NewCard(
                           title: mix['title'] as String,
                           subtitle: mix['subtitle'] as String,
                           imageUrl: cover.isNotEmpty ? cover : null,
-                          badgeText: 'MIX ',
+                          badgeText: 'MIX ${index + 1}',
                           width: 154,
                           onTap: () {
                             final playlist = Playlist(
-                              id: 'daily_mix_${index + 1}',
+                              id: mixId,
                               title: mix['title'] as String,
                               subtitle: mix['subtitle'] as String,
                               image: cover,
-                              songCount: 20,
+                              songCount: songs?.length ?? 20,
+                              songs: songs,
                             );
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => NewPlaylistDetailScreen(playlist: playlist),
+                                builder: (context) => NewPlaylistDetailScreen(
+                                  playlist: playlist,
+                                  staticTracks: songs,
+                                ),
                               ),
                             );
                           },

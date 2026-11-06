@@ -7,6 +7,7 @@ import 'package:it_feels_music/data/repositories/music_repository.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/utils/string_utils.dart';
+import 'package:it_feels_music/core/intelligence/playlists/dynamic_playlist_service.dart';
 import '../theme/new_experience_tokens.dart';
 import '../theme/new_ambient_canvas.dart';
 import '../widgets/new_media_tile.dart';
@@ -44,9 +45,98 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
   }
 
   Future<void> _fetchTracks() async {
+    // 1. If static tracks or playlist.songs are already available
+    if (widget.staticTracks != null && widget.staticTracks!.isNotEmpty) {
+      if (mounted) setState(() { _tracks = List.from(widget.staticTracks!); _isLoading = false; });
+      return;
+    }
+    if (widget.playlist.songs != null && widget.playlist.songs!.isNotEmpty) {
+      if (mounted) setState(() { _tracks = List.from(widget.playlist.songs!); _isLoading = false; });
+      return;
+    }
+
+    // 2. Handle Daily Mixes (daily_mix_1 ... daily_mix_6)
+    if (widget.playlist.id.startsWith('daily_mix_')) {
+      final youPlaylists = ref.read(homeProvider).youPlaylists;
+      final match = youPlaylists.where((p) => p.id == widget.playlist.id).firstOrNull;
+      if (match != null && match.songs != null && match.songs!.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _tracks = List.from(match.songs!);
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // Check DynamicPlaylistService
+      if (locator.isRegistered<DynamicPlaylistService>()) {
+        try {
+          final dynService = locator<DynamicPlaylistService>();
+          final dyn = dynService.getPlaylist(widget.playlist.id);
+          if (dyn != null && dyn.tracks.isNotEmpty) {
+            if (mounted) {
+              setState(() {
+                _tracks = List.from(dyn.tracks);
+                _isLoading = false;
+              });
+            }
+            return;
+          }
+          final refreshed = await dynService.refreshPlaylist(widget.playlist.id);
+          if (refreshed.tracks.isNotEmpty) {
+            if (mounted) {
+              setState(() {
+                _tracks = List.from(refreshed.tracks);
+                _isLoading = false;
+              });
+            }
+            return;
+          }
+        } catch (e) {
+          debugPrint('[NewPlaylistDetailScreen] Dynamic playlist lookup error: $e');
+        }
+      }
+
+      // Seed search fallback for Daily Mixes
+      try {
+        final seedQueries = {
+          'daily_mix_1': 'Bollywood Romantic Top Hits',
+          'daily_mix_2': 'Today Top Hits International English',
+          'daily_mix_3': 'Punjabi Top Hits 2026',
+          'daily_mix_4': 'Hip Hop Hits Rap',
+          'daily_mix_5': 'Acoustic Chill Indie Vibes',
+          'daily_mix_6': 'Bollywood Dance Club Anthems',
+        };
+        final query = seedQueries[widget.playlist.id] ?? widget.playlist.title;
+        final repo = locator<IMusicRepository>();
+        final tracks = await repo.searchSongs(query, count: 25);
+        if (mounted) {
+          setState(() {
+            _tracks = tracks;
+            _isLoading = false;
+          });
+        }
+        return;
+      } catch (e) {
+        debugPrint('[NewPlaylistDetailScreen] Seed query fallback error: $e');
+      }
+    }
+
+    // 3. Regular playlist or album fetching
     try {
       final repo = locator<IMusicRepository>();
-      final tracks = await repo.getPlaylistTracks(widget.playlist.id);
+      List<Song> tracks = [];
+      if (widget.playlist.type == 'album') {
+        final albumData = await repo.fetchAlbumDetails(widget.playlist.id);
+        tracks = List<Song>.from(albumData['songs'] ?? []);
+      } else {
+        tracks = await repo.getPlaylistTracks(widget.playlist.id);
+        if (tracks.isEmpty) {
+          final playlistData = await repo.fetchPlaylistDetails(widget.playlist.id);
+          tracks = List<Song>.from(playlistData['songs'] ?? []);
+        }
+      }
       if (mounted) {
         setState(() {
           _tracks = tracks;

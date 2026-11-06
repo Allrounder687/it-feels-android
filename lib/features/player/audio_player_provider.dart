@@ -1201,19 +1201,22 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Future<void> _fadeOut() async {
     if (_isFading) return; // Prevent concurrent fadeouts from rapid skip taps
     _isFading = true;
+    final initialVol = engine.audioHandler.player.state.volume;
     try {
       final fadeTime = state.crossfadeDuration.toInt();
-      final step = 1.0 / (fadeTime * 10);
-      double vol = 1.0;
-      for (int i = 0; i < fadeTime * 10; i++) {
-        vol -= step;
-        if (vol < 0) vol = 0;
-        await engine.audioHandler.player.setVolume(vol);
-        await Future.delayed(const Duration(milliseconds: 100));
+      if (fadeTime > 0) {
+        final step = initialVol / (fadeTime * 10);
+        double vol = initialVol;
+        for (int i = 0; i < fadeTime * 10; i++) {
+          vol -= step;
+          if (vol < 0) vol = 0;
+          await engine.audioHandler.player.setVolume(vol);
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
       }
     } finally {
       _isFading = false;
-      await engine.audioHandler.player.setVolume(1.0);
+      await engine.audioHandler.player.setVolume(initialVol > 0 ? initialVol : 100.0);
     }
   }
 
@@ -1227,6 +1230,12 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     final updated = List<Song>.from(state.queue)..addAll(songs);
     state = state.copyWith(queue: updated);
     _saveMemory();
+  }
+
+  Future<void> playAtIndex(int index) async {
+    if (index >= 0 && index < state.queue.length) {
+      await playSong(state.queue[index], queue: state.queue, index: index);
+    }
   }
 
   void playNext(Song song) {
@@ -1294,7 +1303,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   double get currentVolume => engine.audioHandler.player.state.volume;
 
   Future<void> setVolume(double volume) async {
-    final clamped = volume.clamp(0.0, 100.0);
+    // Gracefully handle both 0.0-1.0 normalized and 0.0-100.0 percentage scales
+    final scaled = (volume > 0.0 && volume <= 1.0) ? volume * 100.0 : volume;
+    final clamped = scaled.clamp(0.0, 100.0);
     _isMuted = clamped == 0.0;
     await engine.audioHandler.player.setVolume(clamped);
   }

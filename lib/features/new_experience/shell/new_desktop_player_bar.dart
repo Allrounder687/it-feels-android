@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/utils/string_utils.dart';
+import 'package:it_feels_music/features/player/sleep_timer_sheet.dart';
+import 'package:it_feels_music/features/new_experience/player/new_now_playing_screen.dart';
 import '../theme/new_experience_tokens.dart';
 
 class NewDesktopPlayerBar extends ConsumerStatefulWidget {
@@ -29,8 +32,22 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
   double _volume = 1.0;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final current = ref.read(audioPlayerProvider.notifier).currentVolume;
+        setState(() {
+          _volume = (current / 100.0).clamp(0.0, 1.0);
+        });
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final playerState = ref.watch(audioPlayerProvider);
+    final downloadState = ref.watch(downloadProvider);
     final notifier = ref.read(audioPlayerProvider.notifier);
     final song = playerState.currentSong;
 
@@ -39,6 +56,8 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
     }
 
     final isFav = playerState.favoriteSongs.any((s) => s.id == song.id);
+    final isDown = downloadState.isDownloaded(song.id);
+    final isDownloading = downloadState.isDownloading(song.id);
 
     return Container(
       height: 84,
@@ -58,7 +77,7 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
       ),
       child: Row(
         children: [
-          // ── Left: Track Metadata & Heart ──
+          // ── Left: Track Metadata & Heart / Download / Share ──
           Expanded(
             flex: 3,
             child: Row(
@@ -113,14 +132,77 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
+                // Favorite Button
                 IconButton(
+                  tooltip: isFav ? 'Remove from favorites' : 'Add to favorites',
                   icon: Icon(
                     isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                     color: isFav ? NewExperienceTokens.accentRose : NewExperienceTokens.textMuted,
                     size: 20,
                   ),
                   onPressed: () => notifier.toggleFavorite(song),
+                ),
+                // Download Button
+                IconButton(
+                  tooltip: isDown
+                      ? 'Downloaded (Click to remove)'
+                      : isDownloading
+                          ? 'Downloading...'
+                          : 'Download for offline playback',
+                  icon: isDownloading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: NewExperienceTokens.accentCyan,
+                          ),
+                        )
+                      : Icon(
+                          isDown ? Icons.download_done_rounded : Icons.download_rounded,
+                          color: isDown
+                              ? NewExperienceTokens.accentCyan
+                              : NewExperienceTokens.textMuted,
+                          size: 20,
+                        ),
+                  onPressed: () async {
+                    if (isDown) {
+                      await ref.read(downloadProvider.notifier).removeDownload(song);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Removed "${song.title}" from downloads')),
+                        );
+                      }
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Downloading "${song.title}"...')),
+                      );
+                      final ok = await ref.read(downloadProvider.notifier).downloadSong(song);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(ok ? 'Downloaded "${song.title}"' : 'Download failed'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+                // Share Button
+                IconButton(
+                  tooltip: 'Share track',
+                  icon: const Icon(
+                    Icons.share_outlined,
+                    color: NewExperienceTokens.textMuted,
+                    size: 19,
+                  ),
+                  onPressed: () {
+                    final exp = DateTime.now().add(const Duration(hours: 24)).millisecondsSinceEpoch;
+                    Share.share(
+                      'Listening to "${song.title}" by ${song.artist} on It Feels Music! 🎧\nhttps://allrounder687.github.io/room/${song.id}?exp=$exp',
+                    );
+                  },
                 ),
               ],
             ),
@@ -137,6 +219,7 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
+                      tooltip: 'Shuffle',
                       icon: Icon(
                         Icons.shuffle_rounded,
                         color: playerState.isShuffle
@@ -147,6 +230,7 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                       onPressed: () => notifier.toggleShuffle(),
                     ),
                     IconButton(
+                      tooltip: 'Previous track',
                       icon: const Icon(
                         Icons.skip_previous_rounded,
                         color: NewExperienceTokens.textPrimary,
@@ -187,6 +271,7 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                     ),
                     const SizedBox(width: 8),
                     IconButton(
+                      tooltip: 'Next track',
                       icon: const Icon(
                         Icons.skip_next_rounded,
                         color: NewExperienceTokens.textPrimary,
@@ -195,6 +280,7 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                       onPressed: () => notifier.skipToNext(),
                     ),
                     IconButton(
+                      tooltip: 'Repeat mode',
                       icon: Icon(
                         Icons.repeat_rounded,
                         color: playerState.isRepeat
@@ -262,12 +348,29 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
             ),
           ),
 
-          // ── Right: Volume & Drawer Toggles ──
+          // ── Right: Volume, Sleep Timer, Lyrics, Queue, Expand ──
           Expanded(
             flex: 3,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                IconButton(
+                  tooltip: 'Sleep Timer',
+                  icon: Icon(
+                    Icons.bedtime_outlined,
+                    color: playerState.isSleepTimerActive
+                        ? NewExperienceTokens.accentCyan
+                        : NewExperienceTokens.textMuted,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => const SleepTimerSheet(),
+                    );
+                  },
+                ),
                 IconButton(
                   tooltip: 'Live Synchronized Lyrics',
                   icon: Icon(
@@ -290,18 +393,43 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                   ),
                   onPressed: widget.onToggleQueue,
                 ),
-                const SizedBox(width: 8),
-                Icon(
-                  _volume == 0
-                      ? Icons.volume_off_rounded
-                      : _volume < 0.5
-                          ? Icons.volume_down_rounded
-                          : Icons.volume_up_rounded,
-                  color: NewExperienceTokens.textMuted,
-                  size: 20,
+                IconButton(
+                  tooltip: 'Full Player View',
+                  icon: const Icon(
+                    Icons.open_in_full_rounded,
+                    color: NewExperienceTokens.textMuted,
+                    size: 18,
+                  ),
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => const NewNowPlayingScreen(),
+                    );
+                  },
+                ),
+                const SizedBox(width: 6),
+                IconButton(
+                  tooltip: _volume == 0 ? 'Unmute' : 'Mute',
+                  icon: Icon(
+                    _volume == 0
+                        ? Icons.volume_off_rounded
+                        : _volume < 0.5
+                            ? Icons.volume_down_rounded
+                            : Icons.volume_up_rounded,
+                    color: NewExperienceTokens.textMuted,
+                    size: 20,
+                  ),
+                  onPressed: () async {
+                    final isMuted = await notifier.toggleMute();
+                    setState(() {
+                      _volume = isMuted ? 0.0 : (notifier.currentVolume / 100.0).clamp(0.0, 1.0);
+                    });
+                  },
                 ),
                 SizedBox(
-                  width: 90,
+                  width: 85,
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       trackHeight: 3.0,
@@ -312,10 +440,12 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                       thumbColor: Colors.white,
                     ),
                     child: Slider(
-                      value: _volume,
+                      value: _volume.clamp(0.0, 1.0),
+                      min: 0.0,
+                      max: 1.0,
                       onChanged: (v) {
                         setState(() => _volume = v);
-                        notifier.setVolume(v);
+                        notifier.setVolume(v * 100.0);
                       },
                     ),
                   ),

@@ -8,6 +8,7 @@ import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/services/translation_service.dart';
+import 'package:it_feels_music/services/storage_service.dart';
 import 'dart:async';
 
 enum LyricsMode { synced, static }
@@ -41,7 +42,7 @@ class LyricsState {
     this.targetLanguage = 'none',
     this.translatedLyrics,
     this.isTranslating = false,
-    this.showRomanized = false,
+    this.showRomanized = true,
   });
 
   LyricsResult get result => activeProvider != null
@@ -136,7 +137,13 @@ class LyricsNotifier extends Notifier<LyricsState> {
       Future.microtask(() => loadLyricsIfNeeded(current));
     }
 
-    return const LyricsState();
+    StorageService.getLyricsRomanized().then((saved) {
+      if (state.showRomanized != saved) {
+        state = state.copyWith(showRomanized: saved);
+      }
+    });
+
+    return const LyricsState(showRomanized: true);
   }
 
   static const List<String> availableFonts = [
@@ -151,7 +158,9 @@ class LyricsNotifier extends Notifier<LyricsState> {
   }
 
   void toggleRomanized() {
-    state = state.copyWith(showRomanized: !state.showRomanized);
+    final newVal = !state.showRomanized;
+    state = state.copyWith(showRomanized: newVal);
+    StorageService.saveLyricsRomanized(newVal);
   }
 
   void setTargetLanguage(String languageCode) {
@@ -261,6 +270,7 @@ class LyricsNotifier extends Notifier<LyricsState> {
         lyricsNotFound: false,
         fontFamily: state.fontFamily,
         syncOffsetMs: state.syncOffsetMs,
+        showRomanized: state.showRomanized,
       );
 
       _lyricsService.fetchLyrics(
@@ -313,6 +323,7 @@ class LyricsNotifier extends Notifier<LyricsState> {
       lyricsNotFound: false,
       fontFamily: state.fontFamily,
       syncOffsetMs: state.syncOffsetMs,
+      showRomanized: state.showRomanized,
     );
 
     _lyricsService.fetchLyrics(
