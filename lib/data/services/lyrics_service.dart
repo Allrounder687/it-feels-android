@@ -28,6 +28,20 @@ class LyricsService {
   final Map<String, Map<String, LyricsResult>> _lyricsCache = {};
   int _currentSessionId = 0;
 
+  /// Detects automated/placeholder dummy lyrics (commonly found in ASMR or noise tracks on LRCLIB).
+  static bool isDummyLyrics(String text) {
+    final lower = text.toLowerCase();
+    if (lower.contains('lorem ipsum')) return true;
+    if (lower.contains('dalul locufi') ||
+        lower.contains('giyoba yavegu') ||
+        lower.contains('fozuse foquho') ||
+        lower.contains('qiq xafuto') ||
+        lower.contains('hereza guvo')) {
+      return true;
+    }
+    return false;
+  }
+
   void _enforceCacheLimit<K, V>(Map<K, V> cache, int maxSize) {
     while (cache.length > maxSize) {
       cache.remove(cache.keys.first);
@@ -217,7 +231,7 @@ class LyricsService {
             proxyResult['lyrics']?.toString();
 
         List<LyricLine> parsedSynced = [];
-        if (syncedStr != null && syncedStr.isNotEmpty) {
+        if (syncedStr != null && syncedStr.isNotEmpty && !isDummyLyrics(syncedStr)) {
           parsedSynced = LrcParser.parse(syncedStr)
               .map((l) {
                 final translit = HinglishTransliterator.transliterate(l.text);
@@ -230,7 +244,7 @@ class LyricsService {
               .toList();
         }
 
-        final staticText = (plainStr != null && plainStr.isNotEmpty)
+        final staticText = (plainStr != null && plainStr.isNotEmpty && !isDummyLyrics(plainStr))
             ? HinglishTransliterator.transliterate(plainStr)
             : null;
 
@@ -296,7 +310,7 @@ class LyricsService {
         if (getResponse.statusCode == 200) {
           final data = await compute(jsonDecode, getResponse.body);
           final rawSynced = data['syncedLyrics']?.toString();
-          if (rawSynced != null && rawSynced.isNotEmpty) {
+          if (rawSynced != null && rawSynced.isNotEmpty && !isDummyLyrics(rawSynced)) {
             var syncedLrc = LrcParser.parse(rawSynced);
             syncedLrc = syncedLrc.map((line) {
                   final translit = HinglishTransliterator.transliterate(line.text);
@@ -338,7 +352,7 @@ class LyricsService {
             if (titleSimilarity < 0.3 && artistSimilarity < 0.2) continue;
 
             final rawSynced = item['syncedLyrics']?.toString();
-            if (rawSynced != null && rawSynced.isNotEmpty) {
+            if (rawSynced != null && rawSynced.isNotEmpty && !isDummyLyrics(rawSynced)) {
               if (!HinglishTransliterator.hasDevanagari(rawSynced)) {
                 bestLrc = rawSynced;
                 break;
@@ -347,7 +361,7 @@ class LyricsService {
               }
             }
             final rawPlain = item['plainLyrics']?.toString();
-            if (rawPlain != null && rawPlain.isNotEmpty) {
+            if (rawPlain != null && rawPlain.isNotEmpty && !isDummyLyrics(rawPlain)) {
               bestPlain ??= rawPlain;
             }
           }
