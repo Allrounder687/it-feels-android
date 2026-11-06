@@ -283,11 +283,12 @@ class _NewContextualPanelState extends ConsumerState<NewContextualPanel> {
           });
         }
 
-        return ScrollablePositionedList.builder(
-          itemScrollController: _lyricsScrollController,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-          itemCount: lines.length,
-          itemBuilder: (context, index) {
+        return ExcludeSemantics(
+          child: ScrollablePositionedList.builder(
+            itemScrollController: _lyricsScrollController,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            itemCount: lines.length,
+            itemBuilder: (context, index) {
             final line = lines[index];
             final isCurrentLine = index == activeIndex;
             final showRoman = lyricsState.showRomanized && line.transliteration != null;
@@ -357,7 +358,8 @@ class _NewContextualPanelState extends ConsumerState<NewContextualPanel> {
               ),
             );
           },
-        );
+        ),
+      );
       },
     );
   }
