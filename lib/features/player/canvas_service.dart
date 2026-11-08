@@ -18,16 +18,21 @@ final canvasControllerProvider = StateNotifierProvider<CanvasControllerNotifier,
 class CanvasControllerNotifier extends StateNotifier<VideoController?> {
   final Ref ref;
   int _canvasGenToken = 0;
+  bool _isDisposed = false;
   
   CanvasControllerNotifier(this.ref) : super(null);
 
   Future<void> loadCanvasForSong(Song song) async {
+    if (_isDisposed) return;
     final myToken = ++_canvasGenToken;
     // Clear old
     if (state != null) {
-      await state?.player.stop();
-      await state?.player.dispose();
+      final oldState = state;
       state = null;
+      try {
+        await oldState?.player.stop();
+        await oldState?.player.dispose();
+      } catch (_) {}
     }
     
     try {
@@ -35,44 +40,68 @@ class CanvasControllerNotifier extends StateNotifier<VideoController?> {
       
       // Offload heavy HTML/Regex parsing to a background isolate
       final streamUrl = await compute(_fetchCanvasUrl, query);
-      if (_canvasGenToken != myToken) return;
+      if (_canvasGenToken != myToken || _isDisposed) return;
       
       if (streamUrl == null) return;
 
       // Allow UI Hero animations to finish smoothly before hitting the GPU
       await Future.delayed(const Duration(milliseconds: 400));
-      if (!mounted) return;
+      if (!mounted || _isDisposed) return;
       if (_canvasGenToken != myToken) return;
 
       final player = Player();
       final controller = VideoController(player);
       
       await player.open(Media(streamUrl), play: false);
-      if (_canvasGenToken != myToken) {
-        await player.dispose();
+      if (_canvasGenToken != myToken || !mounted || _isDisposed) {
+        try {
+          await player.stop();
+          await player.dispose();
+        } catch (_) {}
         return;
       }
       await player.setVolume(0.0);
       await player.setPlaylistMode(PlaylistMode.loop);
       await player.play();
       
-      if (mounted) {
+      if (mounted && _canvasGenToken == myToken && !_isDisposed) {
         state = controller;
       } else {
-        await player.dispose();
+        try {
+          await player.stop();
+          await player.dispose();
+        } catch (_) {}
       }
     } catch (e) {
       // Failed to load canvas silently
     }
   }
 
+  /// Explicitly releases native Direct3D video texture and libmpv player instance
+  Future<void> releaseVideoResources() async {
+    _canvasGenToken++;
+    final oldState = state;
+    state = null;
+    if (oldState != null) {
+      try {
+        await oldState.player.stop();
+        await oldState.player.dispose();
+      } catch (_) {}
+    }
+  }
+
   @override
   void dispose() {
-    final p = state?.player;
-    if (p != null) {
+    _isDisposed = true;
+    _canvasGenToken++;
+    final oldState = state;
+    state = null;
+    if (oldState != null) {
+      final p = oldState.player;
       try {
-        p.stop();
-        p.dispose();
+        p.stop().then((_) {
+          p.dispose().catchError((_) {});
+        }).catchError((_) {});
       } catch (_) {}
     }
     super.dispose();

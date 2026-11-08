@@ -8,6 +8,8 @@ import 'package:it_feels_music/data/repositories/music_repository.dart';
 import 'package:it_feels_music/services/download_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/services/database_service.dart';
+import 'package:it_feels_music/services/metadata_restoration_service.dart';
+import 'package:it_feels_music/data/services/lyrics_service.dart';
 
 @immutable
 class DownloadState {
@@ -130,11 +132,42 @@ class DownloadNotifier extends Notifier<DownloadState> {
     try {
       final scanned = await downloadService.scanAllDownloads();
       state = state.copyWith(downloadedSongs: scanned, isScanning: false);
+
+      // Automatically batch-restore metadata for any tracks that are missing authentic details
+      final toRestore = scanned.where(MetadataRestorationService.isSongMissingDetails).toList();
+      if (toRestore.isNotEmpty) {
+        unawaited(_autoRestoreMissingMetadata(scanned, toRestore));
+      }
+
+      unawaited(locator<LyricsService>().enrichDownloadedLyrics(scanned));
       return scanned;
     } catch (e) {
       debugPrint('[DownloadNotifier] scanAndSync error: $e');
       state = state.copyWith(isScanning: false);
       return state.downloadedSongs;
+    }
+  }
+
+  Future<void> _autoRestoreMissingMetadata(List<Song> currentSongs, List<Song> toRestore) async {
+    try {
+      debugPrint('[DownloadNotifier] Auto-restoring metadata for ${toRestore.length} tracks...');
+      final restorer = MetadataRestorationService();
+      final restored = await restorer.restoreBatchMetadata(toRestore);
+      if (restored.isNotEmpty) {
+        final Map<String, Song> registry = {for (final s in currentSongs) s.id: s};
+        for (final r in restored) {
+          registry[r.id] = r;
+        }
+        final updatedList = registry.values.toList();
+        state = state.copyWith(downloadedSongs: updatedList);
+        await StorageService.saveDownloads(updatedList);
+        try {
+          await DatabaseService().saveSongs(updatedList);
+        } catch (_) {}
+        debugPrint('[DownloadNotifier] Auto-restoration successfully restored ${restored.length} tracks!');
+      }
+    } catch (e) {
+      debugPrint('[DownloadNotifier] Auto-restoration error: $e');
     }
   }
 
@@ -301,6 +334,27 @@ class DownloadNotifier extends Notifier<DownloadState> {
         await DatabaseService().saveSong(dbSong);
       }
     } catch (_) {}
+  }
+
+  Future<void> removeDownloadsBatch(List<Song> songs) async {
+    for (final song in songs) {
+      await removeDownload(song);
+    }
+  }
+
+  Future<int> computeTotalStorageBytes() async {
+    int total = 0;
+    for (final song in state.downloadedSongs) {
+      if (song.encryptedMediaUrl != null && song.encryptedMediaUrl!.isNotEmpty) {
+        try {
+          final file = File(song.encryptedMediaUrl!);
+          if (await file.exists()) {
+            total += await file.length();
+          }
+        } catch (_) {}
+      }
+    }
+    return total;
   }
 
   Future<void> clearAllDownloads() async {

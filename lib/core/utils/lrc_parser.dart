@@ -77,4 +77,12 @@ class LrcParser {
     result.sort((a, b) => a.time.compareTo(b.time));
     return result;
   }
+
+  /// Formats a [Duration] timestamp into standard LRC time tag `mm:ss.xx`.
+  static String formatDuration(Duration d) {
+    final m = d.inMinutes.toString().padLeft(2, '0');
+    final s = (d.inSeconds % 60).toString().padLeft(2, '0');
+    final ms = ((d.inMilliseconds % 1000) ~/ 10).toString().padLeft(2, '0');
+    return '$m:$s.$ms';
+  }
 }

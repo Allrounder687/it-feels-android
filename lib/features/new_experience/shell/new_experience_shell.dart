@@ -8,6 +8,8 @@ import '../home/new_home_screen.dart';
 import '../search/new_search_screen.dart';
 import '../library/new_library_screen.dart';
 import '../hits/new_hits_screen.dart';
+import '../dna/new_music_dna_screen.dart';
+import '../explore/new_explore_screen.dart';
 import '../ai/new_ai_discovery_screen.dart';
 import '../import/new_spotify_import_screen.dart';
 import '../player/new_mini_player.dart';
@@ -123,6 +125,7 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
           NewDesktopPlayerBar(
             isLyricsActive: _isContextualPanelOpen && _contextualTab == ContextualPanelTab.lyrics,
             isQueueActive: _isContextualPanelOpen && _contextualTab == ContextualPanelTab.queue,
+            isStoryActive: _isContextualPanelOpen && _contextualTab == ContextualPanelTab.trackStory,
             onToggleLyrics: () {
               setState(() {
                 if (_isContextualPanelOpen && _contextualTab == ContextualPanelTab.lyrics) {
@@ -140,6 +143,16 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
                 } else {
                   _isContextualPanelOpen = true;
                   _contextualTab = ContextualPanelTab.queue;
+                }
+              });
+            },
+            onToggleStory: () {
+              setState(() {
+                if (_isContextualPanelOpen && _contextualTab == ContextualPanelTab.trackStory) {
+                  _isContextualPanelOpen = false;
+                } else {
+                  _isContextualPanelOpen = true;
+                  _contextualTab = ContextualPanelTab.trackStory;
                 }
               });
             },
@@ -205,7 +218,7 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
                     selectedIndex: _currentIndex.clamp(0, 4),
                     onDestinationSelected: (idx) {
                       if (idx == 4) {
-                        _onSelectTab(6); // Map dock settings to settings screen
+                        _onSelectTab(8); // Map dock settings to settings screen
                       } else {
                         _onSelectTab(idx);
                       }
@@ -231,10 +244,14 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
       case 3:
         return const NewHitsScreen();
       case 4:
-        return const NewAIDiscoveryScreen();
+        return const NewMusicDnaScreen();
       case 5:
-        return const NewSpotifyImportScreen();
+        return const NewExploreScreen();
       case 6:
+        return const NewAIDiscoveryScreen();
+      case 7:
+        return const NewSpotifyImportScreen();
+      case 8:
       default:
         return NewSettingsScreen(onNavigateHome: () => _onSelectTab(0));
     }

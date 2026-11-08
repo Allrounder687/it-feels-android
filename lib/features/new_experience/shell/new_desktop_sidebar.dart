@@ -158,7 +158,31 @@ class NewDesktopSidebar extends StatelessWidget {
                   _buildNavItem(
                     index: 3,
                     icon: Icons.trending_up_rounded,
-                    label: 'Hits & Discover',
+                    label: 'Hits & Charts',
+                  ),
+
+                  const SizedBox(height: 16),
+                  if (!isCollapsed) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      child: Text(
+                        'INTELLIGENCE & DISCOVERY',
+                        style: NewExperienceTokens.eyebrowLabel(
+                          color: NewExperienceTokens.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  _buildNavItem(
+                    index: 4,
+                    icon: Icons.fingerprint_rounded,
+                    label: 'Music DNA',
+                  ),
+                  _buildNavItem(
+                    index: 5,
+                    icon: Icons.auto_stories_rounded,
+                    label: 'Explore Stories',
                   ),
 
                   const SizedBox(height: 16),
@@ -175,12 +199,12 @@ class NewDesktopSidebar extends StatelessWidget {
                   ],
 
                   _buildNavItem(
-                    index: 4,
+                    index: 6,
                     icon: Icons.auto_awesome_rounded,
                     label: 'AI Discovery',
                   ),
                   _buildNavItem(
-                    index: 5,
+                    index: 7,
                     icon: Icons.playlist_add_check_rounded,
                     label: 'Spotify Import',
                   ),
@@ -199,7 +223,7 @@ class NewDesktopSidebar extends StatelessWidget {
                   ],
 
                   _buildNavItem(
-                    index: 6,
+                    index: 8,
                     icon: Icons.settings_outlined,
                     label: 'Settings',
                   ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -9,19 +9,24 @@ import 'package:it_feels_music/core/utils/string_utils.dart';
 import 'package:it_feels_music/features/player/sleep_timer_sheet.dart';
 import 'package:it_feels_music/features/new_experience/player/new_now_playing_screen.dart';
 import '../theme/new_experience_tokens.dart';
+import '../widgets/new_artwork_image.dart';
 
 class NewDesktopPlayerBar extends ConsumerStatefulWidget {
   final VoidCallback? onToggleLyrics;
   final VoidCallback? onToggleQueue;
+  final VoidCallback? onToggleStory;
   final bool isLyricsActive;
   final bool isQueueActive;
+  final bool isStoryActive;
 
   const NewDesktopPlayerBar({
     super.key,
     this.onToggleLyrics,
     this.onToggleQueue,
+    this.onToggleStory,
     this.isLyricsActive = false,
     this.isQueueActive = false,
+    this.isStoryActive = false,
   });
 
   @override
@@ -50,18 +55,21 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
 
   @override
   Widget build(BuildContext context) {
-    final playerState = ref.watch(audioPlayerProvider);
-    final downloadState = ref.watch(downloadProvider);
-    final notifier = ref.read(audioPlayerProvider.notifier);
-    final song = playerState.currentSong;
+    // Highly isolated selectors: prevent rebuilds during volume, position, or other song downloads
+    final song = ref.watch(audioPlayerProvider.select((s) => s.currentSong));
 
     if (song == null) {
       return const SizedBox.shrink();
     }
 
-    final isFav = playerState.favoriteSongs.any((s) => s.id == song.id);
-    final isDown = downloadState.isDownloaded(song.id);
-    final isDownloading = downloadState.isDownloading(song.id);
+    final isPlaying = ref.watch(audioPlayerProvider.select((s) => s.isPlaying));
+    final isShuffle = ref.watch(audioPlayerProvider.select((s) => s.isShuffle));
+    final isRepeat = ref.watch(audioPlayerProvider.select((s) => s.isRepeat));
+    final isSleepTimerActive = ref.watch(audioPlayerProvider.select((s) => s.isSleepTimerActive));
+    final isFav = ref.watch(audioPlayerProvider.select((s) => s.favoriteSongs.any((item) => item.id == song.id)));
+    final isDown = ref.watch(downloadProvider.select((s) => s.isDownloaded(song.id)));
+    final isDownloading = ref.watch(downloadProvider.select((s) => s.isDownloading(song.id)));
+    final notifier = ref.read(audioPlayerProvider.notifier);
 
     return Container(
       height: 84,
@@ -93,21 +101,12 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                     borderRadius: BorderRadius.circular(NewExperienceTokens.radiusSmall),
                     border: Border.all(color: NewExperienceTokens.specularBorder),
                   ),
-                  child: ClipRRect(
+                  child: NewArtworkImage(
+                    imageUrl: song.image,
+                    width: 52,
+                    height: 52,
                     borderRadius: BorderRadius.circular(NewExperienceTokens.radiusSmall),
-                    child: song.image.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: song.image,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, _, _) => const Icon(
-                              Icons.music_note_rounded,
-                              color: NewExperienceTokens.textMuted,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.music_note_rounded,
-                            color: NewExperienceTokens.textMuted,
-                          ),
+                    iconSize: 24,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -139,6 +138,8 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                 const SizedBox(width: 6),
                 // Favorite Button
                 IconButton(
+                  padding: const EdgeInsets.all(6),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   tooltip: isFav ? 'Remove from favorites' : 'Add to favorites',
                   icon: Icon(
                     isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
@@ -149,6 +150,8 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                 ),
                 // Download Button
                 IconButton(
+                  padding: const EdgeInsets.all(6),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   tooltip: isDown
                       ? 'Downloaded (Click to remove)'
                       : isDownloading
@@ -195,6 +198,8 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                 ),
                 // Share Button
                 IconButton(
+                  padding: const EdgeInsets.all(6),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   tooltip: 'Share track',
                   icon: const Icon(
                     Icons.share_outlined,
@@ -226,7 +231,7 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                       tooltip: 'Shuffle',
                       icon: Icon(
                         Icons.shuffle_rounded,
-                        color: playerState.isShuffle
+                        color: isShuffle
                             ? NewExperienceTokens.accentViolet
                             : NewExperienceTokens.textMuted,
                         size: 18,
@@ -264,7 +269,7 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                             ],
                           ),
                           child: Icon(
-                            playerState.isPlaying
+                            isPlaying
                                 ? Icons.pause_rounded
                                 : Icons.play_arrow_rounded,
                             color: Colors.white,
@@ -287,7 +292,7 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                       tooltip: 'Repeat mode',
                       icon: Icon(
                         Icons.repeat_rounded,
-                        color: playerState.isRepeat
+                        color: isRepeat
                             ? NewExperienceTokens.accentViolet
                             : NewExperienceTokens.textMuted,
                         size: 18,
@@ -297,59 +302,8 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                   ],
                 ),
 
-                // Scrubber Bar
-                StreamBuilder<Duration>(
-                  stream: locator.isRegistered<AudioEngineService>()
-                      ? locator<AudioEngineService>().positionStream
-                      : const Stream.empty(),
-                  builder: (context, snapshot) {
-                    final position = snapshot.data ?? Duration.zero;
-                    final total = Duration(seconds: song.duration);
-                    final maxMs = total.inMilliseconds > 0
-                        ? total.inMilliseconds.toDouble()
-                        : 1.0;
-                    final posMs = position.inMilliseconds.toDouble().clamp(0.0, maxMs);
-
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          StringUtils.formatDuration(position),
-                          style: NewExperienceTokens.numericTimer(
-                            color: NewExperienceTokens.textMuted,
-                          ).copyWith(fontSize: 11),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: SliderTheme(
-                            data: SliderTheme.of(context).copyWith(
-                              trackHeight: 3.5,
-                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                              activeTrackColor: NewExperienceTokens.accentViolet,
-                              inactiveTrackColor: Colors.white.withValues(alpha: 0.12),
-                              thumbColor: Colors.white,
-                            ),
-                            child: Slider(
-                              value: posMs,
-                              max: maxMs,
-                              onChanged: (val) {
-                                notifier.seek(Duration(milliseconds: val.toInt()));
-                              },
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          StringUtils.formatDuration(total),
-                          style: NewExperienceTokens.numericTimer(
-                            color: NewExperienceTokens.textMuted,
-                          ).copyWith(fontSize: 11),
-                        ),
-                      ],
-                    );
-                  },
-                ),
+                // Scrubber Bar with drag buffering and isolated position stream
+                _DesktopTrackScrubber(key: ValueKey('scrubber_${song.id}'), song: song, notifier: notifier),
               ],
             ),
           ),
@@ -361,10 +315,12 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 IconButton(
+                  padding: const EdgeInsets.all(6),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   tooltip: 'Sleep Timer',
                   icon: Icon(
                     Icons.bedtime_outlined,
-                    color: playerState.isSleepTimerActive
+                    color: isSleepTimerActive
                         ? NewExperienceTokens.accentCyan
                         : NewExperienceTokens.textMuted,
                     size: 20,
@@ -378,6 +334,8 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                   },
                 ),
                 IconButton(
+                  padding: const EdgeInsets.all(6),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   tooltip: 'Live Synchronized Lyrics',
                   icon: Icon(
                     Icons.lyrics_rounded,
@@ -389,6 +347,8 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                   onPressed: widget.onToggleLyrics,
                 ),
                 IconButton(
+                  padding: const EdgeInsets.all(6),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   tooltip: 'Up Next Queue',
                   icon: Icon(
                     Icons.queue_music_rounded,
@@ -400,6 +360,21 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                   onPressed: widget.onToggleQueue,
                 ),
                 IconButton(
+                  padding: const EdgeInsets.all(6),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  tooltip: 'Track Story & Intelligence',
+                  icon: Icon(
+                    Icons.auto_stories_rounded,
+                    color: widget.isStoryActive
+                        ? NewExperienceTokens.accentCyan
+                        : NewExperienceTokens.textMuted,
+                    size: 19,
+                  ),
+                  onPressed: widget.onToggleStory,
+                ),
+                IconButton(
+                  padding: const EdgeInsets.all(6),
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   tooltip: 'Full Player View',
                   icon: const Icon(
                     Icons.open_in_full_rounded,
@@ -450,6 +425,98 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Isolated desktop scrubber with local drag buffering and seek dispatch on release.
+class _DesktopTrackScrubber extends StatefulWidget {
+  final Song song;
+  final dynamic notifier;
+
+  const _DesktopTrackScrubber({
+    super.key,
+    required this.song,
+    required this.notifier,
+  });
+
+  @override
+  State<_DesktopTrackScrubber> createState() => _DesktopTrackScrubberState();
+}
+
+class _DesktopTrackScrubberState extends State<_DesktopTrackScrubber> {
+  bool _isDragging = false;
+  double _dragMs = 0.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = Duration(seconds: widget.song.duration);
+    final maxMs = total.inMilliseconds > 0 ? total.inMilliseconds.toDouble() : 1.0;
+
+    return StreamBuilder<Duration>(
+      stream: locator.isRegistered<AudioEngineService>()
+          ? locator<AudioEngineService>().positionStream
+          : const Stream.empty(),
+      builder: (context, snapshot) {
+        final position = snapshot.data ?? Duration.zero;
+        final posMs = _isDragging
+            ? _dragMs.clamp(0.0, maxMs)
+            : position.inMilliseconds.toDouble().clamp(0.0, maxMs);
+        final displayPos = Duration(milliseconds: posMs.toInt());
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              StringUtils.formatDuration(displayPos),
+              style: NewExperienceTokens.numericTimer(
+                color: _isDragging ? NewExperienceTokens.accentCyan : NewExperienceTokens.textMuted,
+              ).copyWith(fontSize: 11),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  trackHeight: 3.5,
+                  thumbShape: RoundSliderThumbShape(enabledThumbRadius: _isDragging ? 7.5 : 5.5),
+                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                  activeTrackColor: _isDragging ? NewExperienceTokens.accentCyan : NewExperienceTokens.accentViolet,
+                  inactiveTrackColor: Colors.white.withValues(alpha: 0.12),
+                  thumbColor: Colors.white,
+                ),
+                child: Slider(
+                  value: posMs,
+                  max: maxMs,
+                  onChangeStart: (val) {
+                    setState(() {
+                      _isDragging = true;
+                      _dragMs = val;
+                    });
+                  },
+                  onChanged: (val) {
+                    setState(() {
+                      _dragMs = val;
+                    });
+                  },
+                  onChangeEnd: (val) {
+                    setState(() {
+                      _isDragging = false;
+                    });
+                    widget.notifier.seek(Duration(milliseconds: val.toInt()));
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              StringUtils.formatDuration(total),
+              style: NewExperienceTokens.numericTimer(
+                color: NewExperienceTokens.textMuted,
+              ).copyWith(fontSize: 11),
+            ),
+          ],
+        );
+      },
     );
   }
 }

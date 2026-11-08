@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import '../theme/new_experience_tokens.dart';
 import '../widgets/new_glass_container.dart';
+import '../widgets/new_artwork_image.dart';
 
 class NewMiniPlayer extends ConsumerWidget {
   final VoidCallback onTap;
@@ -14,15 +14,16 @@ class NewMiniPlayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(audioPlayerProvider);
-    final notifier = ref.read(audioPlayerProvider.notifier);
-    final song = playerState.currentSong;
+    // Granular selectors: prevent rebuilds on volume, shuffle, repeat, or playlist mutations
+    final song = ref.watch(audioPlayerProvider.select((s) => s.currentSong));
 
     if (song == null) {
       return const SizedBox.shrink();
     }
 
-    final isFav = playerState.favoriteSongs.any((s) => s.id == song.id);
+    final isPlaying = ref.watch(audioPlayerProvider.select((s) => s.isPlaying));
+    final isFav = ref.watch(audioPlayerProvider.select((s) => s.favoriteSongs.any((item) => item.id == song.id)));
+    final notifier = ref.read(audioPlayerProvider.notifier);
 
     return Dismissible(
       key: ValueKey('new_mini_player_${song.id}'),
@@ -57,12 +58,14 @@ class NewMiniPlayer extends ConsumerWidget {
                         ? (pos.inMilliseconds / total.inMilliseconds).clamp(0.0, 1.0)
                         : 0.0;
 
-                    return LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 2.5,
-                      backgroundColor: Colors.white.withValues(alpha: 0.06),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        NewExperienceTokens.accentViolet,
+                    return ExcludeSemantics(
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 2.5,
+                        backgroundColor: Colors.white.withValues(alpha: 0.06),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          NewExperienceTokens.accentViolet,
+                        ),
                       ),
                     );
                   },
@@ -81,21 +84,12 @@ class NewMiniPlayer extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(NewExperienceTokens.radiusSmall),
                           border: Border.all(color: NewExperienceTokens.specularBorder),
                         ),
-                        child: ClipRRect(
+                        child: NewArtworkImage(
+                          imageUrl: song.image,
+                          width: 44,
+                          height: 44,
                           borderRadius: BorderRadius.circular(NewExperienceTokens.radiusSmall),
-                          child: song.image.isNotEmpty
-                              ? CachedNetworkImage(
-                                  imageUrl: song.image,
-                                  fit: BoxFit.cover,
-                                  errorWidget: (_, _, _) => const Icon(
-                                    Icons.music_note_rounded,
-                                    color: NewExperienceTokens.textMuted,
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.music_note_rounded,
-                                  color: NewExperienceTokens.textMuted,
-                                ),
+                          iconSize: 20,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -142,7 +136,7 @@ class NewMiniPlayer extends ConsumerWidget {
                       // Play/Pause Button
                       IconButton(
                         icon: Icon(
-                          playerState.isPlaying
+                          isPlaying
                               ? Icons.pause_circle_filled_rounded
                               : Icons.play_circle_fill_rounded,
                           color: NewExperienceTokens.accentViolet,

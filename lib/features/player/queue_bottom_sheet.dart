@@ -48,9 +48,27 @@ class QueueBottomSheet extends ConsumerWidget {
                         color: context.themeTextColor,
                       ),
                     ),
-                    Text(
-                      "${queue.length} Tracks",
-                      style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13),
+                    Row(
+                      children: [
+                        Text(
+                          "${queue.length} Tracks",
+                          style: GoogleFonts.inter(color: context.themeMutedTextColor, fontSize: 13),
+                        ),
+                        if (queue.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: () {
+                              ref.read(audioPlayerProvider.notifier).clearQueue(keepCurrent: true);
+                            },
+                            child: const Text("Clear", style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -95,7 +113,7 @@ class QueueBottomSheet extends ConsumerWidget {
                           final isCurrent = index == currentIndex;
 
                           return Padding(
-                            key: ValueKey('${song.id}_$index'),
+                            key: ValueKey('queue_sheet_${song.effectiveQueueKey}'),
                             padding: const EdgeInsets.only(bottom: 6),
                             child: Material(
                               color: isCurrent
@@ -142,7 +160,19 @@ class QueueBottomSheet extends ConsumerWidget {
                                             : Icons.play_arrow_rounded,
                                         color: playerProvider.themeAccentColor,
                                       )
-                                    : Icon(Icons.drag_handle_rounded, color: context.themeTextColor.withValues(alpha: 0.3)),
+                                    : Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(Icons.close_rounded, size: 18, color: context.themeTextColor.withValues(alpha: 0.4)),
+                                            tooltip: 'Remove from queue',
+                                            onPressed: () {
+                                              ref.read(audioPlayerProvider.notifier).removeFromQueue(index);
+                                            },
+                                          ),
+                                          Icon(Icons.drag_handle_rounded, color: context.themeTextColor.withValues(alpha: 0.3)),
+                                        ],
+                                      ),
                                 onTap: () {
                                   ref.read(audioPlayerProvider.notifier).playSong(song, queue: queue, index: index);
                                 },

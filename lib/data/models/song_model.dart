@@ -49,6 +49,11 @@ class Song {
   @Index(type: IndexType.value)
   List<String> searchVector; 
 
+  @ignore
+  String? queueKey;
+
+  String get effectiveQueueKey => queueKey ?? '${id}_$isarId';
+
   Song({
     this.isarId = Isar.autoIncrement,
     required this.id,
@@ -75,6 +80,7 @@ class Song {
     this.offlineStatus = OfflineStatus.none,
     this.searchVector = const [],
     this.isDirty = false,
+    this.queueKey,
   });
 
   String get image => coverArt;
@@ -224,6 +230,7 @@ class Song {
     bool? isFavorite,
     DateTime? lastPlayedAt,
     bool? isDirty,
+    String? queueKey,
   }) {
     return Song(
       isarId: isarId,
@@ -251,6 +258,7 @@ class Song {
       offlineStatus: offlineStatus ?? this.offlineStatus,
       searchVector: searchVector,
       isDirty: isDirty ?? this.isDirty,
+      queueKey: queueKey ?? this.queueKey,
     );
   }
 

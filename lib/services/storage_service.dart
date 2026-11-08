@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/services/data_integrity_service.dart';
+
 
 class StorageService {
   static const String _favKey = 'favorite_songs_json_v1';
@@ -170,13 +172,11 @@ class StorageService {
 
   /// Custom Playlists
   static Future<void> saveCustomPlaylists(String jsonString) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_customPlaylistsKey, jsonString);
+    await DataIntegrityService.instance.safeWriteString(_customPlaylistsKey, jsonString);
   }
 
   static Future<String?> loadCustomPlaylists() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_customPlaylistsKey);
+    return await DataIntegrityService.instance.safeReadString(_customPlaylistsKey);
   }
 
   /// Default Category
@@ -192,7 +192,6 @@ class StorageService {
 
   /// Save favorites list
   static Future<void> saveFavorites(List<Song> favorites) async {
-    final prefs = await SharedPreferences.getInstance();
     final jsonList = favorites
         .map((s) => {
               'id': s.id,
@@ -206,18 +205,18 @@ class StorageService {
               'hasLyrics': s.hasLyrics,
             })
         .toList();
-    await prefs.setString(_favKey, json.encode(jsonList));
+    await DataIntegrityService.instance.safeWriteString(_favKey, json.encode(jsonList));
   }
 
-  /// Load favorites list
+  /// Load favorites list with resilience and deduplication
   static Future<List<Song>> loadFavorites() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_favKey);
+    final raw = await DataIntegrityService.instance.safeReadString(_favKey);
     if (raw == null || raw.isEmpty) return [];
 
     try {
       final List<dynamic> decoded = json.decode(raw);
-      return decoded.map((item) => Song.fromJson(Map<String, dynamic>.from(item))).toList();
+      final deduplicated = DataIntegrityService.deduplicateList(decoded);
+      return deduplicated.map((item) => Song.fromJson(Map<String, dynamic>.from(item))).toList();
     } catch (e) {
       return [];
     }
@@ -258,7 +257,6 @@ class StorageService {
 
   /// Save downloaded songs list
   static Future<void> saveDownloads(List<Song> downloads) async {
-    final prefs = await SharedPreferences.getInstance();
     final jsonList = downloads
         .map((s) => {
               'id': s.id,
@@ -272,18 +270,18 @@ class StorageService {
               'hasLyrics': s.hasLyrics,
             })
         .toList();
-    await prefs.setString(_downKey, json.encode(jsonList));
+    await DataIntegrityService.instance.safeWriteString(_downKey, json.encode(jsonList));
   }
 
-  /// Load downloaded songs list
+  /// Load downloaded songs list with resilience and deduplication
   static Future<List<Song>> loadDownloads() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_downKey);
+    final raw = await DataIntegrityService.instance.safeReadString(_downKey);
     if (raw == null || raw.isEmpty) return [];
 
     try {
       final List<dynamic> decoded = json.decode(raw);
-      return decoded.map((item) => Song.fromJson(Map<String, dynamic>.from(item))).toList();
+      final deduplicated = DataIntegrityService.deduplicateList(decoded);
+      return deduplicated.map((item) => Song.fromJson(Map<String, dynamic>.from(item))).toList();
     } catch (e) {
       return [];
     }
@@ -512,5 +510,15 @@ class StorageService {
     } catch (_) {
       return null;
     }
+  }
+
+  static Future<String?> getString(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(key);
+  }
+
+  static Future<bool> setString(String key, String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.setString(key, value);
   }
 }

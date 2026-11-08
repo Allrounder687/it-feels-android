@@ -75,7 +75,8 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
 
     // Verify desktop sidebar is present
     expect(find.byType(NewDesktopSidebar), findsOneWidget);
@@ -107,7 +108,8 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
 
     // Verify mobile dock is present
     expect(find.byType(NewMobileNavDock), findsOneWidget);

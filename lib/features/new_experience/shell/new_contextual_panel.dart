@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/core/utils/hinglish_transliterator.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/core/music_identity/canonical_track.dart';
+import 'package:it_feels_music/core/intelligence/federation/federated_music_intelligence_service.dart';
 import '../theme/new_experience_tokens.dart';
+import '../widgets/new_artwork_image.dart';
+import '../artist/new_artist_detail_screen.dart';
 
-enum ContextualPanelTab { lyrics, queue }
+enum ContextualPanelTab { lyrics, queue, trackStory }
 
 class NewContextualPanel extends ConsumerStatefulWidget {
   final VoidCallback onClose;
@@ -43,7 +48,7 @@ class _NewContextualPanelState extends ConsumerState<NewContextualPanel> {
     final song = playerState.currentSong;
 
     return Container(
-      width: 340,
+      width: 360,
       decoration: BoxDecoration(
         color: NewExperienceTokens.midnightSurface,
         border: Border(
@@ -62,63 +67,76 @@ class _NewContextualPanelState extends ConsumerState<NewContextualPanel> {
             ),
             child: Row(
               children: [
-                _buildTabButton('Lyrics', ContextualPanelTab.lyrics),
-                const SizedBox(width: 8),
-                _buildTabButton('Queue', ContextualPanelTab.queue),
-                if (_currentTab == ContextualPanelTab.lyrics) ...[
-                  const SizedBox(width: 8),
-                  // Romanized English Toggle Button
-                  Tooltip(
-                    message: lyricsState.showRomanized
-                        ? 'Romanized English (Active - Click for Original Hindi)'
-                        : 'Romanized English (Click to Enable)',
-                    child: InkWell(
-                      onTap: () => ref.read(lyricsProvider.notifier).toggleRomanized(),
-                      borderRadius: BorderRadius.circular(14),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: lyricsState.showRomanized
-                              ? NewExperienceTokens.accentCyan.withValues(alpha: 0.16)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: lyricsState.showRomanized
-                                ? NewExperienceTokens.accentCyan.withValues(alpha: 0.5)
-                                : NewExperienceTokens.specularBorder,
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildTabButton('Lyrics', ContextualPanelTab.lyrics),
+                        const SizedBox(width: 6),
+                        _buildTabButton('Queue', ContextualPanelTab.queue),
+                        const SizedBox(width: 6),
+                        _buildTabButton('Story', ContextualPanelTab.trackStory),
+                        if (_currentTab == ContextualPanelTab.lyrics) ...[
+                          const SizedBox(width: 8),
+                          // Romanized English Toggle Button
+                          Tooltip(
+                            message: lyricsState.showRomanized
+                                ? 'Romanized English (Active - Click for Original Hindi)'
+                                : 'Romanized English (Click to Enable)',
+                            child: InkWell(
+                              onTap: () => ref.read(lyricsProvider.notifier).toggleRomanized(),
+                              borderRadius: BorderRadius.circular(14),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: lyricsState.showRomanized
+                                      ? NewExperienceTokens.accentCyan.withValues(alpha: 0.16)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: lyricsState.showRomanized
+                                        ? NewExperienceTokens.accentCyan.withValues(alpha: 0.5)
+                                        : NewExperienceTokens.specularBorder,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Aa',
+                                      style: TextStyle(
+                                        color: lyricsState.showRomanized
+                                            ? NewExperienceTokens.accentCyan
+                                            : NewExperienceTokens.textMuted,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 11.5,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Roman',
+                                      style: TextStyle(
+                                        color: lyricsState.showRomanized
+                                            ? NewExperienceTokens.accentCyan
+                                            : NewExperienceTokens.textMuted,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 10.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Aa',
-                              style: TextStyle(
-                                color: lyricsState.showRomanized
-                                    ? NewExperienceTokens.accentCyan
-                                    : NewExperienceTokens.textMuted,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11.5,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Roman',
-                              style: TextStyle(
-                                color: lyricsState.showRomanized
-                                    ? NewExperienceTokens.accentCyan
-                                    : NewExperienceTokens.textMuted,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 10.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                        ],
+                      ],
                     ),
                   ),
-                ],
-                const Spacer(),
+                ),
+                const SizedBox(width: 4),
                 IconButton(
                   icon: const Icon(
                     Icons.close_rounded,
@@ -143,7 +161,9 @@ class _NewContextualPanelState extends ConsumerState<NewContextualPanel> {
                   )
                 : _currentTab == ContextualPanelTab.lyrics
                     ? _buildLyricsView(song.id)
-                    : _buildQueueView(playerState),
+                    : _currentTab == ContextualPanelTab.queue
+                        ? _buildQueueView(playerState)
+                        : _buildTrackStoryView(song),
           ),
         ],
       ),
@@ -270,25 +290,29 @@ class _NewContextualPanelState extends ConsumerState<NewContextualPanel> {
         final activeIndex = lyricsState.getActiveLineIndex(position);
 
         if (activeIndex != _currentActiveIndex && activeIndex >= 0) {
-          _currentActiveIndex = activeIndex;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_lyricsScrollController.isAttached && activeIndex < lines.length) {
-              _lyricsScrollController.scrollTo(
-                index: activeIndex,
-                alignment: 0.35,
-                duration: const Duration(milliseconds: 350),
-                curve: Curves.easeOutCubic,
-              );
+            if (!mounted) return;
+            if (activeIndex != _currentActiveIndex && activeIndex >= 0) {
+              _currentActiveIndex = activeIndex;
+              if (_lyricsScrollController.isAttached && activeIndex < lines.length) {
+                _lyricsScrollController.scrollTo(
+                  index: activeIndex,
+                  alignment: 0.35,
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOutCubic,
+                );
+              }
             }
           });
         }
 
-        return ExcludeSemantics(
-          child: ScrollablePositionedList.builder(
-            itemScrollController: _lyricsScrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
-            itemCount: lines.length,
-            itemBuilder: (context, index) {
+        return ScrollablePositionedList.builder(
+          key: const ValueKey('contextual_panel_lyrics_list'),
+          itemScrollController: _lyricsScrollController,
+          addSemanticIndexes: false,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+          itemCount: lines.length,
+          itemBuilder: (context, index) {
             final line = lines[index];
             final isCurrentLine = index == activeIndex;
             final showRoman = lyricsState.showRomanized && line.transliteration != null;
@@ -358,8 +382,7 @@ class _NewContextualPanelState extends ConsumerState<NewContextualPanel> {
               ),
             );
           },
-        ),
-      );
+        );
       },
     );
   }
@@ -377,88 +400,291 @@ class _NewContextualPanelState extends ConsumerState<NewContextualPanel> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      itemCount: queue.length,
-      itemBuilder: (context, index) {
-        final song = queue[index];
-        final isCurrent = index == playerState.currentIndex;
-
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: isCurrent
-                ? NewExperienceTokens.accentViolet.withValues(alpha: 0.15)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(NewExperienceTokens.radiusSmall),
-          ),
+    return Column(
+      children: [
+        // Queue Header Bar: Count + Clear Button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Cover
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: song.image.isNotEmpty
-                      ? CachedNetworkImage(imageUrl: song.image, fit: BoxFit.cover)
-                      : const Icon(Icons.music_note_rounded, size: 16),
-                ),
+              Text(
+                '${queue.length} Tracks In Queue',
+                style: NewExperienceTokens.captionMuted(),
               ),
-              const SizedBox(width: 10),
-
-              // Title & Artist
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      song.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: NewExperienceTokens.bodySmall(
-                        color: isCurrent
-                            ? NewExperienceTokens.accentViolet
-                            : NewExperienceTokens.textPrimary,
-                      ).copyWith(fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500),
-                    ),
-                    Text(
-                      song.artist,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: NewExperienceTokens.numericTimer(
-                        color: NewExperienceTokens.textMuted,
-                      ).copyWith(fontSize: 11),
-                    ),
-                  ],
+              TextButton.icon(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
+                icon: const Icon(Icons.clear_all_rounded, size: 16, color: NewExperienceTokens.accentRose),
+                label: Text(
+                  'Clear',
+                  style: NewExperienceTokens.captionMuted(color: NewExperienceTokens.accentRose),
+                ),
+                onPressed: () {
+                  notifier.clearQueue(keepCurrent: true);
+                },
               ),
-
-              // Play / Status
-              if (isCurrent)
-                const Icon(
-                  Icons.equalizer_rounded,
-                  color: NewExperienceTokens.accentViolet,
-                  size: 18,
-                )
-              else
-                IconButton(
-                  icon: const Icon(
-                    Icons.play_arrow_rounded,
-                    color: NewExperienceTokens.textMuted,
-                    size: 18,
-                  ),
-                  splashRadius: 16,
-                  onPressed: () => notifier.playSong(song, queue: queue, index: index),
-                ),
             ],
           ),
+        ),
+        Expanded(
+          child: ReorderableListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            itemCount: queue.length,
+            onReorder: (oldIndex, newIndex) {
+              notifier.reorderQueue(oldIndex, newIndex);
+            },
+            itemBuilder: (context, index) {
+              final song = queue[index];
+              final isCurrent = index == playerState.currentIndex;
+
+              return Container(
+                key: ValueKey('queue_item_${song.effectiveQueueKey}'),
+                margin: const EdgeInsets.symmetric(vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isCurrent
+                      ? NewExperienceTokens.accentViolet.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(NewExperienceTokens.radiusSmall),
+                ),
+                child: Row(
+                  children: [
+                    // Drag Handle indicator
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: const MouseRegion(
+                        cursor: SystemMouseCursors.grab,
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          child: Icon(
+                            Icons.drag_indicator_rounded,
+                            size: 16,
+                            color: NewExperienceTokens.textMuted,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Cover
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: NewArtworkImage(
+                        imageUrl: song.image,
+                        width: 36,
+                        height: 36,
+                        borderRadius: BorderRadius.circular(6),
+                        iconSize: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+
+                    // Title & Artist
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => notifier.playSong(song, queue: queue, index: index),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              song.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: NewExperienceTokens.bodySmall(
+                                color: isCurrent
+                                    ? NewExperienceTokens.accentViolet
+                                    : NewExperienceTokens.textPrimary,
+                              ).copyWith(fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500),
+                            ),
+                            Text(
+                              song.artist,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: NewExperienceTokens.numericTimer(
+                                color: NewExperienceTokens.textMuted,
+                              ).copyWith(fontSize: 11),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Play / Status / Remove
+                    if (isCurrent)
+                      const Icon(
+                        Icons.equalizer_rounded,
+                        color: NewExperienceTokens.accentViolet,
+                        size: 18,
+                      )
+                    else
+                      IconButton(
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: NewExperienceTokens.textMuted,
+                          size: 16,
+                        ),
+                        splashRadius: 16,
+                        tooltip: 'Remove from queue',
+                        onPressed: () => notifier.removeFromQueue(index),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTrackStoryView(Song song) {
+    return FutureBuilder<CanonicalTrack>(
+      future: FederatedMusicIntelligenceService().enrichTrack(CanonicalTrack.fromSong(song)),
+      builder: (context, snapshot) {
+        final track = snapshot.data ?? CanonicalTrack.fromSong(song);
+
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          children: [
+            // Artwork & Title
+            Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(NewExperienceTokens.radiusMedium),
+                child: NewArtworkImage(
+                  imageUrl: song.image,
+                  width: 140,
+                  height: 140,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              song.title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: NewExperienceTokens.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => NewArtistDetailScreen(artistName: song.artist)),
+                );
+              },
+              child: Text(
+                song.artist,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: NewExperienceTokens.accentCyan,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Track Story
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: NewExperienceTokens.specularBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.auto_stories_rounded, size: 16, color: NewExperienceTokens.accentCyan),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Track Story',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: NewExperienceTokens.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    track.trackStory ?? 'Authentic recording performed by ${song.artist}.',
+                    style: NewExperienceTokens.bodyMedium(color: NewExperienceTokens.textSecondary).copyWith(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Credits
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: NewExperienceTokens.specularBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Credits & Metadata',
+                    style: GoogleFonts.outfit(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: NewExperienceTokens.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildStoryRow('Composer', track.composer ?? 'Not credited'),
+                  _buildStoryRow('Lyricist', track.lyricist ?? 'Not credited'),
+                  _buildStoryRow('Album', song.album.isNotEmpty ? song.album : 'Single'),
+                  _buildStoryRow('ISRC', track.isrc ?? 'Unregistered'),
+                  _buildStoryRow('Language', song.language.toUpperCase()),
+                ],
+              ),
+            ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildStoryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: NewExperienceTokens.textMuted, fontSize: 11)),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.outfit(
+                color: NewExperienceTokens.textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 11,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

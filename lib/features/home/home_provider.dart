@@ -562,16 +562,36 @@ class HomeNotifier extends Notifier<HomeState> {
       }
       final playlists = plMap.values.toList();
 
-      var tracks = await musicRepo.searchSongs("Top International Pop Hits 2026", count: 30);
+      var tracks = await musicRepo.searchSongs("Today Top Hits Pop", count: 30);
       tracks = _deduplicate(tracks)
           .where((s) => s.language.toLowerCase() == 'english' && !_isInstrumentalOrJunk(s))
           .toList();
 
       if (tracks.length < 15 && playlists.isNotEmpty) {
-        final moreTracks = await musicRepo.getPlaylistTracks(playlists.first.id);
-        tracks = _deduplicate([...tracks, ...moreTracks])
-            .where((s) => s.language.toLowerCase() == 'english' && !_isInstrumentalOrJunk(s))
-            .toList();
+        final cleanPlaylists = playlists.where((p) {
+          final t = p.title.toLowerCase();
+          return !t.contains('arcade') &&
+              !t.contains('8-bit') &&
+              !t.contains('16-bit') &&
+              !t.contains('emulation') &&
+              !t.contains('chiptune');
+        }).toList();
+
+        if (cleanPlaylists.isNotEmpty) {
+          final moreTracks = await musicRepo.getPlaylistTracks(cleanPlaylists.first.id);
+          tracks = _deduplicate([...tracks, ...moreTracks])
+              .where((s) => s.language.toLowerCase() == 'english' && !_isInstrumentalOrJunk(s))
+              .toList();
+        }
+      }
+
+      if (tracks.length < 15) {
+        try {
+          final seedGlobal = await musicRepo.searchSongs("The Weeknd Dua Lipa Taylor Swift", count: 20);
+          tracks = _deduplicate([...tracks, ...seedGlobal])
+              .where((s) => s.language.toLowerCase() == 'english' && !_isInstrumentalOrJunk(s))
+              .toList();
+        } catch (_) {}
       }
 
       final albums = await musicRepo.searchAlbums("English Pop", count: 15);

@@ -74,6 +74,69 @@ class TrackValidationEngine {
     'bass boosted',
   ];
 
+  static const List<String> emulationKeywords = [
+    'emulation',
+    '8-bit',
+    '8 bit',
+    '8bit',
+    '16-bit',
+    '16 bit',
+    '16bit',
+    'chiptune',
+    'arcade player',
+    '8-bit arcade',
+    'arcade version',
+    'arcade cover',
+    'music box version',
+    'music box cover',
+    'music box',
+    'lullaby version',
+    'baby lullaby',
+    'midi cover',
+    'midi version',
+    'synth cover',
+    'synthesizer cover',
+    'synthesizer version',
+    'in the style of',
+    'as made famous by',
+    'originally performed by',
+  ];
+
+  static const List<String> spamArtists = [
+    'arcade player',
+    '8-bit arcade',
+    '8 bit arcade',
+    'sing2piano',
+    'sing2guitar',
+    'karaoke channel',
+    'midifine',
+    'relaxing piano crew',
+    'lullaby world',
+    'baby sleep',
+    'tribute band',
+    'cover band',
+    'acoustic tribute',
+  ];
+
+  static const List<String> topCelebrityArtists = [
+    'the weeknd',
+    'taylor swift',
+    'drake',
+    'ariana grande',
+    'ed sheeran',
+    'justin bieber',
+    'dua lipa',
+    'billie eilish',
+    'bruno mars',
+    'post malone',
+    'harry styles',
+    'arijit singh',
+    'diljit dosanjh',
+    'badshah',
+    'shreya ghoshal',
+    'pritam',
+  ];
+
   /// Checks whether a string denotes an explicit user desire for instrumental/karaoke music.
   static bool isContextuallyInstrumental(String? queryContext) {
     if (queryContext == null || queryContext.trim().isEmpty) return false;
@@ -133,6 +196,30 @@ class TrackValidationEngine {
     for (final kw in modifierKeywords) {
       if (tLower.contains(kw) || albLower.contains(kw)) {
         isModification = true;
+        break;
+      }
+    }
+
+    bool isEmulation = false;
+    for (final kw in emulationKeywords) {
+      if (tLower.contains(kw) || albLower.contains(kw) || aLower.contains(kw)) {
+        isEmulation = true;
+        break;
+      }
+    }
+
+    bool isSpamArtist = false;
+    for (final sa in spamArtists) {
+      if (aLower.contains(sa)) {
+        isSpamArtist = true;
+        break;
+      }
+    }
+
+    bool isSeoTitleStuffed = false;
+    for (final celeb in topCelebrityArtists) {
+      if (tLower.contains(celeb) && !aLower.contains(celeb)) {
+        isSeoTitleStuffed = true;
         break;
       }
     }
@@ -212,6 +299,21 @@ class TrackValidationEngine {
         score -= 45.0; // Heavy penalty for slowed/reverb/ringtone/tribute
         rejectionReason = rejectionReason ?? 'Unwanted remix/ringtone modification';
       }
+    }
+
+    if (isEmulation) {
+      score -= 60.0; // Heavy penalty for unwanted 8-bit/16-bit chiptune or emulation
+      rejectionReason = rejectionReason ?? 'Unwanted 8-bit/16-bit emulation or chiptune track';
+    }
+
+    if (isSpamArtist) {
+      score -= 60.0; // Heavy penalty for known sound-alike / chiptune spam creators
+      rejectionReason = rejectionReason ?? 'Known sound-alike or chiptune spam artist ($aLower)';
+    }
+
+    if (isSeoTitleStuffed) {
+      score -= 55.0; // Heavy penalty for SEO title-stuffed sound-alike cover impersonators
+      rejectionReason = rejectionReason ?? 'SEO title-stuffed sound-alike cover';
     }
 
     // Clamp score to [0.0, 100.0]

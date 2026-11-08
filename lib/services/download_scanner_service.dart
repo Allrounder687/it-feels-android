@@ -7,6 +7,7 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/services/download_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/services/database_service.dart';
+import 'package:it_feels_music/services/metadata_restoration_service.dart';
 
 /// Discovers, validates, and recursively indexes downloaded songs across device storage,
 /// Scoped Storage paths, public Music directories, and custom folders.
@@ -102,9 +103,15 @@ class DownloadScannerService {
     // Candidate C: App Documents Directory
     try {
       final docDir = await getApplicationDocumentsDirectory();
-      candidatePaths.add(docDir.path);
+      // On mobile platforms (Android/iOS), docDir is the app-private sandbox.
+      // On desktop (Windows/macOS/Linux), docDir is the user's root Documents folder,
+      // so we DO NOT scan docDir.path root to avoid scanning personal documents & sound recordings.
+      if (Platform.isAndroid || Platform.isIOS) {
+        candidatePaths.add(docDir.path);
+      }
       candidatePaths.add('${docDir.path}/downloaded_music');
       candidatePaths.add('${docDir.path}/Music');
+      candidatePaths.add('${docDir.path}/Music/It Feels');
       candidatePaths.add('${docDir.path}/It Feels');
     } catch (_) {}
 
@@ -112,8 +119,10 @@ class DownloadScannerService {
     try {
       final dlDir = await getDownloadsDirectory();
       if (dlDir != null) {
-        candidatePaths.add(dlDir.path);
+        // Confine search to dedicated app folders, avoiding the entire general Downloads folder
         candidatePaths.add('${dlDir.path}/It Feels');
+        candidatePaths.add('${dlDir.path}/downloaded_music');
+        candidatePaths.add('${dlDir.path}/Music');
       }
     } catch (_) {}
 
@@ -138,7 +147,32 @@ class DownloadScannerService {
       }
     }
 
-    final finalSongsList = discoveredSongs.values.toList();
+    // 3. Deduplicate and filter out spurious non-music files
+    final Map<String, Song> uniqueDiscovered = {};
+    for (final song in discoveredSongs.values) {
+      final filePath = song.encryptedMediaUrl ?? song.localFilePath ?? '';
+      if (filePath.isEmpty) continue;
+      final file = File(filePath);
+      if (!file.existsSync() || file.lengthSync() <= 0) continue;
+
+      // Filter out files from non-music user folders (e.g. Sound Recordings, video torrents, root documents videos)
+      final normPath = filePath.toLowerCase().replaceAll('\\', '/');
+      if (normPath.contains('/sound recordings/') ||
+          normPath.contains('/playtorrio/') ||
+          (normPath.contains('/documents/') &&
+              !normPath.contains('/downloaded_music/') &&
+              !normPath.contains('/it feels/') &&
+              !normPath.contains('/music/')) ||
+          (normPath.contains('/downloads/') &&
+              !normPath.contains('/it feels/') &&
+              !normPath.contains('/downloaded_music/'))) {
+        continue;
+      }
+
+      uniqueDiscovered[song.id] = song;
+    }
+
+    final finalSongsList = uniqueDiscovered.values.toList();
     debugPrint('[DownloadScannerService] scanAllDownloads completed. Total songs discovered: ${finalSongsList.length}');
     await StorageService.saveDownloads(finalSongsList);
     try {
@@ -203,6 +237,33 @@ class DownloadScannerService {
         final fileSize = audioFile.lengthSync();
         if (fileSize <= 0) continue; // Skip empty files
 
+        final dotIdx = audioFile.path.lastIndexOf('.');
+        final audioBase = dotIdx > 0 ? audioFile.path.substring(0, dotIdx) : audioFile.path;
+
+        // Check for companion JSON: <song_name>.json OR metadata.json
+        File? companionJson = File('$audioBase.json');
+        if (!companionJson.existsSync() && metadataFile != null && metadataFile.existsSync()) {
+          companionJson = metadataFile;
+        }
+
+        // Check for companion Cover Art: <song_name>.jpg/.png OR cover.jpg/png in folder
+        File? companionCover;
+        for (final ext in ['.jpg', '.png', '.jpeg']) {
+          final f = File('$audioBase$ext');
+          if (f.existsSync()) {
+            companionCover = f;
+            break;
+          }
+        }
+        companionCover ??= (coverFile != null && coverFile.existsSync()) ? coverFile : null;
+
+        // Check for companion Lyrics: <song_name>.lrc/.txt OR lyrics.lrc/txt in folder
+        File? companionLyrics = File('$audioBase.lrc');
+        if (!companionLyrics.existsSync()) companionLyrics = File('$audioBase.txt');
+        if (!companionLyrics.existsSync()) {
+          companionLyrics = (lyricsLrcFile != null && lyricsLrcFile.existsSync()) ? lyricsLrcFile : null;
+        }
+
         Song? matchedExisting;
         final normPath = audioFile.path.replaceAll('\\', '/');
         for (final s in existingDownloads) {
@@ -214,38 +275,49 @@ class DownloadScannerService {
         }
 
         if (matchedExisting != null) {
-          discoveredSongs[audioFile.path] = matchedExisting;
+          Song existing = matchedExisting;
+          // If existing metadata was missing/garbled and we now have companionJson, restore it
+          if (MetadataRestorationService.isSongMissingDetails(existing) &&
+              companionJson != null &&
+              companionJson.existsSync()) {
+            try {
+              final jsonStr = companionJson.readAsStringSync();
+              final meta = jsonDecode(jsonStr);
+              if (meta is Map<String, dynamic>) {
+                existing = Song.fromJson(meta).copyWith(
+                  encryptedMediaUrl: audioFile.path,
+                  localFilePath: audioFile.path,
+                  offlineStatus: OfflineStatus.downloaded,
+                );
+              }
+            } catch (_) {}
+          }
+
+          final localCover = companionCover?.path ?? existing.coverArt;
+          final updatedCover = (companionCover != null && (existing.coverArt.isEmpty || existing.coverArt.startsWith('http')))
+              ? companionCover.path
+              : localCover;
+          final updatedLyrics = existing.hasLyrics || companionLyrics != null;
+          final upgraded = existing.copyWith(
+            coverArt: updatedCover,
+            hasLyrics: updatedLyrics,
+          );
+          discoveredSongs[audioFile.path] = upgraded;
           continue;
         }
 
-        // Case A: metadata.json exists
-        if (metadataFile != null && metadataFile.existsSync()) {
+        // Case A: companionJson or metadata.json exists
+        if (companionJson != null && companionJson.existsSync()) {
           try {
-            final jsonStr = metadataFile.readAsStringSync();
+            final jsonStr = companionJson.readAsStringSync();
             final meta = jsonDecode(jsonStr);
             if (meta is Map<String, dynamic>) {
-              final songId = meta['id']?.toString() ?? 'local_${audioFile.path.hashCode}';
-              final saavnId = meta['saavnId']?.toString() ?? (songId.contains(':') ? songId.split(':').last : songId);
-              final coverPath = coverFile?.path ?? meta['coverArt']?.toString() ?? '';
-              
-              final song = Song(
-                id: songId,
-                saavnId: saavnId,
-                title: StringUtils.cleanText(meta['title']?.toString() ?? _extractTitleFromFileName(audioFile.path)),
-                artist: StringUtils.cleanText(meta['artist']?.toString() ?? 'Unknown Artist'),
-                album: StringUtils.cleanText(meta['album']?.toString() ?? 'Downloaded'),
-                duration: int.tryParse(meta['duration']?.toString() ?? '0') ?? 0,
-                coverArt: coverPath,
+              final song = Song.fromJson(meta).copyWith(
                 encryptedMediaUrl: audioFile.path,
                 localFilePath: audioFile.path,
-                hasLyrics: lyricsLrcFile != null || meta['hasLyrics'] == true,
-                addedAt: meta['downloadedAt'] != null ? DateTime.tryParse(meta['downloadedAt']) ?? DateTime.now() : DateTime.now(),
+                coverArt: companionCover?.path ?? (meta['coverArt']?.toString() ?? ''),
+                hasLyrics: companionLyrics != null || meta['hasLyrics'] == true,
                 offlineStatus: OfflineStatus.downloaded,
-                searchVector: Song.generateSearchVector(
-                  meta['title']?.toString() ?? '',
-                  meta['artist']?.toString() ?? '',
-                  meta['album']?.toString() ?? '',
-                ),
               );
               discoveredSongs[audioFile.path] = song;
               continue;
@@ -253,27 +325,18 @@ class DownloadScannerService {
           } catch (_) {}
         }
 
-        // Case B: Loose audio file without metadata.json
+        // Case B: Loose audio file without companion JSON
         final fileName = audioFile.path.split(RegExp(r'[\\/]')).last;
         final (parsedTitle, parsedArtist) = _parseTitleAndArtist(fileName);
-
-        // Check for companion cover art: <song_name>.jpg
-        String foundCover = coverFile?.path ?? '';
-        if (foundCover.isEmpty) {
-          final dotIdx = audioFile.path.lastIndexOf('.');
-          if (dotIdx > 0) {
-            final companionJpg = File('${audioFile.path.substring(0, dotIdx)}.jpg');
-            if (companionJpg.existsSync()) {
-              foundCover = companionJpg.path;
-            }
-          }
-        }
 
         String derivedSaavnId = '';
         if (fileName.startsWith('saavn_')) {
           final match = RegExp(r'saavn_([a-zA-Z0-9_-]+)').firstMatch(fileName);
           if (match != null) {
             derivedSaavnId = match.group(1) ?? '';
+            if (derivedSaavnId.startsWith('native_')) {
+              derivedSaavnId = derivedSaavnId.replaceFirst('native_', '');
+            }
           }
         }
 
@@ -284,10 +347,10 @@ class DownloadScannerService {
           artist: parsedArtist,
           album: 'Downloaded',
           duration: 0,
-          coverArt: foundCover,
+          coverArt: companionCover?.path ?? '',
           encryptedMediaUrl: audioFile.path,
           localFilePath: audioFile.path,
-          hasLyrics: lyricsLrcFile != null,
+          hasLyrics: companionLyrics != null,
           addedAt: audioFile.lastModifiedSync(),
           offlineStatus: OfflineStatus.downloaded,
           searchVector: Song.generateSearchVector(parsedTitle, parsedArtist, 'Downloaded'),

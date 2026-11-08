@@ -9,11 +9,17 @@ import 'package:it_feels_music/features/settings/app_experience_selector_screen.
 import 'package:it_feels_music/features/settings/keyboard_shortcuts_screen.dart';
 import 'package:it_feels_music/features/settings/profile_screen.dart';
 import 'package:it_feels_music/features/new_experience/settings/taste_profile_screen.dart';
+import 'package:it_feels_music/features/new_experience/dna/new_music_dna_screen.dart';
+import 'package:it_feels_music/features/new_experience/diagnostics/enterprise_diagnostic_sheet.dart';
+import 'package:it_feels_music/features/new_experience/diagnostics/content_health_sheet.dart';
+import 'package:it_feels_music/features/new_experience/diagnostics/diagnostics_dashboard_screen.dart';
+import 'package:it_feels_music/features/new_experience/player/new_equalizer_sheet.dart';
 import 'package:it_feels_music/services/download_scanner_service.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import '../theme/new_experience_tokens.dart';
 import '../theme/new_ambient_canvas.dart';
 import '../widgets/new_glass_container.dart';
+import '../theme/content_viewport_insets.dart';
 
 class NewSettingsScreen extends ConsumerWidget {
   final VoidCallback? onNavigateHome;
@@ -37,7 +43,12 @@ class NewSettingsScreen extends ConsumerWidget {
               constraints: const BoxConstraints(maxWidth: 860),
               child: ListView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 120),
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 16,
+                  bottom: ContentViewportInsets.bottom(context, ref),
+                ),
                 children: [
                   // Header
                   Row(
@@ -166,6 +177,48 @@ class NewSettingsScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
+                        // Your Music DNA Card
+                        InkWell(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const NewMusicDnaScreen()),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: NewExperienceTokens.accentCyan.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.fingerprint_rounded, color: NewExperienceTokens.accentCyan, size: 20),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Your Music DNA', style: NewExperienceTokens.sectionTitle(fontSize: 15)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Personal listening analytics, hourly rhythm & discovery timeline',
+                                        style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white70),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Divider(color: Colors.white10),
+
                         InkWell(
                           onTap: () {
                             Navigator.of(context).push(
@@ -195,6 +248,138 @@ class NewSettingsScreen extends ConsumerWidget {
                                       const SizedBox(height: 2),
                                       Text(
                                         'View learned affinities, tune discovery balance & manage exclusions',
+                                        style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white70),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Divider(color: Colors.white10),
+
+                        // System Diagnostics Sheet
+                        InkWell(
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => const EnterpriseDiagnosticSheet(),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.monitor_heart_rounded, color: Color(0xFF10B981), size: 20),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Enterprise System Diagnostics', style: NewExperienceTokens.sectionTitle(fontSize: 15)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Federated provider health, circuit breakers, cache hit rates & latency',
+                                        style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white70),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Divider(color: Colors.white10),
+
+                        // Living Catalogue & Content Health Sheet
+                        InkWell(
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => const ContentHealthSheet(),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: NewExperienceTokens.accentCyan.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.verified_rounded, color: NewExperienceTokens.accentCyan, size: 20),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Living Catalogue & Content Health', style: NewExperienceTokens.sectionTitle(fontSize: 15)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Section-by-section health audits, duplicate prevention & artwork repair stats',
+                                        style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white70),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Divider(color: Colors.white10),
+
+                        // Deep Observability & Diagnostics Dashboard
+                        InkWell(
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const DiagnosticsDashboardScreen()),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: NewExperienceTokens.accentViolet.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.analytics_rounded, color: NewExperienceTokens.accentViolet, size: 20),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Observability & Diagnostics Hub', style: NewExperienceTokens.sectionTitle(fontSize: 15)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Structured logging, playback tracing, latency telemetry & diagnostic export',
                                         style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
                                       ),
                                     ],
@@ -242,6 +427,59 @@ class NewSettingsScreen extends ConsumerWidget {
                           }).toList(),
                         ),
                         Divider(height: 28, color: NewExperienceTokens.specularBorder),
+
+                        // 10-Band Graphic Equalizer
+                        InkWell(
+                          onTap: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => const NewEqualizerSheet(),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: NewExperienceTokens.accentCyan.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.equalizer_rounded, color: NewExperienceTokens.accentCyan, size: 20),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('10-Band Graphic Equalizer', style: NewExperienceTokens.sectionTitle(fontSize: 15)),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Studio biquad peaking filters, loudness normalization, bass & treble boosts',
+                                        style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white70),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Divider(height: 20, color: NewExperienceTokens.specularBorder),
+
+                        _buildToggleRow(
+                          title: 'Hardware Decoding Acceleration',
+                          subtitle: 'Use native GPU/DSP pipeline for MP3, AAC and FLAC decoders',
+                          value: settings.enableHardwareDecoding,
+                          onChanged: (v) => settingsNotifier.setEnableHardwareDecoding(v),
+                        ),
+                        Divider(height: 20, color: NewExperienceTokens.specularBorder),
 
                         _buildToggleRow(
                           title: 'Use Serverless Edge Proxy',
@@ -351,6 +589,53 @@ class NewSettingsScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
+                        Divider(height: 20, color: NewExperienceTokens.specularBorder),
+                        _buildToggleRow(
+                          title: 'Smart Offline Caching',
+                          subtitle: 'Pre-cache frequently played songs in memory for instant playback',
+                          value: settings.enableSmartDownloads,
+                          onChanged: (v) => settingsNotifier.setEnableSmartDownloads(v),
+                        ),
+                        Divider(height: 20, color: NewExperienceTokens.specularBorder),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Clear In-Memory & Image Cache', style: NewExperienceTokens.sectionTitle(fontSize: 15)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Release decode memory buffers and purge thumbnail cache',
+                                    style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                PaintingBinding.instance.imageCache.clear();
+                                PaintingBinding.instance.imageCache.clearLiveImages();
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('In-memory image and artwork cache cleared.'),
+                                      behavior: SnackBarBehavior.floating,
+                                      backgroundColor: NewExperienceTokens.accentCyan,
+                                    ),
+                                  );
+                                }
+                              },
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: NewExperienceTokens.specularBorder),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.cleaning_services_rounded, size: 16, color: NewExperienceTokens.accentCyan),
+                              label: const Text('Clear'),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -412,7 +697,7 @@ class NewSettingsScreen extends ConsumerWidget {
                               style: NewExperienceTokens.bodyMedium(color: NewExperienceTokens.textSecondary),
                             ),
                             Text(
-                              'v3.6.38 Next-Gen',
+                              'v3.9.3 Obsidian',
                               style: GoogleFonts.jetBrainsMono(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,

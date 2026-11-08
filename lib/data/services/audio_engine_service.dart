@@ -7,6 +7,8 @@ import 'package:windows_taskbar/windows_taskbar.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/services/audio_player_handler.dart';
 import 'package:it_feels_music/services/storage_service.dart';
+import 'package:it_feels_music/data/services/equalizer_service.dart';
+import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:home_widget/home_widget.dart';
 
 enum AudioVibe {
@@ -60,6 +62,10 @@ class AudioEngineService {
   Future<void> init(AudioPlayerHandler handler) async {
     audioHandler = handler;
     
+    _positionSub?.cancel();
+    _playerStateSub?.cancel();
+    _mediaItemSub?.cancel();
+    
     if (!kIsWeb && Platform.isWindows) {
       try { WindowsTaskbar.setProgressMode(TaskbarProgressMode.normal).catchError((_) {}); } catch (_) {}
       _positionSub = positionStream.listen((pos) {
@@ -96,6 +102,13 @@ class AudioEngineService {
       });
     }
 
+    try {
+      await locator<EqualizerService>().init();
+      await locator<EqualizerService>().syncWithPlayer(audioHandler.player);
+    } catch (e) {
+      debugPrint('[AudioEngineService] Failed to initialize EqualizerService: $e');
+    }
+
     final audioSettings = await StorageService.loadAudioSettings();
     await _applyAudioSettings(audioSettings);
   }
@@ -122,23 +135,7 @@ class AudioEngineService {
   Future<void> setDspEngine(bool enabled) async {
     isDspEngineEnabled = enabled;
     try {
-      if (enabled) {
-        // Boost low frequencies and high frequencies using libmpv audio filters
-        final af = 'equalizer=f=64:width_type=q:w=1:g=5,equalizer=f=4000:width_type=q:w=1:g=3';
-        try {
-          // Access the NativePlayer's setProperty method dynamically
-          await (audioHandler.player.platform as dynamic).setProperty('af', af);
-        } catch (_) {
-          // Fallback if platform does not support setProperty
-          await audioHandler.player.setVolume(120.0);
-        }
-      } else {
-        try {
-          await (audioHandler.player.platform as dynamic).setProperty('af', '');
-        } catch (_) {
-          await audioHandler.player.setVolume(100.0);
-        }
-      }
+      await locator<EqualizerService>().setEnabled(enabled, audioHandler.player);
       saveAudioSettings();
     } catch (e) {
       debugPrint('[AudioEngine] Failed to apply DSP: $e');
@@ -272,8 +269,12 @@ class AudioEngineService {
     _playerStateSub?.cancel();
     _mediaItemSub?.cancel();
     _sleepTimer?.cancel();
-    _sleepTimerController.close();
-        _sleepAfterTrackController.close();
+    if (!_sleepTimerController.isClosed) {
+      _sleepTimerController.close();
+    }
+    if (!_sleepAfterTrackController.isClosed) {
+      _sleepAfterTrackController.close();
+    }
   }
 
   void _setupWindowsTaskbar() {

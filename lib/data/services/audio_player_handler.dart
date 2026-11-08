@@ -1,6 +1,7 @@
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/repositories/music_repository.dart';
 import 'package:audio_service/audio_service.dart';
+import 'package:audio_session/audio_session.dart' hide AudioDevice;
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'dart:io';
@@ -8,6 +9,8 @@ import 'dart:async';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:smtc_windows/smtc_windows.dart';
 import 'package:it_feels_music/services/storage_service.dart';
+import 'package:it_feels_music/data/services/equalizer_service.dart';
+import 'package:it_feels_music/core/diagnostics/trackers/playback_diagnostics_tracker.dart';
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   late final Player _player;
@@ -17,10 +20,30 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   VoidCallback? onSkipPrevious;
   VoidCallback? onTrackCompleted;
   Future<void> Function()? onToggleFavorite;
+  void Function(String error)? onPlaybackError;
   bool _isLoadingTrack = false;
   
   SMTCWindows? _smtc;
   StreamSubscription? _smtcSubscription;
+
+  StreamSubscription? _playerPlayingSub;
+  StreamSubscription? _playerPositionSub;
+  StreamSubscription? _playerCompletedSub;
+  StreamSubscription? _playerBufferingSub;
+  StreamSubscription? _playerErrorSub;
+  StreamSubscription? _audioDevicesSubscription;
+  StreamSubscription? _audioDeviceSubscription;
+  StreamSubscription? _becomingNoisySubscription;
+  StreamSubscription? _devicesChangedSubscription;
+  StreamSubscription? _interruptionSubscription;
+  List<AudioDevice> _lastAudioDevices = [];
+  AudioDevice? _currentAudioDevice;
+  bool _isFirstAudioDevicesEmission = true;
+  bool _isFirstAudioDeviceEmission = true;
+
+  bool _isDisposed = false;
+  bool _isDisposing = false;
+  bool get isDisposed => _isDisposed;
 
   AudioPlayerHandler({
     required this.apiService,
@@ -72,13 +95,14 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       }
     }
     
-    _player.stream.playing.listen((playing) {
-      _broadcastState();
+    _playerPlayingSub = _player.stream.playing.listen((playing) {
+      if (!_isDisposed) _broadcastState();
     });
-    _player.stream.position.listen((pos) {
-      _broadcastState();
+    _playerPositionSub = _player.stream.position.listen((pos) {
+      if (!_isDisposed) _broadcastState();
     });
-    _player.stream.completed.listen((completed) {
+    _playerCompletedSub = _player.stream.completed.listen((completed) {
+      if (_isDisposed) return;
       if (completed) {
         _broadcastState(); // Do not emit isCompleted to prevent iOS teardown
         if (onTrackCompleted != null) {
@@ -88,9 +112,143 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         }
       }
     });
-    _player.stream.buffering.listen((buffering) {
+    _playerBufferingSub = _player.stream.buffering.listen((buffering) {
+      if (_isDisposed) return;
+      if (buffering) {
+        PlaybackDiagnosticsTracker.instance.trackBufferingStarted();
+      } else {
+        PlaybackDiagnosticsTracker.instance.trackBufferingCompleted(isFirstAudio: true);
+      }
       _broadcastState(isBuffering: buffering);
     });
+
+    _playerErrorSub = _player.stream.error.listen((error) {
+      debugPrint('[AudioPlayerHandler] Player emitted stream error: $error');
+      PlaybackDiagnosticsTracker.instance.trackPlaybackError(
+        category: PlaybackFailureCategory.decoder,
+        errorCode: 'ERR-DEC-STREAM',
+        errorMessage: error.toString(),
+      );
+      if (onPlaybackError != null) {
+        onPlaybackError!(error.toString());
+      }
+    });
+
+    _setupAudioDeviceDisconnectionListeners();
+  }
+
+  void _setupAudioDeviceDisconnectionListeners() {
+    // 1. Desktop & Cross-Platform (media_kit stream)
+    try {
+      _audioDevicesSubscription = _player.stream.audioDevices.listen((devices) {
+        if (_isFirstAudioDevicesEmission) {
+          _isFirstAudioDevicesEmission = false;
+          _lastAudioDevices = devices;
+          return;
+        }
+
+        // Compare non-auto physical/OS devices
+        final previousNames = _lastAudioDevices
+            .map((d) => d.name)
+            .where((n) => n.isNotEmpty && n != 'auto')
+            .toSet();
+        final currentNames = devices
+            .map((d) => d.name)
+            .where((n) => n.isNotEmpty && n != 'auto')
+            .toSet();
+
+        final removedDevices = previousNames.difference(currentNames);
+        _lastAudioDevices = devices;
+
+        if (removedDevices.isNotEmpty) {
+          debugPrint('[AudioPlayerHandler] Output audio device(s) disconnected: $removedDevices');
+          if (_player.state.playing || _isLoadingTrack) {
+            debugPrint('[AudioPlayerHandler] Auto-pausing playback due to audio device disconnection.');
+            pause();
+          }
+        }
+      }, onError: (e) {
+        debugPrint('[AudioPlayerHandler] Error in audioDevices stream: $e');
+      });
+
+      _audioDeviceSubscription = _player.stream.audioDevice.listen((device) {
+        if (_isFirstAudioDeviceEmission) {
+          _isFirstAudioDeviceEmission = false;
+          _currentAudioDevice = device;
+          return;
+        }
+
+        final previousDevice = _currentAudioDevice;
+        _currentAudioDevice = device;
+
+        // If the active output device was non-auto and switched away
+        if (previousDevice != null &&
+            previousDevice.name.isNotEmpty &&
+            previousDevice.name != 'auto' &&
+            device.name != previousDevice.name) {
+          debugPrint('[AudioPlayerHandler] Active device changed from ${previousDevice.name} to ${device.name}');
+          if (_player.state.playing || _isLoadingTrack) {
+            debugPrint('[AudioPlayerHandler] Auto-pausing playback due to active device route loss.');
+            pause();
+          }
+        }
+      }, onError: (e) {
+        debugPrint('[AudioPlayerHandler] Error in audioDevice stream: $e');
+      });
+    } catch (e) {
+      debugPrint('[AudioPlayerHandler] Failed to initialize media_kit device listeners: $e');
+    }
+
+    // 2. Mobile platforms (Android / iOS / macOS) via AudioSession
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)) {
+      try {
+        AudioSession.instance.then((session) {
+          _becomingNoisySubscription = session.becomingNoisyEventStream.listen((_) {
+            debugPrint('[AudioPlayerHandler] Audio becoming noisy (unplugged headphones/BT). Auto-pausing.');
+            if (_player.state.playing || _isLoadingTrack) {
+              pause();
+            }
+          }, onError: (e) {
+            debugPrint('[AudioPlayerHandler] Error in becomingNoisyEventStream: $e');
+          });
+
+          _devicesChangedSubscription = session.devicesChangedEventStream.listen((event) {
+            if (event.devicesRemoved.isNotEmpty) {
+              debugPrint('[AudioPlayerHandler] Audio device(s) removed from AudioSession: ${event.devicesRemoved.map((d) => d.name).toList()}');
+              if (_player.state.playing || _isLoadingTrack) {
+                pause();
+              }
+            }
+          }, onError: (e) {
+            debugPrint('[AudioPlayerHandler] Error in devicesChangedEventStream: $e');
+          });
+
+          _interruptionSubscription = session.interruptionEventStream.listen((event) {
+            if (event.begin) {
+              debugPrint('[AudioPlayerHandler] Audio interruption began: ${event.type}');
+              if (event.type == AudioInterruptionType.duck) {
+                // Smooth transient volume ducking for navigation/notifications
+                _player.setVolume((_player.state.volume * 0.35).clamp(5.0, 100.0));
+              } else {
+                if (_player.state.playing || _isLoadingTrack) {
+                  pause();
+                }
+              }
+            } else {
+              if (event.type == AudioInterruptionType.duck) {
+                _player.setVolume(100.0);
+              }
+            }
+          }, onError: (e) {
+            debugPrint('[AudioPlayerHandler] Error in interruptionEventStream: $e');
+          });
+        }).catchError((e) {
+          debugPrint('[AudioPlayerHandler] Failed to hook AudioSession listeners: $e');
+        });
+      } catch (e) {
+        debugPrint('[AudioPlayerHandler] Error initializing AudioSession listeners: $e');
+      }
+    }
   }
 
   void _broadcastState({bool isBuffering = false}) {
@@ -134,9 +292,8 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     ));
 
     if (_smtc != null) {
-      _smtc!.setPlaybackStatus(playing ? PlaybackStatus.playing : PlaybackStatus.paused);
-      
       try {
+        _smtc!.setPlaybackStatus(playing ? PlaybackStatus.playing : PlaybackStatus.paused);
         _smtc!.updateTimeline(PlaybackTimeline(
           startTimeMs: 0,
           endTimeMs: _player.state.duration.inMilliseconds,
@@ -192,8 +349,17 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> playSong(Song song, String streamUrl) async {
+    if (_isDisposed) return;
     try {
       _isLoadingTrack = false;
+      final host = Uri.tryParse(streamUrl)?.host ?? 'local';
+      PlaybackDiagnosticsTracker.instance.trackSourceResolved(
+        provider: 'jiosaavn_or_addon',
+        streamHost: host,
+        bitrateKbps: 320,
+      );
+      PlaybackDiagnosticsTracker.instance.trackPlayerInitStarted();
+
       final item = MediaItem(
         id: song.id,
         album: song.album,
@@ -205,12 +371,14 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       mediaItem.add(item);
       
       if (_smtc != null) {
-        _smtc!.updateMetadata(MusicMetadata(
-          title: song.title,
-          artist: song.artist,
-          album: song.album ?? '',
-          thumbnail: song.coverArt,
-        ));
+        try {
+          _smtc!.updateMetadata(MusicMetadata(
+            title: song.title,
+            artist: song.artist,
+            album: song.album ?? '',
+            thumbnail: song.coverArt,
+          ));
+        } catch (_) {}
       }
       
       await _player.stop();
@@ -225,12 +393,19 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       );
       
       await _player.open(media, play: true);
+
+      try {
+        await locator<EqualizerService>().syncWithPlayer(_player);
+      } catch (_) {}
       
       if (song.playbackPositionMs != null && song.playbackPositionMs! > 0) {
         await _player.seek(Duration(milliseconds: song.playbackPositionMs!));
       }
     } catch (e) {
       debugPrint('[AudioPlayerHandler] Error setting stream URL: $e');
+      if (onPlaybackError != null) {
+        onPlaybackError!(e.toString());
+      }
     }
   }
 
@@ -238,16 +413,40 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   Future<void> skipToQueueItem(int index) async {}
 
   @override
-  Future<void> play() => _player.play();
+  Future<void> play() {
+    if (_isDisposed) return Future.value();
+    return _player.play();
+  }
 
   @override
-  Future<void> pause() => _player.pause();
+  Future<void> pause() async {
+    if (_isDisposed) return;
+    _isLoadingTrack = false;
+    return _player.pause();
+  }
 
   @override
-  Future<void> stop() => _player.stop();
+  Future<void> stop() async {
+    if (_isDisposed) return;
+    _isLoadingTrack = false;
+    return _player.stop();
+  }
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> seek(Duration position) {
+    if (_isDisposed) return Future.value();
+    final dur = _player.state.duration;
+    Duration target = position;
+    if (target < Duration.zero) {
+      target = Duration.zero;
+    } else if (dur > Duration.zero && target > dur) {
+      target = dur;
+    }
+    PlaybackDiagnosticsTracker.instance.trackSeekStarted(targetPosition: target);
+    return _player.seek(target).then((_) {
+      PlaybackDiagnosticsTracker.instance.trackSeekCompleted(resultingPosition: target);
+    });
+  }
 
   @override
   Future<void> skipToNext() async {
@@ -413,6 +612,80 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> disposeSubscriptions() async {
+    await _playerPlayingSub?.cancel();
+    _playerPlayingSub = null;
+    await _playerPositionSub?.cancel();
+    _playerPositionSub = null;
+    await _playerCompletedSub?.cancel();
+    _playerCompletedSub = null;
+    await _playerBufferingSub?.cancel();
+    _playerBufferingSub = null;
     await _smtcSubscription?.cancel();
+    _smtcSubscription = null;
+    await _playerErrorSub?.cancel();
+    _playerErrorSub = null;
+    await _audioDevicesSubscription?.cancel();
+    _audioDevicesSubscription = null;
+    await _audioDeviceSubscription?.cancel();
+    _audioDeviceSubscription = null;
+    await _becomingNoisySubscription?.cancel();
+    _becomingNoisySubscription = null;
+    await _devicesChangedSubscription?.cancel();
+    _devicesChangedSubscription = null;
+    await _interruptionSubscription?.cancel();
+    _interruptionSubscription = null;
+  }
+
+  /// Deterministic shutdown and teardown of AudioPlayerHandler and underlying libmpv player.
+  /// Guarantees that all callbacks and audio filter graphs are flushed before Dart isolate destruction.
+  Future<void> dispose() async {
+    if (_isDisposed || _isDisposing) return;
+    _isDisposing = true;
+    try {
+      // 1. Immediately detach EqualizerService to prevent late filter applications
+      try {
+        if (locator.isRegistered<EqualizerService>()) {
+          await locator<EqualizerService>().detachPlayer(_player);
+        }
+      } catch (e) {
+        debugPrint('[AudioPlayerHandler] Error detaching EqualizerService during disposal: $e');
+      }
+
+      // 2. Mute player volume to avoid audio pops/stutters during teardown
+      try {
+        await _player.setVolume(0.0);
+      } catch (_) {}
+
+      // 3. Stop playback engine
+      try {
+        await _player.stop();
+      } catch (_) {}
+
+      // 4. Cancel all stream subscriptions
+      await disposeSubscriptions();
+
+      // 5. Clean up Windows SMTC
+      try {
+        _smtc?.dispose();
+        _smtc = null;
+      } catch (_) {}
+
+      // 6. Clear external closures/callbacks to release references
+      onSkipNext = null;
+      onSkipPrevious = null;
+      onTrackCompleted = null;
+      onToggleFavorite = null;
+      onPlaybackError = null;
+
+      // 7. Dispose native player and release underlying libmpv handle
+      try {
+        await _player.dispose();
+      } catch (e) {
+        debugPrint('[AudioPlayerHandler] Error disposing media_kit player: $e');
+      }
+    } finally {
+      _isDisposed = true;
+      _isDisposing = false;
+    }
   }
 }

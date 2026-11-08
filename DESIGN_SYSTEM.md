@@ -1,57 +1,75 @@
-# IT FEELS MUSIC — DESIGN SYSTEM SPECIFICATION (2026 GENERATION)
-
-## 1. Visual Identity & Brand Concept
-
-The **2026 New Experience** introduces an authentic, luxury visual identity characterized by:
-- Deep obsidian and midnight spatial surfaces with specular rim lighting.
-- GPU-accelerated dynamic mesh background derived from album cover art.
-- Ultra-refined editorial typography pairing Outfit (expressive headlines) and Inter (crisp UI body).
-- True multi-device adaptive ergonomics adhering to the 3-tier progressive disclosure model and Steven Hoober thumb zones.
-- 100% isolation from Classic UI tokens.
+# Obsidian Design System & Interaction Specification
+**IT Feels Music — Project Obsidian 2026**
+*Document Version: 1.0.0 | Status: Production Design System Specification*
 
 ---
 
-## 2. Color Palette & Semantics (`NewExperienceTokens`)
+## 1. Design Philosophy
 
-| Token Name | Hex Value | Purpose |
-|---|---|---|
-| `obsidianBackground` | `#08080A` | Deepest canvas background, energy-efficient on OLED |
-| `midnightSurface` | `#121217` | Card, container, and drawer primary surface |
-| `elevatedGlass` | `#1A1A22` | Frosted glass modals, popovers, and miniplayers |
-| `specularBorder` | `rgba(255,255,255,0.08)` | 1px sub-pixel rim highlight on cards |
-| `accentViolet` | `#8B5CF6` | Primary brand accent, glowing focus states |
-| `accentCyan` | `#06B6D4` | Secondary accent, live lyrics & discovery badges |
-| `accentEmerald` | `#10B981` | Downloaded indicators, audio streaming fidelity |
-| `textPrimary` | `#F8FAFC` | High-contrast headlines and active titles (WCAG AAA) |
-| `textSecondary` | `#94A3B8` | Subtitles, artist names, metadata |
-| `textMuted` | `#64748B` | Timestamps, durations, inactive icons |
+The Obsidian Design System is built to deliver a luxurious, immersive, and human-centric music listening experience. It avoids flat sterile minimalism in favor of subtle depth, rich dark materials, specular glass borders, dynamic atmospheric lighting, and tactile haptic feedback.
 
----
-
-## 3. Typography Scale
-
-- **Display Headline (Hero)**: Outfit 32sp, SemiBold / Bold, -0.8px letter spacing.
-- **Section Title**: Outfit 20sp, Bold, -0.4px letter spacing.
-- **Eyebrow Label**: Inter 11sp, ExtraBold, +1.2px uppercase tracking.
-- **Primary Body**: Inter 14sp, Medium, normal spacing.
-- **Secondary Caption**: Inter 12sp, Regular, muted tone.
-- **Mono / Numeric**: Inter 13sp with tabular figures for seek timers & durations.
+```text
++-----------------------------------------------------------------------------------+
+|                            Obsidian Theme Tokens                                  |
+|                                                                                   |
+|  * Background:   #0A0A0C (Deep Space Obsidian)                                    |
+|  * Surface:      #141418 (Frosted Midnight Surface)                               |
+|  * Specular:     rgba(255, 255, 255, 0.08) (Subtle Edge Refraction)               |
+|  * Accent Cyan:  #06B6D4 (Digital Cyan Indicator)                                 |
+|  * Accent Violet:#8B5CF6 (Vibrant Violet Primary)                                 |
+|  * Accent Rose:  #F43F5E (Heart & Favorite Rose)                                  |
++-----------------------------------------------------------------------------------+
+```
 
 ---
 
-## 4. Geometry & Elevation
+## 2. Dynamic Ambient Canvas (`NewAmbientCanvas`)
 
-- **Card Squircle Radius**: `20.0` dp with continuous curvature.
-- **Button Pill Radius**: `24.0` dp.
-- **Dock / Floating Island Radius**: `28.0` dp.
-- **Glass Refraction**: `BackdropFilter` with `ImageFilter.blur(sigmaX: 20, sigmaY: 20)`.
-- **Specular Border**: `Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1.0)`.
+Music is visual and emotional. The background of the New Experience is powered by `NewAmbientCanvas`:
+- **Dynamic Color Extraction:** As a new track loads, `PaletteExtractorService` extracts dominant, surface, and complementary accent colors in a background isolate.
+- **Radial Lighting Meshes:** Renders layered radial blur shaders centered behind album artwork with configurable intensity ($0.3$ on browse screens, $0.65$ on Now Playing).
+- **GPU Efficiency:** Mesh gradients use static hardware shaders without continuous repaint loops, preserving device battery life during long listening sessions.
 
 ---
 
-## 5. Animation Curves & Reduced Motion
+## 3. Typography Hierarchy
 
-- **Micro-Interactions (Hover, Tap)**: `Curves.easeOutCubic`, 180ms duration.
-- **Sheet / Drawer Transitions**: `Curves.easeOutQuint`, 350ms duration.
-- **Mesh Palette Crossfade**: `Curves.easeInOutCubic`, 600ms duration.
-- **Reduced Motion**: Automatically respected when `MediaQuery.of(context).disableAnimations` is `true`.
+The design system unifies two premier typefaces:
+- **Display & Section Titles:** `GoogleFonts.outfit()`
+  - Bold, modern geometric sans-serif with tight character tracking ($-0.3\text{px}$).
+  - Used for hero banners, song titles, artist names, and section headers.
+- **Body & Metadata Typography:** `GoogleFonts.inter()`
+  - Highly legible, neutral body font designed for optical readability on mobile and high-DPI displays.
+  - Used for artist subtitles, album descriptions, lyrics, and metadata timestamps.
+- **Numeric Timers:** Monospaced tabular numerals (`FontFeature.tabularFigures()`) preventing jitter in progress counters.
+
+---
+
+## 4. Components & Materials
+
+### 4.1 Specular Glass Containers (`NewGlassContainer`)
+- Backed by subtle white opacity ($0.04 - 0.08$) and ultra-thin white border refraction ($0.08 - 0.12$).
+- Provides high contrast against dark backdrops without opaque visual weight.
+
+### 4.2 Universal Artwork Image (`NewArtworkImage`)
+- Resolves network URLs, local filesystem paths (`C:\...`, `/storage/...`), and `file://` URIs seamlessly.
+- Enforces smooth anti-aliased squircle borders (`borderRadius: 20-28dp`).
+- Displays animated placeholder skeletons during disk or network I/O.
+
+### 4.3 High-Precision Scrubber (`NewAudioScrubber`)
+- Local drag buffering preventing continuous stream seeks.
+- Thumb enlarges from $6.0\text{dp}$ to $8.5\text{dp}$ when touched with subtle specular glow.
+- Haptic notches trigger on minute boundaries.
+
+---
+
+## 5. Micro-Interactions & Haptics Matrix
+
+| Action | Visual Animation | Haptic Feedback Tier | Audio Consequence |
+| :--- | :--- | :--- | :--- |
+| **Play / Pause Toggle** | Artwork scales between $0.94$ and $1.00$ ($300\text{ms}$ ease-out) | `HapticFeedback.mediumImpact()` | Immediate play / pause |
+| **Favorite Track Toggle** | Rose heart pulse animation ($1.2\times$ bounce) | `HapticFeedback.lightImpact()` | Inserts / removes from favorites |
+| **Scrubber Dragging** | Scrubber thumb expands, track height increases | `HapticFeedback.selectionClick()` on start; light tick on each minute | Seeks on touch release |
+| **Skip Track (Next/Prev)**| Slide transition on track details | `HapticFeedback.lightImpact()` | Traverses shuffled / linear queue |
+| **Equalizer Band Shift** | Gain numerical text changes color to cyan | Light impact per $3\text{dB}$ threshold | Adjusts biquad filter in real-time |
+| **Multi-Select Toggle** | Checkbox fades in with cyan fill | `HapticFeedback.selectionClick()` | Adds / removes from selection set |

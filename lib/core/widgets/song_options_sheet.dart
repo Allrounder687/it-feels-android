@@ -14,6 +14,11 @@ import 'package:it_feels_music/features/social/social_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:it_feels_music/core/appearance/app_experience.dart';
+import 'package:it_feels_music/core/appearance/app_experience_provider.dart';
+import 'package:it_feels_music/features/new_experience/artist/new_artist_detail_screen.dart';
+import 'package:it_feels_music/features/new_experience/album/new_album_detail_screen.dart';
+import 'package:it_feels_music/features/new_experience/track/new_track_detail_screen.dart';
 
 class SongOptionsSheet extends ConsumerWidget {
   final Song song;
@@ -285,16 +290,67 @@ class SongOptionsSheet extends ConsumerWidget {
               title: "Go to Artist (${song.artist.split(',').first})",
               onTap: () {
                 Navigator.pop(context);
+                final exp = ref.read(appExperienceProvider);
+                final leadArtist = song.artist.split(',').first.trim();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => ArtistDetailScreen(
-                      artistName: song.artist.split(',').first.trim(),
-                    ),
+                    builder: (_) => exp == AppExperience.newExperience
+                        ? NewArtistDetailScreen(artistName: leadArtist)
+                        : ArtistDetailScreen(artistName: leadArtist),
                   ),
                 );
               },
             ),
+
+          // Action 6b: Go to Album
+          if (song.album.isNotEmpty && song.album != 'Unknown Album')
+            _buildOptionTile(context,
+              icon: Icons.album_outlined,
+              iconColor: Colors.tealAccent,
+              title: "Go to Album (${song.album})",
+              onTap: () {
+                Navigator.pop(context);
+                final exp = ref.read(appExperienceProvider);
+                if (exp == AppExperience.newExperience) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => NewAlbumDetailScreen(
+                        albumTitle: song.album,
+                        artistName: song.artist,
+                        albumCover: song.image,
+                      ),
+                    ),
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ArtistDetailScreen(
+                        artistName: song.artist.split(',').first.trim(),
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+
+          // Action 6c: Song Story & Credits
+          _buildOptionTile(context,
+            icon: Icons.auto_stories_rounded,
+            iconColor: Colors.cyanAccent,
+            title: "Track Story & Credits",
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => NewTrackDetailScreen(song: song),
+                ),
+              );
+            },
+          ),
 
           // Action 7: Driving Mode
           _buildOptionTile(context,

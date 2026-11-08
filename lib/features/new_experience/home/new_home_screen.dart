@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/home/home_provider.dart';
+import 'package:it_feels_music/features/library/listening_history_provider.dart';
 import 'package:it_feels_music/features/settings/profile_screen.dart';
 import '../theme/new_experience_tokens.dart';
 import '../theme/new_ambient_canvas.dart';
@@ -10,6 +11,12 @@ import '../widgets/new_section_header.dart';
 import '../widgets/new_card.dart';
 import '../widgets/new_media_tile.dart';
 import '../playlist/new_playlist_detail_screen.dart';
+import '../see_all/new_see_all_screen.dart';
+import '../theme/content_viewport_insets.dart';
+import '../widgets/new_daily_mix_cover.dart';
+import 'package:it_feels_music/core/intelligence/playlists/daily_mix_orchestrator.dart';
+import 'package:it_feels_music/core/intelligence/catalogue/artwork_repair_service.dart';
+import 'package:it_feels_music/core/intelligence/catalogue/content_enrichment_pipeline.dart';
 
 class NewHomeScreen extends ConsumerStatefulWidget {
   final VoidCallback onOpenFullPlayer;
@@ -35,6 +42,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
         final topArtists = ref.read(listeningHistoryProvider).getTopArtists();
         ref.read(homeProvider.notifier).fetchYouSongs(topArtists);
       }
+      ContentEnrichmentPipeline.instance.scheduleDailyMixEnrichment(homeState);
     });
   }
 
@@ -58,32 +66,72 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
   void _onSelectFilter(String filter) {
     setState(() => _activeFilter = filter);
     ref.read(homeFeedProvider.notifier).setFilter(filter);
+    final homeNotifier = ref.read(homeProvider.notifier);
+    final homeState = ref.read(homeProvider);
+    if (filter == 'Bollywood' && homeState.bollywoodSongs.isEmpty) {
+      homeNotifier.fetchBollywoodSongs();
+    } else if (filter == 'International' && homeState.hollywoodSongs.isEmpty) {
+      homeNotifier.fetchHollywoodSongs();
+    } else if (filter == 'Punjabi' && homeState.punjabiSongs.isEmpty) {
+      homeNotifier.fetchPunjabiSongs();
+    } else if (filter == 'Charts' && homeState.chartPlaylists.isEmpty) {
+      homeNotifier.fetchCharts();
+    } else if (filter == 'For You' && homeState.youSongs.isEmpty) {
+      final topArtists = ref.read(listeningHistoryProvider).getTopArtists();
+      homeNotifier.fetchYouSongs(topArtists);
+    }
+  }
+
+  bool _isCategoryEmpty(HomeState homeState, ListeningHistoryState historyState, String filter) {
+    switch (filter) {
+      case 'Bollywood':
+        return homeState.bollywoodSongs.isEmpty && homeState.bollywoodPlaylists.isEmpty;
+      case 'International':
+        return homeState.hollywoodSongs.isEmpty && homeState.hollywoodPlaylists.isEmpty;
+      case 'Punjabi':
+        return homeState.punjabiSongs.isEmpty && homeState.punjabiPlaylists.isEmpty;
+      case 'Charts':
+        return homeState.chartPlaylists.isEmpty && homeState.trendingSongs.isEmpty;
+      case 'For You':
+        return historyState.recentlyPlayed.isEmpty && homeState.youSongs.isEmpty && homeState.youPlaylists.isEmpty;
+      default:
+        return false;
+    }
   }
 
   String _getMixCover(int index, HomeState homeState) {
     final mixId = 'daily_mix_${index + 1}';
+    final dynMix = DailyMixOrchestrator.instance.getMix(mixId);
+    if (dynMix?.coverArt != null && dynMix!.coverArt!.isNotEmpty) {
+      return dynMix.coverArt!;
+    }
     for (final p in homeState.youPlaylists) {
       if (p.id == mixId && p.coverArt.isNotEmpty) {
         return p.coverArt;
       }
     }
+    final repaired = ArtworkRepairService.instance.getDailyMixCover(mixId);
+    if (repaired.isNotEmpty) return repaired;
     switch (index) {
       case 0:
         if (homeState.bollywoodSongs.isNotEmpty) return homeState.bollywoodSongs.first.coverArt;
         if (homeState.trendingSongs.isNotEmpty) return homeState.trendingSongs.first.coverArt;
-        return 'https://c.saavncdn.com/152/Arijit-Singh-Broken-Heart-Hindi-2022-20220422171542-500x500.jpg';
+        return '';
       case 1:
         if (homeState.hollywoodSongs.isNotEmpty) return homeState.hollywoodSongs.first.coverArt;
-        return 'https://c.saavncdn.com/830/Starboy-English-2016-500x500.jpg';
+        return '';
       case 2:
         if (homeState.punjabiSongs.isNotEmpty) return homeState.punjabiSongs.first.coverArt;
-        return 'https://c.saavncdn.com/269/Ghost-Punjabi-2023-20230929054714-500x500.jpg';
+        return '';
       case 3:
-        return 'https://c.saavncdn.com/568/Kohinoor-Hindi-2019-20191008064504-500x500.jpg';
+        if (homeState.trendingSongs.isNotEmpty) return homeState.trendingSongs.first.coverArt;
+        return '';
       case 4:
-        return 'https://c.saavncdn.com/131/Alag-Aasman-Hindi-2020-20200730073539-500x500.jpg';
+        if (homeState.bollywoodSongs.length > 5) return homeState.bollywoodSongs[5].coverArt;
+        return '';
       case 5:
-        return 'https://c.saavncdn.com/712/Badshah-Greatest-Hits-Hindi-2022-20220317053036-500x500.jpg';
+        if (homeState.trendingSongs.length > 3) return homeState.trendingSongs[3].coverArt;
+        return '';
       default:
         return '';
     }
@@ -235,7 +283,15 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                     child: NewSectionHeader(
                       title: 'Jump Back In',
                       eyebrow: 'CONTINUE LISTENING',
-                      onAction: () {},
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.songs(
+                            title: 'Jump Back In',
+                            eyebrow: 'CONTINUE LISTENING',
+                            songs: historyState.recentlyPlayed,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -273,7 +329,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                     child: NewSectionHeader(
                       title: 'Made For You',
                       eyebrow: 'DAILY CLUSTERS',
-                      onAction: () {},
+                      onAction: () => _openDailyMixesSeeAll(context, homeState),
                     ),
                   ),
                 ),
@@ -288,15 +344,32 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                       separatorBuilder: (_, _) => const SizedBox(width: 14),
                       itemBuilder: (context, index) {
                         final mix = _dailyMixes[index];
-                        final cover = _getMixCover(index, homeState);
                         final mixId = 'daily_mix_${index + 1}';
-                        final match = homeState.youPlaylists.where((p) => p.id == mixId).firstOrNull;
-                        final songs = (match?.songs != null && match!.songs!.isNotEmpty) ? match.songs : null;
+                        final dynMix = DailyMixOrchestrator.instance.getMix(mixId);
+                        final cover = (dynMix?.coverArt != null && dynMix!.coverArt!.isNotEmpty)
+                            ? dynMix.coverArt!
+                            : _getMixCover(index, homeState);
+                        final songs = (dynMix?.tracks != null && dynMix!.tracks.isNotEmpty)
+                            ? dynMix.tracks
+                            : homeState.youPlaylists.where((p) => p.id == mixId).firstOrNull?.songs;
+
+                        final quadUrls = (songs ?? [])
+                            .map((s) => s.image)
+                            .where((u) => u.isNotEmpty && !u.contains('404'))
+                            .take(4)
+                            .toList();
 
                         return NewCard(
                           title: mix['title'] as String,
                           subtitle: mix['subtitle'] as String,
                           imageUrl: cover.isNotEmpty ? cover : null,
+                          customArtwork: NewDailyMixCover(
+                            mixIndex: index + 1,
+                            title: mix['title'] as String,
+                            subtitle: mix['subtitle'] as String,
+                            quadImageUrls: quadUrls.isNotEmpty ? quadUrls : null,
+                            primaryImageUrl: cover.isNotEmpty ? cover : null,
+                          ),
                           badgeText: 'MIX ${index + 1}',
                           width: 154,
                           onTap: () {
@@ -368,7 +441,15 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                     child: NewSectionHeader(
                       title: 'Bollywood Hits',
                       eyebrow: 'DESI FAVORITES',
-                      onAction: () {},
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.songs(
+                            title: 'Bollywood Hits',
+                            eyebrow: 'DESI FAVORITES',
+                            songs: homeState.bollywoodSongs,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -398,6 +479,148 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
               ],
 
+              // ── Section: Bollywood Curated Playlists (When in Bollywood tab) ──
+              if (_activeFilter == 'Bollywood' && homeState.bollywoodPlaylists.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Bollywood Playlists',
+                      eyebrow: 'CURATED DESI COLLECTIONS',
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.playlists(
+                            title: 'Bollywood Playlists',
+                            eyebrow: 'CURATED DESI COLLECTIONS',
+                            playlists: homeState.bollywoodPlaylists,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 228,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: homeState.bollywoodPlaylists.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final playlist = homeState.bollywoodPlaylists[index];
+                        final sub = playlist.songCount > 0
+                            ? '${playlist.songCount} Tracks'
+                            : (playlist.customSubtitle ?? 'Curated Playlist');
+                        return NewCard(
+                          title: playlist.title,
+                          subtitle: sub,
+                          imageUrl: playlist.image,
+                          width: 154,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => NewPlaylistDetailScreen(playlist: playlist),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
+              // ── Section: Bollywood Soundtracks & Albums (When in Bollywood tab) ──
+              if (_activeFilter == 'Bollywood' && homeState.bollywoodAlbums.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Bollywood Soundtracks & Albums',
+                      eyebrow: 'ORIGINAL SOUNDTRACKS',
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.playlists(
+                            title: 'Bollywood Soundtracks & Albums',
+                            eyebrow: 'ORIGINAL SOUNDTRACKS',
+                            playlists: homeState.bollywoodAlbums,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 228,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: homeState.bollywoodAlbums.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final album = homeState.bollywoodAlbums[index];
+                        final sub = album.songCount > 0
+                            ? '${album.songCount} Tracks'
+                            : (album.customSubtitle ?? 'OST Album');
+                        return NewCard(
+                          title: album.title,
+                          subtitle: sub,
+                          imageUrl: album.image,
+                          width: 154,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => NewPlaylistDetailScreen(playlist: album),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
+              // ── Section: Bollywood Track Explorer (When in Bollywood tab) ──
+              if (_activeFilter == 'Bollywood' && homeState.bollywoodSongs.isNotEmpty) ...[
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Explore Bollywood Tracks',
+                      eyebrow: 'POPULAR RELEASES',
+                    ),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final song = homeState.bollywoodSongs[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: NewMediaTile(
+                          song: song,
+                          index: index,
+                          onTap: () => playerNotifier.playSong(
+                            song,
+                            queue: homeState.bollywoodSongs,
+                            index: index,
+                          ),
+                        ),
+                      );
+                    },
+                    childCount: homeState.bollywoodSongs.length,
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
               // ── Section: Pop & International Hits ──
               if ((_activeFilter == 'All' || _activeFilter == 'International') &&
                   homeState.hollywoodSongs.isNotEmpty) ...[
@@ -407,7 +630,15 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                     child: NewSectionHeader(
                       title: 'Pop & Global Hits',
                       eyebrow: 'INTERNATIONAL',
-                      onAction: () {},
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.songs(
+                            title: 'Pop & Global Hits',
+                            eyebrow: 'INTERNATIONAL',
+                            songs: homeState.hollywoodSongs,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -437,6 +668,148 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
               ],
 
+              // ── Section: Global Playlists (When in International tab) ──
+              if (_activeFilter == 'International' && homeState.hollywoodPlaylists.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Global Playlists',
+                      eyebrow: 'WORLDWIDE SELECTIONS',
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.playlists(
+                            title: 'Global Playlists',
+                            eyebrow: 'WORLDWIDE SELECTIONS',
+                            playlists: homeState.hollywoodPlaylists,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 228,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: homeState.hollywoodPlaylists.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final playlist = homeState.hollywoodPlaylists[index];
+                        final sub = playlist.songCount > 0
+                            ? '${playlist.songCount} Tracks'
+                            : (playlist.customSubtitle ?? 'Global Playlist');
+                        return NewCard(
+                          title: playlist.title,
+                          subtitle: sub,
+                          imageUrl: playlist.image,
+                          width: 154,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => NewPlaylistDetailScreen(playlist: playlist),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
+              // ── Section: International Albums (When in International tab) ──
+              if (_activeFilter == 'International' && homeState.hollywoodAlbums.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'International Masterpieces',
+                      eyebrow: 'TOP CHARTER ALBUMS',
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.playlists(
+                            title: 'International Masterpieces',
+                            eyebrow: 'TOP CHARTER ALBUMS',
+                            playlists: homeState.hollywoodAlbums,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 228,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: homeState.hollywoodAlbums.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final album = homeState.hollywoodAlbums[index];
+                        final sub = album.songCount > 0
+                            ? '${album.songCount} Tracks'
+                            : (album.customSubtitle ?? 'International Album');
+                        return NewCard(
+                          title: album.title,
+                          subtitle: sub,
+                          imageUrl: album.image,
+                          width: 154,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => NewPlaylistDetailScreen(playlist: album),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
+              // ── Section: International Track Explorer (When in International tab) ──
+              if (_activeFilter == 'International' && homeState.hollywoodSongs.isNotEmpty) ...[
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Explore Global Pop & Hits',
+                      eyebrow: 'GLOBAL STREAMING',
+                    ),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final song = homeState.hollywoodSongs[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: NewMediaTile(
+                          song: song,
+                          index: index,
+                          onTap: () => playerNotifier.playSong(
+                            song,
+                            queue: homeState.hollywoodSongs,
+                            index: index,
+                          ),
+                        ),
+                      );
+                    },
+                    childCount: homeState.hollywoodSongs.length,
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
               // ── Section: Punjabi Beats ──
               if ((_activeFilter == 'All' || _activeFilter == 'Punjabi') &&
                   homeState.punjabiSongs.isNotEmpty) ...[
@@ -446,7 +819,15 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                     child: NewSectionHeader(
                       title: 'Punjabi Beats',
                       eyebrow: 'HIGH ENERGY',
-                      onAction: () {},
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.songs(
+                            title: 'Punjabi Beats',
+                            eyebrow: 'HIGH ENERGY',
+                            songs: homeState.punjabiSongs,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -476,6 +857,237 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
               ],
 
+              // ── Section: Punjabi Playlists (When in Punjabi tab) ──
+              if (_activeFilter == 'Punjabi' && homeState.punjabiPlaylists.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Punjabi Playlists',
+                      eyebrow: 'BHANGRA & DESI VIBES',
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.playlists(
+                            title: 'Punjabi Playlists',
+                            eyebrow: 'BHANGRA & DESI VIBES',
+                            playlists: homeState.punjabiPlaylists,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 228,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: homeState.punjabiPlaylists.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final playlist = homeState.punjabiPlaylists[index];
+                        final sub = playlist.songCount > 0
+                            ? '${playlist.songCount} Tracks'
+                            : (playlist.customSubtitle ?? 'Punjabi Playlist');
+                        return NewCard(
+                          title: playlist.title,
+                          subtitle: sub,
+                          imageUrl: playlist.image,
+                          width: 154,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => NewPlaylistDetailScreen(playlist: playlist),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
+              // ── Section: Punjabi Albums (When in Punjabi tab) ──
+              if (_activeFilter == 'Punjabi' && homeState.punjabiAlbums.isNotEmpty) ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Essential Punjabi Albums',
+                      eyebrow: 'ICONIC ALBUMS',
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.playlists(
+                            title: 'Essential Punjabi Albums',
+                            eyebrow: 'ICONIC ALBUMS',
+                            playlists: homeState.punjabiAlbums,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 228,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: homeState.punjabiAlbums.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        final album = homeState.punjabiAlbums[index];
+                        final sub = album.songCount > 0
+                            ? '${album.songCount} Tracks'
+                            : (album.customSubtitle ?? 'Punjabi Album');
+                        return NewCard(
+                          title: album.title,
+                          subtitle: sub,
+                          imageUrl: album.image,
+                          width: 154,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => NewPlaylistDetailScreen(playlist: album),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
+              // ── Section: Punjabi Track Explorer (When in Punjabi tab) ──
+              if (_activeFilter == 'Punjabi' && homeState.punjabiSongs.isNotEmpty) ...[
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Explore Punjabi Hits',
+                      eyebrow: 'BHANGRA & HIP-HOP',
+                    ),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final song = homeState.punjabiSongs[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: NewMediaTile(
+                          song: song,
+                          index: index,
+                          onTap: () => playerNotifier.playSong(
+                            song,
+                            queue: homeState.punjabiSongs,
+                            index: index,
+                          ),
+                        ),
+                      );
+                    },
+                    childCount: homeState.punjabiSongs.length,
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
+              // ── Section: Acoustic & Indie (When in Acoustic tab) ──
+              if (_activeFilter == 'Acoustic') ...[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Acoustic & Unplugged',
+                      eyebrow: 'CALM & INTIMATE',
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.playlists(
+                            title: 'Acoustic & Unplugged',
+                            eyebrow: 'CALM & INTIMATE',
+                            playlists: homeState.topPlaylists,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 228,
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        NewCard(
+                          title: 'Acoustic & Indie',
+                          subtitle: 'Anuv Jain, Prateek Kuhad, Jasleen Royal',
+                          imageUrl: _getMixCover(4, homeState),
+                          customArtwork: NewDailyMixCover(
+                            mixIndex: 5,
+                            title: 'Acoustic & Indie',
+                            subtitle: 'Anuv Jain, Prateek Kuhad, Jasleen Royal',
+                            primaryImageUrl: _getMixCover(4, homeState),
+                          ),
+                          badgeText: 'MIX 5',
+                          width: 154,
+                          onTap: () {
+                            final match = homeState.youPlaylists.where((p) => p.id == 'daily_mix_5').firstOrNull;
+                            final songs = match?.songs;
+                            final playlist = Playlist(
+                              id: 'daily_mix_5',
+                              title: 'Acoustic & Indie',
+                              subtitle: 'Anuv Jain, Prateek Kuhad, Jasleen Royal',
+                              image: _getMixCover(4, homeState),
+                              songCount: songs?.length ?? 20,
+                              songs: songs,
+                            );
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => NewPlaylistDetailScreen(
+                                  playlist: playlist,
+                                  staticTracks: songs,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        if (homeState.topPlaylists.isNotEmpty) ...[
+                          const SizedBox(width: 14),
+                          ...homeState.topPlaylists.take(6).map((playlist) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 14),
+                              child: NewCard(
+                                title: playlist.title,
+                                subtitle: playlist.songCount > 0 ? '${playlist.songCount} Tracks' : 'Curated Playlist',
+                                imageUrl: playlist.image,
+                                width: 154,
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) => NewPlaylistDetailScreen(playlist: playlist),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          }),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
               // ── Section: Charts (When Filtered or In All) ──
               if ((_activeFilter == 'All' || _activeFilter == 'Charts') &&
                   homeState.chartPlaylists.isNotEmpty) ...[
@@ -485,7 +1097,15 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                     child: NewSectionHeader(
                       title: 'Global Charts',
                       eyebrow: 'TOP RANKINGS',
-                      onAction: () {},
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.playlists(
+                            title: 'Global Charts',
+                            eyebrow: 'TOP RANKINGS',
+                            playlists: homeState.chartPlaylists,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -532,7 +1152,15 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                     child: NewSectionHeader(
                       title: 'Trending Hits',
                       eyebrow: 'CHART TOPPERS',
-                      onAction: () {},
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.songs(
+                            title: 'Trending Hits',
+                            eyebrow: 'CHART TOPPERS',
+                            songs: homeState.trendingSongs,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -563,15 +1191,57 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 const SliverToBoxAdapter(child: SizedBox(height: 16)),
               ],
 
-              // ── Section: Curated Playlists ──
-              if (_activeFilter == 'All' && homeState.topPlaylists.isNotEmpty) ...[
+              // ── Section: Chart Tracks Explorer (When in Charts tab) ──
+              if (_activeFilter == 'Charts' && homeState.trendingSongs.isNotEmpty) ...[
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: NewSectionHeader(
+                      title: 'Trending Track Feed',
+                      eyebrow: 'NOW PLAYING WORLDWIDE',
+                    ),
+                  ),
+                ),
+                SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final song = homeState.trendingSongs[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: NewMediaTile(
+                          song: song,
+                          index: index,
+                          onTap: () => playerNotifier.playSong(
+                            song,
+                            queue: homeState.trendingSongs,
+                            index: index,
+                          ),
+                        ),
+                      );
+                    },
+                    childCount: homeState.trendingSongs.length,
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+              ],
+
+              // ── Section: Curated Playlists (When in All or Acoustic) ──
+              if ((_activeFilter == 'All' || _activeFilter == 'Acoustic') && homeState.topPlaylists.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: NewSectionHeader(
                       title: 'Featured Playlists',
                       eyebrow: 'HANDPICKED COLLECTIONS',
-                      onAction: () {},
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.playlists(
+                            title: 'Featured Playlists',
+                            eyebrow: 'HANDPICKED COLLECTIONS',
+                            playlists: homeState.topPlaylists,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -610,14 +1280,22 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
               ],
 
               // ── Section: Essential Albums ──
-              if (_activeFilter == 'All' && homeState.topAlbums.isNotEmpty) ...[
+              if ((_activeFilter == 'All' || _activeFilter == 'Acoustic') && homeState.topAlbums.isNotEmpty) ...[
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: NewSectionHeader(
                       title: 'Essential Albums',
                       eyebrow: 'MASTERPIECES',
-                      onAction: () {},
+                      onAction: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => NewSeeAllScreen.playlists(
+                            title: 'Essential Albums',
+                            eyebrow: 'MASTERPIECES',
+                            playlists: homeState.topAlbums,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -655,11 +1333,68 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 const SliverToBoxAdapter(child: SizedBox(height: 24)),
               ],
 
-              // Bottom clearance so content never collides with docked playback bar
-              const SliverToBoxAdapter(child: SizedBox(height: 120)),
+              // ── Loading state if filtered category is fetching ──
+              if (_activeFilter != 'All' && _isCategoryEmpty(homeState, historyState, _activeFilter)) ...[
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(color: NewExperienceTokens.accentViolet),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Curating $_activeFilter recommendations...',
+                            style: NewExperienceTokens.bodyMedium(color: NewExperienceTokens.textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+
+              // Centralized dynamic bottom clearance preventing obstruction by MiniPlayer & NavDock
+              ContentViewportInsets.sliverBottomSpacer(context, ref),
             ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _openDailyMixesSeeAll(BuildContext context, HomeState homeState) {
+    final orchestrator = DailyMixOrchestrator.instance;
+    final mixes = _dailyMixes.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final mix = entry.value;
+      final mixId = 'daily_mix_${idx + 1}';
+      final dynMix = orchestrator.getMix(mixId);
+      final cover = (dynMix?.coverArt != null && dynMix!.coverArt!.isNotEmpty)
+          ? dynMix.coverArt!
+          : _getMixCover(idx, homeState);
+      final songs = (dynMix?.tracks != null && dynMix!.tracks.isNotEmpty)
+          ? dynMix.tracks
+          : homeState.youPlaylists.where((p) => p.id == mixId).firstOrNull?.songs;
+      return Playlist(
+        id: mixId,
+        title: mix['title'] as String,
+        subtitle: mix['subtitle'] as String,
+        coverArt: cover,
+        songCount: songs?.length ?? 20,
+        songs: songs,
+      );
+    }).toList();
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => NewSeeAllScreen.playlists(
+          title: 'Made For You',
+          eyebrow: 'DAILY CLUSTERS',
+          playlists: mixes,
         ),
       ),
     );

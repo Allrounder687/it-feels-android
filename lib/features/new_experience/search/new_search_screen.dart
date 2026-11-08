@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:it_feels_music/features/search/search_provider.dart';
 import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -9,8 +8,11 @@ import '../theme/new_experience_tokens.dart';
 import '../theme/new_ambient_canvas.dart';
 import '../widgets/new_media_tile.dart';
 import '../widgets/new_glass_container.dart';
-import '../playlist/new_playlist_detail_screen.dart';
 import '../artist/new_artist_detail_screen.dart';
+import '../album/new_album_detail_screen.dart';
+import '../playlist/new_playlist_detail_screen.dart';
+import '../widgets/new_artwork_image.dart';
+import '../theme/content_viewport_insets.dart';
 
 class NewSearchScreen extends ConsumerStatefulWidget {
   final String? initialQuery;
@@ -191,10 +193,24 @@ class _NewSearchScreenState extends ConsumerState<NewSearchScreen> {
   }
 
   Widget _buildSearchResults(SearchState searchState, AudioPlayerNotifier playerNotifier) {
+    final downloadState = ref.watch(downloadProvider);
+    final playerState = ref.watch(audioPlayerProvider);
+
+    final cleanQuery = searchState.query.trim().toLowerCase();
+    final localMatches = [
+      ...downloadState.downloadedSongs,
+      ...playerState.favoriteSongs,
+    ].where((s) {
+      return s.title.toLowerCase().contains(cleanQuery) ||
+          s.artist.toLowerCase().contains(cleanQuery) ||
+          s.album.toLowerCase().contains(cleanQuery);
+    }).toSet().toList();
+
     if (searchState.songs.isEmpty &&
         searchState.artists.isEmpty &&
         searchState.albums.isEmpty &&
-        searchState.playlists.isEmpty) {
+        searchState.playlists.isEmpty &&
+        localMatches.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -216,9 +232,37 @@ class _NewSearchScreenState extends ConsumerState<NewSearchScreen> {
     }
 
     return ListView(
-      padding: const EdgeInsets.only(left: 20, right: 20, top: 8, bottom: 120),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 8,
+        bottom: ContentViewportInsets.bottom(context, ref),
+      ),
       physics: const BouncingScrollPhysics(),
       children: [
+        // ── Local Library Matches (Offline-Ready) ──
+        if (localMatches.isNotEmpty &&
+            (_selectedFilter == 'All' || _selectedFilter == 'Songs')) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                const Icon(Icons.offline_pin_rounded, size: 18, color: NewExperienceTokens.accentCyan),
+                const SizedBox(width: 8),
+                Text('In Your Library (${localMatches.length})', style: NewExperienceTokens.sectionTitle()),
+              ],
+            ),
+          ),
+          ...localMatches.take(5).map((song) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: NewMediaTile(
+                  song: song,
+                  onTap: () => playerNotifier.playSong(song),
+                ),
+              )),
+          const SizedBox(height: 14),
+        ],
+
         // Top Artist Match
         if (searchState.artists.isNotEmpty &&
             (_selectedFilter == 'All' || _selectedFilter == 'Artists')) ...[
@@ -289,12 +333,40 @@ class _NewSearchScreenState extends ConsumerState<NewSearchScreen> {
             (_selectedFilter == 'All' || _selectedFilter == 'Songs')) ...[
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text('Songs', style: NewExperienceTokens.sectionTitle()),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Songs (${searchState.songs.length})', style: NewExperienceTokens.sectionTitle()),
+                Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Play All Songs',
+                      icon: const Icon(Icons.play_arrow_rounded, color: NewExperienceTokens.accentCyan, size: 24),
+                      onPressed: () {
+                        playerNotifier.playSong(searchState.songs.first, queue: searchState.songs, index: 0);
+                      },
+                    ),
+                    IconButton(
+                      tooltip: 'Shuffle Songs',
+                      icon: const Icon(Icons.shuffle_rounded, color: NewExperienceTokens.accentCyan, size: 20),
+                      onPressed: () {
+                        playerNotifier.shufflePlayContext(searchState.songs);
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           ...searchState.songs.take(25).map(
                 (song) => NewMediaTile(
                   song: song,
-                  onTap: () => playerNotifier.playSong(song),
+                  index: searchState.songs.indexOf(song),
+                  onTap: () => playerNotifier.playSong(
+                    song,
+                    queue: searchState.songs,
+                    index: searchState.songs.indexOf(song),
+                  ),
                 ),
               ),
         ],
@@ -310,21 +382,60 @@ class _NewSearchScreenState extends ConsumerState<NewSearchScreen> {
           ...searchState.albums.take(8).map(
                 (album) => ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: ClipRRect(
+                  leading: NewArtworkImage(
+                    imageUrl: album.image,
+                    width: 48,
+                    height: 48,
                     borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: album.image,
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                    ),
+                    iconSize: 22,
+                    fallbackTitle: album.title,
                   ),
                   title: Text(album.title, style: NewExperienceTokens.bodyMedium()),
                   subtitle: Text(album.subtitle, style: NewExperienceTokens.captionMuted()),
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => NewPlaylistDetailScreen(playlist: album),
+                        builder: (context) => NewAlbumDetailScreen(
+                          albumTitle: album.title,
+                          artistName: album.subtitle,
+                          albumCover: album.image,
+                          albumId: album.id,
+                          initialTracks: album.songs,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+        ],
+
+        // Playlists Results
+        if (searchState.playlists.isNotEmpty &&
+            (_selectedFilter == 'All' || _selectedFilter == 'Playlists')) ...[
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('Playlists (${searchState.playlists.length})', style: NewExperienceTokens.sectionTitle()),
+          ),
+          ...searchState.playlists.take(8).map(
+                (pl) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: NewArtworkImage(
+                    imageUrl: pl.image,
+                    width: 48,
+                    height: 48,
+                    borderRadius: BorderRadius.circular(8),
+                    iconSize: 22,
+                    fallbackTitle: pl.title,
+                  ),
+                  title: Text(pl.title, style: NewExperienceTokens.bodyMedium()),
+                  subtitle: Text(pl.subtitle.isNotEmpty ? pl.subtitle : 'Curated Playlist', style: NewExperienceTokens.captionMuted()),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => NewPlaylistDetailScreen(
+                          playlist: pl,
+                        ),
                       ),
                     );
                   },
@@ -337,7 +448,12 @@ class _NewSearchScreenState extends ConsumerState<NewSearchScreen> {
 
   Widget _buildBrowseAndRecent(SearchState searchState, SearchNotifier searchNotifier) {
     return ListView(
-      padding: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 120),
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 12,
+        bottom: ContentViewportInsets.bottom(context, ref),
+      ),
       physics: const BouncingScrollPhysics(),
       children: [
         // Recent Searches

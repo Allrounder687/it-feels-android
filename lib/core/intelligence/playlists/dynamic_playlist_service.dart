@@ -6,6 +6,9 @@ import 'package:it_feels_music/data/repositories/music_repository.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/core/intelligence/playlists/dynamic_playlist_models.dart';
 import 'package:it_feels_music/core/intelligence/playlists/playlist_version_engine.dart';
+import 'package:it_feels_music/core/intelligence/catalogue/catalogue_deduplication_engine.dart';
+import 'package:it_feels_music/core/intelligence/catalogue/artwork_repair_service.dart';
+import 'package:it_feels_music/core/utils/track_validation_engine.dart';
 
 /// Central service managing lifecycle, scheduled refreshes, and persistence for dynamic playlists.
 class DynamicPlaylistService {
@@ -38,7 +41,23 @@ class DynamicPlaylistService {
         if (raw != null && raw.isNotEmpty) {
           final decoded = jsonDecode(raw) as Map<String, dynamic>;
           final playlist = DynamicPlaylist.fromJson(decoded);
-          _playlists[playlist.id] = playlist;
+
+          // Purge corrupted emulation / chiptune / 8-bit tracks from cached storage
+          final cleanTracks = TrackValidationEngine.filterAndRank(
+            playlist.tracks,
+            preserveOriginalOrderIfValid: true,
+          );
+
+          if (cleanTracks.length < 5 && playlist.tracks.isNotEmpty) {
+            await prefs.remove(key);
+            continue;
+          }
+
+          final cleanPlaylist = cleanTracks.length != playlist.tracks.length
+              ? playlist.copyWith(tracks: cleanTracks)
+              : playlist;
+
+          _playlists[cleanPlaylist.id] = cleanPlaylist;
         }
       }
     } catch (e) {
@@ -66,14 +85,26 @@ class DynamicPlaylistService {
       debugPrint('[DynamicPlaylistService] Refresh query failed for $playlistId: $e');
     }
 
+    final dedup = CatalogueDeduplicationEngine();
+    final dedupReport = dedup.deduplicateTracks(freshlyGenerated);
+    final cleanTracks = dedupReport.uniqueItems;
+
     final reconciled = PlaylistVersionEngine.reconcileRefresh(
       currentPlaylist: current,
-      freshlyGeneratedTracks: freshlyGenerated.isNotEmpty ? freshlyGenerated : current.tracks,
+      freshlyGeneratedTracks: cleanTracks.isNotEmpty ? cleanTracks : current.tracks,
     );
 
-    _playlists[playlistId] = reconciled;
-    await persistPlaylist(reconciled);
-    return reconciled;
+    final artworkRepair = ArtworkRepairService();
+    final compositeCover = artworkRepair.generatePlaylistCover(
+      playlistId: playlistId,
+      tracks: reconciled.tracks,
+      fallbackTitle: reconciled.title,
+    );
+
+    final finalPlaylist = reconciled.copyWith(coverArt: compositeCover.primaryUrl);
+    _playlists[playlistId] = finalPlaylist;
+    await persistPlaylist(finalPlaylist);
+    return finalPlaylist;
   }
 
   /// Manually adds a track to a dynamic playlist.
@@ -108,7 +139,7 @@ class DynamicPlaylistService {
       case 'daily_mix_1':
         return 'Bollywood Romance';
       case 'daily_mix_2':
-        return 'Pop International Hits';
+        return 'Today Top Hits International Pop';
       case 'daily_mix_3':
         return 'Punjabi Hits';
       case 'daily_mix_4':

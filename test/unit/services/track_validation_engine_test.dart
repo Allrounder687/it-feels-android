@@ -104,5 +104,70 @@ void main() {
 
       expect(deduped.length, equals(1));
     });
+
+    test('Rejects 8-bit, 16-bit, and chiptune emulation tracks', () {
+      final emulationTrack1 = Song(
+        id: 'emu:1',
+        saavnId: 'emu1',
+        title: 'Snowchild (16-Bit The Weeknd Emulation)',
+        artist: 'Arcade Player',
+        album: 'City of Mirrors',
+        duration: 242,
+        coverArt: '',
+        addedAt: DateTime.now(),
+      );
+
+      final emulationTrack2 = Song(
+        id: 'emu:2',
+        saavnId: 'emu2',
+        title: 'Final Lullaby (8-Bit The Weeknd Emulation)',
+        artist: '8-Bit Arcade',
+        album: 'Chiptune Hits',
+        duration: 171,
+        coverArt: '',
+        addedAt: DateTime.now(),
+      );
+
+      final authenticTrack = Song(
+        id: 'real:1',
+        saavnId: 'real1',
+        title: 'Snowchild',
+        artist: 'The Weeknd',
+        album: 'After Hours',
+        duration: 247,
+        coverArt: '',
+        addedAt: DateTime.now(),
+      );
+
+      final res1 = TrackValidationEngine.evaluate(emulationTrack1);
+      final res2 = TrackValidationEngine.evaluate(emulationTrack2);
+      final resReal = TrackValidationEngine.evaluate(authenticTrack);
+
+      expect(res1.isValid, isFalse);
+      expect(res1.confidenceScore, lessThan(35.0));
+
+      expect(res2.isValid, isFalse);
+      expect(res2.confidenceScore, lessThan(35.0));
+
+      expect(resReal.isValid, isTrue);
+      expect(resReal.confidenceScore, greaterThanOrEqualTo(50.0));
+    });
+
+    test('Rejects SEO title-stuffed sound-alike cover tracks', () {
+      final seoTrack = Song(
+        id: 'seo:1',
+        saavnId: 'seo1',
+        title: 'Starboy The Weeknd',
+        artist: 'Blue Pink',
+        album: 'Single',
+        duration: 238,
+        coverArt: '',
+        addedAt: DateTime.now(),
+      );
+
+      final res = TrackValidationEngine.evaluate(seoTrack);
+      expect(res.isValid, isFalse);
+      expect(res.rejectionReason, contains('SEO title-stuffed'));
+    });
   });
 }

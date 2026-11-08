@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/repositories/music_repository.dart';
@@ -13,6 +12,9 @@ import '../theme/new_ambient_canvas.dart';
 import '../widgets/new_media_tile.dart';
 import '../widgets/new_action_button.dart';
 import '../widgets/new_glass_container.dart';
+import '../widgets/new_artwork_image.dart';
+import '../widgets/new_daily_mix_cover.dart';
+import '../theme/content_viewport_insets.dart';
 
 class NewPlaylistDetailScreen extends ConsumerStatefulWidget {
   final Playlist playlist;
@@ -32,6 +34,78 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
   bool _isLoading = true;
   List<Song> _tracks = [];
   String _filterQuery = '';
+  bool _isSelectionMode = false;
+  final Set<String> _selectedSongIds = {};
+
+  void _showRenameDialog(String currentTitle, String playlistId) {
+    final textController = TextEditingController(text: currentTitle);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: NewExperienceTokens.midnightSurface,
+        title: Text('Rename Playlist', style: NewExperienceTokens.sectionTitle(fontSize: 18)),
+        content: TextField(
+          controller: textController,
+          autofocus: true,
+          style: NewExperienceTokens.bodyMedium(),
+          decoration: InputDecoration(
+            hintText: 'Enter new title...',
+            hintStyle: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: NewExperienceTokens.accentViolet),
+            onPressed: () {
+              final newName = textController.text.trim();
+              if (newName.isNotEmpty) {
+                ref.read(customPlaylistProvider.notifier).renamePlaylist(playlistId, newName);
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Renamed playlist to "$newName"')),
+                );
+              }
+            },
+            child: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeletePlaylist(String playlistId, String title) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: NewExperienceTokens.midnightSurface,
+        title: Text('Delete Playlist?', style: NewExperienceTokens.sectionTitle(fontSize: 18)),
+        content: Text('Are you sure you want to delete "$title"? This cannot be undone.', style: NewExperienceTokens.bodyMedium()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () {
+              ref.read(customPlaylistProvider.notifier).deletePlaylist(playlistId);
+              Navigator.pop(ctx);
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Deleted playlist "$title"')),
+              );
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -153,16 +227,21 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
   @override
   Widget build(BuildContext context) {
     final playerNotifier = ref.read(audioPlayerProvider.notifier);
+    final customPlaylistState = ref.watch(customPlaylistProvider);
+    final customPlaylist = customPlaylistState.playlists.where((p) => p.id == widget.playlist.id).firstOrNull;
+    final isCustom = customPlaylist != null;
+    final effectiveTracks = isCustom ? customPlaylist.songs : _tracks;
+    final effectiveTitle = isCustom ? customPlaylist.title : widget.playlist.title;
 
     final filteredTracks = _filterQuery.isEmpty
-        ? _tracks
-        : _tracks
+        ? effectiveTracks
+        : effectiveTracks
             .where((s) =>
                 s.title.toLowerCase().contains(_filterQuery.toLowerCase()) ||
                 s.artist.toLowerCase().contains(_filterQuery.toLowerCase()))
             .toList();
 
-    final totalSeconds = _tracks.fold<int>(0, (sum, s) => sum + s.duration);
+    final totalSeconds = effectiveTracks.fold<int>(0, (sum, s) => sum + s.duration);
     final totalDurationStr = StringUtils.formatDuration(Duration(seconds: totalSeconds));
 
     return NewAmbientCanvas(
@@ -177,6 +256,78 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
             onPressed: () => Navigator.of(context).pop(),
           ),
           actions: [
+            // Toggle Multi-Selection
+            IconButton(
+              tooltip: _isSelectionMode ? 'Cancel Selection' : 'Select Tracks',
+              icon: Icon(
+                _isSelectionMode ? Icons.check_circle_rounded : Icons.checklist_rounded,
+                color: _isSelectionMode ? NewExperienceTokens.accentCyan : Colors.white,
+                size: 20,
+              ),
+              onPressed: () {
+                setState(() {
+                  _isSelectionMode = !_isSelectionMode;
+                  _selectedSongIds.clear();
+                });
+              },
+            ),
+            if (isCustom)
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 20),
+                color: NewExperienceTokens.midnightSurface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: NewExperienceTokens.specularBorder),
+                ),
+                onSelected: (val) {
+                  switch (val) {
+                    case 'rename':
+                      _showRenameDialog(effectiveTitle, customPlaylist.id);
+                      break;
+                    case 'duplicate':
+                      ref.read(customPlaylistProvider.notifier).duplicatePlaylist(customPlaylist.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Duplicated "$effectiveTitle"')),
+                      );
+                      break;
+                    case 'delete':
+                      _confirmDeletePlaylist(customPlaylist.id, effectiveTitle);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'rename',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined, size: 18, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text('Rename Playlist', style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'duplicate',
+                    child: Row(
+                      children: [
+                        Icon(Icons.copy_rounded, size: 18, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text('Duplicate Playlist', style: TextStyle(color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+                        SizedBox(width: 10),
+                        Text('Delete Playlist', style: TextStyle(color: Colors.redAccent)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             IconButton(
               icon: const Icon(Icons.share_rounded, color: Colors.white, size: 20),
               onPressed: () {
@@ -194,148 +345,298 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
             ? const Center(
                 child: CircularProgressIndicator(color: NewExperienceTokens.accentViolet),
               )
-            : CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  // ── Hero Header ──
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isWide = constraints.maxWidth >= 600;
+            : Stack(
+                children: [
+                  CustomScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    slivers: [
+                      // ── Hero Header ──
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isWide = constraints.maxWidth >= 600;
 
-                          if (isWide) {
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
+                              if (isWide) {
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    _buildCoverArt(180),
+                                    const SizedBox(width: 24),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(isCustom ? 'CUSTOM PLAYLIST' : 'PLAYLIST', style: NewExperienceTokens.eyebrowLabel()),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            effectiveTitle,
+                                            style: NewExperienceTokens.displayHero(fontSize: 32),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            '${effectiveTracks.length} Songs • $totalDurationStr',
+                                            style: NewExperienceTokens.bodySmall(
+                                              color: NewExperienceTokens.textSecondary,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          _buildActionButtons(playerNotifier, effectiveTracks),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              }
+
+                              // Mobile Column Header
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  _buildCoverArt(160),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    effectiveTitle,
+                                    textAlign: TextAlign.center,
+                                    style: NewExperienceTokens.displayHero(fontSize: 24),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${effectiveTracks.length} Songs • $totalDurationStr',
+                                    style: NewExperienceTokens.bodySmall(
+                                      color: NewExperienceTokens.textSecondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildActionButtons(playerNotifier, effectiveTracks),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+                      // ── Search & Track Filter Input ──
+                      if (effectiveTracks.length > 5)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            child: NewGlassContainer(
+                              borderRadius: NewExperienceTokens.radiusMedium,
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              child: TextField(
+                                style: NewExperienceTokens.bodyMedium(),
+                                decoration: InputDecoration(
+                                  hintText: 'Filter tracks in playlist...',
+                                  hintStyle: NewExperienceTokens.bodySmall(
+                                    color: NewExperienceTokens.textMuted,
+                                  ),
+                                  border: InputBorder.none,
+                                  prefixIcon: const Icon(
+                                    Icons.filter_list_rounded,
+                                    color: NewExperienceTokens.textMuted,
+                                    size: 20,
+                                  ),
+                                  prefixIconConstraints: const BoxConstraints(minWidth: 32),
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                                onChanged: (val) => setState(() => _filterQuery = val),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      const SliverToBoxAdapter(child: SizedBox(height: 8)),
+
+                      // ── Tracks List ──
+                      if (filteredTracks.isEmpty)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Center(
+                              child: Text(
+                                'No songs found in this playlist',
+                                style: NewExperienceTokens.bodyMedium(
+                                  color: NewExperienceTokens.textMuted,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final song = filteredTracks[index];
+                              final isSelected = _selectedSongIds.contains(song.id);
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                child: Row(
+                                  children: [
+                                    if (_isSelectionMode)
+                                      Checkbox(
+                                        value: isSelected,
+                                        activeColor: NewExperienceTokens.accentCyan,
+                                        onChanged: (val) {
+                                          setState(() {
+                                            if (val == true) {
+                                              _selectedSongIds.add(song.id);
+                                            } else {
+                                              _selectedSongIds.remove(song.id);
+                                            }
+                                          });
+                                        },
+                                      ),
+                                    Expanded(
+                                      child: NewMediaTile(
+                                        song: song,
+                                        index: index,
+                                        onTap: _isSelectionMode
+                                            ? () {
+                                                setState(() {
+                                                  if (isSelected) {
+                                                    _selectedSongIds.remove(song.id);
+                                                  } else {
+                                                    _selectedSongIds.add(song.id);
+                                                  }
+                                                });
+                                              }
+                                            : () {
+                                                playerNotifier.playSong(song, queue: filteredTracks, index: index);
+                                              },
+                                      ),
+                                    ),
+                                    if (isCustom && !_isSelectionMode)
+                                      IconButton(
+                                        icon: const Icon(Icons.remove_circle_outline_rounded, color: NewExperienceTokens.textMuted, size: 18),
+                                        tooltip: 'Remove from playlist',
+                                        onPressed: () {
+                                          ref.read(customPlaylistProvider.notifier).removeSongFromPlaylist(customPlaylist.id, song.id);
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Removed "${song.title}" from playlist')),
+                                          );
+                                        },
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
+                            childCount: filteredTracks.length,
+                          ),
+                        ),
+
+                      // Dynamic bottom clearance
+                      ContentViewportInsets.sliverBottomSpacer(context, ref),
+                    ],
+                  ),
+
+                  // Floating Multi-Select Action Dock
+                  if (_isSelectionMode && _selectedSongIds.isNotEmpty)
+                    Positioned(
+                      left: 20,
+                      right: 20,
+                      bottom: ContentViewportInsets.bottom(context, ref) + 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: NewExperienceTokens.midnightSurface,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: NewExperienceTokens.accentCyan, width: 1.2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              blurRadius: 20,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
                               children: [
-                                _buildCoverArt(180),
-                                const SizedBox(width: 24),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text('PLAYLIST', style: NewExperienceTokens.eyebrowLabel()),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        widget.playlist.title,
-                                        style: NewExperienceTokens.displayHero(fontSize: 32),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        '${_tracks.length} Songs • $totalDurationStr',
-                                        style: NewExperienceTokens.bodySmall(
-                                          color: NewExperienceTokens.textSecondary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      _buildActionButtons(playerNotifier),
-                                    ],
+                                Text(
+                                  '${_selectedSongIds.length} Selected',
+                                  style: NewExperienceTokens.bodyMedium(
+                                    color: NewExperienceTokens.accentCyan,
+                                  ).copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 8),
+                                TextButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      if (_selectedSongIds.length == filteredTracks.length) {
+                                        _selectedSongIds.clear();
+                                      } else {
+                                        _selectedSongIds.addAll(filteredTracks.map((s) => s.id));
+                                      }
+                                    });
+                                  },
+                                  child: Text(
+                                    _selectedSongIds.length == filteredTracks.length ? 'Deselect All' : 'Select All',
+                                    style: const TextStyle(color: Colors.white70, fontSize: 12),
                                   ),
                                 ),
                               ],
-                            );
-                          }
-
-                          // Mobile Column Header
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              _buildCoverArt(160),
-                              const SizedBox(height: 16),
-                              Text(
-                                widget.playlist.title,
-                                textAlign: TextAlign.center,
-                                style: NewExperienceTokens.displayHero(fontSize: 24),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${_tracks.length} Songs • $totalDurationStr',
-                                style: NewExperienceTokens.bodySmall(
-                                  color: NewExperienceTokens.textSecondary,
+                            ),
+                            Row(
+                              children: [
+                                if (isCustom)
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                                    tooltip: 'Remove selected from playlist',
+                                    onPressed: () {
+                                      ref.read(customPlaylistProvider.notifier).removeSongsBatch(customPlaylist.id, _selectedSongIds.toList());
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Removed ${_selectedSongIds.length} tracks')),
+                                      );
+                                      setState(() {
+                                        _selectedSongIds.clear();
+                                        _isSelectionMode = false;
+                                      });
+                                    },
+                                  ),
+                                IconButton(
+                                  icon: const Icon(Icons.queue_music_rounded, color: Colors.white, size: 20),
+                                  tooltip: 'Add selected to queue',
+                                  onPressed: () {
+                                    final selectedSongs = effectiveTracks.where((s) => _selectedSongIds.contains(s.id)).toList();
+                                    playerNotifier.addSongsToQueue(selectedSongs);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Added ${selectedSongs.length} tracks to queue')),
+                                    );
+                                    setState(() {
+                                      _selectedSongIds.clear();
+                                      _isSelectionMode = false;
+                                    });
+                                  },
                                 ),
-                              ),
-                              const SizedBox(height: 16),
-                              _buildActionButtons(playerNotifier),
-                            ],
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-                  // ── Search & Track Filter Input ──
-                  if (_tracks.length > 5)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        child: NewGlassContainer(
-                          borderRadius: NewExperienceTokens.radiusMedium,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          child: TextField(
-                            style: NewExperienceTokens.bodyMedium(),
-                            decoration: InputDecoration(
-                              hintText: 'Filter tracks in playlist...',
-                              hintStyle: NewExperienceTokens.bodySmall(
-                                color: NewExperienceTokens.textMuted,
-                              ),
-                              border: InputBorder.none,
-                              prefixIcon: const Icon(
-                                Icons.filter_list_rounded,
-                                color: NewExperienceTokens.textMuted,
-                                size: 20,
-                              ),
-                              prefixIconConstraints: const BoxConstraints(minWidth: 32),
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: NewExperienceTokens.accentCyan,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _isSelectionMode = false;
+                                      _selectedSongIds.clear();
+                                    });
+                                  },
+                                  child: const Text('Done', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13)),
+                                ),
+                              ],
                             ),
-                            onChanged: (val) => setState(() => _filterQuery = val),
-                          ),
+                          ],
                         ),
                       ),
                     ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 8)),
-
-                  // ── Tracks List ──
-                  if (filteredTracks.isEmpty)
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.all(32),
-                        child: Center(
-                          child: Text(
-                            'No songs found in this playlist',
-                            style: NewExperienceTokens.bodyMedium(
-                              color: NewExperienceTokens.textMuted,
-                            ),
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final song = filteredTracks[index];
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: NewMediaTile(
-                              song: song,
-                              index: index,
-                              onTap: () {
-                                playerNotifier.playSong(song, queue: filteredTracks, index: index);
-                              },
-                            ),
-                          );
-                        },
-                        childCount: filteredTracks.length,
-                      ),
-                    ),
-
-                  const SliverToBoxAdapter(child: SizedBox(height: 120)),
                 ],
               ),
       ),
@@ -343,6 +644,15 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
   }
 
   Widget _buildCoverArt(double size) {
+    final isDailyMix = widget.playlist.id.startsWith('daily_mix_');
+    final mixIdx = isDailyMix ? (int.tryParse(widget.playlist.id.split('_').last) ?? 1) : null;
+    final activeTracks = _tracks.isNotEmpty ? _tracks : (widget.staticTracks ?? []);
+    final quadUrls = activeTracks
+        .map((s) => s.image)
+        .where((u) => u.isNotEmpty && !u.contains('404'))
+        .take(4)
+        .toList();
+
     return Container(
       width: size,
       height: size,
@@ -357,28 +667,30 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(NewExperienceTokens.radiusMedium),
-        child: widget.playlist.image.isNotEmpty
-            ? CachedNetworkImage(
-                imageUrl: widget.playlist.image,
-                fit: BoxFit.cover,
-                errorWidget: (_, _, _) => const Icon(
-                  Icons.album_rounded,
-                  size: 48,
-                  color: NewExperienceTokens.textMuted,
-                ),
-              )
-            : const Icon(
-                Icons.album_rounded,
-                size: 48,
-                color: NewExperienceTokens.textMuted,
-              ),
-      ),
+      child: isDailyMix
+          ? NewDailyMixCover(
+              mixIndex: mixIdx!,
+              title: widget.playlist.title,
+              subtitle: widget.playlist.subtitle,
+              quadImageUrls: quadUrls.isNotEmpty ? quadUrls : null,
+              primaryImageUrl: widget.playlist.image.isNotEmpty ? widget.playlist.image : null,
+              width: size,
+              height: size,
+              borderRadius: BorderRadius.circular(NewExperienceTokens.radiusMedium),
+            )
+          : NewArtworkImage(
+              imageUrl: widget.playlist.image,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              borderRadius: BorderRadius.circular(NewExperienceTokens.radiusMedium),
+              iconSize: 48,
+              fallbackTitle: widget.playlist.title,
+            ),
     );
   }
 
-  Widget _buildActionButtons(AudioPlayerNotifier playerNotifier) {
+  Widget _buildActionButtons(AudioPlayerNotifier playerNotifier, List<Song> activeTracks) {
     return Wrap(
       spacing: 12,
       runSpacing: 10,
@@ -389,8 +701,8 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
           label: 'Play',
           icon: Icons.play_arrow_rounded,
           onPressed: () {
-            if (_tracks.isNotEmpty) {
-              playerNotifier.playSong(_tracks.first, queue: _tracks, index: 0);
+            if (activeTracks.isNotEmpty) {
+              playerNotifier.playSong(activeTracks.first, queue: activeTracks, index: 0);
             }
           },
         ),
@@ -401,9 +713,38 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
           icon: Icons.shuffle_rounded,
           variant: NewActionButtonVariant.glass,
           onPressed: () {
-            if (_tracks.isNotEmpty) {
-              final shuffled = List<Song>.from(_tracks)..shuffle();
-              playerNotifier.playSong(shuffled.first, queue: shuffled, index: 0);
+            if (activeTracks.isNotEmpty) {
+              playerNotifier.shufflePlayContext(activeTracks);
+            }
+          },
+        ),
+
+        // Play Next Button
+        NewActionButton(
+          label: 'Play Next',
+          icon: Icons.playlist_play_rounded,
+          variant: NewActionButtonVariant.glass,
+          onPressed: () {
+            if (activeTracks.isNotEmpty) {
+              playerNotifier.playNextBatch(activeTracks);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Playing ${activeTracks.length} tracks next')),
+              );
+            }
+          },
+        ),
+
+        // Add to Queue Button
+        NewActionButton(
+          label: 'Add to Queue',
+          icon: Icons.queue_music_rounded,
+          variant: NewActionButtonVariant.glass,
+          onPressed: () {
+            if (activeTracks.isNotEmpty) {
+              playerNotifier.addSongsToQueue(activeTracks);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Added ${activeTracks.length} tracks to queue')),
+              );
             }
           },
         ),

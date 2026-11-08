@@ -1,0 +1,397 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IT Feels Music Feature Registry",
+  "version": "3.9.5",
+  "updatedAt": "2026-11-07T12:35:00Z",
+  "architecture": "Obsidian Dual-Codebase Upstream (IT_Feels_Alternate)",
+  "domains": {
+    "playback_and_engine": {
+      "name": "Playback Engine & Sound Engineering",
+      "status": "production_ready",
+      "features": {
+        "core_playback": {
+          "id": "PLBK-001",
+          "name": "Core Play / Pause & Stream Lifecycle",
+          "supported": true,
+          "components": ["AudioPlayerNotifier", "AudioPlayerHandler"],
+          "capabilities": ["play", "pause", "resume", "stop", "auto_advance"]
+        },
+        "bounded_seek": {
+          "id": "PLBK-002",
+          "name": "Bounded Seek & Scrubber Drag-Buffering",
+          "supported": true,
+          "components": ["AudioPlayerHandler", "NewAudioScrubber", "_DesktopTrackScrubber"],
+          "capabilities": ["clamp_target", "drag_buffering", "seek_on_release"]
+        },
+        "deterministic_shuffle": {
+          "id": "PLBK-003",
+          "name": "Fisher-Yates Deterministic Shuffled Sequence",
+          "supported": true,
+          "components": ["AudioPlayerNotifier", "AudioPlayerHandler"],
+          "capabilities": ["shuffle_play_context", "toggle_shuffle", "accurate_previous_trace"]
+        },
+        "play_next_batch": {
+          "id": "PLBK-004",
+          "name": "Play Next Single & Batch Insertion",
+          "supported": true,
+          "components": ["AudioPlayerNotifier"],
+          "capabilities": ["play_next_song", "play_next_batch"]
+        },
+        "equalizer_10_band": {
+          "id": "PLBK-005",
+          "name": "10-Band Graphic Equalizer & Loudness Normalization",
+          "supported": true,
+          "components": ["EqualizerService", "NewEqualizerSheet"],
+          "capabilities": ["10_bands", "bass_boost", "treble_boost", "preamp_gain", "ebu_r128_loudnorm", "10_presets"]
+        },
+        "fault_tolerance_circuit_breaker": {
+          "id": "PLBK-006",
+          "name": "Consecutive Failure Circuit Breaker",
+          "supported": true,
+          "components": ["AudioPlayerNotifier", "AudioPlayerHandler"],
+          "capabilities": ["max_3_skips", "trip_on_consecutive", "token_refresh_fallback"]
+        }
+      }
+    },
+    "queue_and_now_playing": {
+      "name": "Queue Management & Now Playing Ergonomics",
+      "status": "production_ready",
+      "features": {
+        "queue_mutation": {
+          "id": "QNP-001",
+          "name": "Queue Reordering, Removal & Clearing",
+          "supported": true,
+          "components": ["NewContextualPanel", "QueueBottomSheet", "AudioPlayerNotifier"],
+          "capabilities": ["drag_and_drop_reorder", "remove_individual", "clear_queue_preserve_active"]
+        },
+        "now_playing_display": {
+          "id": "QNP-002",
+          "name": "Now Playing Visuals & Metadata Badges",
+          "supported": true,
+          "components": ["NewNowPlayingScreen", "NewDesktopPlayerBar", "NewMiniPlayer"],
+          "capabilities": ["ambient_lighting", "audio_quality_badge", "offline_indicator", "favorite_toggle"]
+        },
+        "synchronized_lyrics": {
+          "id": "QNP-003",
+          "name": "Synchronized & Plain Lyrics Engine",
+          "supported": true,
+          "components": ["LyricsService", "NewNowPlayingScreen"],
+          "capabilities": ["lrc_sync_scrolling", "offline_lrc_companion", "plain_lyrics_fallback"]
+        },
+        "contextual_actions": {
+          "id": "QNP-004",
+          "name": "Contextual Song Options Menu",
+          "supported": true,
+          "components": ["SongOptionsSheet", "NewMediaTile"],
+          "capabilities": ["go_to_artist", "go_to_album", "track_story_and_credits", "add_to_playlist", "download"]
+        }
+      }
+    },
+    "downloads_and_offline": {
+      "name": "Downloads & Offline Resilience",
+      "status": "production_ready",
+      "features": {
+        "download_lifecycle": {
+          "id": "DL-001",
+          "name": "Single & Batch Download Lifecycle",
+          "supported": true,
+          "components": ["DownloadService", "DownloadNotifier"],
+          "capabilities": ["track_download", "progress_tracking", "batch_removal", "clear_all"]
+        },
+        "storage_management": {
+          "id": "DL-002",
+          "name": "Disk Storage Footprint & Scanner",
+          "supported": true,
+          "components": ["DownloadScannerService", "NewLibraryScreen", "DownloadNotifier"],
+          "capabilities": ["compute_total_bytes", "scan_and_sync", "dedicated_folder_scoping"]
+        },
+        "offline_hero_and_playback": {
+          "id": "DL-003",
+          "name": "Offline Storage Hero & Offline Shuffle",
+          "supported": true,
+          "components": ["NewLibraryScreen", "AudioPlayerNotifier"],
+          "capabilities": ["play_all_offline", "shuffle_play_context_offline", "offline_status_badge"]
+        },
+        "companion_metadata": {
+          "id": "DL-004",
+          "name": "Automatic Metadata & Artwork Healing",
+          "supported": true,
+          "components": ["MetadataRestorationService", "NewArtworkImage"],
+          "capabilities": ["restore_batch_metadata", "companion_json_storage", "companion_artwork_resolution"]
+        }
+      }
+    },
+    "custom_playlists": {
+      "name": "Custom User Playlists",
+      "status": "production_ready",
+      "features": {
+        "playlist_crud": {
+          "id": "PL-001",
+          "name": "Playlist Creation, Renaming, Duplication & Deletion",
+          "supported": true,
+          "components": ["CustomPlaylistNotifier", "NewPlaylistDetailScreen", "NewLibraryScreen"],
+          "capabilities": ["create", "rename", "duplicate", "delete"]
+        },
+        "playlist_tracks_management": {
+          "id": "PL-002",
+          "name": "Playlist Track Mutations & Reordering",
+          "supported": true,
+          "components": ["CustomPlaylistNotifier", "NewPlaylistDetailScreen"],
+          "capabilities": ["add_song", "remove_song", "batch_remove", "reorder_songs"]
+        },
+        "playlist_batch_playback": {
+          "id": "PL-003",
+          "name": "Comprehensive Playlist Action Dock",
+          "supported": true,
+          "components": ["NewPlaylistDetailScreen"],
+          "capabilities": ["play_all", "shuffle_play_context", "play_next_batch", "add_songs_to_queue"]
+        },
+        "in_playlist_multi_select": {
+          "id": "PL-004",
+          "name": "In-Playlist Multi-Select & Bulk Operations",
+          "supported": true,
+          "components": ["NewPlaylistDetailScreen"],
+          "capabilities": ["select_all", "deselect_all", "bulk_remove_from_playlist", "bulk_add_to_queue"]
+        }
+      }
+    },
+    "album_experience": {
+      "name": "Album Destination & Intelligence",
+      "status": "production_ready",
+      "features": {
+        "album_view": {
+          "id": "ALB-001",
+          "name": "Album Details & Narrative Story",
+          "supported": true,
+          "components": ["NewAlbumDetailScreen"],
+          "capabilities": ["hi_res_artwork", "liner_notes", "release_year", "track_count"]
+        },
+        "album_actions": {
+          "id": "ALB-002",
+          "name": "Album Action Bar",
+          "supported": true,
+          "components": ["NewAlbumDetailScreen"],
+          "capabilities": ["play_album", "shuffle_play_context", "play_next_batch", "add_songs_to_queue", "add_to_playlist"]
+        },
+        "artist_navigation": {
+          "id": "ALB-003",
+          "name": "Cross-Entity Artist Navigation",
+          "supported": true,
+          "components": ["NewAlbumDetailScreen", "NewArtistDetailScreen"],
+          "capabilities": ["navigate_primary_artist"]
+        }
+      }
+    },
+    "artist_experience": {
+      "name": "Artist Destination & Ecosystem",
+      "status": "production_ready",
+      "features": {
+        "artist_view": {
+          "id": "ART-001",
+          "name": "Artist Hero, Biography & Facts",
+          "supported": true,
+          "components": ["NewArtistDetailScreen"],
+          "capabilities": ["hero_portrait", "native_name", "verified_facts", "tabbed_insights"]
+        },
+        "artist_actions": {
+          "id": "ART-002",
+          "name": "Artist Comprehensive Action Bar",
+          "supported": true,
+          "components": ["NewArtistDetailScreen"],
+          "capabilities": ["play_artist", "shuffle_play_context", "play_next_batch", "add_songs_to_queue", "add_to_playlist"]
+        },
+        "artist_tabs": {
+          "id": "ART-003",
+          "name": "Multi-Tab Ecosystem (Overview, Timeline, Collaborators, History)",
+          "supported": true,
+          "components": ["NewArtistDetailScreen"],
+          "capabilities": ["top_tracks", "chronological_timeline", "collaborator_network", "user_listening_history"]
+        }
+      }
+    },
+    "search_and_discovery": {
+      "name": "Search & Multi-Domain Discovery",
+      "status": "production_ready",
+      "features": {
+        "multi_entity_search": {
+          "id": "SRC-001",
+          "name": "Songs, Albums & Playlists Search Results",
+          "supported": true,
+          "components": ["NewSearchScreen", "SearchNotifier"],
+          "capabilities": ["song_results", "album_results", "playlist_results", "navigate_to_results"]
+        },
+        "search_playback_actions": {
+          "id": "SRC-002",
+          "name": "Search Quick Action Bar & Queue Context",
+          "supported": true,
+          "components": ["NewSearchScreen", "AudioPlayerNotifier"],
+          "capabilities": ["play_all_results", "shuffle_all_results", "pass_search_list_as_queue"]
+        },
+        "offline_library_search": {
+          "id": "SRC-003",
+          "name": "In Your Library Shelf & Offline Fallback",
+          "supported": true,
+          "components": ["NewSearchScreen", "DatabaseService"],
+          "capabilities": ["local_matches_shelf", "zero_network_offline_search"]
+        }
+      }
+    },
+    "library_management": {
+      "name": "Library Organization & Bulk Operations",
+      "status": "production_ready",
+      "features": {
+        "categorized_tabs": {
+          "id": "LIB-001",
+          "name": "Library Category Shelves",
+          "supported": true,
+          "components": ["NewLibraryScreen"],
+          "capabilities": ["all", "liked_songs", "downloads", "playlists", "on_repeat", "recently_played"]
+        },
+        "in_library_filtering_sorting": {
+          "id": "LIB-002",
+          "name": "In-Library Instant Search & 6-Way Sorting",
+          "supported": true,
+          "components": ["NewLibraryScreen"],
+          "capabilities": ["instant_text_filter", "date_added", "title_asc", "title_desc", "artist_asc", "duration_desc", "play_count_desc"]
+        },
+        "library_multi_select": {
+          "id": "LIB-003",
+          "name": "Multi-Select Dock & Bulk Actions",
+          "supported": true,
+          "components": ["NewLibraryScreen"],
+          "capabilities": ["select_all", "deselect_all", "add_selected_to_queue", "add_selected_to_playlist", "bulk_delete_downloads"]
+        }
+      }
+    },
+    "settings_and_system": {
+      "name": "Settings, Cache & System Telemetry",
+      "status": "production_ready",
+      "features": {
+        "audio_and_decoding": {
+          "id": "SET-001",
+          "name": "Audio Bitrates, Hardware Acceleration & Edge Proxy",
+          "supported": true,
+          "components": ["NewSettingsScreen", "SettingsNotifier"],
+          "capabilities": ["bitrate_selection", "hardware_decoding_toggle", "edge_proxy_toggle"]
+        },
+        "equalizer_access": {
+          "id": "SET-002",
+          "name": "Settings Equalizer Shortcut",
+          "supported": true,
+          "components": ["NewSettingsScreen", "NewEqualizerSheet"],
+          "capabilities": ["launch_equalizer_modal"]
+        },
+        "cache_management": {
+          "id": "SET-003",
+          "name": "In-Memory Image & Artwork Cache Purge",
+          "supported": true,
+          "components": ["NewSettingsScreen"],
+          "capabilities": ["purge_image_cache", "clear_live_images"]
+        },
+        "version_auditing": {
+          "id": "SET-004",
+          "name": "Obsidian Version Tracking",
+          "supported": true,
+          "components": ["NewSettingsScreen"],
+          "capabilities": ["display_obsidian_version"]
+        }
+      }
+    },
+    "living_catalogue_and_content": {
+      "name": "Living Catalogue, Content Health & Enrichment",
+      "status": "production_ready",
+      "features": {
+        "global_deduplication": {
+          "id": "CAT-001",
+          "name": "Global Deduplication & Variant Preservation",
+          "supported": true,
+          "components": ["CatalogueDeduplicationEngine"],
+          "capabilities": ["track_dedup", "album_dedup", "playlist_dedup", "artwork_dedup", "variant_guard"]
+        },
+        "artwork_repair_and_composite": {
+          "id": "CAT-002",
+          "name": "Automatic Artwork Repair & Quad Composite",
+          "supported": true,
+          "components": ["ArtworkRepairService"],
+          "capabilities": ["track_art_repair", "quad_composite_generation", "curated_fallbacks", "cache_persistence"]
+        },
+        "daily_mix_orchestration": {
+          "id": "CAT-003",
+          "name": "Daily Mix Guaranteed Content & Non-Empty Clusters",
+          "supported": true,
+          "components": ["DailyMixOrchestrator", "DynamicPlaylistService"],
+          "capabilities": ["stable_identities_1_to_6", "seed_deduplication", "persistent_tracks_and_art", "cold_start_survival"]
+        },
+        "mood_genre_intelligence": {
+          "id": "CAT-004",
+          "name": "Acoustic Mood & Musical Genre Taxonomy",
+          "supported": true,
+          "components": ["MoodGenreIntelligenceService"],
+          "capabilities": ["9_verified_moods", "10_verified_genres", "strict_category_segregation", "confidence_scoring"]
+        },
+        "content_health_monitoring": {
+          "id": "CAT-005",
+          "name": "Tab-by-Tab Central Content Health Monitor",
+          "supported": true,
+          "components": ["ContentHealthService", "ContentHealthSheet"],
+          "capabilities": ["audit_sections", "health_scores", "deficit_tracking", "status_classification"]
+        },
+        "controlled_enrichment_pipeline": {
+          "id": "CAT-006",
+          "name": "Controlled Background Content Enrichment",
+          "supported": true,
+          "components": ["ContentEnrichmentPipeline"],
+          "capabilities": ["bounded_concurrency_2", "non_blocking_execution", "deduplicated_tasks"]
+        }
+      }
+    },
+    "observability_and_diagnostics": {
+      "name": "Deep Observability, Structured Logging & Diagnostics",
+      "status": "production_ready",
+      "features": {
+        "structured_logging_engine": {
+          "id": "OBS-001",
+          "name": "Unified Structured Logging & Bounded Local Sink",
+          "supported": true,
+          "components": ["ObservabilityService", "RotatingLogFileSink"],
+          "capabilities": ["standard_levels", "json_serialization", "jsonl_streaming", "log_rotation_10mb", "7_day_retention", "async_writes"]
+        },
+        "privacy_scrubbing": {
+          "id": "OBS-002",
+          "name": "Automated Multi-Pattern Privacy & Secret Redaction",
+          "supported": true,
+          "components": ["ObservabilityService"],
+          "capabilities": ["bearer_token_redaction", "email_redaction", "password_redaction", "windows_user_path_scrubbing", "stream_signature_redaction"]
+        },
+        "playback_diagnostics": {
+          "id": "OBS-003",
+          "name": "End-to-End Playback Lifecycle Tracing & Latency Metrics",
+          "supported": true,
+          "components": ["PlaybackDiagnosticsTracker", "AudioPlayerHandler", "AudioPlayerNotifier"],
+          "capabilities": ["lifecycle_event_tracing", "time_to_first_audio", "source_resolution_latency", "seek_latency", "failure_categorization"]
+        },
+        "network_and_api_diagnostics": {
+          "id": "OBS-004",
+          "name": "Network Request Diagnostics & Endpoint Profiling",
+          "supported": true,
+          "components": ["NetworkDiagnosticsTracker"],
+          "capabilities": ["endpoint_sanitization", "rate_limit_429_detection", "latency_benchmarks", "call_frequency_tracking"]
+        },
+        "performance_and_database_telemetry": {
+          "id": "OBS-005",
+          "name": "Performance Percentile Telemetry & Database Diagnostics",
+          "supported": true,
+          "components": ["PerformanceTelemetryTracker", "DatabaseDiagnosticsTracker"],
+          "capabilities": ["p50_p95_p99_percentiles", "startup_latency_profiling", "slow_query_alerts_50ms", "transaction_failure_tracking"]
+        },
+        "diagnostics_dashboard_and_export": {
+          "id": "OBS-006",
+          "name": "Interactive Diagnostics Dashboard & One-Click Export",
+          "supported": true,
+          "components": ["DiagnosticsDashboardScreen", "DiagnosticExportService"],
+          "capabilities": ["developer_dashboard", "error_explorer", "filterable_logs", "one_click_json_md_export", "redacted_archive"]
+        }
+      }
+    }
+  }
+}

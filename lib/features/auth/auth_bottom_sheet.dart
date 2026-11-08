@@ -37,7 +37,8 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet> {
     if (kIsWeb) return true;
     return defaultTargetPlatform == TargetPlatform.android ||
            defaultTargetPlatform == TargetPlatform.iOS ||
-           defaultTargetPlatform == TargetPlatform.macOS;
+           defaultTargetPlatform == TargetPlatform.macOS ||
+           defaultTargetPlatform == TargetPlatform.windows;
   }
 
   @override

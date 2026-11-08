@@ -5,6 +5,8 @@ import 'package:it_feels_music/core/intelligence/feed/home_feed_models.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/features/home/home_provider.dart';
 import 'package:it_feels_music/features/library/listening_history_provider.dart';
+import 'package:it_feels_music/core/intelligence/playlists/daily_mix_orchestrator.dart';
+import 'package:it_feels_music/core/intelligence/catalogue/artwork_repair_service.dart';
 
 /// Data-driven engine that composes, orders, and caches personalized feed sections.
 class HomeFeedEngine {
@@ -76,40 +78,118 @@ class HomeFeedEngine {
       );
     }
 
-    // 4. Genre-Specific Track Feeds (Bollywood, Punjabi, International)
-    if (activeFilter == 'Bollywood' && hState.bollywoodSongs.isNotEmpty) {
-      sections.add(
-        HomeFeedSection(
-          id: 'sec_bollywood_tracks',
-          sectionType: FeedSectionType.trackList,
-          title: 'Bollywood Hits',
-          subtitle: 'TOP HINDI ESSENTIALS',
-          priority: 30,
-          items: hState.bollywoodSongs.map((s) => FeedItem.fromSong(s)).toList(),
-        ),
-      );
-    } else if (activeFilter == 'International' && hState.hollywoodSongs.isNotEmpty) {
-      sections.add(
-        HomeFeedSection(
-          id: 'sec_international_tracks',
-          sectionType: FeedSectionType.trackList,
-          title: 'Pop & International',
-          subtitle: 'GLOBAL VIBES',
-          priority: 30,
-          items: hState.hollywoodSongs.map((s) => FeedItem.fromSong(s)).toList(),
-        ),
-      );
-    } else if (activeFilter == 'Punjabi' && hState.punjabiSongs.isNotEmpty) {
-      sections.add(
-        HomeFeedSection(
-          id: 'sec_punjabi_tracks',
-          sectionType: FeedSectionType.trackList,
-          title: 'Punjabi Hits',
-          subtitle: 'DESI BEATS & ANTHEMS',
-          priority: 30,
-          items: hState.punjabiSongs.map((s) => FeedItem.fromSong(s)).toList(),
-        ),
-      );
+    // 4. Genre-Specific Multi-Shelf Feeds (Bollywood, Punjabi, International)
+    if (activeFilter == 'Bollywood') {
+      if (hState.bollywoodSongs.isNotEmpty) {
+        sections.add(
+          HomeFeedSection(
+            id: 'sec_bollywood_tracks',
+            sectionType: FeedSectionType.trackList,
+            title: 'Bollywood Hits',
+            subtitle: 'TOP HINDI ESSENTIALS',
+            priority: 30,
+            items: hState.bollywoodSongs.map((s) => FeedItem.fromSong(s)).toList(),
+          ),
+        );
+      }
+      if (hState.bollywoodPlaylists.isNotEmpty) {
+        sections.add(
+          HomeFeedSection(
+            id: 'sec_bollywood_playlists',
+            sectionType: FeedSectionType.playlistCarousel,
+            title: 'Bollywood Playlists',
+            subtitle: 'CURATED DESI COLLECTIONS',
+            priority: 32,
+            items: hState.bollywoodPlaylists.map((p) => FeedItem.fromPlaylist(p)).toList(),
+          ),
+        );
+      }
+      if (hState.bollywoodAlbums.isNotEmpty) {
+        sections.add(
+          HomeFeedSection(
+            id: 'sec_bollywood_albums',
+            sectionType: FeedSectionType.albumCarousel,
+            title: 'Bollywood Soundtracks & Albums',
+            subtitle: 'ORIGINAL SOUNDTRACKS',
+            priority: 34,
+            items: hState.bollywoodAlbums.map((p) => FeedItem.fromPlaylist(p)).toList(),
+          ),
+        );
+      }
+    } else if (activeFilter == 'International') {
+      if (hState.hollywoodSongs.isNotEmpty) {
+        sections.add(
+          HomeFeedSection(
+            id: 'sec_international_tracks',
+            sectionType: FeedSectionType.trackList,
+            title: 'Pop & International',
+            subtitle: 'GLOBAL VIBES',
+            priority: 30,
+            items: hState.hollywoodSongs.map((s) => FeedItem.fromSong(s)).toList(),
+          ),
+        );
+      }
+      if (hState.hollywoodPlaylists.isNotEmpty) {
+        sections.add(
+          HomeFeedSection(
+            id: 'sec_international_playlists',
+            sectionType: FeedSectionType.playlistCarousel,
+            title: 'Global Playlists',
+            subtitle: 'WORLDWIDE SELECTIONS',
+            priority: 32,
+            items: hState.hollywoodPlaylists.map((p) => FeedItem.fromPlaylist(p)).toList(),
+          ),
+        );
+      }
+      if (hState.hollywoodAlbums.isNotEmpty) {
+        sections.add(
+          HomeFeedSection(
+            id: 'sec_international_albums',
+            sectionType: FeedSectionType.albumCarousel,
+            title: 'International Masterpieces',
+            subtitle: 'TOP CHARTER ALBUMS',
+            priority: 34,
+            items: hState.hollywoodAlbums.map((p) => FeedItem.fromPlaylist(p)).toList(),
+          ),
+        );
+      }
+    } else if (activeFilter == 'Punjabi') {
+      if (hState.punjabiSongs.isNotEmpty) {
+        sections.add(
+          HomeFeedSection(
+            id: 'sec_punjabi_tracks',
+            sectionType: FeedSectionType.trackList,
+            title: 'Punjabi Hits',
+            subtitle: 'DESI BEATS & ANTHEMS',
+            priority: 30,
+            items: hState.punjabiSongs.map((s) => FeedItem.fromSong(s)).toList(),
+          ),
+        );
+      }
+      if (hState.punjabiPlaylists.isNotEmpty) {
+        sections.add(
+          HomeFeedSection(
+            id: 'sec_punjabi_playlists',
+            sectionType: FeedSectionType.playlistCarousel,
+            title: 'Punjabi Playlists',
+            subtitle: 'BHANGRA & DESI VIBES',
+            priority: 32,
+            items: hState.punjabiPlaylists.map((p) => FeedItem.fromPlaylist(p)).toList(),
+          ),
+        );
+      }
+      if (hState.punjabiAlbums.isNotEmpty) {
+        sections.add(
+          HomeFeedSection(
+            id: 'sec_punjabi_albums',
+            sectionType: FeedSectionType.albumCarousel,
+            title: 'Essential Punjabi Albums',
+            subtitle: 'ICONIC ALBUMS',
+            priority: 34,
+            items: hState.punjabiAlbums.map((p) => FeedItem.fromPlaylist(p)).toList(),
+          ),
+        );
+      }
     }
 
     // 5. Trending Hits / Top Charts
@@ -172,79 +252,31 @@ class HomeFeedEngine {
 
   /// Builds standardized Daily Mixes (Mix 1 to 6) with resilient fallback cover art.
   List<FeedItem> _buildDailyMixItems(HomeState homeState) {
-    final List<Map<String, String>> mixMeta = [
-      {
-        'id': 'daily_mix_1',
-        'title': 'Bollywood Romance',
-        'subtitle': 'Arijit Singh, Pritam, Shreya Ghoshal',
-        'fallbackCover': 'https://c.saavncdn.com/152/Arijit-Singh-Broken-Heart-Hindi-2022-20220422171542-500x500.jpg',
-      },
-      {
-        'id': 'daily_mix_2',
-        'title': 'Pop & International',
-        'subtitle': 'The Weeknd, Taylor Swift, Drake',
-        'fallbackCover': 'https://c.saavncdn.com/830/Starboy-English-2016-500x500.jpg',
-      },
-      {
-        'id': 'daily_mix_3',
-        'title': 'Punjabi Beats',
-        'subtitle': 'Diljit Dosanjh, Karan Aujla, AP Dhillon',
-        'fallbackCover': 'https://c.saavncdn.com/269/Ghost-Punjabi-2023-20230929054714-500x500.jpg',
-      },
-      {
-        'id': 'daily_mix_4',
-        'title': 'Desi Hip-Hop',
-        'subtitle': 'DIVINE, Seedhe Maut, KR\$NA',
-        'fallbackCover': 'https://c.saavncdn.com/568/Kohinoor-Hindi-2019-20191008064504-500x500.jpg',
-      },
-      {
-        'id': 'daily_mix_5',
-        'title': 'Acoustic & Indie',
-        'subtitle': 'Anuv Jain, Prateek Kuhad, Jasleen Royal',
-        'fallbackCover': 'https://c.saavncdn.com/131/Alag-Aasman-Hindi-2020-20200730073539-500x500.jpg',
-      },
-      {
-        'id': 'daily_mix_6',
-        'title': 'Club & Party Anthems',
-        'subtitle': 'Badshah, Yo Yo Honey Singh, Nucleya',
-        'fallbackCover': 'https://c.saavncdn.com/712/Badshah-Greatest-Hits-Hindi-2022-20220317053036-500x500.jpg',
-      },
-    ];
-
+    final orchestrator = DailyMixOrchestrator();
+    final artworkRepair = ArtworkRepairService();
+    final mixes = orchestrator.getAllMixes();
     final items = <FeedItem>[];
-    for (int i = 0; i < mixMeta.length; i++) {
-      final meta = mixMeta[i];
-      final mixId = meta['id']!;
-      String cover = meta['fallbackCover']!;
 
-      for (final p in homeState.youPlaylists) {
-        if (p.id == mixId && p.coverArt.isNotEmpty) {
-          cover = p.coverArt;
-          break;
-        }
-      }
-
-      if (i == 0 && homeState.bollywoodSongs.isNotEmpty) {
-        cover = homeState.bollywoodSongs.first.coverArt;
-      } else if (i == 1 && homeState.hollywoodSongs.isNotEmpty) {
-        cover = homeState.hollywoodSongs.first.coverArt;
-      } else if (i == 2 && homeState.punjabiSongs.isNotEmpty) {
-        cover = homeState.punjabiSongs.first.coverArt;
-      }
+    for (int i = 0; i < mixes.length; i++) {
+      final mix = mixes[i];
+      final cover = (mix.coverArt != null && mix.coverArt!.isNotEmpty)
+          ? mix.coverArt!
+          : artworkRepair.getDailyMixCover(mix.id, songs: mix.tracks);
 
       final playlist = Playlist(
-        id: mixId,
-        title: meta['title']!,
-        subtitle: meta['subtitle']!,
+        id: mix.id,
+        title: mix.title,
+        subtitle: mix.subtitle,
         image: cover,
-        songCount: 20,
+        songCount: mix.tracks.isNotEmpty ? mix.tracks.length : 20,
+        songs: mix.tracks.isNotEmpty ? mix.tracks : null,
       );
 
       items.add(
         FeedItem(
-          id: mixId,
-          title: meta['title']!,
-          subtitle: meta['subtitle']!,
+          id: mix.id,
+          title: mix.title,
+          subtitle: mix.subtitle,
           imageUrl: cover,
           itemType: 'playlist',
           playlist: playlist,

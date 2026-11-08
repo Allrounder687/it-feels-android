@@ -134,7 +134,7 @@ class DownloadService {
         if (cleanTitle.isNotEmpty) {
           final queryParams = 'track_name=${Uri.encodeComponent(cleanTitle)}&artist_name=${Uri.encodeComponent(cleanArtist)}${song.duration > 0 ? '&duration=${song.duration}' : ''}';
           final url = Uri.parse('https://lrclib.net/api/get?$queryParams');
-          final response = await httpClient.get(url).timeout(const Duration(seconds: 4));
+          final response = await httpClient.get(url).timeout(const Duration(seconds: 8));
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
             if (data is Map) {
@@ -270,11 +270,19 @@ class DownloadService {
       bool hasCover = false;
       if (song.coverArt.isNotEmpty) {
         try {
-          final coverResponse = await httpClient.get(Uri.parse(song.coverArt)).timeout(const Duration(seconds: 5));
-          if (coverResponse.statusCode == 200) {
-            final coverFile = File('${songDir.path}/cover.jpg');
-            await coverFile.writeAsBytes(coverResponse.bodyBytes);
-            hasCover = true;
+          final coverFile = File('${songDir.path}/cover.jpg');
+          if (song.coverArt.startsWith('http://') || song.coverArt.startsWith('https://')) {
+            final coverResponse = await httpClient.get(Uri.parse(song.coverArt)).timeout(const Duration(seconds: 8));
+            if (coverResponse.statusCode == 200 && coverResponse.bodyBytes.isNotEmpty) {
+              await coverFile.writeAsBytes(coverResponse.bodyBytes);
+              hasCover = true;
+            }
+          } else {
+            final localSource = File(song.coverArt.replaceFirst('file://', ''));
+            if (localSource.existsSync()) {
+              await localSource.copy(coverFile.path);
+              hasCover = true;
+            }
           }
         } catch (e) {
           debugPrint('[DownloadService] Cover art download error: $e');

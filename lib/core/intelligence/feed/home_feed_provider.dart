@@ -103,6 +103,11 @@ class HomeFeedNotifier extends StateNotifier<HomeFeedState> {
           homeNotifier.fetchCharts();
         }
         break;
+      case 'Acoustic':
+        if (homeState.topPlaylists.isEmpty) {
+          homeNotifier.fetchIndianAlbums();
+        }
+        break;
       case 'For You':
         if (homeState.youPlaylists.isEmpty) {
           final history = ref.read(listeningHistoryProvider);

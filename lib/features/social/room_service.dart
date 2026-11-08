@@ -4,6 +4,7 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:it_feels_music/features/social/windows_safe_rtdb.dart';
 
 class RoomService {
   final FirebaseDatabase _rtdb;
@@ -107,13 +108,20 @@ class RoomService {
   // Listen to room state (called by guests)
   Stream<DatabaseEvent> listenToRoom(String roomId) {
     final ref = _rtdb.ref('rooms/$roomId');
+    if (WindowsSafeRtdb.isWindowsDesktop) {
+      return WindowsSafeRtdb.safeOnValue(ref, interval: const Duration(milliseconds: 1500));
+    }
     ref.keepSynced(true);
     return ref.onValue;
   }
 
   // Get public rooms
   Stream<DatabaseEvent> getPublicRooms() {
-    return _rtdb.ref('rooms').orderByChild('isPublic').equalTo(true).onValue;
+    final query = _rtdb.ref('rooms').orderByChild('isPublic').equalTo(true);
+    if (WindowsSafeRtdb.isWindowsDesktop) {
+      return WindowsSafeRtdb.safeOnValue(query, interval: const Duration(seconds: 8));
+    }
+    return query.onValue;
   }
 
   // End room
@@ -138,7 +146,11 @@ class RoomService {
 
   // Host listens to join requests
   Stream<DatabaseEvent> listenToJoinRequests(String roomId) {
-    return _rtdb.ref('rooms/$roomId/join_requests').onChildAdded;
+    final query = _rtdb.ref('rooms/$roomId/join_requests');
+    if (WindowsSafeRtdb.isWindowsDesktop) {
+      return WindowsSafeRtdb.safeOnChildAdded(query, interval: const Duration(seconds: 2));
+    }
+    return query.onChildAdded;
   }
 
   // Accept join request
@@ -154,7 +166,11 @@ class RoomService {
 
   // Guest listens to allowed status
   Stream<DatabaseEvent> listenToAllowedStatus(String roomId, String guestId) {
-    return _rtdb.ref('rooms/$roomId/allowed_guests/$guestId').onValue;
+    final ref = _rtdb.ref('rooms/$roomId/allowed_guests/$guestId');
+    if (WindowsSafeRtdb.isWindowsDesktop) {
+      return WindowsSafeRtdb.safeOnValue(ref, interval: const Duration(milliseconds: 1500));
+    }
+    return ref.onValue;
   }
 
   // Generate a random 6 digit numeric code

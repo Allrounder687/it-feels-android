@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/services/download_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
+import 'package:it_feels_music/services/database_service.dart';
 
 /// Handles detection, recovery, and batch restoration of missing song metadata,
 /// covers, and lyrics for locally downloaded tracks using JioSaavn catalog queries.
@@ -50,50 +51,123 @@ class MetadataRestorationService {
     return false;
   }
 
+  /// Checks whether a directory is a dedicated single-song folder vs a generic downloads directory
+  static bool _isDedicatedFolder(Directory dir) {
+    final name = dir.uri.pathSegments.where((s) => s.isNotEmpty).last.toLowerCase();
+    const genericNames = {
+      'music',
+      'download',
+      'downloads',
+      'downloaded_music',
+      'it-feels',
+      'it feels',
+      'it_feels',
+      'sound recordings',
+    };
+    if (genericNames.contains(name)) return false;
+    try {
+      final audioCount = dir.listSync().whereType<File>().where((f) {
+        final l = f.path.toLowerCase();
+        return l.endsWith('.mp3') ||
+            l.endsWith('.m4a') ||
+            l.endsWith('.mp4') ||
+            l.endsWith('.flac') ||
+            l.endsWith('.opus') ||
+            l.endsWith('.wav') ||
+            l.endsWith('.aac') ||
+            l.endsWith('.ogg');
+      }).length;
+      return audioCount <= 1;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Extracts clean Saavn ID from any candidate song representation
+  static String? extractSaavnId(Song song) {
+    if (song.saavnId.isNotEmpty && !song.saavnId.startsWith('local_')) {
+      return song.saavnId;
+    }
+    if (song.id.startsWith('saavn:')) {
+      final id = song.id.replaceFirst('saavn:', '').trim();
+      if (!id.startsWith('local_') && id.isNotEmpty) return id;
+    } else if (song.id.startsWith('saavn_')) {
+      final id = song.id.replaceFirst('saavn_', '').trim();
+      if (!id.startsWith('local_') && id.isNotEmpty) return id;
+    }
+    if (song.encryptedMediaUrl != null) {
+      final m = RegExp(r'saavn_([a-zA-Z0-9_-]+)').firstMatch(song.encryptedMediaUrl!);
+      if (m != null) {
+        final id = m.group(1) ?? '';
+        if (id.startsWith('native_')) return id.replaceFirst('native_', '');
+        if (id.isNotEmpty && !id.startsWith('local_')) return id;
+      }
+    }
+    if (song.localFilePath != null) {
+      final m = RegExp(r'saavn_([a-zA-Z0-9_-]+)').firstMatch(song.localFilePath!);
+      if (m != null) {
+        final id = m.group(1) ?? '';
+        if (id.startsWith('native_')) return id.replaceFirst('native_', '');
+        if (id.isNotEmpty && !id.startsWith('local_')) return id;
+      }
+    }
+    final m = RegExp(r'\(([a-zA-Z0-9_-]{6,16})\)').firstMatch(song.title);
+    if (m != null) {
+      final id = m.group(1) ?? '';
+      if (id.isNotEmpty && !id.startsWith('local_')) return id;
+    }
+    return null;
+  }
+
+  /// Fetches an HTTP URL with proxy fallback to guarantee 100% reachability across all networks
+  Future<http.Response?> _fetchUrlWithProxyFallback(
+    String rawUrl, {
+    Map<String, String>? headers,
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    final reqHeaders = headers ?? {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Referer': 'https://www.jiosaavn.com/',
+      'Accept': 'application/json, text/plain, */*',
+    };
+
+    final proxyUrl = rawUrl.contains('image-proxy')
+        ? rawUrl
+        : 'https://it-feels-proxy.cleverfox687.workers.dev/api/v1/image-proxy?url=${Uri.encodeComponent(rawUrl)}';
+
+    // 1. Try via Edge Proxy
+    try {
+      final res = await _httpClient.get(Uri.parse(proxyUrl), headers: reqHeaders).timeout(timeout);
+      if (res.statusCode == 200 && res.bodyBytes.isNotEmpty) {
+        return res;
+      }
+    } catch (_) {}
+
+    // 2. Direct fallback
+    try {
+      final res = await _httpClient.get(Uri.parse(rawUrl), headers: reqHeaders).timeout(timeout);
+      if (res.statusCode == 200 && res.bodyBytes.isNotEmpty) {
+        return res;
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
   /// Queries JioSaavn (via Saavn ID or autocomplete search) to restore full metadata,
   /// 500x500 album art, and lyrics for downloaded songs that have missing details.
   Future<Song?> restoreSongMetadata(Song song) async {
     try {
-      String? saavnId = song.saavnId.isNotEmpty ? song.saavnId : null;
-      if (saavnId == null || saavnId.isEmpty) {
-        if (song.id.startsWith('saavn_')) {
-          saavnId = song.id.replaceFirst('saavn_', '');
-        } else if (song.id.startsWith('saavn:')) {
-          saavnId = song.id.replaceFirst('saavn:', '');
-        }
-      }
-
-      // Check if audio filename or media url has saavn_XYZ
-      if (saavnId == null || saavnId.isEmpty) {
-        if (song.encryptedMediaUrl != null) {
-          final m = RegExp(r'saavn_([a-zA-Z0-9_-]+)').firstMatch(song.encryptedMediaUrl!);
-          if (m != null) {
-            saavnId = m.group(1);
-          }
-        }
-      }
-
-      // Check if title has (saavnId) placeholder e.g. "Downloaded Track (xNVbUezC)"
-      if (saavnId == null || saavnId.isEmpty) {
-        final m = RegExp(r'\(([a-zA-Z0-9_-]{6,16})\)').firstMatch(song.title);
-        if (m != null) {
-          saavnId = m.group(1);
-        }
-      }
-
+      String? saavnId = extractSaavnId(song);
       Map<String, dynamic>? songDetails;
 
       // 1. Direct Saavn ID lookup
       if (saavnId != null && saavnId.isNotEmpty) {
         final detailsUrl =
             'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=${Uri.encodeComponent(saavnId)}&_format=json&_marker=0&api_version=4&ctx=web6dot0';
-        try {
-          final res = await _httpClient.get(
-            Uri.parse(detailsUrl),
-            headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
-          ).timeout(const Duration(seconds: 10));
-
-          if (res.statusCode == 200) {
+        final res = await _fetchUrlWithProxyFallback(detailsUrl);
+        if (res != null) {
+          try {
             final raw = utf8.decode(res.bodyBytes);
             final data = jsonDecode(raw);
             if (data is Map<String, dynamic>) {
@@ -108,8 +182,8 @@ class MetadataRestorationService {
                 }
               }
             }
-          }
-        } catch (_) {}
+          } catch (_) {}
+        }
       }
 
       // 2. Fallback: Autocomplete search query
@@ -135,13 +209,9 @@ class MetadataRestorationService {
         if (cleanQ.isNotEmpty && cleanQ != 'Downloaded Track' && cleanQ != 'Unknown Track') {
           final searchUrl =
               'https://www.jiosaavn.com/api.php?__call=autocomplete.get&_format=json&_marker=0&api_version=4&ctx=web6dot0&query=${Uri.encodeComponent(cleanQ)}';
-          try {
-            final res = await _httpClient.get(
-              Uri.parse(searchUrl),
-              headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
-            ).timeout(const Duration(seconds: 10));
-
-            if (res.statusCode == 200) {
+          final res = await _fetchUrlWithProxyFallback(searchUrl);
+          if (res != null) {
+            try {
               final raw = utf8.decode(res.bodyBytes);
               final data = jsonDecode(raw);
               if (data is Map && data['songs'] != null && data['songs']['data'] is List) {
@@ -152,11 +222,8 @@ class MetadataRestorationService {
                   if (candidateId.isNotEmpty) {
                     final candidateDetailsUrl =
                         'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=${Uri.encodeComponent(candidateId)}&_format=json&_marker=0&api_version=4&ctx=web6dot0';
-                    final cRes = await _httpClient.get(
-                      Uri.parse(candidateDetailsUrl),
-                      headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'},
-                    ).timeout(const Duration(seconds: 10));
-                    if (cRes.statusCode == 200) {
+                    final cRes = await _fetchUrlWithProxyFallback(candidateDetailsUrl);
+                    if (cRes != null) {
                       final cData = jsonDecode(utf8.decode(cRes.bodyBytes));
                       if (cData is Map && cData.containsKey(candidateId)) {
                         songDetails = Map<String, dynamic>.from(cData[candidateId]);
@@ -166,8 +233,8 @@ class MetadataRestorationService {
                   songDetails ??= Map<String, dynamic>.from(candidate);
                 }
               }
-            }
-          } catch (_) {}
+            } catch (_) {}
+          }
         }
       }
 
@@ -177,7 +244,7 @@ class MetadataRestorationService {
       final enrichedSong = Song.fromJson(songDetails);
 
       // Determine local directory paths safely
-      final audioFilePath = song.encryptedMediaUrl;
+      final audioFilePath = song.encryptedMediaUrl ?? song.localFilePath;
       File? audioFile;
       Directory? parentDir;
       if (audioFilePath != null && audioFilePath.isNotEmpty) {
@@ -185,22 +252,39 @@ class MetadataRestorationService {
         parentDir = audioFile.parent;
       }
 
-      String localCoverPath = enrichedSong.coverArt;
+      final isDedicatedFolder = parentDir != null && _isDedicatedFolder(parentDir);
+      final audioBase = audioFile != null ? audioFile.path.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '') : '';
 
-      if (enrichedSong.coverArt.isNotEmpty && enrichedSong.coverArt.startsWith('http')) {
+      String localCoverPath = song.coverArt;
+      // Check if companion cover art already exists locally
+      if (audioBase.isNotEmpty) {
+        for (final ext in ['.jpg', '.png', '.jpeg']) {
+          final comp = File('$audioBase$ext');
+          if (comp.existsSync()) {
+            localCoverPath = comp.path;
+            break;
+          }
+        }
+      }
+      if (localCoverPath.isEmpty && parentDir != null) {
+        final folderCover = File('${parentDir.path}/cover.jpg');
+        if (folderCover.existsSync()) {
+          localCoverPath = folderCover.path;
+        }
+      }
+
+      // Download cover art if missing or remote
+      if (enrichedSong.coverArt.isNotEmpty &&
+          (localCoverPath.isEmpty || localCoverPath.startsWith('http'))) {
         try {
-          final imgResp = await _httpClient.get(Uri.parse(enrichedSong.coverArt)).timeout(const Duration(seconds: 12));
-          if (imgResp.statusCode == 200 && imgResp.bodyBytes.isNotEmpty) {
+          final imgResp = await _fetchUrlWithProxyFallback(enrichedSong.coverArt, timeout: const Duration(seconds: 12));
+          if (imgResp != null && imgResp.bodyBytes.isNotEmpty) {
             bool savedLocally = false;
             if (parentDir != null && await parentDir.exists()) {
               try {
-                final isDedicatedFolder = parentDir.uri.pathSegments.where((s) => s.isNotEmpty).last.toLowerCase() != 'music' &&
-                    parentDir.uri.pathSegments.where((s) => s.isNotEmpty).last.toLowerCase() != 'download' &&
-                    parentDir.uri.pathSegments.where((s) => s.isNotEmpty).last.toLowerCase() != 'it-feels';
-
                 final File targetCover = isDedicatedFolder
                     ? File('${parentDir.path}/cover.jpg')
-                    : File('${parentDir.path}/${audioFile!.uri.pathSegments.last.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '')}.jpg');
+                    : File('$audioBase.jpg');
                 await targetCover.writeAsBytes(imgResp.bodyBytes);
                 localCoverPath = targetCover.path;
                 savedLocally = true;
@@ -225,8 +309,8 @@ class MetadataRestorationService {
         }
       }
 
-      // 5. Fetch and save lyrics
-      bool hasLyrics = enrichedSong.hasLyrics;
+      // 4. Fetch and save lyrics
+      bool hasLyrics = enrichedSong.hasLyrics || song.hasLyrics;
       try {
         final moreInfo = songDetails['more_info'];
         final hasLyricsFlag = moreInfo != null && (moreInfo['has_lyrics'] == 'true' || moreInfo['has_lyrics'] == true);
@@ -234,18 +318,19 @@ class MetadataRestorationService {
           final cleanLyricsId = enrichedSong.saavnId.isNotEmpty
               ? enrichedSong.saavnId
               : enrichedSong.id.replaceFirst('saavn:', '');
-          final lyricsUri = Uri.parse(
-            'https://www.jiosaavn.com/api.php?__call=lyrics.getLyrics&lyrics_id=$cleanLyricsId&_format=json&ctx=web6dot0',
-          );
-          final lyrResp = await _httpClient.get(lyricsUri, headers: {'User-Agent': 'Mozilla/5.0'}).timeout(const Duration(seconds: 10));
-          if (lyrResp.statusCode == 200) {
+          final lyricsUri =
+              'https://www.jiosaavn.com/api.php?__call=lyrics.getLyrics&lyrics_id=$cleanLyricsId&_format=json&ctx=web6dot0';
+          final lyrResp = await _fetchUrlWithProxyFallback(lyricsUri);
+          if (lyrResp != null) {
             final lyrData = jsonDecode(utf8.decode(lyrResp.bodyBytes));
             final rawLyrics = lyrData['lyrics']?.toString();
             if (rawLyrics != null && rawLyrics.trim().isNotEmpty) {
               hasLyrics = true;
               if (parentDir != null && await parentDir.exists()) {
                 try {
-                  final targetLrc = File('${parentDir.path}/lyrics.txt');
+                  final targetLrc = isDedicatedFolder
+                      ? File('${parentDir.path}/lyrics.txt')
+                      : File('$audioBase.txt');
                   await targetLrc.writeAsString(rawLyrics.replaceAll('<br>', '\n').replaceAll('&quot;', '"'));
                 } catch (_) {}
               }
@@ -256,10 +341,12 @@ class MetadataRestorationService {
         debugPrint('[MetadataRestorationService] Lyrics download error: $e');
       }
 
-      // 6. Update metadata.json bundled alongside the song
+      // 5. Update companion metadata JSON bundled alongside the song
       if (parentDir != null && await parentDir.exists()) {
         try {
-          final metaFile = File('${parentDir.path}/metadata.json');
+          final metaFile = isDedicatedFolder
+              ? File('${parentDir.path}/metadata.json')
+              : File('$audioBase.json');
           final metaMap = {
             'id': enrichedSong.id,
             'saavnId': enrichedSong.saavnId,
@@ -272,14 +359,18 @@ class MetadataRestorationService {
             'coverArt': localCoverPath,
             'hasLyrics': hasLyrics,
             'restoredAt': DateTime.now().toIso8601String(),
+            'app': 'IT-Feels',
           };
           await metaFile.writeAsString(const JsonEncoder.withIndent('  ').convert(metaMap));
         } catch (_) {}
       }
 
       final restoredSong = enrichedSong.copyWith(
-        coverArt: localCoverPath,
+        id: song.id.isNotEmpty ? song.id : enrichedSong.id,
+        saavnId: enrichedSong.saavnId.isNotEmpty ? enrichedSong.saavnId : song.saavnId,
+        coverArt: localCoverPath.isNotEmpty ? localCoverPath : enrichedSong.coverArt,
         encryptedMediaUrl: song.encryptedMediaUrl,
+        localFilePath: song.localFilePath ?? song.encryptedMediaUrl,
         hasLyrics: hasLyrics,
         offlineStatus: OfflineStatus.downloaded,
       );
@@ -292,7 +383,158 @@ class MetadataRestorationService {
     }
   }
 
-  /// Restores missing metadata, covers, and lyrics across all downloaded songs in background.
+  /// High-performance multi-track batch restoration using multi-pid queries
+  Future<List<Song>> restoreBatchMetadata(
+    List<Song> songs, {
+    Function(int current, int total, Song song)? onProgress,
+  }) async {
+    final toRestore = songs.where(isSongMissingDetails).toList();
+    if (toRestore.isEmpty) return [];
+
+    final List<Song> restoredList = [];
+    final Map<String, List<Song>> saavnGroups = {};
+    final List<Song> nonSaavnSongs = [];
+
+    for (final song in toRestore) {
+      final sId = extractSaavnId(song);
+      if (sId != null && sId.isNotEmpty) {
+        saavnGroups.putIfAbsent(sId, () => []).add(song);
+      } else {
+        nonSaavnSongs.add(song);
+      }
+    }
+
+    // 1. Process Saavn tracks in batches of 20
+    final allSaavnIds = saavnGroups.keys.toList();
+    final Map<String, Map<String, dynamic>> detailsMap = {};
+
+    for (int i = 0; i < allSaavnIds.length; i += 20) {
+      final batch = allSaavnIds.sublist(i, (i + 20 > allSaavnIds.length) ? allSaavnIds.length : i + 20);
+      final pids = batch.join(',');
+      final rawUrl =
+          'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=${Uri.encodeComponent(pids)}&_format=json&_marker=0&api_version=4&ctx=web6dot0';
+
+      try {
+        final res = await _fetchUrlWithProxyFallback(rawUrl);
+        if (res != null) {
+          final data = jsonDecode(utf8.decode(res.bodyBytes));
+          List<dynamic> returned = [];
+          if (data is Map) {
+            if (data['songs'] is List) {
+              returned = data['songs'] as List;
+            } else {
+              for (final k in batch) {
+                if (data[k] is Map) returned.add(data[k]);
+              }
+            }
+          }
+          for (final s in returned) {
+            if (s is Map) {
+              final sId = s['id']?.toString() ?? '';
+              if (sId.isNotEmpty) {
+                detailsMap[sId] = Map<String, dynamic>.from(s);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[MetadataRestorationService] Batch fetch error: $e');
+      }
+    }
+
+    // Build restored songs from batch results
+    int processedCount = 0;
+    for (final entry in saavnGroups.entries) {
+      final sId = entry.key;
+      final originalSongs = entry.value;
+      final rawDetails = detailsMap[sId];
+
+      if (rawDetails != null) {
+        final enriched = Song.fromJson(rawDetails);
+        for (final orig in originalSongs) {
+          processedCount++;
+          onProgress?.call(processedCount, toRestore.length, orig);
+
+          final audioPath = orig.encryptedMediaUrl ?? orig.localFilePath;
+          File? audioFile = audioPath != null ? File(audioPath) : null;
+          final parentDir = audioFile?.parent;
+          final isDedicated = parentDir != null && _isDedicatedFolder(parentDir);
+          final audioBase = audioFile != null ? audioFile.path.replaceAll(RegExp(r'\.[a-zA-Z0-9]+$'), '') : '';
+
+          String coverPath = orig.coverArt;
+          if (audioBase.isNotEmpty) {
+            for (final ext in ['.jpg', '.png', '.jpeg']) {
+              final comp = File('$audioBase$ext');
+              if (comp.existsSync()) {
+                coverPath = comp.path;
+                break;
+              }
+            }
+          }
+          if (coverPath.isEmpty && parentDir != null) {
+            final folderCover = File('${parentDir.path}/cover.jpg');
+            if (folderCover.existsSync()) coverPath = folderCover.path;
+          }
+
+          // Save companion JSON
+          if (parentDir != null && parentDir.existsSync()) {
+            try {
+              final metaFile = isDedicated
+                  ? File('${parentDir.path}/metadata.json')
+                  : File('$audioBase.json');
+              final metaMap = {
+                'id': enriched.id,
+                'saavnId': enriched.saavnId,
+                'title': enriched.title,
+                'artist': enriched.artist,
+                'album': enriched.album,
+                'duration': enriched.duration,
+                'audioFile': audioFile?.uri.pathSegments.last ?? '',
+                'coverFile': coverPath.startsWith('http') ? '' : coverPath.split(RegExp(r'[\\/]')).last,
+                'coverArt': coverPath,
+                'hasLyrics': enriched.hasLyrics || orig.hasLyrics,
+                'restoredAt': DateTime.now().toIso8601String(),
+                'app': 'IT-Feels',
+              };
+              metaFile.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(metaMap));
+            } catch (_) {}
+          }
+
+          final restored = enriched.copyWith(
+            id: orig.id.isNotEmpty ? orig.id : enriched.id,
+            saavnId: enriched.saavnId.isNotEmpty ? enriched.saavnId : sId,
+            coverArt: coverPath.isNotEmpty ? coverPath : enriched.coverArt,
+            encryptedMediaUrl: orig.encryptedMediaUrl,
+            localFilePath: orig.localFilePath ?? orig.encryptedMediaUrl,
+            hasLyrics: enriched.hasLyrics || orig.hasLyrics,
+            offlineStatus: OfflineStatus.downloaded,
+          );
+          restoredList.add(restored);
+        }
+      } else {
+        // Fallback to individual restoration
+        for (final orig in originalSongs) {
+          processedCount++;
+          onProgress?.call(processedCount, toRestore.length, orig);
+          final restored = await restoreSongMetadata(orig);
+          if (restored != null) restoredList.add(restored);
+        }
+      }
+    }
+
+    // 2. Process non-Saavn tracks individually
+    for (final orig in nonSaavnSongs) {
+      processedCount++;
+      onProgress?.call(processedCount, toRestore.length, orig);
+      final restored = await restoreSongMetadata(orig);
+      if (restored != null) restoredList.add(restored);
+    }
+
+    debugPrint('[MetadataRestorationService] Batch restored ${restoredList.length}/${toRestore.length} tracks');
+    return restoredList;
+  }
+
+  /// Restores missing metadata, covers, and lyrics across all downloaded songs in background using batching.
   Future<int> restoreAllMissingMetadata({
     List<Song>? candidateSongs,
     Function(int current, int total, Song song)? onProgress,
@@ -301,25 +543,21 @@ class MetadataRestorationService {
     final toRestore = existingDownloads.where(isSongMissingDetails).toList();
     if (toRestore.isEmpty) return 0;
 
-    int restoredCount = 0;
-    final Map<String, Song> registry = {
-      for (final s in existingDownloads) s.id: s,
-    };
-
-    for (int i = 0; i < toRestore.length; i++) {
-      final song = toRestore[i];
-      onProgress?.call(i + 1, toRestore.length, song);
-
-      final restored = await restoreSongMetadata(song);
-      if (restored != null) {
-        registry[song.id] = restored;
-        restoredCount++;
-        await StorageService.saveDownloads(registry.values.toList());
+    final restored = await restoreBatchMetadata(toRestore, onProgress: onProgress);
+    if (restored.isNotEmpty) {
+      final Map<String, Song> registry = {
+        for (final s in existingDownloads) s.id: s,
+      };
+      for (final r in restored) {
+        registry[r.id] = r;
       }
-
-      await Future.delayed(const Duration(milliseconds: 150));
+      final updatedList = registry.values.toList();
+      await StorageService.saveDownloads(updatedList);
+      try {
+        await DatabaseService().saveSongs(updatedList);
+      } catch (_) {}
     }
 
-    return restoredCount;
+    return restored.length;
   }
 }

@@ -15,6 +15,11 @@ import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/features/social/listen_together_service.dart';
 import 'package:it_feels_music/services/download_service.dart';
 import 'package:it_feels_music/data/services/smart_cache_service.dart';
+import 'package:it_feels_music/data/services/equalizer_service.dart';
+import 'package:it_feels_music/core/intelligence/playlists/dynamic_playlist_service.dart';
+import 'package:it_feels_music/core/diagnostics/observability_service.dart';
+import 'package:it_feels_music/core/diagnostics/trackers/playback_diagnostics_tracker.dart';
+import 'package:it_feels_music/core/diagnostics/export/diagnostic_export_service.dart';
 
 import 'package:it_feels_music/data/datasources/local_cache_data_source.dart';
 import 'package:it_feels_music/data/services/feedback_email_service.dart';
@@ -63,5 +68,10 @@ Future<void> setupServiceLocator() async {
   locator.registerLazySingleton<ListenTogetherService>(() => ListenTogetherService());
   locator.registerLazySingleton<DownloadService>(() => DownloadService(apiService: locator<IMusicRepository>()));
   locator.registerLazySingleton<SmartCacheService>(() => SmartCacheService());
+  locator.registerLazySingleton<EqualizerService>(() => EqualizerService());
+  locator.registerLazySingleton<DynamicPlaylistService>(() => DynamicPlaylistService.instance);
+  locator.registerLazySingleton<ObservabilityService>(() => ObservabilityService.instance);
+  locator.registerLazySingleton<PlaybackDiagnosticsTracker>(() => PlaybackDiagnosticsTracker.instance);
+  locator.registerLazySingleton<DiagnosticExportService>(() => DiagnosticExportService.instance);
 }
 

@@ -1,5 +1,8 @@
 import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
+import 'package:it_feels_music/core/diagnostics/crash_diagnostics_service.dart';
+import 'package:it_feels_music/core/diagnostics/observability_service.dart';
+import 'package:it_feels_music/core/diagnostics/models/diagnostic_subsystem.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:audio_session/audio_session.dart';
@@ -12,7 +15,9 @@ import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:it_feels_music/data/repositories/music_repository.dart';
-import 'data/services/audio_player_handler.dart';
+import 'package:it_feels_music/data/services/audio_player_handler.dart';
+import 'package:it_feels_music/features/social/listen_together_service.dart';
+import 'package:it_feels_music/data/services/equalizer_service.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 
@@ -46,6 +51,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'firebase_options.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -58,6 +64,11 @@ Future<void> main(List<String> args) async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   
+  try {
+    await ObservabilityService.instance.init();
+    await CrashDiagnosticsService.instance.init();
+  } catch (_) {}
+
   await LocalProxyServer.start();
 
   if (Platform.isWindows && !kDebugMode) {
@@ -148,25 +159,87 @@ Future<void> main(List<String> args) async {
           options: DefaultFirebaseOptions.currentPlatform,
         );
       }
+      if (!kIsWeb && Platform.isWindows) {
+        try {
+          FirebaseFirestore.instance.settings = const Settings(
+            persistenceEnabled: false,
+          );
+          debugPrint('[Firebase] Disabled LevelDB persistence on Windows to prevent runtime assertions.');
+        } catch (e) {
+          debugPrint('[Firebase] Could not set Firestore persistence on Windows: $e');
+        }
+      }
       try {
         await FirebaseAuth.instance.setLanguageCode('en');
       } catch (_) {}
       
-      // Pass all uncaught "fatal" errors from the framework to Crashlytics
+      // Pass all uncaught "fatal" errors from the framework to CrashDiagnostics & Crashlytics
       if (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)) {
-        FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+        FlutterError.onError = (details) {
+          ObservabilityService.instance.fatal(
+            subsystem: DiagnosticSubsystem.framework,
+            component: 'FlutterFramework',
+            eventName: 'uncaught_flutter_error',
+            errorMessage: details.exceptionAsString(),
+            stackTrace: details.stack,
+            metadata: {
+              'library': details.library ?? 'flutter',
+              'context': details.context?.toDescription(),
+            },
+          );
+          CrashDiagnosticsService.instance.recordFrameworkError(details);
+          FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+        };
         
-        // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework to Crashlytics
+        // Pass all uncaught asynchronous errors that aren't handled by the Flutter framework
         PlatformDispatcher.instance.onError = (error, stack) {
+          ObservabilityService.instance.fatal(
+            subsystem: DiagnosticSubsystem.platform,
+            component: 'PlatformDispatcher',
+            eventName: 'uncaught_async_error',
+            errorMessage: error.toString(),
+            stackTrace: stack,
+          );
+          CrashDiagnosticsService.instance.record(
+            category: DiagnosticCategory.platform,
+            severity: DiagnosticSeverity.fatal,
+            message: error.toString(),
+            stackTrace: stack,
+          );
           FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
           return true;
         };
       } else {
-        // Fallback for Windows/Linux/Web where Crashlytics isn't fully supported
+        // Fallback for Windows/Linux/Web with full privacy-conscious local crash diagnostics
         FlutterError.onError = (details) {
+          ObservabilityService.instance.fatal(
+            subsystem: DiagnosticSubsystem.framework,
+            component: 'FlutterFramework',
+            eventName: 'uncaught_flutter_error',
+            errorMessage: details.exceptionAsString(),
+            stackTrace: details.stack,
+            metadata: {
+              'library': details.library ?? 'flutter',
+              'context': details.context?.toDescription(),
+            },
+          );
+          CrashDiagnosticsService.instance.recordFrameworkError(details);
           FlutterError.presentError(details);
         };
         PlatformDispatcher.instance.onError = (error, stack) {
+          ObservabilityService.instance.fatal(
+            subsystem: DiagnosticSubsystem.platform,
+            component: 'PlatformDispatcher',
+            eventName: 'uncaught_async_error',
+            errorMessage: error.toString(),
+            stackTrace: stack,
+          );
+          CrashDiagnosticsService.instance.record(
+            category: DiagnosticCategory.platform,
+            severity: DiagnosticSeverity.fatal,
+            message: error.toString(),
+            stackTrace: stack,
+          );
           debugPrint('Async Error: $error\n$stack');
           return true;
         };
@@ -229,13 +302,15 @@ Future<void> main(List<String> args) async {
       await hotKeyManager.register(
         HotKey(key: LogicalKeyboardKey.space, modifiers: [HotKeyModifier.control], scope: HotKeyScope.system),
         keyDownHandler: (HotKey hotKey) async {
-          await windowManager.show();
-          await windowManager.focus();
-          appRouter.push('/raycast');
+          try {
+            await windowManager.show();
+            await windowManager.focus();
+            appRouter.push('/raycast');
+          } catch (_) {}
         },
       );
     } catch (e) {
-      debugPrint('[hotKeyManager] Raycast registration error: ');
+      debugPrint('[hotKeyManager] Raycast registration error: $e');
     }
 
     // Initialize custom keyboard controls & Windows overlap detection
@@ -266,7 +341,7 @@ Future<void> main(List<String> args) async {
       size: Size(1280, 720),
       minimumSize: Size(800, 600),
       center: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Color(0xFF0A0D14),
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.hidden,
     );
@@ -389,13 +464,68 @@ StartupWMClass=it_feels_music
 
 final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
-class PixelPlayerSaavnApp extends ConsumerWidget {
+class PixelPlayerSaavnApp extends ConsumerStatefulWidget {
   final AudioPlayerHandler? audioHandler;
 
   const PixelPlayerSaavnApp({super.key, this.audioHandler});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PixelPlayerSaavnApp> createState() => _PixelPlayerSaavnAppState();
+}
+
+class _PixelPlayerSaavnAppState extends ConsumerState<PixelPlayerSaavnApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void reassemble() {
+    super.reassemble();
+    // Hot Restart / Hot Reload Safety Hook:
+    // Detach EqualizerService and flush audio filter graph to prevent dangling libmpv callbacks
+    try {
+      if (locator.isRegistered<EqualizerService>()) {
+        locator<EqualizerService>().detachPlayer();
+      }
+    } catch (_) {}
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      try {
+        if (locator.isRegistered<ListenTogetherService>()) {
+          locator<ListenTogetherService>().dispose();
+        }
+      } catch (_) {}
+      try {
+        if (locator.isRegistered<AudioPlayerHandler>()) {
+          locator<AudioPlayerHandler>().dispose();
+        }
+      } catch (_) {}
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    try {
+      if (locator.isRegistered<ListenTogetherService>()) {
+        locator<ListenTogetherService>().dispose();
+      }
+    } catch (_) {}
+    try {
+      if (locator.isRegistered<AudioPlayerHandler>()) {
+        locator<AudioPlayerHandler>().dispose();
+      }
+    } catch (_) {}
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
           return Builder(
@@ -509,6 +639,11 @@ class AppWindowListener extends WindowListener with TrayListener {
       windowManager.show();
       windowManager.focus();
     } else if (menuItem.key == 'exit_app') {
+      try {
+        if (locator.isRegistered<AudioPlayerHandler>()) {
+          await locator<AudioPlayerHandler>().dispose();
+        }
+      } catch (_) {}
       await windowManager.setPreventClose(false);
       await windowManager.destroy();
       exit(0);

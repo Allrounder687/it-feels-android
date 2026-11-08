@@ -60,8 +60,24 @@ void main() {
         addedAt: DateTime.now(),
       );
 
+      final bAlbum = Playlist(
+        id: 'saavn:album1',
+        title: 'Bolly Album 1',
+        image: 'https://example.com/a.jpg',
+        songCount: 8,
+      );
+
+      final bPlaylist = Playlist(
+        id: 'saavn:pl1',
+        title: 'Bolly Playlist 1',
+        image: 'https://example.com/p.jpg',
+        songCount: 15,
+      );
+
       final homeState = HomeState(
         bollywoodSongs: [bSong],
+        bollywoodPlaylists: [bPlaylist],
+        bollywoodAlbums: [bAlbum],
       );
 
       const historyState = ListeningHistoryState();
@@ -72,9 +88,16 @@ void main() {
         activeFilter: 'Bollywood',
       );
 
-      // In Bollywood filter, Bollywood tracks must be present and dailyMix/quickPicks absent
+      // In Bollywood filter, Bollywood tracks, playlists, and albums must be present
       final bollySection = feed.sections.firstWhere((s) => s.id == 'sec_bollywood_tracks');
       expect(bollySection.items.first.title, 'Bolly Song');
+
+      final bollyPlSection = feed.sections.firstWhere((s) => s.id == 'sec_bollywood_playlists');
+      expect(bollyPlSection.items.first.title, 'Bolly Playlist 1');
+
+      final bollyAlbumSection = feed.sections.firstWhere((s) => s.id == 'sec_bollywood_albums');
+      expect(bollyAlbumSection.items.first.title, 'Bolly Album 1');
+
       expect(feed.sections.any((s) => s.sectionType == FeedSectionType.dailyMix), isFalse);
     });
   });

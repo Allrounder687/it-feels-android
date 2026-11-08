@@ -6,6 +6,7 @@ import 'package:it_feels_music/core/utils/service_locator.dart';
 import 'package:it_feels_music/services/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:it_feels_music/features/social/windows_safe_rtdb.dart';
 
 class SocialService {
   final FirebaseFirestore _firestore;
@@ -397,6 +398,10 @@ class SocialService {
 
   // Get a friend's presence stream
   Stream<DatabaseEvent> getPresenceStream(String friendUid) {
-    return _rtdb.ref('presence/$friendUid').onValue;
+    final ref = _rtdb.ref('presence/$friendUid');
+    if (WindowsSafeRtdb.isWindowsDesktop) {
+      return WindowsSafeRtdb.safeOnValue(ref, interval: const Duration(seconds: 10));
+    }
+    return ref.onValue;
   }
 }

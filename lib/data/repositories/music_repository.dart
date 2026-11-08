@@ -12,6 +12,7 @@ import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/datasources/local_cache_data_source.dart';
 import 'package:it_feels_music/data/services/addon_manager.dart';
 import 'package:it_feels_music/services/database_service.dart';
+import 'package:it_feels_music/core/intelligence/charts/chart_aggregation_service.dart';
 
 abstract class IMusicRepository {
   Future<List<Song>> fetchRecommendations({String? songId, String? artist});
@@ -19,7 +20,7 @@ abstract class IMusicRepository {
   Future<List<Song>> searchNativeCatalog(String query);
   Future<Map<String, dynamic>?> fetchNativeHomeFeed();
   Future<List<Song>> search(String query, {int page = 1, int limit = 20});
-  Future<String?> getStreamUrl(Song song);
+  Future<String?> getStreamUrl(Song song, {bool bypassCache = false});
   Future<Map<String, dynamic>?> getLyrics(
     String track,
     String artist, {
@@ -194,7 +195,22 @@ class MusicRepository implements IMusicRepository {
   @override
   Future<Map<String, dynamic>> getCharts() async {
     final addonManager = AddonManager();
-    return await addonManager.getCharts();
+    final res = await addonManager.getCharts();
+    final tracks = res['tracks'] as List? ?? [];
+    if (tracks.isNotEmpty) {
+      return res;
+    }
+    // High-reliability verified chart fallback
+    try {
+      final aggregatedTracks = await ChartAggregationService.instance.fetchChartTracks('hindi_top_50');
+      final chartPlaylists = await searchPlaylists('Top 50', count: 12);
+      if (aggregatedTracks.isNotEmpty) {
+        return {'tracks': aggregatedTracks, 'playlists': chartPlaylists};
+      }
+    } catch (e) {
+      debugPrint('[MusicRepository] Chart fallback error: $e');
+    }
+    return res;
   }
 
   @override
@@ -293,7 +309,7 @@ class MusicRepository implements IMusicRepository {
   }
 
   @override
-  Future<String?> resolveStream(Song song) async => null;
+  Future<String?> resolveStream(Song song) async => getStreamUrl(song);
 
   @override
   Future<List<Song>> getRecommendedSongs(Song song) async {
@@ -568,7 +584,37 @@ class MusicRepository implements IMusicRepository {
   }
 
   @override
-  Future<Song?> fetchSongDetails(String token) async => null;
+  Future<Song?> fetchSongDetails(String token) async {
+    final cleanToken = token.replaceFirst('saavn:', '').replaceFirst('saavn_', '').trim();
+    if (cleanToken.isEmpty) return null;
+
+    final rawUrl =
+        'https://www.jiosaavn.com/api.php?__call=song.getDetails&pids=${Uri.encodeComponent(cleanToken)}&_format=json&_marker=0&api_version=4&ctx=web6dot0';
+    final proxyUrl =
+        'https://it-feels-proxy.cleverfox687.workers.dev/api/v1/image-proxy?url=${Uri.encodeComponent(rawUrl)}';
+
+    for (final url in [proxyUrl, rawUrl]) {
+      try {
+        final res = await http.get(Uri.parse(url), headers: {
+          'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+          'Referer': 'https://www.jiosaavn.com/',
+        }).timeout(const Duration(seconds: 8));
+
+        if (res.statusCode == 200) {
+          final data = jsonDecode(utf8.decode(res.bodyBytes));
+          if (data is Map<String, dynamic>) {
+            if (data.containsKey('songs') && data['songs'] is List && (data['songs'] as List).isNotEmpty) {
+              return Song.fromJson(Map<String, dynamic>.from((data['songs'] as List).first));
+            } else if (data.containsKey(cleanToken) && data[cleanToken] is Map) {
+              return Song.fromJson(Map<String, dynamic>.from(data[cleanToken]));
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
 
   @override
   Future<List<Song>> fetchRecommendations({String? songId, String? artist}) async {
@@ -642,10 +688,13 @@ class MusicRepository implements IMusicRepository {
   }
 
   @override
-  Future<String?> getStreamUrl(Song song) async {
+  Future<String?> getStreamUrl(Song song, {bool bypassCache = false}) async {
     // 0. Cache check
-    if (_streamCache.containsKey(song.id)) {
+    if (!bypassCache && _streamCache.containsKey(song.id)) {
       return _streamCache[song.id];
+    }
+    if (bypassCache) {
+      _streamCache.remove(song.id);
     }
 
     // 1. Radio station direct stream

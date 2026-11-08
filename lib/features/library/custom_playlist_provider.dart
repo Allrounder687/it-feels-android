@@ -100,6 +100,53 @@ class CustomPlaylistNotifier extends Notifier<CustomPlaylistState> {
       await _save();
     }
   }
+
+  Future<void> reorderSongs(String playlistId, int oldIndex, int newIndex) async {
+    final idx = state.playlists.indexWhere((p) => p.id == playlistId);
+    if (idx != -1) {
+      final updated = List<CustomPlaylist>.from(state.playlists);
+      final pl = updated[idx];
+      var target = newIndex;
+      if (oldIndex < target) {
+        target -= 1;
+      }
+      if (oldIndex >= 0 && oldIndex < pl.songs.length && target >= 0 && target <= pl.songs.length) {
+        final song = pl.songs.removeAt(oldIndex);
+        pl.songs.insert(target, song);
+        state = state.copyWith(playlists: updated);
+        await _save();
+      }
+    }
+  }
+
+  Future<void> removeSongsBatch(String playlistId, List<String> songIds) async {
+    final idx = state.playlists.indexWhere((p) => p.id == playlistId);
+    if (idx != -1) {
+      final idSet = songIds.toSet();
+      final updated = List<CustomPlaylist>.from(state.playlists);
+      updated[idx].songs.removeWhere((s) => idSet.contains(s.id));
+      state = state.copyWith(playlists: updated);
+      await _save();
+    }
+  }
+
+  Future<CustomPlaylist?> duplicatePlaylist(String playlistId) async {
+    final idx = state.playlists.indexWhere((p) => p.id == playlistId);
+    if (idx != -1) {
+      final original = state.playlists[idx];
+      final newPlaylist = CustomPlaylist(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: '${original.title} (Copy)',
+        createdAt: DateTime.now(),
+        songs: List.from(original.songs),
+      );
+      final updated = List<CustomPlaylist>.from(state.playlists)..add(newPlaylist);
+      state = state.copyWith(playlists: updated);
+      await _save();
+      return newPlaylist;
+    }
+    return null;
+  }
 }
 
 typedef CustomPlaylistProvider = CustomPlaylistNotifier;

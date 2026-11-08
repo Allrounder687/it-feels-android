@@ -7,6 +7,7 @@ import 'package:it_feels_music/services/notification_service.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:it_feels_music/features/social/windows_safe_rtdb.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/theme/app_colors.dart';
@@ -29,9 +30,16 @@ class ListenTogetherService {
   FirebaseFirestore get _firestore => locator.isRegistered<FirebaseFirestore>() ? locator<FirebaseFirestore>() : FirebaseFirestore.instance;
 
   ListenTogetherService({FirebaseDatabase? database}) : _database = database ?? FirebaseDatabase.instance {
-    _offsetSubscription = _database.ref('.info/serverTimeOffset').onValue.listen((event) {
-      _serverTimeOffset = (event.snapshot.value as int?) ?? 0;
-    });
+    if (WindowsSafeRtdb.isWindowsDesktop) {
+      // Safe one-time read on Windows prevents non-platform thread EventChannel crash
+      _database.ref('.info/serverTimeOffset').get().then((snapshot) {
+        _serverTimeOffset = (snapshot.value as int?) ?? 0;
+      }).catchError((_) {});
+    } else {
+      _offsetSubscription = _database.ref('.info/serverTimeOffset').onValue.listen((event) {
+        _serverTimeOffset = (event.snapshot.value as int?) ?? 0;
+      });
+    }
   }
 
   int get estimatedServerTime => DateTime.now().millisecondsSinceEpoch + _serverTimeOffset;

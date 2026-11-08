@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../theme/new_experience_tokens.dart';
+import 'new_artwork_image.dart';
 
 class NewCard extends StatefulWidget {
   final String title;
   final String? subtitle;
   final String? imageUrl;
   final String? badgeText;
+  final Widget? customArtwork;
   final VoidCallback onTap;
   final VoidCallback? onPlay;
   final double width;
@@ -19,6 +20,7 @@ class NewCard extends StatefulWidget {
     this.subtitle,
     this.imageUrl,
     this.badgeText,
+    this.customArtwork,
     required this.onTap,
     this.onPlay,
     this.width = 164.0,
@@ -35,86 +37,65 @@ class _NewCardState extends State<NewCard> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          width: widget.width,
-          transform: Matrix4.identity()..translate(0.0, _isHovered ? -4.0 : 0.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Artwork container with hover elevation and play button
-              Stack(
-                children: [
-                  AspectRatio(
-                    aspectRatio: widget.aspectRatio,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(NewExperienceTokens.radiusMedium),
-                        border: Border.all(
-                          color: _isHovered
-                              ? NewExperienceTokens.accentViolet.withValues(alpha: 0.5)
-                              : NewExperienceTokens.specularBorder,
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: _isHovered ? 0.45 : 0.25),
-                            blurRadius: _isHovered ? 16 : 8,
-                            offset: Offset(0, _isHovered ? 8 : 4),
+    final cardHeight = widget.width / widget.aspectRatio;
+
+    return RepaintBoundary(
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            width: widget.width,
+            transform: Matrix4.identity()..translate(0.0, _isHovered ? -4.0 : 0.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Artwork container with hover elevation and play button
+                Stack(
+                  children: [
+                    AspectRatio(
+                      aspectRatio: widget.aspectRatio,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(NewExperienceTokens.radiusMedium),
+                          border: Border.all(
+                            color: _isHovered
+                                ? NewExperienceTokens.accentViolet.withValues(alpha: 0.5)
+                                : NewExperienceTokens.specularBorder,
+                            width: 1,
                           ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(NewExperienceTokens.radiusMedium),
-                        child: widget.imageUrl != null && widget.imageUrl!.isNotEmpty
-                            ? CachedNetworkImage(
-                                imageUrl: widget.imageUrl!,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => Container(
-                                  color: NewExperienceTokens.midnightSurface,
-                                  child: Center(
-                                    child: Icon(
-                                      widget.placeholderIcon,
-                                      color: NewExperienceTokens.textMuted,
-                                      size: 32,
-                                    ),
-                                  ),
-                                ),
-                                errorWidget: (context, url, error) => Container(
-                                  color: NewExperienceTokens.midnightSurface,
-                                  child: Center(
-                                    child: Icon(
-                                      widget.placeholderIcon,
-                                      color: NewExperienceTokens.textMuted,
-                                      size: 32,
-                                    ),
-                                  ),
-                                ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: _isHovered ? 0.45 : 0.25),
+                              blurRadius: _isHovered ? 16 : 8,
+                              offset: Offset(0, _isHovered ? 8 : 4),
+                            ),
+                          ],
+                        ),
+                        child: widget.customArtwork != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(NewExperienceTokens.radiusMedium),
+                                child: widget.customArtwork!,
                               )
-                            : Container(
-                                color: NewExperienceTokens.midnightSurface,
-                                child: Center(
-                                  child: Icon(
-                                    widget.placeholderIcon,
-                                    color: NewExperienceTokens.textMuted,
-                                    size: 32,
-                                  ),
-                                ),
+                            : NewArtworkImage(
+                                imageUrl: widget.imageUrl,
+                                width: widget.width,
+                                height: cardHeight,
+                                fit: BoxFit.cover,
+                                borderRadius: BorderRadius.circular(NewExperienceTokens.radiusMedium),
+                                iconSize: 32,
+                                fallbackTitle: widget.title,
                               ),
                       ),
                     ),
-                  ),
 
                   // Optional Badge (e.g. "DAILY MIX", "TOP HIT")
-                  if (widget.badgeText != null)
+                  if (widget.badgeText != null && widget.customArtwork == null)
                     Positioned(
                       top: 8,
                       left: 8,
@@ -203,6 +184,7 @@ class _NewCardState extends State<NewCard> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

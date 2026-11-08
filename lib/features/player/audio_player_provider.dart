@@ -28,10 +28,12 @@ import 'package:it_feels_music/features/player/palette_extractor_service.dart';
 import 'package:it_feels_music/data/services/audio_engine_service.dart';
 import 'package:it_feels_music/services/cloud_sync_service.dart';
 import 'package:it_feels_music/features/social/listen_together_service.dart';
+import 'package:it_feels_music/core/diagnostics/trackers/playback_diagnostics_tracker.dart';
 import 'package:it_feels_music/core/intelligence/events/listening_event.dart';
 import 'package:it_feels_music/core/intelligence/events/listening_event_buffer.dart';
 import 'package:it_feels_music/core/intelligence/taste/taste_profile_service.dart';
 import 'package:it_feels_music/core/intelligence/recommendations/recommendation_pipeline.dart';
+import 'package:it_feels_music/core/diagnostics/crash_diagnostics_service.dart';
 
 enum AppThemeMode { dynamic, midnight, burgundy, amoled, materialYou, light, glass }
 
@@ -352,6 +354,32 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   Timer? _audioSyncHapticTimer;
   int _playSongGenerationToken = 0;
   Timer? _bufferingTimer;
+  String? _adaptiveDowngradedSongId;
+  bool _isAdaptiveDowngrading = false;
+
+  // Fisher-Yates Shuffled Playlist Engine
+  List<int> _shuffleSequence = [];
+  int _shufflePointer = 0;
+
+  int _consecutivePlaybackFailures = 0;
+  static const int _maxConsecutiveFailures = 3;
+
+  void _regenerateShuffleSequence({int? startingQueueIndex}) {
+    if (state.queue.isEmpty) {
+      _shuffleSequence = [];
+      _shufflePointer = 0;
+      return;
+    }
+    final len = state.queue.length;
+    final start = (startingQueueIndex != null && startingQueueIndex >= 0 && startingQueueIndex < len)
+        ? startingQueueIndex
+        : (state.currentIndex >= 0 && state.currentIndex < len ? state.currentIndex : 0);
+
+    final otherIndices = List<int>.generate(len, (i) => i)..remove(start);
+    otherIndices.shuffle(Random());
+    _shuffleSequence = [start, ...otherIndices];
+    _shufflePointer = 0;
+  }
 
   @override
   AudioPlayerState build() {
@@ -414,6 +442,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     audioHandler.onSkipNext = () => skipToNext();
     audioHandler.onSkipPrevious = () => skipToPrevious();
     audioHandler.onTrackCompleted = () => _handleTrackCompleted();
+    audioHandler.onPlaybackError = (err) => _handlePlaybackError(err);
 
     // Sync the Notifier's state with the Engine's initial state
     state = state.copyWith(
@@ -494,9 +523,18 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
     _eventSubscriptions.add(engine.bufferingStream.listen((isBuffering) async {
       if (isBuffering) {
+        final currentId = state.currentSong?.id;
+        if (currentId == null ||
+            _adaptiveDowngradedSongId == currentId ||
+            _isAdaptiveDowngrading) {
+          return;
+        }
         if (_bufferingTimer == null || !_bufferingTimer!.isActive) {
-          _bufferingTimer = Timer(const Duration(milliseconds: 1500), () async {
-            if (state.currentSong != null) {
+          _bufferingTimer = Timer(const Duration(milliseconds: 3500), () async {
+            if (_isAdaptiveDowngrading || state.currentSong?.id != currentId) return;
+            try {
+              _isAdaptiveDowngrading = true;
+              _adaptiveDowngradedSongId = currentId;
               final originalUrl = await locator<IMusicRepository>().getStreamUrl(
                 state.currentSong!,
               );
@@ -512,6 +550,10 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
                   await engine.play();
                 }
               }
+            } catch (e) {
+              debugPrint('[AdaptiveNetwork] Downgrade failed: $e');
+            } finally {
+              _isAdaptiveDowngrading = false;
             }
           });
         }
@@ -669,6 +711,77 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       // Allow a small buffer before re-enabling completion tracking
       await Future.delayed(const Duration(milliseconds: 1000));
       _isHandlingCompletion = false;
+    }
+  }
+
+  Future<void> _handlePlaybackError(String error) async {
+    final failedSong = state.currentSong;
+    if (failedSong == null) return;
+
+    CrashDiagnosticsService.instance.recordPlaybackFailure(
+      songId: failedSong.id,
+      songTitle: failedSong.title,
+      reason: error,
+    );
+
+    await _recoverOrSkipFailedTrack(failedSong, reason: error);
+  }
+
+  Future<void> _recoverOrSkipFailedTrack(Song failedSong, {required String reason}) async {
+    state = state.copyWith(isLoading: false);
+    engine.cancelLoading();
+
+    _consecutivePlaybackFailures++;
+
+    if (_consecutivePlaybackFailures >= _maxConsecutiveFailures) {
+      debugPrint('[AudioPlayerNotifier] Max consecutive failures reached ($_consecutivePlaybackFailures). Halting playback.');
+      _consecutivePlaybackFailures = 0;
+      await engine.stop();
+      rootScaffoldMessengerKey.currentState?.clearSnackBars();
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Playback halted: Streaming servers are currently unreachable. Please check your internet connection.',
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: AppColors.midnightSurface,
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    if (state.queue.length > 1) {
+      rootScaffoldMessengerKey.currentState?.clearSnackBars();
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unable to stream "${failedSong.title}". Skipping to next track...',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: AppColors.midnightSurface,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      await skipToNext();
+    } else {
+      rootScaffoldMessengerKey.currentState?.clearSnackBars();
+      rootScaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Unable to stream "${failedSong.title}". Please check your connection or choose another track.',
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor: AppColors.midnightSurface,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
     }
   }
 
@@ -862,6 +975,13 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       return;
     }
 
+    PlaybackDiagnosticsTracker.instance.trackPlayRequested(
+      songId: song.id,
+      songTitle: song.title,
+      sourceOrigin: 'audio_player_notifier',
+    );
+    PlaybackDiagnosticsTracker.instance.trackSourceResolutionStarted(provider: 'MusicRepository');
+
     engine.notifyLoading(song);
 
     final currentToken = ++_playSongGenerationToken;
@@ -928,12 +1048,18 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       }
     }
 
+    _ensureQueueKeys(newQueue);
+    _adaptiveDowngradedSongId = null;
     state = state.copyWith(
       queue: newQueue,
       currentIndex: newIndex,
       isLoading: true,
     );
     _saveMemory();
+
+    if (state.isShuffle && queue != null && queue.isNotEmpty) {
+      _regenerateShuffleSequence(startingQueueIndex: newIndex);
+    }
 
     // Trigger continuous autoplay recommendation seeding if queue is small (e.g. played single track from Recently Played or Search)
     if (state.isAutoplayEnabled && (newQueue.length - newIndex) <= 2) {
@@ -985,6 +1111,12 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     try {
       _currentlyFetchingSongId = song.id;
       streamUrl ??= predefinedStreamUrl ?? await locator<IMusicRepository>().getStreamUrl(song);
+      if (streamUrl == null && retryCount == 0) {
+        debugPrint('[AudioPlayerNotifier] Retrying stream resolution with bypassCache for ${song.title}');
+        streamUrl = await locator<IMusicRepository>().getStreamUrl(song, bypassCache: true);
+      }
+    } catch (e) {
+      debugPrint('[AudioPlayerNotifier] Error fetching stream for ${song.title}: $e');
     } finally {
       if (_currentlyFetchingSongId == song.id) {
         _currentlyFetchingSongId = null;
@@ -997,6 +1129,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     }
 
     if (streamUrl != null) {
+      _consecutivePlaybackFailures = 0; // Reset consecutive failures on success
       state = state.copyWith(isLoading: false, currentStreamUrl: streamUrl);
       if (locator<it_feels_music_cast_service.CastService>().isConnected) {
         await engine.pause(); // Ensure local is paused
@@ -1014,27 +1147,13 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       debugPrint(
         '[AudioPlayerNotifier] Failed to resolve stream for ${song.title}',
       );
-      state = state.copyWith(isLoading: false);
-      engine.cancelLoading();
-
-      // Notify user of playback failure gracefully
-      rootScaffoldMessengerKey.currentState?.clearSnackBars();
-      rootScaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Text(
-            'Unable to stream "${song.title}". Please check your connection or choose another track.',
-            style: const TextStyle(color: Colors.white),
-          ),
-          backgroundColor: AppColors.midnightSurface,
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
+      CrashDiagnosticsService.instance.recordPlaybackFailure(
+        songId: song.id,
+        songTitle: song.title,
+        reason: 'Stream URL resolution returned null',
+        retryAttempt: retryCount,
       );
-
-      debugPrint('[AudioPlayerNotifier] Playback halted for ${song.title}');
+      await _recoverOrSkipFailedTrack(song, reason: 'Failed to resolve stream URL');
     }
 
     _updateHomeWidget();
@@ -1151,11 +1270,19 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
 
     int nextIndex;
     if (state.isShuffle && state.queue.length > 1) {
-      final rng = Random();
-      nextIndex = rng.nextInt(state.queue.length);
-      while (nextIndex == state.currentIndex) {
-        nextIndex = rng.nextInt(state.queue.length);
+      if (_shuffleSequence.length != state.queue.length) {
+        _regenerateShuffleSequence(startingQueueIndex: state.currentIndex);
       }
+      _shufflePointer++;
+      if (_shufflePointer >= _shuffleSequence.length) {
+        if (state.isAutoplayEnabled) {
+          await _fetchAutoplayRecommendations();
+          _regenerateShuffleSequence();
+        } else {
+          _shufflePointer = 0;
+        }
+      }
+      nextIndex = _shuffleSequence[_shufflePointer.clamp(0, _shuffleSequence.length - 1)];
     } else {
       nextIndex = state.currentIndex + 1;
       if (nextIndex >= state.queue.length) {
@@ -1187,9 +1314,18 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
       await _fadeOut();
     }
 
-    int prevIndex = state.currentIndex - 1;
-    if (prevIndex < 0) {
-      prevIndex = state.queue.length - 1;
+    int prevIndex;
+    if (state.isShuffle && _shuffleSequence.isNotEmpty) {
+      _shufflePointer--;
+      if (_shufflePointer < 0) {
+        _shufflePointer = _shuffleSequence.length - 1;
+      }
+      prevIndex = _shuffleSequence[_shufflePointer.clamp(0, _shuffleSequence.length - 1)];
+    } else {
+      prevIndex = state.currentIndex - 1;
+      if (prevIndex < 0) {
+        prevIndex = state.queue.length - 1;
+      }
     }
     await playSong(
       state.queue[prevIndex],
@@ -1220,15 +1356,90 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     }
   }
 
+  static int _queueKeyCounter = 0;
+
+  List<Song> _ensureQueueKeys(List<Song> songs) {
+    for (var i = 0; i < songs.length; i++) {
+      songs[i].queueKey ??= '${songs[i].id}_${DateTime.now().microsecondsSinceEpoch}_${_queueKeyCounter++}';
+    }
+    return songs;
+  }
+
   void addToQueue(Song song) {
+    if (state.queue.isNotEmpty && state.queue.last.id == song.id) return;
     final updated = List<Song>.from(state.queue)..add(song);
+    _ensureQueueKeys(updated);
     state = state.copyWith(queue: updated);
+    if (state.isShuffle) {
+      _regenerateShuffleSequence(startingQueueIndex: state.currentIndex);
+    }
     _saveMemory();
   }
 
   void addSongsToQueue(List<Song> songs) {
-    final updated = List<Song>.from(state.queue)..addAll(songs);
+    if (songs.isEmpty) return;
+    final existingIds = state.queue.map((s) => s.id).toSet();
+    final deduplicated = songs.where((s) => !existingIds.contains(s.id)).toList();
+    if (deduplicated.isEmpty) return;
+    final updated = List<Song>.from(state.queue)..addAll(deduplicated);
+    _ensureQueueKeys(updated);
     state = state.copyWith(queue: updated);
+    if (state.isShuffle) {
+      _regenerateShuffleSequence(startingQueueIndex: state.currentIndex);
+    }
+    _saveMemory();
+  }
+
+  void removeFromQueue(int index) {
+    if (index < 0 || index >= state.queue.length) return;
+    final updated = List<Song>.from(state.queue);
+    updated.removeAt(index);
+
+    int curIndex = state.currentIndex;
+    if (updated.isEmpty) {
+      engine.stop();
+      state = state.copyWith(queue: const [], currentIndex: -1, clearCurrentSong: true);
+      _saveMemory();
+      return;
+    }
+
+    if (index < curIndex) {
+      curIndex--;
+      state = state.copyWith(queue: updated, currentIndex: curIndex);
+    } else if (index == curIndex) {
+      if (curIndex >= updated.length) {
+        curIndex = updated.length - 1;
+      }
+      playSong(updated[curIndex], queue: updated, index: curIndex);
+      return;
+    } else {
+      state = state.copyWith(queue: updated, currentIndex: curIndex);
+    }
+
+    if (state.isShuffle) {
+      _regenerateShuffleSequence(startingQueueIndex: curIndex);
+    }
+    _saveMemory();
+  }
+
+  void clearQueue({bool keepCurrent = true}) {
+    if (state.queue.isEmpty) return;
+    if (keepCurrent && state.currentSong != null) {
+      state = state.copyWith(
+        queue: [state.currentSong!],
+        currentIndex: 0,
+      );
+    } else {
+      engine.stop();
+      state = state.copyWith(
+        queue: const [],
+        currentIndex: -1,
+        clearCurrentSong: true,
+      );
+    }
+    if (state.isShuffle) {
+      _regenerateShuffleSequence(startingQueueIndex: state.currentIndex);
+    }
     _saveMemory();
   }
 
@@ -1245,8 +1456,38 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     } else {
       updated.add(song);
     }
+    _ensureQueueKeys(updated);
     state = state.copyWith(queue: updated);
+    if (state.isShuffle) {
+      _regenerateShuffleSequence(startingQueueIndex: state.currentIndex);
+    }
     _saveMemory();
+  }
+
+  void playNextBatch(List<Song> songs) {
+    if (songs.isEmpty) return;
+    final updated = List<Song>.from(state.queue);
+    final insertPos = (state.currentIndex >= 0 && state.currentIndex < updated.length)
+        ? state.currentIndex + 1
+        : updated.length;
+    updated.insertAll(insertPos, songs);
+    _ensureQueueKeys(updated);
+    state = state.copyWith(queue: updated);
+    if (state.isShuffle) {
+      _regenerateShuffleSequence(startingQueueIndex: state.currentIndex);
+    }
+    _saveMemory();
+  }
+
+  void shufflePlayContext(List<Song> songs, {int? initialIndex}) {
+    if (songs.isEmpty) return;
+    final startingIndex = (initialIndex != null && initialIndex >= 0 && initialIndex < songs.length)
+        ? initialIndex
+        : Random().nextInt(songs.length);
+
+    state = state.copyWith(isShuffle: true);
+    _regenerateShuffleSequence(startingQueueIndex: startingIndex);
+    playSong(songs[startingIndex], queue: songs, index: startingIndex);
   }
 
   void reorderQueue(int oldIndex, int newIndex) {
@@ -1274,6 +1515,9 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     }
 
     state = state.copyWith(queue: updated, currentIndex: curIndex);
+    if (state.isShuffle) {
+      _regenerateShuffleSequence(startingQueueIndex: curIndex);
+    }
     _saveMemory();
   }
 
@@ -1290,7 +1534,14 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   void toggleShuffle() {
-    state = state.copyWith(isShuffle: !state.isShuffle);
+    final nextShuffle = !state.isShuffle;
+    state = state.copyWith(isShuffle: nextShuffle);
+    if (nextShuffle) {
+      _regenerateShuffleSequence(startingQueueIndex: state.currentIndex);
+    } else {
+      _shuffleSequence.clear();
+      _shufflePointer = 0;
+    }
   }
 
   void toggleRepeat() {

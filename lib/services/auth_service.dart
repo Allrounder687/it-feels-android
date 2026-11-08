@@ -58,6 +58,24 @@ class AuthService {
   // Sign In with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+        try {
+          final googleProvider = GoogleAuthProvider();
+          googleProvider.addScope('email');
+          googleProvider.addScope('profile');
+          final cred = await _auth.signInWithProvider(googleProvider);
+          if (cred.user != null) {
+            await _syncUserToFirestore(cred.user!);
+          }
+          return cred;
+        } catch (e) {
+          debugPrint('[AuthService] Windows signInWithProvider failed: $e');
+          throw Exception(
+            'Google Sign-In on Windows requires OAuth configuration in Firebase Console. You can also sign in instantly using Email & Password or continue as Guest.',
+          );
+        }
+      }
+
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return null; // User canceled
 

@@ -12,6 +12,7 @@ import 'package:string_similarity/string_similarity.dart';
 import 'package:it_feels_music/services/database_service.dart';
 import 'package:it_feels_music/data/models/cache_models.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
+import 'package:it_feels_music/services/storage_service.dart';
 
 class LyricsResult {
   final String? staticLyrics;
@@ -100,53 +101,75 @@ class LyricsService {
       }
     }
 
-    // Check if the song has local downloaded lyrics in its folder
-    if (song.encryptedMediaUrl != null &&
-        song.encryptedMediaUrl!.isNotEmpty &&
-        !song.encryptedMediaUrl!.startsWith('http://') &&
-        !song.encryptedMediaUrl!.startsWith('https://')) {
-      try {
+    // Check if the song has local downloaded lyrics in its folder, or if matching downloaded song exists
+    try {
+      String? localSongDir;
+      if (song.encryptedMediaUrl != null &&
+          song.encryptedMediaUrl!.isNotEmpty &&
+          !song.encryptedMediaUrl!.startsWith('http://') &&
+          !song.encryptedMediaUrl!.startsWith('https://')) {
         final audioFile = File(song.encryptedMediaUrl!);
         if (audioFile.existsSync()) {
-          final songDir = audioFile.parent;
-          final lrcFile = File('${songDir.path}/lyrics.lrc');
-          final txtFile = File('${songDir.path}/lyrics.txt');
+          localSongDir = audioFile.parent.path;
+        }
+      }
 
-          List<LyricLine> synced = [];
-          String? staticLyrics;
-
-          if (lrcFile.existsSync()) {
-            final rawLrc = await lrcFile.readAsString();
-            synced = LrcParser.parse(rawLrc).map((l) {
-              final translit = HinglishTransliterator.transliterate(l.text);
-              return LyricLine(
-                time: l.time,
-                text: l.text,
-                transliteration: translit != l.text ? translit : null,
-              );
-            }).toList();
-          }
-
-          if (txtFile.existsSync()) {
-            staticLyrics = await txtFile.readAsString();
-          }
-
-          if (synced.isNotEmpty || (staticLyrics != null && staticLyrics.isNotEmpty)) {
-            final res = LyricsResult(
-              staticLyrics: staticLyrics,
-              syncedLyrics: synced,
-              source: 'Downloaded',
-            );
-            _lyricsCache[song.id]![res.source] = res;
-            if (sessionId == _currentSessionId) {
-              onResult(res);
+      if (localSongDir == null) {
+        final downloads = await StorageService.loadDownloads();
+        final cleanSongId = song.id.startsWith('saavn:') ? song.id.substring(6) : (song.id.startsWith('youtube:') ? song.id.substring(8) : song.id);
+        for (final d in downloads) {
+          final dClean = d.id.startsWith('saavn:') ? d.id.substring(6) : (d.id.startsWith('youtube:') ? d.id.substring(8) : d.id);
+          final matchesId = d.id == song.id || dClean == cleanSongId || (d.saavnId.isNotEmpty && d.saavnId == song.saavnId);
+          final matchesTitleArtist = d.title.trim().toLowerCase() == song.title.trim().toLowerCase() &&
+              d.artist.trim().toLowerCase() == song.artist.trim().toLowerCase();
+          if ((matchesId || matchesTitleArtist) && d.encryptedMediaUrl != null) {
+            final f = File(d.encryptedMediaUrl!);
+            if (f.existsSync()) {
+              localSongDir = f.parent.path;
+              break;
             }
-            return;
           }
         }
-      } catch (e) {
-        debugPrint('[LyricsService] Error reading local lyrics file: $e');
       }
+
+      if (localSongDir != null) {
+        final lrcFile = File('$localSongDir/lyrics.lrc');
+        final txtFile = File('$localSongDir/lyrics.txt');
+
+        List<LyricLine> synced = [];
+        String? staticLyrics;
+
+        if (lrcFile.existsSync()) {
+          final rawLrc = await lrcFile.readAsString();
+          synced = LrcParser.parse(rawLrc).map((l) {
+            final translit = HinglishTransliterator.transliterate(l.text);
+            return LyricLine(
+              time: l.time,
+              text: l.text,
+              transliteration: translit != l.text ? translit : null,
+            );
+          }).toList();
+        }
+
+        if (txtFile.existsSync()) {
+          staticLyrics = await txtFile.readAsString();
+        }
+
+        if (synced.isNotEmpty || (staticLyrics != null && staticLyrics.isNotEmpty)) {
+          final res = LyricsResult(
+            staticLyrics: staticLyrics,
+            syncedLyrics: synced,
+            source: 'Downloaded',
+          );
+          _lyricsCache[song.id]![res.source] = res;
+          if (sessionId == _currentSessionId) {
+            onResult(res);
+          }
+          return;
+        }
+      }
+    } catch (e) {
+      debugPrint('[LyricsService] Error reading local lyrics file: $e');
     }
 
     if (sessionId != _currentSessionId) return;
@@ -170,6 +193,34 @@ class LyricsService {
           ..cachedAt = DateTime.now()
           ..expiryTime = DateTime.now().add(const Duration(days: 30));
         locator<DatabaseService>().saveCachedLyrics(cacheObj);
+
+        // If this song is in downloads, persist offline lyrics file to disk too
+        StorageService.loadDownloads().then((downloads) {
+          final cleanSongId = song.id.startsWith('saavn:') ? song.id.substring(6) : (song.id.startsWith('youtube:') ? song.id.substring(8) : song.id);
+          for (final d in downloads) {
+            final dClean = d.id.startsWith('saavn:') ? d.id.substring(6) : (d.id.startsWith('youtube:') ? d.id.substring(8) : d.id);
+            final matchesId = d.id == song.id || dClean == cleanSongId || (d.saavnId.isNotEmpty && d.saavnId == song.saavnId);
+            final matchesTitleArtist = d.title.trim().toLowerCase() == song.title.trim().toLowerCase() &&
+                d.artist.trim().toLowerCase() == song.artist.trim().toLowerCase();
+            if ((matchesId || matchesTitleArtist) && d.encryptedMediaUrl != null) {
+              final audioFile = File(d.encryptedMediaUrl!);
+              if (audioFile.existsSync()) {
+                final songDir = audioFile.parent;
+                if (res.hasSynced) {
+                  final lrcContent = res.syncedLyrics.map((l) => '[${LrcParser.formatDuration(l.time)}] ${l.text}').join('\n');
+                  try {
+                    File('${songDir.path}/lyrics.lrc').writeAsString(lrcContent);
+                  } catch (_) {}
+                } else if (res.hasStatic) {
+                  try {
+                    File('${songDir.path}/lyrics.txt').writeAsString(res.staticLyrics!);
+                  } catch (_) {}
+                }
+              }
+              break;
+            }
+          }
+        }).catchError((_) {});
         
         if (res.hasSynced) {
           hasSyncedResult = true;
@@ -393,6 +444,36 @@ class LyricsService {
 
   Future<LyricsResult?> _fetchMusixmatch(Song song) async {
     return null;
+  }
+
+  /// Background worker that checks downloaded tracks missing lyrics and backfills them
+  Future<void> enrichDownloadedLyrics(List<Song> downloadedSongs) async {
+    final validCandidates = downloadedSongs.where((song) {
+      if (song.hasLyrics || isLyricsCached(song.id)) return false;
+      final aLower = song.artist.toLowerCase();
+      final tLower = song.title.toLowerCase();
+      if (aLower.isEmpty || aLower == 'unknown artist') return false;
+      if (tLower.startsWith('downloaded track') ||
+          tLower.startsWith('recording') ||
+          tLower.startsWith('voice') ||
+          tLower.length < 2) {
+        return false;
+      }
+      return true;
+    }).take(20).toList();
+
+    for (final song in validCandidates) {
+      // Modest delay between sequential queries
+      await Future.delayed(const Duration(milliseconds: 500));
+      try {
+        fetchLyrics(
+          song,
+          onResult: (res) {
+            debugPrint('[LyricsService] Successfully enriched offline lyrics for: ${song.title}');
+          },
+        );
+      } catch (_) {}
+    }
   }
 
   static String _cleanText(String input) {
