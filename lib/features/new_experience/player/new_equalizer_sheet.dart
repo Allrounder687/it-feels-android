@@ -26,13 +26,12 @@ class NewEqualizerSheet extends StatefulWidget {
 
 class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
   late EqualizerService _eqService;
-  late dynamic _player;
+  dynamic get _player => locator<AudioEngineService>().audioHandler.player;
 
   @override
   void initState() {
     super.initState();
     _eqService = locator<EqualizerService>();
-    _player = locator<AudioEngineService>().audioHandler.player;
   }
 
   @override
@@ -73,8 +72,8 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
             // ── Header Row ──
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,11 +92,14 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                     ],
                   ),
                   Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         state.isEnabled ? 'ON' : 'OFF',
                         style: NewExperienceTokens.bodySmall(
-                          color: state.isEnabled ? NewExperienceTokens.accentCyan : NewExperienceTokens.textMuted,
+                          color: state.isEnabled
+                              ? NewExperienceTokens.accentCyan
+                              : NewExperienceTokens.textMuted,
                         ).copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(width: 8),
@@ -119,7 +121,10 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
 
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 children: [
                   // ── Presets Carousel ──
                   SizedBox(
@@ -136,16 +141,24 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                           onTap: state.isEnabled
                               ? () async {
                                   HapticFeedback.selectionClick();
-                                  await _eqService.applyPreset(preset.id, _player);
+                                  await _eqService.applyPreset(
+                                    preset.id,
+                                    _player,
+                                  );
                                   setState(() {});
                                 }
                               : null,
                           borderRadius: BorderRadius.circular(19),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? NewExperienceTokens.accentCyan.withValues(alpha: 0.22)
+                                  ? NewExperienceTokens.accentCyan.withValues(
+                                      alpha: 0.22,
+                                    )
                                   : Colors.white.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(19),
                               border: Border.all(
@@ -156,9 +169,16 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                             ),
                             child: Text(
                               preset.name,
-                              style: NewExperienceTokens.bodySmall(
-                                color: isSelected ? Colors.white : NewExperienceTokens.textSecondary,
-                              ).copyWith(fontWeight: isSelected ? FontWeight.bold : FontWeight.w500),
+                              style:
+                                  NewExperienceTokens.bodySmall(
+                                    color: isSelected
+                                        ? Colors.white
+                                        : NewExperienceTokens.textSecondary,
+                                  ).copyWith(
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
+                                  ),
                             ),
                           ),
                         );
@@ -171,14 +191,18 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                   // ── 10-Band Sliders Grid ──
                   NewGlassContainer(
                     borderRadius: 20,
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 8,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Wrap(
+                            spacing: 12,
+                            runSpacing: 8,
                             children: [
                               Text(
                                 'Frequency Response (-12dB to +12dB)',
@@ -207,11 +231,20 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                         const SizedBox(height: 12),
                         SizedBox(
                           height: 170,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: state.bands.map((band) {
-                              return _buildBandSlider(band, state.isEnabled);
-                            }).toList(),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: state.bands.map((band) {
+                                return SizedBox(
+                                  width: 48,
+                                  child: _buildBandSlider(
+                                    band,
+                                    state.isEnabled,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
                           ),
                         ),
                       ],
@@ -230,15 +263,27 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('BASS BOOST', style: NewExperienceTokens.eyebrowLabel(color: NewExperienceTokens.accentViolet)),
-                                  Text('${state.bassBoost.toStringAsFixed(1)} dB', style: NewExperienceTokens.numericTimer(color: Colors.white)),
+                                  Text(
+                                    'BASS BOOST',
+                                    style: NewExperienceTokens.eyebrowLabel(
+                                      color: NewExperienceTokens.accentViolet,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${state.bassBoost.toStringAsFixed(1)} dB',
+                                    style: NewExperienceTokens.numericTimer(
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ],
                               ),
                               SliderTheme(
-                                data: _compactSliderTheme(NewExperienceTokens.accentViolet),
+                                data: _compactSliderTheme(
+                                  NewExperienceTokens.accentViolet,
+                                ),
                                 child: Slider(
                                   value: state.bassBoost,
                                   min: 0.0,
@@ -246,7 +291,10 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                                   divisions: 20,
                                   onChanged: state.isEnabled
                                       ? (val) async {
-                                          await _eqService.setBassBoost(val, _player);
+                                          await _eqService.setBassBoost(
+                                            val,
+                                            _player,
+                                          );
                                           setState(() {});
                                         }
                                       : null,
@@ -264,15 +312,27 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('TREBLE BOOST', style: NewExperienceTokens.eyebrowLabel(color: NewExperienceTokens.accentCyan)),
-                                  Text('${state.trebleBoost.toStringAsFixed(1)} dB', style: NewExperienceTokens.numericTimer(color: Colors.white)),
+                                  Text(
+                                    'TREBLE BOOST',
+                                    style: NewExperienceTokens.eyebrowLabel(
+                                      color: NewExperienceTokens.accentCyan,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${state.trebleBoost.toStringAsFixed(1)} dB',
+                                    style: NewExperienceTokens.numericTimer(
+                                      color: Colors.white,
+                                    ),
+                                  ),
                                 ],
                               ),
                               SliderTheme(
-                                data: _compactSliderTheme(NewExperienceTokens.accentCyan),
+                                data: _compactSliderTheme(
+                                  NewExperienceTokens.accentCyan,
+                                ),
                                 child: Slider(
                                   value: state.trebleBoost,
                                   min: 0.0,
@@ -280,7 +340,10 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                                   divisions: 20,
                                   onChanged: state.isEnabled
                                       ? (val) async {
-                                          await _eqService.setTrebleBoost(val, _player);
+                                          await _eqService.setTrebleBoost(
+                                            val,
+                                            _player,
+                                          );
                                           setState(() {});
                                         }
                                       : null,
@@ -298,7 +361,10 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                   // ── Volume Normalization (ReplayGain / EBU R128) ──
                   NewGlassContainer(
                     borderRadius: 18,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -308,12 +374,16 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                             children: [
                               Text(
                                 'Loudness Normalization (ReplayGain)',
-                                style: NewExperienceTokens.bodyMedium(color: Colors.white).copyWith(fontWeight: FontWeight.w600),
+                                style: NewExperienceTokens.bodyMedium(
+                                  color: Colors.white,
+                                ).copyWith(fontWeight: FontWeight.w600),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 'Maintains uniform perceived loudness (-16 LUFS) across albums and tracks.',
-                                style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+                                style: NewExperienceTokens.bodySmall(
+                                  color: NewExperienceTokens.textMuted,
+                                ),
                               ),
                             ],
                           ),
@@ -323,7 +393,10 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                           activeColor: NewExperienceTokens.accentCyan,
                           onChanged: (val) async {
                             HapticFeedback.lightImpact();
-                            await _eqService.setLoudnessNormalization(val, _player);
+                            await _eqService.setLoudnessNormalization(
+                              val,
+                              _player,
+                            );
                             setState(() {});
                           },
                         ),
@@ -346,11 +419,17 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
       children: [
         // Gain readout
         Text(
-          band.gainDb >= 0 ? '+${band.gainDb.toStringAsFixed(0)}' : band.gainDb.toStringAsFixed(0),
+          band.gainDb >= 0
+              ? '+${band.gainDb.toStringAsFixed(0)}'
+              : band.gainDb.toStringAsFixed(0),
           style: GoogleFonts.outfit(
             fontSize: 10,
             fontWeight: FontWeight.bold,
-            color: enabled ? (band.gainDb != 0 ? NewExperienceTokens.accentCyan : Colors.white60) : Colors.white30,
+            color: enabled
+                ? (band.gainDb != 0
+                      ? NewExperienceTokens.accentCyan
+                      : Colors.white60)
+                : Colors.white30,
           ),
         ),
         const SizedBox(height: 4),
@@ -364,7 +443,9 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                 trackHeight: 3.5,
                 thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
                 overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
-                activeTrackColor: enabled ? NewExperienceTokens.accentCyan : Colors.white24,
+                activeTrackColor: enabled
+                    ? NewExperienceTokens.accentCyan
+                    : Colors.white24,
                 inactiveTrackColor: Colors.white12,
                 thumbColor: enabled ? Colors.white : Colors.white38,
               ),
@@ -375,7 +456,11 @@ class _NewEqualizerSheetState extends State<NewEqualizerSheet> {
                 divisions: 24,
                 onChanged: enabled
                     ? (val) async {
-                        await _eqService.setBandGain(band.frequencyHz, val, _player);
+                        await _eqService.setBandGain(
+                          band.frequencyHz,
+                          val,
+                          _player,
+                        );
                         setState(() {});
                       }
                     : null,

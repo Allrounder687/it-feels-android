@@ -19,6 +19,8 @@ import '../widgets/new_artwork_image.dart';
 import '../album/new_album_detail_screen.dart';
 import '../see_all/new_see_all_screen.dart';
 import '../theme/content_viewport_insets.dart';
+import '../discovery/new_listening_collections.dart';
+import 'package:it_feels_music/core/intelligence/playlists/listening_collection_service.dart';
 
 class NewArtistDetailScreen extends ConsumerStatefulWidget {
   final String artistName;
@@ -256,6 +258,16 @@ class _NewArtistDetailScreenState extends ConsumerState<NewArtistDetailScreen> w
                                 label: 'Play Artist',
                                 icon: Icons.play_arrow_rounded,
                                 onPressed: () => _playAll(startIndex: 0),
+                              ),
+                              NewActionButton(
+                                label: 'Dynamic Mix',
+                                icon: Icons.auto_awesome_rounded,
+                                variant: NewActionButtonVariant.glass,
+                                onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (_) => NewListeningStationScreen(collection: ListeningCollection(
+                                    id: 'artist:${widget.artistName.toLowerCase()}',
+                                    title: '${widget.artistName} Mix', query: widget.artistName,
+                                    artist: widget.artistName, kind: ListeningCollectionKind.artist)))),
                               ),
                               NewActionButton(
                                 label: 'Shuffle',

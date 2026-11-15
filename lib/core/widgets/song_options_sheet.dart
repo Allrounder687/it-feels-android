@@ -19,6 +19,8 @@ import 'package:it_feels_music/core/appearance/app_experience_provider.dart';
 import 'package:it_feels_music/features/new_experience/artist/new_artist_detail_screen.dart';
 import 'package:it_feels_music/features/new_experience/album/new_album_detail_screen.dart';
 import 'package:it_feels_music/features/new_experience/track/new_track_detail_screen.dart';
+import 'package:it_feels_music/features/new_experience/discovery/new_listening_collections.dart';
+import 'package:it_feels_music/core/intelligence/playlists/listening_collection_service.dart';
 
 class SongOptionsSheet extends ConsumerWidget {
   final Song song;
@@ -281,6 +283,19 @@ class SongOptionsSheet extends ConsumerWidget {
               );
             },
           ),
+
+          if (ref.read(appExperienceProvider) == AppExperience.newExperience && !song.id.startsWith('radio:'))
+            _buildOptionTile(context,
+              icon: Icons.sensors_rounded,
+              iconColor: Colors.cyanAccent,
+              title: 'Start Song Radio',
+              onTap: () {
+                final navigator = Navigator.of(context);
+                navigator.pop();
+                navigator.push(MaterialPageRoute(builder: (_) => NewListeningStationScreen(
+                  collection: ListeningCollection.songRadio(song))));
+              },
+            ),
 
           // Action 6: View Artist
           if (song.artist.isNotEmpty && song.artist != 'Unknown Artist')

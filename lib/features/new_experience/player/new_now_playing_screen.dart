@@ -22,7 +22,8 @@ class NewNowPlayingScreen extends ConsumerStatefulWidget {
   const NewNowPlayingScreen({super.key});
 
   @override
-  ConsumerState<NewNowPlayingScreen> createState() => _NewNowPlayingScreenState();
+  ConsumerState<NewNowPlayingScreen> createState() =>
+      _NewNowPlayingScreenState();
 }
 
 class _NewNowPlayingScreenState extends ConsumerState<NewNowPlayingScreen> {
@@ -43,7 +44,10 @@ class _NewNowPlayingScreenState extends ConsumerState<NewNowPlayingScreen> {
           ),
         ),
         body: const Center(
-          child: Text('No song selected', style: TextStyle(color: NewExperienceTokens.textMuted)),
+          child: Text(
+            'No song selected',
+            style: TextStyle(color: NewExperienceTokens.textMuted),
+          ),
         ),
       );
     }
@@ -51,10 +55,20 @@ class _NewNowPlayingScreenState extends ConsumerState<NewNowPlayingScreen> {
     final isPlaying = ref.watch(audioPlayerProvider.select((s) => s.isPlaying));
     final isShuffle = ref.watch(audioPlayerProvider.select((s) => s.isShuffle));
     final isRepeat = ref.watch(audioPlayerProvider.select((s) => s.isRepeat));
-    final isSleepTimerActive = ref.watch(audioPlayerProvider.select((s) => s.isSleepTimerActive));
-    final isFav = ref.watch(audioPlayerProvider.select((s) => s.favoriteSongs.any((item) => item.id == song.id)));
-    final isDown = ref.watch(downloadProvider.select((s) => s.isDownloaded(song.id)));
-    final isDownloading = ref.watch(downloadProvider.select((s) => s.isDownloading(song.id)));
+    final isSleepTimerActive = ref.watch(
+      audioPlayerProvider.select((s) => s.isSleepTimerActive),
+    );
+    final isFav = ref.watch(
+      audioPlayerProvider.select(
+        (s) => s.favoriteSongs.any((item) => item.id == song.id),
+      ),
+    );
+    final isDown = ref.watch(
+      downloadProvider.select((s) => s.isDownloaded(song.id)),
+    );
+    final isDownloading = ref.watch(
+      downloadProvider.select((s) => s.isDownloading(song.id)),
+    );
 
     return NewAmbientCanvas(
       intensity: 0.65,
@@ -64,7 +78,11 @@ class _NewNowPlayingScreenState extends ConsumerState<NewNowPlayingScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white, size: 30),
+            icon: const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: Colors.white,
+              size: 30,
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
           centerTitle: true,
@@ -91,14 +109,22 @@ class _NewNowPlayingScreenState extends ConsumerState<NewNowPlayingScreen> {
           actions: [
             IconButton(
               tooltip: '10-Band Equalizer & Audio FX',
-              icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 24),
+              icon: const Icon(
+                Icons.tune_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
               onPressed: () {
                 HapticFeedback.lightImpact();
                 NewEqualizerSheet.show(context);
               },
             ),
             IconButton(
-              icon: const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 24),
+              icon: const Icon(
+                Icons.more_horiz_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
               onPressed: () {
                 showModalBottomSheet(
                   context: context,
@@ -111,129 +137,180 @@ class _NewNowPlayingScreenState extends ConsumerState<NewNowPlayingScreen> {
           ],
         ),
         body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // ── Big Album Artwork Squircle ──
-                Flexible(
-                  flex: 8,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final minimumHeight =
+                  680.0 + MediaQuery.textScalerOf(context).scale(120) - 120;
+              return SingleChildScrollView(
+                child: SizedBox(
+                  height: constraints.maxHeight < minimumHeight
+                      ? minimumHeight
+                      : constraints.maxHeight,
                   child: Center(
-                    child: AnimatedScale(
-                      scale: isPlaying ? 1.0 : 0.94,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutCubic,
-                      child: Container(
-                        constraints: const BoxConstraints(maxWidth: 340, maxHeight: 340),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.15),
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.6),
-                              blurRadius: 36,
-                              offset: const Offset(0, 16),
-                            ),
-                          ],
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 520),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: constraints.maxWidth < 360 ? 20 : 28,
+                          vertical: 12,
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(28),
-                          child: AspectRatio(
-                            aspectRatio: 1.0,
-                            child: NewArtworkImage(
-                              imageUrl: song.image,
-                              width: 340,
-                              height: 340,
-                              fit: BoxFit.cover,
-                              borderRadius: BorderRadius.circular(28),
-                              iconSize: 80,
-                              fallbackTitle: song.title,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Title, Artist & Favorite Toggle ──
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            song.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.outfit(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          InkWell(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => NewArtistDetailScreen(artistName: song.artist),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            // ── Big Album Artwork Squircle ──
+                            Flexible(
+                              flex: 8,
+                              child: Center(
+                                child: AnimatedScale(
+                                  scale: isPlaying ? 1.0 : 0.94,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeOutCubic,
+                                  child: Container(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 340,
+                                      maxHeight: 340,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(28),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        width: 1.5,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(
+                                            alpha: 0.6,
+                                          ),
+                                          blurRadius: 36,
+                                          offset: const Offset(0, 16),
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(28),
+                                      child: AspectRatio(
+                                        aspectRatio: 1.0,
+                                        child: NewArtworkImage(
+                                          imageUrl: song.image,
+                                          width: 340,
+                                          height: 340,
+                                          fit: BoxFit.cover,
+                                          borderRadius: BorderRadius.circular(
+                                            28,
+                                          ),
+                                          iconSize: 80,
+                                          fallbackTitle: song.title,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              );
-                            },
-                            child: Text(
-                              song.artist,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
-                                fontSize: 15,
-                                color: Colors.white.withValues(alpha: 0.85),
-                                decoration: TextDecoration.underline,
-                                decorationColor: Colors.white38,
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(5),
-                              border: Border.all(color: Colors.white24, width: 0.5),
-                            ),
-                            child: Text(
-                              isDown ? 'OFFLINE • 320 KBPS' : '320 KBPS • AAC STEREO',
-                              style: GoogleFonts.outfit(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
-                                color: isDown ? NewExperienceTokens.accentCyan : Colors.white70,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: isFav ? 'Remove from favorites' : 'Add to favorites',
-                      icon: Icon(
-                        isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                        color: isFav ? NewExperienceTokens.accentRose : Colors.white70,
-                        size: 26,
-                      ),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        notifier.toggleFavorite(song);
-                      },
-                    ),
-                    IconButton(
+
+                            const SizedBox(height: 16),
+
+                            // ── Title, Artist & Favorite Toggle ──
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        song.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      InkWell(
+                                        onTap: () {
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  NewArtistDetailScreen(
+                                                    artistName: song.artist,
+                                                  ),
+                                            ),
+                                          );
+                                        },
+                                        child: Text(
+                                          song.artist,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 15,
+                                            color: Colors.white.withValues(
+                                              alpha: 0.85,
+                                            ),
+                                            decoration:
+                                                TextDecoration.underline,
+                                            decorationColor: Colors.white38,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(
+                                            alpha: 0.1,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            5,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.white24,
+                                            width: 0.5,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          isDown
+                                              ? 'OFFLINE • 320 KBPS'
+                                              : '320 KBPS • AAC STEREO',
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.6,
+                                            color: isDown
+                                                ? NewExperienceTokens.accentCyan
+                                                : Colors.white70,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: isFav
+                                      ? 'Remove from favorites'
+                                      : 'Add to favorites',
+                                  icon: Icon(
+                                    isFav
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    color: isFav
+                                        ? NewExperienceTokens.accentRose
+                                        : Colors.white70,
+                                    size: 26,
+                                  ),
+                                  onPressed: () {
+                                    HapticFeedback.lightImpact();
+                                    notifier.toggleFavorite(song);
+                                  },
+                                ),
+                                IconButton(
                       tooltip: isDown
                           ? 'Downloaded (Click to remove)'
                           : isDownloading
@@ -277,186 +354,219 @@ class _NewNowPlayingScreenState extends ConsumerState<NewNowPlayingScreen> {
                         }
                       },
                     ),
-                  ],
-                ),
+                              ],
+                            ),
 
-                const SizedBox(height: 12),
+                            const SizedBox(height: 12),
 
-                // ── High-Precision Audio Scrubber ──
-                StreamBuilder<Duration>(
-                  stream: locator<AudioEngineService>().positionStream,
-                  builder: (context, snapshot) {
-                    final pos = snapshot.data ?? Duration.zero;
-                    final total = Duration(seconds: song.duration);
+                            // ── High-Precision Audio Scrubber ──
+                            StreamBuilder<Duration>(
+                              stream:
+                                  locator<AudioEngineService>().positionStream,
+                              builder: (context, snapshot) {
+                                final pos = snapshot.data ?? Duration.zero;
+                                final total = Duration(seconds: song.duration);
 
-                    return NewAudioScrubber(
-                      currentPosition: pos,
-                      totalDuration: total,
-                      onSeek: (target) {
-                        notifier.seek(target);
-                      },
-                    );
-                  },
-                ),
+                                return NewAudioScrubber(
+                                  currentPosition: pos,
+                                  totalDuration: total,
+                                  onSeek: (target) {
+                                    notifier.seek(target);
+                                  },
+                                );
+                              },
+                            ),
 
-                const SizedBox(height: 12),
+                            const SizedBox(height: 12),
 
-                // ── Transport Controls ──
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.shuffle_rounded,
-                        color: isShuffle
-                            ? NewExperienceTokens.accentCyan
-                            : Colors.white54,
-                        size: 24,
-                      ),
-                      onPressed: () => notifier.toggleShuffle(),
-                    ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.skip_previous_rounded,
-                        color: Colors.white,
-                        size: 36,
-                      ),
-                      onPressed: () => notifier.skipToPrevious(),
-                    ),
-                    // Big Play/Pause Button
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          HapticFeedback.mediumImpact();
-                          notifier.togglePlayPause();
-                        },
-                        borderRadius: BorderRadius.circular(34),
-                        child: Container(
-                          width: 68,
-                          height: 68,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.white.withValues(alpha: 0.35),
-                                blurRadius: 20,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                            color: Colors.black,
-                            size: 38,
-                          ),
+                            // ── Transport Controls ──
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.shuffle_rounded,
+                                    color: isShuffle
+                                        ? NewExperienceTokens.accentCyan
+                                        : Colors.white54,
+                                    size: 24,
+                                  ),
+                                  onPressed: () => notifier.toggleShuffle(),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.skip_previous_rounded,
+                                    color: Colors.white,
+                                    size: 36,
+                                  ),
+                                  onPressed: () => notifier.skipToPrevious(),
+                                ),
+                                // Big Play/Pause Button
+                                Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () {
+                                      HapticFeedback.mediumImpact();
+                                      notifier.togglePlayPause();
+                                    },
+                                    borderRadius: BorderRadius.circular(34),
+                                    child: Container(
+                                      width: 68,
+                                      height: 68,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.35,
+                                            ),
+                                            blurRadius: 20,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Icon(
+                                        isPlaying
+                                            ? Icons.pause_rounded
+                                            : Icons.play_arrow_rounded,
+                                        color: Colors.black,
+                                        size: 38,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.skip_next_rounded,
+                                    color: Colors.white,
+                                    size: 36,
+                                  ),
+                                  onPressed: () => notifier.skipToNext(),
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.repeat_rounded,
+                                    color: isRepeat
+                                        ? NewExperienceTokens.accentCyan
+                                        : Colors.white54,
+                                    size: 24,
+                                  ),
+                                  onPressed: () => notifier.toggleRepeat(),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // ── Bottom Utility Drawer Icons ──
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                // Lyrics Button
+                                IconButton(
+                                  tooltip: 'Lyrics',
+                                  icon: const Icon(
+                                    Icons.lyrics_rounded,
+                                    color: Colors.white70,
+                                    size: 22,
+                                  ),
+                                  onPressed: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      backgroundColor: Colors.transparent,
+                                      isScrollControlled: true,
+                                      builder: (context) =>
+                                          const LyricsScreen(),
+                                    );
+                                  },
+                                ),
+
+                                // Sleep Timer
+                                IconButton(
+                                  tooltip: 'Sleep Timer',
+                                  icon: Icon(
+                                    Icons.bedtime_rounded,
+                                    color: isSleepTimerActive
+                                        ? NewExperienceTokens.accentCyan
+                                        : Colors.white70,
+                                    size: 22,
+                                  ),
+                                  onPressed: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      backgroundColor: Colors.transparent,
+                                      builder: (context) =>
+                                          const SleepTimerSheet(),
+                                    );
+                                  },
+                                ),
+
+                                // Up Next Queue
+                                IconButton(
+                                  tooltip: 'Queue',
+                                  icon: const Icon(
+                                    Icons.queue_music_rounded,
+                                    color: Colors.white70,
+                                    size: 22,
+                                  ),
+                                  onPressed: () {
+                                    showModalBottomSheet(
+                                      context: context,
+                                      backgroundColor: Colors.transparent,
+                                      isScrollControlled: true,
+                                      builder: (context) =>
+                                          const QueueBottomSheet(),
+                                    );
+                                  },
+                                ),
+
+                                // Track Story & Credits
+                                IconButton(
+                                  tooltip: 'Track Story & Credits',
+                                  icon: const Icon(
+                                    Icons.auto_stories_rounded,
+                                    color: Colors.white70,
+                                    size: 22,
+                                  ),
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            NewTrackDetailScreen(song: song),
+                                      ),
+                                    );
+                                  },
+                                ),
+
+                                // Share Button
+                                IconButton(
+                                  tooltip: 'Share',
+                                  icon: const Icon(
+                                    Icons.share_outlined,
+                                    color: Colors.white70,
+                                    size: 22,
+                                  ),
+                                  onPressed: () {
+                                    HapticFeedback.lightImpact();
+                                    final exp = DateTime.now()
+                                        .add(const Duration(hours: 24))
+                                        .millisecondsSinceEpoch;
+                                    Share.share(
+                                      'Listening to "${song.title}" by ${song.artist} on It Feels Music! 🎧\nhttps://allrounder687.github.io/room/${song.id}?exp=$exp',
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.skip_next_rounded,
-                        color: Colors.white,
-                        size: 36,
-                      ),
-                      onPressed: () => notifier.skipToNext(),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.repeat_rounded,
-                        color: isRepeat
-                            ? NewExperienceTokens.accentCyan
-                            : Colors.white54,
-                        size: 24,
-                      ),
-                      onPressed: () => notifier.toggleRepeat(),
-                    ),
-                  ],
+                  ),
                 ),
-
-                const SizedBox(height: 16),
-
-                // ── Bottom Utility Drawer Icons ──
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    // Lyrics Button
-                    IconButton(
-                      tooltip: 'Lyrics',
-                      icon: const Icon(Icons.lyrics_rounded, color: Colors.white70, size: 22),
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          backgroundColor: Colors.transparent,
-                          isScrollControlled: true,
-                          builder: (context) => const LyricsScreen(),
-                        );
-                      },
-                    ),
-
-                    // Sleep Timer
-                    IconButton(
-                      tooltip: 'Sleep Timer',
-                      icon: Icon(
-                        Icons.bedtime_rounded,
-                        color: isSleepTimerActive
-                            ? NewExperienceTokens.accentCyan
-                            : Colors.white70,
-                        size: 22,
-                      ),
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => const SleepTimerSheet(),
-                        );
-                      },
-                    ),
-
-                    // Up Next Queue
-                    IconButton(
-                      tooltip: 'Queue',
-                      icon: const Icon(Icons.queue_music_rounded, color: Colors.white70, size: 22),
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          backgroundColor: Colors.transparent,
-                          isScrollControlled: true,
-                          builder: (context) => const QueueBottomSheet(),
-                        );
-                      },
-                    ),
-
-                    // Track Story & Credits
-                    IconButton(
-                      tooltip: 'Track Story & Credits',
-                      icon: const Icon(Icons.auto_stories_rounded, color: Colors.white70, size: 22),
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => NewTrackDetailScreen(song: song),
-                          ),
-                        );
-                      },
-                    ),
-
-                    // Share Button
-                    IconButton(
-                      tooltip: 'Share',
-                      icon: const Icon(Icons.share_outlined, color: Colors.white70, size: 22),
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        final exp = DateTime.now().add(const Duration(hours: 24)).millisecondsSinceEpoch;
-                        Share.share(
-                          'Listening to "${song.title}" by ${song.artist} on It Feels Music! 🎧\nhttps://allrounder687.github.io/room/${song.id}?exp=$exp',
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),

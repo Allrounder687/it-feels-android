@@ -14,6 +14,7 @@ import '../playlist/new_playlist_detail_screen.dart';
 import '../see_all/new_see_all_screen.dart';
 import '../theme/content_viewport_insets.dart';
 import '../widgets/new_daily_mix_cover.dart';
+import '../discovery/new_listening_collections.dart';
 import 'package:it_feels_music/core/intelligence/playlists/daily_mix_orchestrator.dart';
 import 'package:it_feels_music/core/intelligence/catalogue/artwork_repair_service.dart';
 import 'package:it_feels_music/core/intelligence/catalogue/content_enrichment_pipeline.dart';
@@ -227,7 +228,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
               // ── Category Filter Capsules ──
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 48,
+                  height: 48 + MediaQuery.textScalerOf(context).scale(14) - 14,
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
                     scrollDirection: Axis.horizontal,
@@ -335,7 +336,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 228,
+                    height: 228 + MediaQuery.textScalerOf(context).scale(40) - 40,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -501,7 +502,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 228,
+                    height: 228 + MediaQuery.textScalerOf(context).scale(40) - 40,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -555,7 +556,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 228,
+                    height: 228 + MediaQuery.textScalerOf(context).scale(40) - 40,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -690,7 +691,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 228,
+                    height: 228 + MediaQuery.textScalerOf(context).scale(40) - 40,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -744,7 +745,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 228,
+                    height: 228 + MediaQuery.textScalerOf(context).scale(40) - 40,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -879,7 +880,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 228,
+                    height: 228 + MediaQuery.textScalerOf(context).scale(40) - 40,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -933,7 +934,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 228,
+                    height: 228 + MediaQuery.textScalerOf(context).scale(40) - 40,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -1021,7 +1022,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 228,
+                    height: 228 + MediaQuery.textScalerOf(context).scale(40) - 40,
                     child: ListView(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -1111,7 +1112,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 228,
+                    height: 228 + MediaQuery.textScalerOf(context).scale(40) - 40,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -1247,7 +1248,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 228,
+                    height: 228 + MediaQuery.textScalerOf(context).scale(40) - 40,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -1301,7 +1302,7 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: 228,
+                    height: 228 + MediaQuery.textScalerOf(context).scale(40) - 40,
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       scrollDirection: Axis.horizontal,
@@ -1332,6 +1333,14 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
                 ),
                 const SliverToBoxAdapter(child: SizedBox(height: 24)),
               ],
+
+              if (_activeFilter == 'All' || _activeFilter == 'For You')
+                SliverToBoxAdapter(child: NewListeningCollections(
+                  songs: [...historyState.recentlyPlayed, ...homeState.youSongs,
+                    ...homeState.bollywoodSongs, ...homeState.hollywoodSongs,
+                    ...homeState.punjabiSongs, ...homeState.trendingSongs],
+                  favoriteArtists: historyState.getTopArtists(limit: 12),
+                )),
 
               // ── Loading state if filtered category is fetching ──
               if (_activeFilter != 'All' && _isCategoryEmpty(homeState, historyState, _activeFilter)) ...[

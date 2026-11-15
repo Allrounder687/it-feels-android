@@ -1,6 +1,10 @@
 
 # IT-Feels Music  🎵
 
+The New Experience includes dynamic artist mixes, year/decade collections, mood and genre shelves, album sessions, and song radio. Home provides the collection shelves; artist pages offer **Dynamic Mix**, and song options offer **Start Song Radio**. Music is resolved by installed addons when a collection opens. Refresh changes the mix; cached track lists remain available offline, with audio downloads managed separately.
+
+See [the UI and discovery audit](NEW_UI_DISCOVERY_AUDIT.md) for responsive fixes, device-test scope, Spotify feature gaps and artwork sources.
+
 A modern, sleek, and feature-rich music player built with Flutter.
 
 IT-Feels is designed for music lovers who demand a clean interface and powerful functionality. Leveraging Flutter's cross-platform capabilities, it provides a native-feel experience on Android with high-fidelity audio playback.

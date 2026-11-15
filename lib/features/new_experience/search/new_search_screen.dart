@@ -132,7 +132,7 @@ class _NewSearchScreenState extends ConsumerState<NewSearchScreen> {
                     if (hasQuery) ...[
                       const SizedBox(height: 12),
                       SizedBox(
-                        height: 36,
+                        height: 36 + MediaQuery.textScalerOf(context).scale(14) - 14,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _filters.length,
@@ -249,7 +249,7 @@ class _NewSearchScreenState extends ConsumerState<NewSearchScreen> {
               children: [
                 const Icon(Icons.offline_pin_rounded, size: 18, color: NewExperienceTokens.accentCyan),
                 const SizedBox(width: 8),
-                Text('In Your Library (${localMatches.length})', style: NewExperienceTokens.sectionTitle()),
+                Expanded(child: Text('In Your Library (${localMatches.length})', style: NewExperienceTokens.sectionTitle())),
               ],
             ),
           ),
@@ -336,7 +336,7 @@ class _NewSearchScreenState extends ConsumerState<NewSearchScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Songs (${searchState.songs.length})', style: NewExperienceTokens.sectionTitle()),
+                Expanded(child: Text('Songs (${searchState.songs.length})', style: NewExperienceTokens.sectionTitle())),
                 Row(
                   children: [
                     IconButton(
@@ -508,11 +508,11 @@ class _NewSearchScreenState extends ConsumerState<NewSearchScreen> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: 220,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 2.1,
+            mainAxisExtent: 90 + MediaQuery.textScalerOf(context).scale(28) - 28,
           ),
           itemCount: _genreBrowseCards.length,
           itemBuilder: (context, index) {
@@ -555,6 +555,8 @@ class _NewSearchScreenState extends ConsumerState<NewSearchScreen> {
                       alignment: Alignment.topLeft,
                       child: Text(
                         card['title'] as String,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.outfit(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,

@@ -29,16 +29,16 @@ class NewSeeAllScreen extends ConsumerStatefulWidget {
     required this.title,
     this.eyebrow,
     required this.songs,
-  })  : type = NewSeeAllType.songs,
-        playlists = null;
+  }) : type = NewSeeAllType.songs,
+       playlists = null;
 
   const NewSeeAllScreen.playlists({
     super.key,
     required this.title,
     this.eyebrow,
     required this.playlists,
-  })  : type = NewSeeAllType.playlists,
-        songs = null;
+  }) : type = NewSeeAllType.playlists,
+       songs = null;
 
   @override
   ConsumerState<NewSeeAllScreen> createState() => _NewSeeAllScreenState();
@@ -103,10 +103,16 @@ class _NewSeeAllScreenState extends ConsumerState<NewSeeAllScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          title: (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
+          title:
+              (!kIsWeb &&
+                  (Platform.isWindows || Platform.isMacOS || Platform.isLinux))
               ? const DragToMoveArea(
                   child: SizedBox(
                     height: 48,
@@ -126,7 +132,12 @@ class _NewSeeAllScreenState extends ConsumerState<NewSeeAllScreen> {
               // ── Hero Header ──
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 20, right: 20, top: 4, bottom: 12),
+                  padding: const EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 4,
+                    bottom: 12,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -139,16 +150,16 @@ class _NewSeeAllScreenState extends ConsumerState<NewSeeAllScreen> {
                         ),
                         const SizedBox(height: 6),
                       ],
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              widget.title,
-                              style: NewExperienceTokens.displayHero(fontSize: 26),
+                          Text(
+                            widget.title,
+                            style: NewExperienceTokens.displayHero(
+                              fontSize: 26,
                             ),
                           ),
+                          const SizedBox(height: 4),
                           Text(
                             '$totalCount ${widget.type == NewSeeAllType.songs ? "tracks" : "collections"}',
                             style: NewExperienceTokens.captionMuted(
@@ -165,7 +176,10 @@ class _NewSeeAllScreenState extends ConsumerState<NewSeeAllScreen> {
               // ── Action Bar: Search & Transport ──
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
                   child: Column(
                     children: [
                       // Search Filter Bar
@@ -177,12 +191,22 @@ class _NewSeeAllScreenState extends ConsumerState<NewSeeAllScreen> {
                           style: NewExperienceTokens.bodyMedium(),
                           decoration: InputDecoration(
                             hintText: 'Filter ${widget.title.toLowerCase()}...',
-                            hintStyle: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+                            hintStyle: NewExperienceTokens.bodySmall(
+                              color: NewExperienceTokens.textMuted,
+                            ),
                             border: InputBorder.none,
-                            prefixIcon: const Icon(Icons.search, size: 18, color: NewExperienceTokens.textMuted),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              size: 18,
+                              color: NewExperienceTokens.textMuted,
+                            ),
                             suffixIcon: _query.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.clear, size: 16, color: NewExperienceTokens.textMuted),
+                                    icon: const Icon(
+                                      Icons.clear,
+                                      size: 16,
+                                      color: NewExperienceTokens.textMuted,
+                                    ),
                                     onPressed: () {
                                       _searchController.clear();
                                       setState(() => _query = '');
@@ -190,46 +214,75 @@ class _NewSeeAllScreenState extends ConsumerState<NewSeeAllScreen> {
                                   )
                                 : null,
                           ),
-                          onChanged: (val) => setState(() => _query = val.trim()),
+                          onChanged: (val) =>
+                              setState(() => _query = val.trim()),
                         ),
                       ),
                       const SizedBox(height: 12),
 
                       // Transport Play / Shuffle Action Pills (for Songs)
-                      if (widget.type == NewSeeAllType.songs && filteredSongs.isNotEmpty)
-                        Row(
+                      if (widget.type == NewSeeAllType.songs &&
+                          filteredSongs.isNotEmpty)
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 8,
                           children: [
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: NewExperienceTokens.accentViolet,
+                                backgroundColor:
+                                    NewExperienceTokens.accentViolet,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                                 elevation: 0,
                               ),
-                              onPressed: () => _playAll(filteredSongs, shuffle: false),
-                              icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                              onPressed: () =>
+                                  _playAll(filteredSongs, shuffle: false),
+                              icon: const Icon(
+                                Icons.play_arrow_rounded,
+                                size: 20,
+                              ),
                               label: Text(
                                 'Play All',
-                                style: NewExperienceTokens.bodySmall(color: Colors.white)
-                                    .copyWith(fontWeight: FontWeight.bold),
+                                style: NewExperienceTokens.bodySmall(
+                                  color: Colors.white,
+                                ).copyWith(fontWeight: FontWeight.bold),
                               ),
                             ),
-                            const SizedBox(width: 10),
                             OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                side: BorderSide(color: NewExperienceTokens.specularBorder),
-                                backgroundColor: Colors.white.withValues(alpha: 0.05),
+                                side: BorderSide(
+                                  color: NewExperienceTokens.specularBorder,
+                                ),
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.05,
+                                ),
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                               ),
-                              onPressed: () => _playAll(filteredSongs, shuffle: true),
-                              icon: const Icon(Icons.shuffle_rounded, size: 18, color: NewExperienceTokens.accentCyan),
+                              onPressed: () =>
+                                  _playAll(filteredSongs, shuffle: true),
+                              icon: const Icon(
+                                Icons.shuffle_rounded,
+                                size: 18,
+                                color: NewExperienceTokens.accentCyan,
+                              ),
                               label: Text(
                                 'Shuffle',
-                                style: NewExperienceTokens.bodySmall(color: Colors.white)
-                                    .copyWith(fontWeight: FontWeight.w600),
+                                style: NewExperienceTokens.bodySmall(
+                                  color: Colors.white,
+                                ).copyWith(fontWeight: FontWeight.w600),
                               ),
                             ),
                           ],
@@ -249,32 +302,33 @@ class _NewSeeAllScreenState extends ConsumerState<NewSeeAllScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 40),
                       child: Center(
                         child: Text(
-                          _query.isNotEmpty ? 'No tracks match "$_query"' : 'No tracks found in this collection',
-                          style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+                          _query.isNotEmpty
+                              ? 'No tracks match "$_query"'
+                              : 'No tracks found in this collection',
+                          style: NewExperienceTokens.bodySmall(
+                            color: NewExperienceTokens.textMuted,
+                          ),
                         ),
                       ),
                     ),
                   )
                 else
                   SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final song = filteredSongs[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: NewMediaTile(
-                            song: song,
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final song = filteredSongs[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: NewMediaTile(
+                          song: song,
+                          index: index,
+                          onTap: () => playerNotifier.playSong(
+                            song,
+                            queue: filteredSongs,
                             index: index,
-                            onTap: () => playerNotifier.playSong(
-                              song,
-                              queue: filteredSongs,
-                              index: index,
-                            ),
                           ),
-                        );
-                      },
-                      childCount: filteredSongs.length,
-                    ),
+                        ),
+                      );
+                    }, childCount: filteredSongs.length),
                   ),
               ],
 
@@ -286,8 +340,12 @@ class _NewSeeAllScreenState extends ConsumerState<NewSeeAllScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 40),
                       child: Center(
                         child: Text(
-                          _query.isNotEmpty ? 'No collections match "$_query"' : 'No collections available',
-                          style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted),
+                          _query.isNotEmpty
+                              ? 'No collections match "$_query"'
+                              : 'No collections available',
+                          style: NewExperienceTokens.bodySmall(
+                            color: NewExperienceTokens.textMuted,
+                          ),
                         ),
                       ),
                     ),
@@ -296,28 +354,34 @@ class _NewSeeAllScreenState extends ConsumerState<NewSeeAllScreen> {
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     sliver: SliverGrid(
-                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                         maxCrossAxisExtent: 180,
                         mainAxisSpacing: 16,
                         crossAxisSpacing: 14,
-                        childAspectRatio: 0.72,
+                        mainAxisExtent:
+                            180 +
+                            MediaQuery.textScalerOf(context).scale(14) +
+                            MediaQuery.textScalerOf(context).scale(12.5) +
+                            28,
                       ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final pl = filteredPlaylists[index];
-                          final sub = pl.songCount > 0
-                              ? '${pl.songCount} Tracks'
-                              : (pl.customSubtitle ?? 'Collection');
+                      delegate: SliverChildBuilderDelegate((context, index) {
+                        final pl = filteredPlaylists[index];
+                        final sub = pl.songCount > 0
+                            ? '${pl.songCount} Tracks'
+                            : (pl.customSubtitle ?? 'Collection');
 
-                          final isDailyMix = pl.id.startsWith('daily_mix_');
-                          final mixIdx = isDailyMix ? (int.tryParse(pl.id.split('_').last) ?? 1) : null;
-                          final quadUrls = (pl.songs ?? [])
-                              .map((s) => s.image)
-                              .where((u) => u.isNotEmpty && !u.contains('404'))
-                              .take(4)
-                              .toList();
+                        final isDailyMix = pl.id.startsWith('daily_mix_');
+                        final mixIdx = isDailyMix
+                            ? (int.tryParse(pl.id.split('_').last) ?? 1)
+                            : null;
+                        final quadUrls = (pl.songs ?? [])
+                            .map((s) => s.image)
+                            .where((u) => u.isNotEmpty && !u.contains('404'))
+                            .take(4)
+                            .toList();
 
-                          return NewCard(
+                        return LayoutBuilder(
+                          builder: (context, constraints) => NewCard(
                             title: pl.title,
                             subtitle: sub,
                             imageUrl: pl.image,
@@ -326,11 +390,15 @@ class _NewSeeAllScreenState extends ConsumerState<NewSeeAllScreen> {
                                     mixIndex: mixIdx!,
                                     title: pl.title,
                                     subtitle: sub,
-                                    quadImageUrls: quadUrls.isNotEmpty ? quadUrls : null,
-                                    primaryImageUrl: pl.image.isNotEmpty ? pl.image : null,
+                                    quadImageUrls: quadUrls.isNotEmpty
+                                        ? quadUrls
+                                        : null,
+                                    primaryImageUrl: pl.image.isNotEmpty
+                                        ? pl.image
+                                        : null,
                                   )
                                 : null,
-                            width: 160,
+                            width: constraints.maxWidth,
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
@@ -341,10 +409,9 @@ class _NewSeeAllScreenState extends ConsumerState<NewSeeAllScreen> {
                                 ),
                               );
                             },
-                          );
-                        },
-                        childCount: filteredPlaylists.length,
-                      ),
+                          ),
+                        );
+                      }, childCount: filteredPlaylists.length),
                     ),
                   ),
               ],

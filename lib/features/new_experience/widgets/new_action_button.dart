@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/new_experience_tokens.dart';
 
-enum NewActionButtonVariant {
-  primary,
-  glass,
-  circularPlay,
-}
+enum NewActionButtonVariant { primary, glass, circularPlay }
 
 class NewActionButton extends StatelessWidget {
   final String? label;
@@ -65,18 +61,30 @@ class NewActionButton extends StatelessWidget {
 
     return SizedBox(
       width: width,
-      height: height,
+      height: (height + MediaQuery.textScalerOf(context).scale(14) - 14).clamp(
+        48,
+        double.infinity,
+      ),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: isPrimary ? accent : Colors.white.withValues(alpha: 0.08),
-          foregroundColor: isPrimary ? Colors.white : NewExperienceTokens.textPrimary,
+          backgroundColor: isPrimary
+              ? accent
+              : Colors.white.withValues(alpha: 0.08),
+          foregroundColor: isPrimary
+              ? Colors.white
+              : NewExperienceTokens.textPrimary,
           elevation: isPrimary ? 4 : 0,
-          shadowColor: isPrimary ? accent.withValues(alpha: 0.35) : Colors.transparent,
+          shadowColor: isPrimary
+              ? accent.withValues(alpha: 0.35)
+              : Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(NewExperienceTokens.radiusPill),
             side: isPrimary
                 ? BorderSide.none
-                : BorderSide(color: NewExperienceTokens.specularBorder, width: 1),
+                : BorderSide(
+                    color: NewExperienceTokens.specularBorder,
+                    width: 1,
+                  ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 18),
         ),
@@ -90,11 +98,17 @@ class NewActionButton extends StatelessWidget {
               if (label != null) const SizedBox(width: 8),
             ],
             if (label != null)
-              Text(
-                label!,
-                style: NewExperienceTokens.bodyMedium(
-                  color: isPrimary ? Colors.white : NewExperienceTokens.textPrimary,
-                ).copyWith(fontWeight: FontWeight.w700),
+              Flexible(
+                child: Text(
+                  label!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: NewExperienceTokens.bodyMedium(
+                    color: isPrimary
+                        ? Colors.white
+                        : NewExperienceTokens.textPrimary,
+                  ).copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
           ],
         ),

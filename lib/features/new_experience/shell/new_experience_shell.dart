@@ -72,7 +72,7 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
         final isMobile = constraints.maxWidth < NewExperienceTokens.breakpointCompact;
 
         if (isDesktop) {
-          return _buildDesktopLayout();
+          return _buildDesktopLayout(constraints.maxWidth);
         }
 
         if (isMobile) {
@@ -86,7 +86,7 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
     );
   }
 
-  Widget _buildDesktopLayout() {
+  Widget _buildDesktopLayout(double availableWidth) {
     return Scaffold(
       backgroundColor: NewExperienceTokens.obsidianBackground,
       body: Column(
@@ -99,7 +99,8 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
                 NewDesktopSidebar(
                   selectedIndex: _currentIndex,
                   onDestinationSelected: _onSelectTab,
-                  isCollapsed: _isSidebarCollapsed,
+                  isCollapsed: _isSidebarCollapsed ||
+                      (_isContextualPanelOpen && availableWidth < 1320),
                   onToggleCollapse: () =>
                       setState(() => _isSidebarCollapsed = !_isSidebarCollapsed),
                 ),

@@ -40,7 +40,9 @@ class _NewMediaTileState extends ConsumerState<NewMediaTile> {
     // Only subscribe to isPlaying updates if this tile is the current active track
     final isPlaying = isCurrent && ref.watch(audioPlayerProvider.select((s) => s.isPlaying));
 
-    return RepaintBoundary(
+    return LayoutBuilder(builder: (context, constraints) {
+      final compact = constraints.maxWidth < 360;
+      return RepaintBoundary(
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (_) => setState(() => _isHovered = true),
@@ -84,7 +86,7 @@ class _NewMediaTileState extends ConsumerState<NewMediaTile> {
             child: Row(
               children: [
                 // Index or Equalizer
-                if (widget.showIndex) ...[
+                if (widget.showIndex && !compact) ...[
                   SizedBox(
                     width: 28,
                     child: Center(
@@ -158,7 +160,8 @@ class _NewMediaTileState extends ConsumerState<NewMediaTile> {
 
                 const SizedBox(width: 8),
 
-                // Duration
+                // Keep core controls reachable in narrow lists and selection mode.
+                if (!compact) ...[
                 Text(
                   StringUtils.formatDuration(Duration(seconds: widget.song.duration)),
                   style: NewExperienceTokens.numericTimer(
@@ -169,6 +172,7 @@ class _NewMediaTileState extends ConsumerState<NewMediaTile> {
                 ),
 
                 const SizedBox(width: 8),
+                ],
 
                 // Options 3-dot menu
                 IconButton(
@@ -193,5 +197,6 @@ class _NewMediaTileState extends ConsumerState<NewMediaTile> {
         ),
       ),
     );
+    });
   }
 }

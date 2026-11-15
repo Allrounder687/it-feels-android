@@ -250,7 +250,9 @@ class _NewHitsScreenState extends ConsumerState<NewHitsScreen> {
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                      child: Row(
+                      child: Wrap(
+                        spacing: 10,
+                        runSpacing: 8,
                         children: [
                           NewActionButton(
                             label: 'Play Chart',
@@ -263,7 +265,6 @@ class _NewHitsScreenState extends ConsumerState<NewHitsScreen> {
                               );
                             },
                           ),
-                          const SizedBox(width: 10),
                           NewActionButton(
                             label: 'Shuffle',
                             icon: Icons.shuffle_rounded,

@@ -1,3 +1,10 @@
+## v3.7.0+102 — Unreleased UI and discovery improvements
+
+- Add 66 addon-backed collection definitions plus history-derived artist/album sessions and song radio, with randomized refresh, bounded offline snapshots and request coalescing.
+- Add Home discovery shelves, artist Dynamic Mix actions, and Start Song Radio in new-experience song options.
+- Fix collection grid sizing, touch play visibility, large-text actions/shelves, narrow song rows, full-player scrolling, equalizer phone layouts and desktop panel/sidebar spacing.
+- Document Spotify feature gaps, artwork provenance choices and native-device verification limits in `NEW_UI_DISCOVERY_AUDIT.md`.
+
 ## v3.6.23+93
 - **Scoped Storage Write Validation, Local Image Fault-Tolerance & Presence Guard**:
   - **Dynamic Scoped Storage Fallback (`isPathWritable`)**: Tested custom download directories (`/storage/emulated/0/It Feels`, etc.) for write permissions using a temporary probe file before initiating tasks. Automatically falls back to Scoped Storage (`StorageDirectory.music` or app documents) when custom paths are denied by Android 11+ (`Operation not permitted`).
