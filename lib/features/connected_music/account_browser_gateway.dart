@@ -303,10 +303,18 @@ class AccountBrowserGateway implements AccountGateway, PublicPlaylistGateway {
         final controller = browser.webViewController;
         if (controller == null) continue;
         final currentUrl = await controller.getUrl();
-        if (currentUrl != null &&
+        if (started &&
+            currentUrl != null &&
             addon.allowsNavigation(currentUrl) &&
             !addon.ownsPage(currentUrl)) {
-          throw const AccountAccessException(needsLogin: true);
+          final path = currentUrl.path.toLowerCase();
+          final host = currentUrl.host.toLowerCase();
+          if (host.contains('accounts.') ||
+              path.contains('signin') ||
+              path.contains('login') ||
+              path.contains('servicelogin')) {
+            throw const AccountAccessException(needsLogin: true);
+          }
         }
         final page = await snapshot(addon, controller);
         if (page == null) continue;

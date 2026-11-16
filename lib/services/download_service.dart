@@ -340,14 +340,22 @@ class DownloadService {
 
       // 4. Configure Background Download Task with original song name notifications
       try {
+        final downloadHeaders = <String, String>{
+          'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': '*/*',
+        };
+        if (streamUrl.contains('saavn')) {
+          downloadHeaders['Referer'] = 'https://www.jiosaavn.com/';
+        } else if (streamUrl.contains('youtube') ||
+            streamUrl.contains('googlevideo')) {
+          downloadHeaders['Referer'] = 'https://www.youtube.com/';
+        }
+
         final task = DownloadTask(
           url: streamUrl,
           filename: audioFileName,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Referer': 'https://www.jiosaavn.com/',
-            'Accept': '*/*',
-          },
+          headers: downloadHeaders,
           directory: songDir.path,
           baseDirectory: BaseDirectory.root,
           updates: Updates.statusAndProgress,
@@ -391,11 +399,18 @@ class DownloadService {
         debugPrint('[DownloadService] Attempting direct stream download fallback for: ${song.title}');
         try {
           final request = http.Request('GET', Uri.parse(streamUrl));
-          request.headers.addAll({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Referer': 'https://www.jiosaavn.com/',
+          final fallbackHeaders = <String, String>{
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': '*/*',
-          });
+          };
+          if (streamUrl.contains('saavn')) {
+            fallbackHeaders['Referer'] = 'https://www.jiosaavn.com/';
+          } else if (streamUrl.contains('youtube') ||
+              streamUrl.contains('googlevideo')) {
+            fallbackHeaders['Referer'] = 'https://www.youtube.com/';
+          }
+          request.headers.addAll(fallbackHeaders);
           final streamedResponse = await httpClient.send(request);
           if (streamedResponse.statusCode == 200) {
             final totalBytes = streamedResponse.contentLength ?? 0;

@@ -16,4 +16,10 @@ class MixChapter {
     }
     return MixChapter(title: title, startSeconds: start, endSeconds: end);
   }
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'start': startSeconds,
+    if (endSeconds != null) 'end': endSeconds,
+  };
 }

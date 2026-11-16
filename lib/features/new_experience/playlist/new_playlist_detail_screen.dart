@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:it_feels_music/core/widgets/collection_download_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:it_feels_music/features/player/audio_player_provider.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/core/utils/string_utils.dart';
 import 'package:it_feels_music/core/intelligence/playlists/dynamic_playlist_service.dart';
+import 'package:it_feels_music/core/intelligence/playlists/dynamic_playlist_models.dart';
 import '../theme/new_experience_tokens.dart';
 import '../theme/new_ambient_canvas.dart';
 import '../widgets/new_media_tile.dart';
@@ -186,6 +188,17 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
         final query = seedQueries[widget.playlist.id] ?? widget.playlist.title;
         final repo = locator<IMusicRepository>();
         final tracks = await repo.searchSongs(query, count: 25);
+        if (tracks.isNotEmpty && locator.isRegistered<DynamicPlaylistService>()) {
+          final dyn = DynamicPlaylist(
+            id: widget.playlist.id,
+            title: widget.playlist.title,
+            subtitle: widget.playlist.subtitle,
+            tracks: tracks,
+            coverArt: widget.playlist.coverArt,
+            lastRefreshedAt: DateTime.now(),
+          );
+          unawaited(locator<DynamicPlaylistService>().persistPlaylist(dyn));
+        }
         if (mounted) {
           setState(() {
             _tracks = tracks;

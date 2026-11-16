@@ -249,6 +249,9 @@ class _AccountLoginScreenState extends ConsumerState<_AccountLoginScreen> {
       final snapshot = await gateway.snapshot(widget.addon, _controller!);
       if (snapshot?.authenticated != true || !mounted) return;
       _finishing = true;
+      // Allow browser session cookies to settle before capturing
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      if (!mounted) return;
       await gateway.remember(widget.addon);
       if (!mounted) return;
       final service = ref.read(connectedMusicProvider);

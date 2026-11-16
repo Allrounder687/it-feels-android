@@ -23,7 +23,7 @@
     var service = host === 'api.spotify.com' || host === 'api-partner.spotify.com' || host === 'open.spotify.com';
     if (service) { captureHeaders(init && init.headers); captureHeaders(resource && resource.headers); }
     var result = originalFetch.apply(this, arguments);
-    if (service && (url.indexOf('/api/token') >= 0 || url.indexOf('/pathfinder/') >= 0)) {
+    if (service && (url.indexOf('/api/token') >= 0 || url.indexOf('/pathfinder/') >= 0 || url.indexOf('/get_access_token') >= 0)) {
       result.then(function (response) {
         if (!response.ok) return;
         response.clone().json().then(function (body) {
@@ -38,12 +38,28 @@
     }
     return result;
   };
+  var tokenFetching = false;
+  async function fetchTokenIfMissing() {
+    if (accessToken || tokenFetching) return accessToken;
+    tokenFetching = true;
+    try {
+      var res = await originalFetch('https://open.spotify.com/get_access_token?reason=transport&productType=web_player', { credentials: 'include' });
+      if (res.ok) {
+        var body = await res.json();
+        if (body.accessToken && !body.isAnonymous) accessToken = body.accessToken;
+      }
+    } catch (_) {} finally {
+      tokenFetching = false;
+    }
+    return accessToken;
+  }
   function tokenFromPage() {
     try {
       var session = document.querySelector('script#session');
       var data = session && JSON.parse(session.textContent);
       if (!accessToken && data && data.accessToken && !data.isAnonymous) accessToken = data.accessToken;
     } catch (_) { /* Web builds may omit this script. */ }
+    if (!accessToken) fetchTokenIfMissing();
     return accessToken;
   }
   async function api(path) {
@@ -134,6 +150,7 @@
   window.itFeelsAccount = {
     snapshot: function () {
       tokenFromPage();
+      if (!accessToken) fetchTokenIfMissing();
       // A login cookie alone is not proof of a usable account session.
       if (accessToken && accessToken !== checkedToken && !verifying) {
         verifying = true;
@@ -148,7 +165,11 @@
     start: function (input) {
       if (running) return; running = true;
       (async function () {
-        for (var i = 0; i < 60 && !tokenFromPage(); i++) await pause(300);
+        for (var i = 0; i < 60 && !tokenFromPage(); i++) {
+          await fetchTokenIfMissing();
+          if (accessToken) break;
+          await pause(300);
+        }
         if (!accessToken) throw new Error('login_required');
         var profile = await api('me');
         state.authenticated = true; state.accountName = profile.display_name || profile.id || '';

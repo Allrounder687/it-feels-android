@@ -11,6 +11,7 @@ import 'package:it_feels_music/core/utils/track_validation_engine.dart';
 import 'package:it_feels_music/services/lastfm_service.dart';
 import 'package:it_feels_music/services/storage_service.dart';
 import 'package:it_feels_music/services/database_service.dart';
+import 'package:it_feels_music/core/intelligence/catalogue/catalogue_deduplication_engine.dart';
 
 
 @immutable
@@ -429,11 +430,12 @@ class HomeNotifier extends Notifier<HomeState> {
       }
 
       final albums = await musicRepo.searchAlbums("Hindi", count: 15);
+      final dedupedAlbums = CatalogueDeduplicationEngine().deduplicateAlbums(albums).uniqueItems;
 
       state = state.copyWith(
         bollywoodSongs: tracks.isNotEmpty ? tracks : state.bollywoodSongs,
         bollywoodPlaylists: playlists.isNotEmpty ? playlists : state.bollywoodPlaylists,
-        bollywoodAlbums: albums.isNotEmpty ? albums : state.bollywoodAlbums,
+        bollywoodAlbums: dedupedAlbums.isNotEmpty ? dedupedAlbums : state.bollywoodAlbums,
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchBollywoodSongs error: $e');
@@ -465,11 +467,12 @@ class HomeNotifier extends Notifier<HomeState> {
       }
 
       final albums = await musicRepo.searchAlbums("Telugu", count: 15);
+      final dedupedAlbums = CatalogueDeduplicationEngine().deduplicateAlbums(albums).uniqueItems;
 
       state = state.copyWith(
         teluguSongs: tracks.isNotEmpty ? tracks : state.teluguSongs,
         teluguPlaylists: playlists.isNotEmpty ? playlists : state.teluguPlaylists,
-        teluguAlbums: albums.isNotEmpty ? albums : state.teluguAlbums,
+        teluguAlbums: dedupedAlbums.isNotEmpty ? dedupedAlbums : state.teluguAlbums,
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchTeluguSongs error: $e');
@@ -501,11 +504,12 @@ class HomeNotifier extends Notifier<HomeState> {
       }
 
       final albums = await musicRepo.searchAlbums("Tamil", count: 15);
+      final dedupedAlbums = CatalogueDeduplicationEngine().deduplicateAlbums(albums).uniqueItems;
 
       state = state.copyWith(
         tamilSongs: tracks.isNotEmpty ? tracks : state.tamilSongs,
         tamilPlaylists: playlists.isNotEmpty ? playlists : state.tamilPlaylists,
-        tamilAlbums: albums.isNotEmpty ? albums : state.tamilAlbums,
+        tamilAlbums: dedupedAlbums.isNotEmpty ? dedupedAlbums : state.tamilAlbums,
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchTamilSongs error: $e');
@@ -537,11 +541,12 @@ class HomeNotifier extends Notifier<HomeState> {
       }
 
       final albums = await musicRepo.searchAlbums("Punjabi", count: 15);
+      final dedupedAlbums = CatalogueDeduplicationEngine().deduplicateAlbums(albums).uniqueItems;
 
       state = state.copyWith(
         punjabiSongs: tracks.isNotEmpty ? tracks : state.punjabiSongs,
         punjabiPlaylists: playlists.isNotEmpty ? playlists : state.punjabiPlaylists,
-        punjabiAlbums: albums.isNotEmpty ? albums : state.punjabiAlbums,
+        punjabiAlbums: dedupedAlbums.isNotEmpty ? dedupedAlbums : state.punjabiAlbums,
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchPunjabiSongs error: $e');
@@ -595,11 +600,12 @@ class HomeNotifier extends Notifier<HomeState> {
       }
 
       final albums = await musicRepo.searchAlbums("English Pop", count: 15);
+      final dedupedAlbums = CatalogueDeduplicationEngine().deduplicateAlbums(albums).uniqueItems;
 
       state = state.copyWith(
         hollywoodSongs: tracks.isNotEmpty ? tracks : state.hollywoodSongs,
         hollywoodPlaylists: playlists.isNotEmpty ? playlists : state.hollywoodPlaylists,
-        hollywoodAlbums: albums.isNotEmpty ? albums : state.hollywoodAlbums,
+        hollywoodAlbums: dedupedAlbums.isNotEmpty ? dedupedAlbums : state.hollywoodAlbums,
       );
     } catch (e) {
       debugPrint('[HomeNotifier] fetchHollywoodSongs error: $e');
@@ -650,12 +656,9 @@ class HomeNotifier extends Notifier<HomeState> {
         ...tamilAlbums,
         ...punjabiAlbums,
       ];
-      final Map<String, Playlist> unique = {};
-      for (var album in combined) {
-        if (album.id.isNotEmpty) unique[album.id] = album;
-      }
-      if (unique.isNotEmpty) {
-        state = state.copyWith(topAlbums: unique.values.toList());
+      final deduped = CatalogueDeduplicationEngine().deduplicateAlbums(combined).uniqueItems;
+      if (deduped.isNotEmpty) {
+        state = state.copyWith(topAlbums: deduped);
       }
     } catch (_) {}
   }

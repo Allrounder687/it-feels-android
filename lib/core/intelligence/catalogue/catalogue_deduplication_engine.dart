@@ -185,11 +185,25 @@ class CatalogueDeduplicationEngine {
     final uniqueList = <Playlist>[];
     final seenIds = <String>{};
     final seenSignatures = <String, Playlist>{};
+    final seenCoverStems = <String>{};
     int duplicatesRemoved = 0;
     int variantsPreserved = 0;
 
     for (final album in albums) {
       if (seenIds.contains(album.id)) {
+        duplicatesRemoved++;
+        continue;
+      }
+
+      // 1. Cover Art Stem Deduplication (Eliminates repeated posters across album feeds)
+      final coverStem = album.coverArt.isNotEmpty
+          ? album.coverArt
+              .replaceAll(RegExp(r'[-_]\d+x\d+\.(jpg|png|jpeg|webp)', caseSensitive: false), '')
+              .toLowerCase()
+              .replaceAll(RegExp(r'\?.*$'), '')
+              .trim()
+          : '';
+      if (coverStem.isNotEmpty && seenCoverStems.contains(coverStem)) {
         duplicatesRemoved++;
         continue;
       }
@@ -204,6 +218,12 @@ class CatalogueDeduplicationEngine {
         continue;
       }
 
+      // Check title collision without artist if artist is generic or empty
+      if (baseTitle.isNotEmpty && seenSignatures.keys.any((k) => k.endsWith('::$baseTitle::$variantSig'))) {
+        duplicatesRemoved++;
+        continue;
+      }
+
       final baseSig = '$artist::$baseTitle';
       final hasBase = seenSignatures.keys.any((k) => k.startsWith('$baseSig::'));
       if (hasBase && variantSig.isNotEmpty) {
@@ -211,6 +231,7 @@ class CatalogueDeduplicationEngine {
       }
 
       seenIds.add(album.id);
+      if (coverStem.isNotEmpty) seenCoverStems.add(coverStem);
       seenSignatures[sig] = album;
       uniqueList.add(album);
     }

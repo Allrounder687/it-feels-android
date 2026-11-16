@@ -395,13 +395,21 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       
       await _player.stop();
 
+      final headers = <String, String>{
+        'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+      };
+      if (streamUrl.contains('saavn')) {
+        headers['Referer'] = 'https://www.jiosaavn.com/';
+      } else if (streamUrl.contains('youtube') ||
+          streamUrl.contains('googlevideo')) {
+        headers['Referer'] = 'https://www.youtube.com/';
+      }
+
       final Media media = Media(
         streamUrl,
-        httpHeaders: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': 'https://www.jiosaavn.com/',
-          'Accept': '*/*',
-        },
+        httpHeaders: headers,
       );
       
       // Bounded connection timeout watchdog to prevent native libmpv from hanging indefinitely

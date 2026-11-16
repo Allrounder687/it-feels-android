@@ -50,8 +50,16 @@ const accountAddons = [
       'google.co.in',
       'gstatic.com',
       'googleusercontent.com',
+      'accounts.google.com',
+      'accounts.youtube.com',
+      'apis.google.com',
     ],
-    cookieDomains: ['music.youtube.com', 'youtube.com'],
+    cookieDomains: [
+      'music.youtube.com',
+      'youtube.com',
+      'google.com',
+      'google.co.in',
+    ],
     color: 0xFFFF4268,
   ),
   AccountAddon(
@@ -59,10 +67,14 @@ const accountAddons = [
     name: 'Spotify',
     asset: 'assets/account_addons/spotify.js',
     origin: 'https://open.spotify.com',
-    loginUrl: 'https://open.spotify.com/collection/playlists',
+    loginUrl:
+        'https://accounts.spotify.com/login?continue=https%3A%2F%2Fopen.spotify.com%2Fcollection%2Fplaylists',
     libraryUrl: 'https://open.spotify.com/collection/playlists',
     navigationDomains: [
       'spotify.com',
+      'spotifycdn.com',
+      'scdn.co',
+      'akamaized.net',
       'google.com',
       'apple.com',
       'facebook.com',

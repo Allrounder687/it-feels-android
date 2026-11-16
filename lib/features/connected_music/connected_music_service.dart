@@ -31,6 +31,7 @@ class ConnectedMusicService extends ChangeNotifier {
   final Map<String, Future<void>> _storageTasks = {};
   final Map<String, Timer> _retries = {};
   final Map<String, int> _failures = {};
+  final Map<String, AccountSnapshot> _playlistMemoryCache = {};
   Future<void>? _initialization;
   bool _disposed = false;
   ConnectedMusicService({
@@ -58,6 +59,7 @@ class ConnectedMusicService extends ChangeNotifier {
   }
 
   String _cacheKey(String id) => 'connected_music.v1.$id';
+  String _playlistCacheKey(String key) => 'connected_music.v1.playlist.$key';
 
   Future<void> initialize() => _initialization ??= _initialize();
   Future<void> _initialize() async {
@@ -249,6 +251,36 @@ class ConnectedMusicService extends ChangeNotifier {
     final addon = accountAddons.firstWhere((a) => a.id == playlist.providerId);
     final epoch = _epochs[addon.id] ?? 0;
     final entries = <String, RemoteTrack>{};
+
+    // 1. Yield in-memory cache immediately if available
+    final mem = _playlistMemoryCache[playlist.key];
+    if (mem != null && mem.tracks.isNotEmpty) {
+      for (final t in mem.tracks) {
+        entries[t.entryId] = t;
+      }
+      yield mem;
+    } else {
+      // 2. Yield persistent disk cache if available
+      try {
+        final raw = await store.read(_playlistCacheKey(playlist.key));
+        if (raw != null &&
+            raw.isNotEmpty &&
+            !_disposed &&
+            (_epochs[addon.id] ?? 0) == epoch) {
+          final j = jsonDecode(raw) as Map<String, dynamic>;
+          final cachedSnapshot = AccountSnapshot.fromJson(playlist.providerId, j);
+          if (cachedSnapshot.tracks.isNotEmpty) {
+            for (final t in cachedSnapshot.tracks) {
+              entries[t.entryId] = t;
+            }
+            _playlistMemoryCache[playlist.key] = cachedSnapshot;
+            yield cachedSnapshot;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // 3. Stream live/updated pages from gateway
     await for (final page in gateway.read(addon, playlist: playlist)) {
       if (_disposed || (_epochs[addon.id] ?? 0) != epoch) return;
       if (page.error == 'login_required') {
@@ -257,13 +289,44 @@ class ConnectedMusicService extends ChangeNotifier {
       for (final t in page.tracks) {
         entries[t.entryId] = t;
       }
-      yield AccountSnapshot(
+      final snapshot = AccountSnapshot(
         authenticated: page.authenticated,
         complete: page.complete,
         tracks: entries.values.toList(),
         error: page.error,
-        chapters: page.chapters,
+        chapters: page.chapters ?? mem?.chapters ?? const [],
       );
+      _playlistMemoryCache[playlist.key] = snapshot;
+      yield snapshot;
+
+      // 4. Save to persistent store upon complete page resolution
+      if (page.complete && page.error == null && entries.isNotEmpty) {
+        unawaited(
+          _storage(addon.id, () async {
+            if (_disposed || (_epochs[addon.id] ?? 0) != epoch) return;
+            await store.write(
+              _playlistCacheKey(playlist.key),
+              jsonEncode({
+                'authenticated': true,
+                'complete': true,
+                'tracks': entries.values
+                    .map((t) => {
+                          'entryId': t.entryId,
+                          'id': t.song.id
+                              .replaceFirst(RegExp(r'^(youtube|spotify):'), ''),
+                          'title': t.song.title,
+                          'artist': t.song.artist,
+                          'album': t.song.album,
+                          'duration': t.song.duration,
+                          'artwork': t.song.coverArt,
+                        })
+                    .toList(),
+                'chapters': page.chapters.map((c) => c.toJson()).toList(),
+              }),
+            );
+          }),
+        );
+      }
     }
   }
 
@@ -273,6 +336,7 @@ class ConnectedMusicService extends ChangeNotifier {
     _epochs[addon.id] = (_epochs[addon.id] ?? 0) + 1;
     _refreshes.remove(addon.id);
     _accounts.remove(addon.id);
+    _playlistMemoryCache.removeWhere((k, _) => k.startsWith('${addon.id}:'));
     _notify();
     try {
       await _storage(addon.id, () => store.delete(_cacheKey(addon.id)));

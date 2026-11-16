@@ -13,6 +13,7 @@ import 'package:it_feels_music/data/datasources/local_cache_data_source.dart';
 import 'package:it_feels_music/data/services/addon_manager.dart';
 import 'package:it_feels_music/services/database_service.dart';
 import 'package:it_feels_music/core/intelligence/charts/chart_aggregation_service.dart';
+import 'package:it_feels_music/core/intelligence/catalogue/catalogue_deduplication_engine.dart';
 
 abstract class IMusicRepository {
   Future<List<Song>> fetchRecommendations({String? songId, String? artist});
@@ -548,6 +549,9 @@ class MusicRepository implements IMusicRepository {
         results = playlistResults;
       }
     }
+
+    // Deduplicate albums and remove repeated artwork posters
+    results = CatalogueDeduplicationEngine().deduplicateAlbums(results).uniqueItems;
 
     if (results.isNotEmpty) {
       final cacheObj = CachedSearch()
