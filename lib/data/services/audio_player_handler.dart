@@ -13,8 +13,9 @@ import 'package:it_feels_music/data/services/equalizer_service.dart';
 import 'package:it_feels_music/core/diagnostics/trackers/playback_diagnostics_tracker.dart';
 
 class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
-  late final Player _player;
+  late Player _player;
   final IMusicRepository apiService;
+  final Player Function()? customPlayerFactory;
   
   VoidCallback? onSkipNext;
   VoidCallback? onSkipPrevious;
@@ -48,8 +49,9 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   AudioPlayerHandler({
     required this.apiService,
     @visibleForTesting Player? customPlayer,
+    @visibleForTesting this.customPlayerFactory,
   }) {
-    _player = customPlayer ?? Player(configuration: const PlayerConfiguration(pitch: true));
+    _player = customPlayer ?? customPlayerFactory?.call() ?? Player(configuration: const PlayerConfiguration(pitch: true));
     _init();
   }
 
@@ -137,66 +139,80 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     _setupAudioDeviceDisconnectionListeners();
   }
 
+  void _ensurePlayerAlive() {
+    if (_isDisposed) {
+      debugPrint('[AudioPlayerHandler] Re-initializing disposed player instance.');
+      _isDisposed = false;
+      _isDisposing = false;
+      _player = customPlayerFactory != null
+          ? customPlayerFactory!()
+          : Player(configuration: const PlayerConfiguration(pitch: true));
+      _init();
+    }
+  }
+
   void _setupAudioDeviceDisconnectionListeners() {
-    // 1. Desktop & Cross-Platform (media_kit stream)
-    try {
-      _audioDevicesSubscription = _player.stream.audioDevices.listen((devices) {
-        if (_isFirstAudioDevicesEmission) {
-          _isFirstAudioDevicesEmission = false;
+    // 1. Desktop & Cross-Platform (media_kit stream for desktop output switches)
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
+      try {
+        _audioDevicesSubscription = _player.stream.audioDevices.listen((devices) {
+          if (_isFirstAudioDevicesEmission) {
+            _isFirstAudioDevicesEmission = false;
+            _lastAudioDevices = devices;
+            return;
+          }
+
+          // Compare non-auto physical/OS devices
+          final previousNames = _lastAudioDevices
+              .map((d) => d.name)
+              .where((n) => n.isNotEmpty && n != 'auto')
+              .toSet();
+          final currentNames = devices
+              .map((d) => d.name)
+              .where((n) => n.isNotEmpty && n != 'auto')
+              .toSet();
+
+          final removedDevices = previousNames.difference(currentNames);
           _lastAudioDevices = devices;
-          return;
-        }
 
-        // Compare non-auto physical/OS devices
-        final previousNames = _lastAudioDevices
-            .map((d) => d.name)
-            .where((n) => n.isNotEmpty && n != 'auto')
-            .toSet();
-        final currentNames = devices
-            .map((d) => d.name)
-            .where((n) => n.isNotEmpty && n != 'auto')
-            .toSet();
-
-        final removedDevices = previousNames.difference(currentNames);
-        _lastAudioDevices = devices;
-
-        if (removedDevices.isNotEmpty) {
-          debugPrint('[AudioPlayerHandler] Output audio device(s) disconnected: $removedDevices');
-          if (_player.state.playing || _isLoadingTrack) {
-            debugPrint('[AudioPlayerHandler] Auto-pausing playback due to audio device disconnection.');
-            pause();
+          if (removedDevices.isNotEmpty) {
+            debugPrint('[AudioPlayerHandler] Output audio device(s) disconnected: $removedDevices');
+            if (_player.state.playing || _isLoadingTrack) {
+              debugPrint('[AudioPlayerHandler] Auto-pausing playback due to audio device disconnection.');
+              pause();
+            }
           }
-        }
-      }, onError: (e) {
-        debugPrint('[AudioPlayerHandler] Error in audioDevices stream: $e');
-      });
+        }, onError: (e) {
+          debugPrint('[AudioPlayerHandler] Error in audioDevices stream: $e');
+        });
 
-      _audioDeviceSubscription = _player.stream.audioDevice.listen((device) {
-        if (_isFirstAudioDeviceEmission) {
-          _isFirstAudioDeviceEmission = false;
+        _audioDeviceSubscription = _player.stream.audioDevice.listen((device) {
+          if (_isFirstAudioDeviceEmission) {
+            _isFirstAudioDeviceEmission = false;
+            _currentAudioDevice = device;
+            return;
+          }
+
+          final previousDevice = _currentAudioDevice;
           _currentAudioDevice = device;
-          return;
-        }
 
-        final previousDevice = _currentAudioDevice;
-        _currentAudioDevice = device;
-
-        // If the active output device was non-auto and switched away
-        if (previousDevice != null &&
-            previousDevice.name.isNotEmpty &&
-            previousDevice.name != 'auto' &&
-            device.name != previousDevice.name) {
-          debugPrint('[AudioPlayerHandler] Active device changed from ${previousDevice.name} to ${device.name}');
-          if (_player.state.playing || _isLoadingTrack) {
-            debugPrint('[AudioPlayerHandler] Auto-pausing playback due to active device route loss.');
-            pause();
+          // If the active output device was non-auto and switched away
+          if (previousDevice != null &&
+              previousDevice.name.isNotEmpty &&
+              previousDevice.name != 'auto' &&
+              device.name != previousDevice.name) {
+            debugPrint('[AudioPlayerHandler] Active device changed from ${previousDevice.name} to ${device.name}');
+            if (_player.state.playing || _isLoadingTrack) {
+              debugPrint('[AudioPlayerHandler] Auto-pausing playback due to active device route loss.');
+              pause();
+            }
           }
-        }
-      }, onError: (e) {
-        debugPrint('[AudioPlayerHandler] Error in audioDevice stream: $e');
-      });
-    } catch (e) {
-      debugPrint('[AudioPlayerHandler] Failed to initialize media_kit device listeners: $e');
+        }, onError: (e) {
+          debugPrint('[AudioPlayerHandler] Error in audioDevice stream: $e');
+        });
+      } catch (e) {
+        debugPrint('[AudioPlayerHandler] Failed to initialize media_kit device listeners: $e');
+      }
     }
 
     // 2. Mobile platforms (Android / iOS / macOS) via AudioSession
@@ -219,12 +235,10 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
             debugPrint('[AudioPlayerHandler] Error in becomingNoisyEventStream: $e');
           });
 
+          // devicesChangedEventStream is informational; real headphone/BT unhooking is handled by becomingNoisyEventStream
           _devicesChangedSubscription = session.devicesChangedEventStream.listen((event) {
             if (event.devicesRemoved.isNotEmpty) {
-              debugPrint('[AudioPlayerHandler] Audio device(s) removed from AudioSession: ${event.devicesRemoved.map((d) => d.name).toList()}');
-              if (_player.state.playing || _isLoadingTrack) {
-                pause();
-              }
+              debugPrint('[AudioPlayerHandler] Audio device(s) route change in AudioSession: ${event.devicesRemoved.map((d) => d.name).toList()}');
             }
           }, onError: (e) {
             debugPrint('[AudioPlayerHandler] Error in devicesChangedEventStream: $e');
@@ -361,7 +375,13 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   }
 
   Future<void> playSong(Song song, String streamUrl) async {
-    if (_isDisposed) return;
+    _ensurePlayerAlive();
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      try {
+        final session = await AudioSession.instance;
+        await session.setActive(true);
+      } catch (_) {}
+    }
     try {
       _isLoadingTrack = false;
       final host = Uri.tryParse(streamUrl)?.host ?? 'local';
@@ -443,7 +463,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> play() async {
-    if (_isDisposed) return;
+    _ensurePlayerAlive();
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       try {
         final session = await AudioSession.instance;
@@ -469,7 +489,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
 
   @override
   Future<void> seek(Duration position) {
-    if (_isDisposed) return Future.value();
+    _ensurePlayerAlive();
     final dur = _player.state.duration;
     Duration target = position;
     if (target < Duration.zero) {

@@ -494,7 +494,28 @@ class _PixelPlayerSaavnAppState extends ConsumerState<PixelPlayerSaavnApp> with 
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached) {
+    // Only dispose background playback on Desktop (where closing the window terminates the application)
+    // On mobile (Android / iOS), playback MUST survive UI detachment for background audio service.
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
+      if (state == AppLifecycleState.detached) {
+        try {
+          if (locator.isRegistered<ListenTogetherService>()) {
+            locator<ListenTogetherService>().dispose();
+          }
+        } catch (_) {}
+        try {
+          if (locator.isRegistered<AudioPlayerHandler>()) {
+            locator<AudioPlayerHandler>().dispose();
+          }
+        } catch (_) {}
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
       try {
         if (locator.isRegistered<ListenTogetherService>()) {
           locator<ListenTogetherService>().dispose();
@@ -506,21 +527,6 @@ class _PixelPlayerSaavnAppState extends ConsumerState<PixelPlayerSaavnApp> with 
         }
       } catch (_) {}
     }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    try {
-      if (locator.isRegistered<ListenTogetherService>()) {
-        locator<ListenTogetherService>().dispose();
-      }
-    } catch (_) {}
-    try {
-      if (locator.isRegistered<AudioPlayerHandler>()) {
-        locator<AudioPlayerHandler>().dispose();
-      }
-    } catch (_) {}
     super.dispose();
   }
 
