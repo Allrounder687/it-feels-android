@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:it_feels_music/core/widgets/collection_download_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/utils/service_locator.dart';
@@ -10,7 +11,6 @@ import 'package:it_feels_music/core/intelligence/playlists/dynamic_playlist_serv
 import '../theme/new_experience_tokens.dart';
 import '../theme/new_ambient_canvas.dart';
 import '../widgets/new_media_tile.dart';
-import '../widgets/new_action_button.dart';
 import '../widgets/new_glass_container.dart';
 import '../widgets/new_artwork_image.dart';
 import '../widgets/new_daily_mix_cover.dart';
@@ -34,6 +34,7 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
   bool _isLoading = true;
   List<Song> _tracks = [];
   String _filterQuery = '';
+  bool _isSearchExpanded = false;
   bool _isSelectionMode = false;
   final Set<String> _selectedSongIds = {};
 
@@ -353,7 +354,7 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
                       // ── Hero Header ──
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           child: LayoutBuilder(
                             builder: (context, constraints) {
                               final isWide = constraints.maxWidth >= 600;
@@ -373,7 +374,7 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
                                           const SizedBox(height: 6),
                                           Text(
                                             effectiveTitle,
-                                            style: NewExperienceTokens.displayHero(fontSize: 32),
+                                            style: NewExperienceTokens.displayHero(fontSize: 30),
                                           ),
                                           const SizedBox(height: 6),
                                           Text(
@@ -391,16 +392,18 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
                                 );
                               }
 
-                              // Mobile Column Header
+                              // Mobile Column Header (Sleek & Proportional)
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  _buildCoverArt(160),
-                                  const SizedBox(height: 16),
+                                  _buildCoverArt(140),
+                                  const SizedBox(height: 14),
                                   Text(
                                     effectiveTitle,
                                     textAlign: TextAlign.center,
-                                    style: NewExperienceTokens.displayHero(fontSize: 24),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: NewExperienceTokens.displayHero(fontSize: 22),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
@@ -409,7 +412,7 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
                                       color: NewExperienceTokens.textSecondary,
                                     ),
                                   ),
-                                  const SizedBox(height: 16),
+                                  const SizedBox(height: 14),
                                   _buildActionButtons(playerNotifier, effectiveTracks),
                                 ],
                               );
@@ -418,32 +421,39 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
                         ),
                       ),
 
-                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-                      // ── Search & Track Filter Input ──
-                      if (effectiveTracks.length > 5)
+                      // ── In-Playlist Search Bar (Only shown on demand) ──
+                      if (_isSearchExpanded)
                         SliverToBoxAdapter(
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                             child: NewGlassContainer(
-                              borderRadius: NewExperienceTokens.radiusMedium,
+                              borderRadius: 14,
                               padding: const EdgeInsets.symmetric(horizontal: 14),
                               child: TextField(
+                                autofocus: true,
                                 style: NewExperienceTokens.bodyMedium(),
                                 decoration: InputDecoration(
-                                  hintText: 'Filter tracks in playlist...',
+                                  hintText: 'Search tracks in playlist...',
                                   hintStyle: NewExperienceTokens.bodySmall(
                                     color: NewExperienceTokens.textMuted,
                                   ),
                                   border: InputBorder.none,
                                   prefixIcon: const Icon(
-                                    Icons.filter_list_rounded,
+                                    Icons.search_rounded,
                                     color: NewExperienceTokens.textMuted,
                                     size: 20,
                                   ),
-                                  prefixIconConstraints: const BoxConstraints(minWidth: 32),
+                                  suffixIcon: IconButton(
+                                    icon: const Icon(Icons.close_rounded, size: 18, color: NewExperienceTokens.textMuted),
+                                    onPressed: () {
+                                      setState(() {
+                                        _isSearchExpanded = false;
+                                        _filterQuery = '';
+                                      });
+                                    },
+                                  ),
                                   isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
                                 ),
                                 onChanged: (val) => setState(() => _filterQuery = val),
                               ),
@@ -451,7 +461,7 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
                           ),
                         ),
 
-                      const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                      const SliverToBoxAdapter(child: SizedBox(height: 6)),
 
                       // ── Tracks List ──
                       if (filteredTracks.isEmpty)
@@ -476,7 +486,7 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
                               final isSelected = _selectedSongIds.contains(song.id);
 
                               return Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 20),
+                                padding: const EdgeInsets.symmetric(horizontal: 14),
                                 child: Row(
                                   children: [
                                     if (_isSelectionMode)
@@ -497,6 +507,15 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
                                       child: NewMediaTile(
                                         song: song,
                                         index: index,
+                                        onDelete: isCustom && !_isSelectionMode
+                                            ? () {
+                                                ref.read(customPlaylistProvider.notifier).removeSongFromPlaylist(customPlaylist.id, song.id);
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(content: Text('Removed "${song.title}" from playlist')),
+                                                );
+                                              }
+                                            : null,
+                                        deleteTooltip: 'Remove from playlist',
                                         onTap: _isSelectionMode
                                             ? () {
                                                 setState(() {
@@ -512,17 +531,6 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
                                               },
                                       ),
                                     ),
-                                    if (isCustom && !_isSelectionMode)
-                                      IconButton(
-                                        icon: const Icon(Icons.remove_circle_outline_rounded, color: NewExperienceTokens.textMuted, size: 18),
-                                        tooltip: 'Remove from playlist',
-                                        onPressed: () {
-                                          ref.read(customPlaylistProvider.notifier).removeSongFromPlaylist(customPlaylist.id, song.id);
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(content: Text('Removed "${song.title}" from playlist')),
-                                          );
-                                        },
-                                      ),
                                   ],
                                 ),
                               );
@@ -690,65 +698,146 @@ class _NewPlaylistDetailScreenState extends ConsumerState<NewPlaylistDetailScree
     );
   }
 
+  Widget _buildCircularIconButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+    Color? color,
+    double size = 42,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(size / 2),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.06),
+            border: Border.all(
+              color: color != null
+                  ? color.withValues(alpha: 0.4)
+                  : NewExperienceTokens.specularBorder,
+            ),
+          ),
+          child: Center(
+            child: Icon(
+              icon,
+              color: color ?? Colors.white.withValues(alpha: 0.9),
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildActionButtons(AudioPlayerNotifier playerNotifier, List<Song> activeTracks) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 10,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        // Play All Button
-        NewActionButton(
-          label: 'Play',
-          icon: Icons.play_arrow_rounded,
-          onPressed: () {
-            if (activeTracks.isNotEmpty) {
-              playerNotifier.playSong(activeTracks.first, queue: activeTracks, index: 0);
-            }
-          },
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          CollectionDownloadButton(collectionId: 'catalogue:${widget.playlist.id}', title: widget.playlist.title, songs: activeTracks),
+          // 1. Shuffle Play Button
+          _buildCircularIconButton(
+            icon: Icons.shuffle_rounded,
+            tooltip: 'Shuffle Playlist',
+            onTap: () {
+              if (activeTracks.isNotEmpty) {
+                playerNotifier.shufflePlayContext(activeTracks);
+              }
+            },
+          ),
+          const SizedBox(width: 12),
 
-        // Shuffle Button
-        NewActionButton(
-          label: 'Shuffle',
-          icon: Icons.shuffle_rounded,
-          variant: NewActionButtonVariant.glass,
-          onPressed: () {
-            if (activeTracks.isNotEmpty) {
-              playerNotifier.shufflePlayContext(activeTracks);
-            }
-          },
-        ),
+          // 2. Play Next Button
+          _buildCircularIconButton(
+            icon: Icons.playlist_play_rounded,
+            tooltip: 'Play Next',
+            onTap: () {
+              if (activeTracks.isNotEmpty) {
+                playerNotifier.playNextBatch(activeTracks);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Playing ${activeTracks.length} tracks next')),
+                );
+              }
+            },
+          ),
+          const SizedBox(width: 12),
 
-        // Play Next Button
-        NewActionButton(
-          label: 'Play Next',
-          icon: Icons.playlist_play_rounded,
-          variant: NewActionButtonVariant.glass,
-          onPressed: () {
-            if (activeTracks.isNotEmpty) {
-              playerNotifier.playNextBatch(activeTracks);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Playing ${activeTracks.length} tracks next')),
-              );
-            }
-          },
-        ),
+          // 3. Add to Queue Button
+          _buildCircularIconButton(
+            icon: Icons.queue_music_rounded,
+            tooltip: 'Add Playlist to Queue',
+            onTap: () {
+              if (activeTracks.isNotEmpty) {
+                playerNotifier.addSongsToQueue(activeTracks);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Added ${activeTracks.length} tracks to queue')),
+                );
+              }
+            },
+          ),
+          const SizedBox(width: 12),
 
-        // Add to Queue Button
-        NewActionButton(
-          label: 'Add to Queue',
-          icon: Icons.queue_music_rounded,
-          variant: NewActionButtonVariant.glass,
-          onPressed: () {
-            if (activeTracks.isNotEmpty) {
-              playerNotifier.addSongsToQueue(activeTracks);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Added ${activeTracks.length} tracks to queue')),
-              );
-            }
-          },
-        ),
-      ],
+          // 4. In-Playlist Search Toggle
+          _buildCircularIconButton(
+            icon: _isSearchExpanded ? Icons.search_off_rounded : Icons.search_rounded,
+            tooltip: 'Search Playlist',
+            color: _isSearchExpanded ? NewExperienceTokens.accentCyan : null,
+            onTap: () {
+              setState(() {
+                _isSearchExpanded = !_isSearchExpanded;
+                if (!_isSearchExpanded) {
+                  _filterQuery = '';
+                }
+              });
+            },
+          ),
+
+          const SizedBox(width: 4),
+
+          // 5. Hero Circular Play Button (Glow Gradient FAB)
+          GestureDetector(
+            onTap: () {
+              if (activeTracks.isNotEmpty) {
+                playerNotifier.playSong(activeTracks.first, queue: activeTracks, index: 0);
+              }
+            },
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [NewExperienceTokens.accentViolet, Color(0xFF9333EA)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: NewExperienceTokens.accentViolet.withValues(alpha: 0.45),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.play_arrow_rounded,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

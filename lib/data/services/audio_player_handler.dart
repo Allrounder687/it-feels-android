@@ -202,7 +202,14 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
     // 2. Mobile platforms (Android / iOS / macOS) via AudioSession
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS)) {
       try {
-        AudioSession.instance.then((session) {
+        AudioSession.instance.then((session) async {
+          try {
+            await session.configure(const AudioSessionConfiguration.music());
+            await session.setActive(true);
+          } catch (e) {
+            debugPrint('[AudioPlayerHandler] Error activating AudioSession: $e');
+          }
+
           _becomingNoisySubscription = session.becomingNoisyEventStream.listen((_) {
             debugPrint('[AudioPlayerHandler] Audio becoming noisy (unplugged headphones/BT). Auto-pausing.');
             if (_player.state.playing || _isLoadingTrack) {
@@ -223,7 +230,7 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
             debugPrint('[AudioPlayerHandler] Error in devicesChangedEventStream: $e');
           });
 
-          _interruptionSubscription = session.interruptionEventStream.listen((event) {
+          _interruptionSubscription = session.interruptionEventStream.listen((event) async {
             if (event.begin) {
               debugPrint('[AudioPlayerHandler] Audio interruption began: ${event.type}');
               if (event.type == AudioInterruptionType.duck) {
@@ -235,8 +242,13 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
                 }
               }
             } else {
+              debugPrint('[AudioPlayerHandler] Audio interruption ended: ${event.type}');
               if (event.type == AudioInterruptionType.duck) {
                 _player.setVolume(100.0);
+              } else if (event.type == AudioInterruptionType.pause) {
+                try {
+                  await session.setActive(true);
+                } catch (_) {}
               }
             }
           }, onError: (e) {
@@ -392,7 +404,13 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
         },
       );
       
-      await _player.open(media, play: true);
+      // Bounded connection timeout watchdog to prevent native libmpv from hanging indefinitely
+      await _player.open(media, play: true).timeout(
+        const Duration(seconds: 12),
+        onTimeout: () {
+          throw TimeoutException('Stream playback open timed out for ${song.title}');
+        },
+      );
 
       try {
         await locator<EqualizerService>().syncWithPlayer(_player);
@@ -403,6 +421,9 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
       }
     } catch (e) {
       debugPrint('[AudioPlayerHandler] Error setting stream URL: $e');
+      apiService.evictStreamCache(song.id);
+      _isLoadingTrack = false;
+      _broadcastState();
       if (onPlaybackError != null) {
         onPlaybackError!(e.toString());
       }
@@ -413,8 +434,14 @@ class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
   Future<void> skipToQueueItem(int index) async {}
 
   @override
-  Future<void> play() {
-    if (_isDisposed) return Future.value();
+  Future<void> play() async {
+    if (_isDisposed) return;
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      try {
+        final session = await AudioSession.instance;
+        await session.setActive(true);
+      } catch (_) {}
+    }
     return _player.play();
   }
 

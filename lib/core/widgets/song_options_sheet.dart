@@ -200,18 +200,18 @@ class SongOptionsSheet extends ConsumerWidget {
             },
           ),
 
-          // Action 5: Download / Remove Download
+          // Action 5: Download / Delete Download
           _buildOptionTile(context, 
             icon: isDownloading
                 ? Icons.hourglass_top_rounded
                 : isDown
-                    ? Icons.download_done_rounded
+                    ? Icons.delete_outline_rounded
                     : Icons.file_download_outlined,
-            iconColor: isDown ? context.themeAccentColor : context.themeMutedTextColor,
+            iconColor: isDown ? Colors.redAccent : (isDownloading ? context.themeAccentColor : context.themeMutedTextColor),
             title: isDownloading
                 ? "Downloading... (${(downloadProv.getProgress(song.id) * 100).toInt()}%)"
                 : isDown
-                    ? "Downloaded (Tap to delete)"
+                    ? "Delete from Downloads"
                     : "Download Track",
             onTap: () async {
               Navigator.pop(context);

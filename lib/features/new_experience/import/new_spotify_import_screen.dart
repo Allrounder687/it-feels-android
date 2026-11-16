@@ -10,6 +10,7 @@ import '../theme/new_experience_tokens.dart';
 import '../theme/new_ambient_canvas.dart';
 import '../widgets/new_action_button.dart';
 import '../widgets/new_glass_container.dart';
+import '../theme/content_viewport_insets.dart';
 
 class NewSpotifyImportScreen extends ConsumerStatefulWidget {
   const NewSpotifyImportScreen({super.key});
@@ -221,6 +222,7 @@ class _NewSpotifyImportScreenState extends ConsumerState<NewSpotifyImportScreen>
                   ],
                 ),
               ),
+              ContentViewportInsets.bottomSpacer(context, ref),
             ],
           ),
         ),

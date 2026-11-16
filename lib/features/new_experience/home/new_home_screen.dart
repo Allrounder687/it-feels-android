@@ -15,6 +15,9 @@ import '../see_all/new_see_all_screen.dart';
 import '../theme/content_viewport_insets.dart';
 import '../widgets/new_daily_mix_cover.dart';
 import '../discovery/new_listening_collections.dart';
+import '../discovery/new_discovery_feed.dart';
+import '../connected/new_connected_accounts.dart';
+import 'package:it_feels_music/features/connected_music/connected_music_providers.dart';
 import 'package:it_feels_music/core/intelligence/playlists/daily_mix_orchestrator.dart';
 import 'package:it_feels_music/core/intelligence/catalogue/artwork_repair_service.dart';
 import 'package:it_feels_music/core/intelligence/catalogue/content_enrichment_pipeline.dart';
@@ -154,7 +157,13 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
           child: RefreshIndicator(
             color: NewExperienceTokens.accentViolet,
             backgroundColor: NewExperienceTokens.midnightSurface,
-            onRefresh: () => ref.read(homeFeedProvider.notifier).refresh(),
+            onRefresh: () async {
+              await Future.wait([
+                ref.read(homeFeedProvider.notifier).refresh(),
+                ref.read(connectedMusicProvider).refreshAll(force: true),
+                ref.read(discoveryFeedProvider).refresh(force: true),
+              ]);
+            },
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
             slivers: [
@@ -274,6 +283,12 @@ class _NewHomeScreenState extends ConsumerState<NewHomeScreen> {
               ),
 
               const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+              if (_activeFilter == 'All' || _activeFilter == 'For You')
+                const SliverToBoxAdapter(child: NewConnectedMusicFeed()),
+
+              if (_activeFilter == 'All' || _activeFilter == 'For You')
+                const SliverToBoxAdapter(child: NewDiscoveryFeed()),
 
               // ── Section: Recently Played / Jump Back In ──
               if ((_activeFilter == 'All' || _activeFilter == 'For You') &&

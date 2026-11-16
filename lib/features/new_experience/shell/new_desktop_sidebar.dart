@@ -206,7 +206,7 @@ class NewDesktopSidebar extends StatelessWidget {
                   _buildNavItem(
                     index: 7,
                     icon: Icons.playlist_add_check_rounded,
-                    label: 'Spotify Import',
+                    label: 'Connected Music',
                   ),
 
                   const SizedBox(height: 16),

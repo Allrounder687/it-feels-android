@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:it_feels_music/core/widgets/collection_download_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
@@ -311,6 +312,7 @@ class _NewArtistDetailScreenState extends ConsumerState<NewArtistDetailScreen> w
                                 variant: NewActionButtonVariant.glass,
                                 onPressed: _showAddToPlaylistDialog,
                               ),
+                              CollectionDownloadButton(collectionId: 'artist:${widget.artistName}', title: '${widget.artistName} top tracks', songs: _topSongs),
                             ],
                           ),
                           const SizedBox(height: 20),

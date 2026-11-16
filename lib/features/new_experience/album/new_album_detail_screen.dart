@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:it_feels_music/core/widgets/collection_download_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:it_feels_music/core/music_identity/canonical_album.dart';
@@ -317,6 +318,7 @@ class _NewAlbumDetailScreenState extends ConsumerState<NewAlbumDetailScreen> {
                                 variant: NewActionButtonVariant.glass,
                                 onPressed: _showAddToPlaylistDialog,
                               ),
+                              CollectionDownloadButton(collectionId: 'album:${widget.albumId ?? '${widget.artistName}:${widget.albumTitle}'}', title: widget.albumTitle, songs: _tracks),
                             ],
                           ),
                         ],

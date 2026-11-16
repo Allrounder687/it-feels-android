@@ -348,23 +348,16 @@ class _NewHitsScreenState extends ConsumerState<NewHitsScreen> {
                         final song = chartState.visibleTracks[index];
                         final rank = index + 1;
                         return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            children: [
-                              _buildRankBadge(rank),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: NewMediaTile(
-                                  song: song,
-                                  showIndex: false,
-                                  onTap: () => playerNotifier.playSong(
-                                    song,
-                                    queue: chartState.allTracks,
-                                    index: index,
-                                  ),
-                                ),
-                              ),
-                            ],
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: NewMediaTile(
+                            song: song,
+                            showIndex: false,
+                            leadingBadge: _buildRankBadge(rank),
+                            onTap: () => playerNotifier.playSong(
+                              song,
+                              queue: chartState.allTracks,
+                              index: index,
+                            ),
                           ),
                         );
                       },

@@ -58,6 +58,7 @@ abstract class IMusicRepository {
   Future<String?> resolveStream(Song song);
   Future<List<Song>> getRecommendedSongs(Song song);
   Future<void> preloadStreamUrl(Song song);
+  void evictStreamCache(String songId);
   Future<Map<String, dynamic>> searchAll(String query);
   Future<Map<String, dynamic>> fetchArtistDetails(String token, {int? page, int? count});
   Future<List<Playlist>> searchAlbums(String query, {int? page, int? count});
@@ -71,9 +72,22 @@ abstract class IMusicRepository {
   Future<Map<String, dynamic>> fetchHomepageData({Function(String)? onError});
 }
 
+class _StreamCacheEntry {
+  final String url;
+  final DateTime cachedAt;
+  _StreamCacheEntry(this.url) : cachedAt = DateTime.now();
+  bool get isExpired => DateTime.now().difference(cachedAt) > const Duration(hours: 2);
+}
+
 class MusicRepository implements IMusicRepository {
   final LocalCacheDataSource cacheDataSource;
-  final Map<String, String> _streamCache = {};
+  final Map<String, _StreamCacheEntry> _streamCache = {};
+
+  @override
+  void evictStreamCache(String songId) {
+    _streamCache.remove(songId);
+    debugPrint('[MusicRepository] Evicted stream cache for $songId');
+  }
 
   MusicRepository({
     LocalCacheDataSource? cacheDataSource,
@@ -678,22 +692,29 @@ class MusicRepository implements IMusicRepository {
 
   @override
   Future<void> preloadStreamUrl(Song song) async {
-    if (_streamCache.containsKey(song.id)) return;
+    final cached = _streamCache[song.id];
+    if (cached != null && !cached.isExpired) return;
     try {
       final url = await getStreamUrl(song);
       if (url != null && url.isNotEmpty) {
-        _streamCache[song.id] = url;
+        _streamCache[song.id] = _StreamCacheEntry(url);
       }
     } catch (_) {}
   }
 
   @override
   Future<String?> getStreamUrl(Song song, {bool bypassCache = false}) async {
-    // 0. Cache check
-    if (!bypassCache && _streamCache.containsKey(song.id)) {
-      return _streamCache[song.id];
-    }
-    if (bypassCache) {
+    // 0. Cache check with TTL expiration
+    if (!bypassCache) {
+      final cached = _streamCache[song.id];
+      if (cached != null) {
+        if (!cached.isExpired) {
+          return cached.url;
+        } else {
+          _streamCache.remove(song.id);
+        }
+      }
+    } else {
       _streamCache.remove(song.id);
     }
 
@@ -704,7 +725,7 @@ class MusicRepository implements IMusicRepository {
 
     // 2. Direct streamUrl if present
     if (song.streamUrl != null && song.streamUrl!.isNotEmpty) {
-      _streamCache[song.id] = song.streamUrl!;
+      _streamCache[song.id] = _StreamCacheEntry(song.streamUrl!);
       return song.streamUrl;
     }
 
@@ -713,7 +734,7 @@ class MusicRepository implements IMusicRepository {
       final enc = song.encryptedMediaUrl!.trim();
       if (enc.startsWith('http://') || enc.startsWith('https://')) {
         final upgraded = DesDecryptor.get320kbpsUrl(enc) ?? enc;
-        _streamCache[song.id] = upgraded;
+        _streamCache[song.id] = _StreamCacheEntry(upgraded);
         return upgraded;
       }
 
@@ -729,7 +750,7 @@ class MusicRepository implements IMusicRepository {
       try {
         final decryptedUrl = await DesDecryptor.decrypt(enc);
         if (decryptedUrl != null && decryptedUrl.isNotEmpty) {
-          _streamCache[song.id] = decryptedUrl;
+          _streamCache[song.id] = _StreamCacheEntry(decryptedUrl);
           return decryptedUrl;
         }
       } catch (_) {}
@@ -750,7 +771,7 @@ class MusicRepository implements IMusicRepository {
           final streamUrl = edgeData['streamUrl'] ?? edgeData['url'];
           if (streamUrl != null && streamUrl.toString().isNotEmpty) {
             final upgraded = DesDecryptor.get320kbpsUrl(streamUrl.toString()) ?? streamUrl.toString();
-            _streamCache[song.id] = upgraded;
+            _streamCache[song.id] = _StreamCacheEntry(upgraded);
             return upgraded;
           }
         }
@@ -784,7 +805,7 @@ class MusicRepository implements IMusicRepository {
           if (encFromDetails != null && encFromDetails.toString().isNotEmpty) {
             final decryptedUrl = await DesDecryptor.decrypt(encFromDetails.toString());
             if (decryptedUrl != null && decryptedUrl.isNotEmpty) {
-              _streamCache[song.id] = decryptedUrl;
+              _streamCache[song.id] = _StreamCacheEntry(decryptedUrl);
               return decryptedUrl;
             }
           }
@@ -804,7 +825,7 @@ class MusicRepository implements IMusicRepository {
     final addonManager = AddonManager();
     final addonStream = await addonManager.getStreamUrl(song);
     if (addonStream != null && addonStream.isNotEmpty) {
-      _streamCache[song.id] = addonStream;
+      _streamCache[song.id] = _StreamCacheEntry(addonStream);
       return addonStream;
     }
 

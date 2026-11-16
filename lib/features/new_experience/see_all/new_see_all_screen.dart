@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:it_feels_music/core/widgets/collection_download_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
@@ -227,6 +228,7 @@ class _NewSeeAllScreenState extends ConsumerState<NewSeeAllScreen> {
                           spacing: 10,
                           runSpacing: 8,
                           children: [
+                            CollectionDownloadButton(collectionId: 'collection:${widget.title}', title: widget.title, songs: widget.songs),
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor:

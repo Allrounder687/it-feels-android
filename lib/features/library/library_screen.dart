@@ -907,11 +907,44 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                               ],
                             ],
                           ),
-                          trailing: IconButton(
-                            icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
-                            onPressed: () {
-                              SongOptionsSheet.show(context, song, playlistContext: processedSongs);
-                            },
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isDownloadsTab)
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                                  tooltip: 'Delete Download',
+                                  onPressed: () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text('Delete Download'),
+                                        content: Text('Permanently delete "${song.title}" from device storage?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                            onPressed: () => Navigator.pop(ctx, true),
+                                            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true) {
+                                      await ref.read(downloadProvider.notifier).removeDownload(song);
+                                    }
+                                  },
+                                ),
+                              IconButton(
+                                icon: Icon(Icons.more_vert, color: context.themeMutedTextColor),
+                                onPressed: () {
+                                  SongOptionsSheet.show(context, song, playlistContext: processedSongs);
+                                },
+                              ),
+                            ],
                           ),
                           onTap: () {
                             ref.read(audioPlayerProvider.notifier).playSong(song, queue: processedSongs, index: index);

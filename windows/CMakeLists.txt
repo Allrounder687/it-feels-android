@@ -2,6 +2,28 @@
 cmake_minimum_required(VERSION 3.14)
 project("IT-Feels" LANGUAGES CXX)
 
+# WebView2's Flutter plugin expects NuGet on PATH. Bootstrap the pinned CLI in
+# the build tree so developers and CI need no machine-wide installation.
+find_program(NUGET nuget)
+if(NOT NUGET)
+  set(NUGET "${CMAKE_BINARY_DIR}/tools/nuget.exe" CACHE FILEPATH "NuGet CLI" FORCE)
+  file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/tools")
+  set(IT_FEELS_NUGET_SHA256 "04eb6c4fe4213907e2773e1be1bbbd730e9a655a3c9c58387ce8d4a714a5b9e1")
+  if(EXISTS "${CMAKE_BINARY_DIR}/_deps/nuget-src/nuget.exe")
+    file(SHA256 "${CMAKE_BINARY_DIR}/_deps/nuget-src/nuget.exe" IT_FEELS_CACHED_NUGET_SHA256)
+    if(IT_FEELS_CACHED_NUGET_SHA256 STREQUAL IT_FEELS_NUGET_SHA256)
+      configure_file("${CMAKE_BINARY_DIR}/_deps/nuget-src/nuget.exe" "${NUGET}" COPYONLY)
+    endif()
+  endif()
+  file(DOWNLOAD "https://dist.nuget.org/win-x86-commandline/v6.0.0/nuget.exe"
+    "${NUGET}" EXPECTED_HASH SHA256=${IT_FEELS_NUGET_SHA256}
+    TLS_VERIFY ON STATUS IT_FEELS_NUGET_DOWNLOAD TIMEOUT 120)
+  list(GET IT_FEELS_NUGET_DOWNLOAD 0 IT_FEELS_NUGET_RESULT)
+  if(NOT IT_FEELS_NUGET_RESULT EQUAL 0)
+    message(FATAL_ERROR "Could not prepare NuGet for the account sign-in browser: ${IT_FEELS_NUGET_DOWNLOAD}")
+  endif()
+endif()
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "it_feels_music")

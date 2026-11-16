@@ -1,4 +1,5 @@
 import 'package:it_feels_music/core/utils/string_utils.dart';
+import 'package:it_feels_music/core/utils/audio_source_policy.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
@@ -1099,21 +1100,20 @@ function getLyricsUrl(track, artist) {
     for (var runtime in _activeRuntimes) {
       try {
         final artistStr = song.artist == 'Unknown Artist' ? '' : song.artist;
-        final query = '${song.title} $artistStr'.trim().replaceAll("'", "\\'");
-        final safeEncUrl = (song.encryptedMediaUrl ?? '').replaceAll("'", "\\'");
-        final safeId = song.id.replaceAll("'", "\\'");
+        final arguments = jsonEncode([song.id, '${song.title} $artistStr'.trim(), song.encryptedMediaUrl ?? '', {'audioOnly': true}]);
         final jsResult = runtime.evaluate(
-          "typeof getStreamUrl === 'function' ? getStreamUrl('$safeId', '$query', '$safeEncUrl') : null"
+          "typeof getStreamUrl === 'function' ? getStreamUrl.apply(null, $arguments) : null"
         );
         final streamApiUrl = jsResult.stringResult.replaceAll('"', '');
         
         if (streamApiUrl != 'null' && streamApiUrl.isNotEmpty) {
           // Direct CDN / audio link pass-through
           if ((streamApiUrl.startsWith('http://') || streamApiUrl.startsWith('https://')) && !streamApiUrl.contains('/api/')) {
-            return streamApiUrl;
+            if (AudioSourcePolicy.declaredAudio(streamApiUrl) != false) return streamApiUrl;
+            continue;
           }
 
-          debugPrint('[AddonManager] Fetching stream from: $streamApiUrl');
+          debugPrint('[AddonManager] Resolving audio through installed addon');
           final response = await http.get(
             Uri.parse(streamApiUrl),
             headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'},
@@ -1121,17 +1121,7 @@ function getLyricsUrl(track, artist) {
 
           if (response.statusCode == 200) {
             final data = jsonDecode(utf8.decode(response.bodyBytes));
-            String? resolvedUrl = data['streamUrl'] ?? data['audioUrl'] ?? data['url'];
-            if (resolvedUrl == null && data['streams'] is List && (data['streams'] as List).isNotEmpty) {
-              final streamsList = data['streams'] as List;
-              final audioStream = streamsList.firstWhere(
-                (s) => s is Map && s['quality'] == 'audio',
-                orElse: () => streamsList.first,
-              );
-              if (audioStream is Map && audioStream['url'] != null) {
-                resolvedUrl = audioStream['url'].toString();
-              }
-            }
+            final resolvedUrl = data is Map<String, dynamic> ? AudioSourcePolicy.select(data) : null;
             if (data['success'] == true && resolvedUrl != null) {
               return LocalProxyServer.getProxyUrl(resolvedUrl.toString());
             }

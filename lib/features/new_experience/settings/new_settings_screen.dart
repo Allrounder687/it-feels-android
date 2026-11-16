@@ -14,12 +14,11 @@ import 'package:it_feels_music/features/new_experience/diagnostics/enterprise_di
 import 'package:it_feels_music/features/new_experience/diagnostics/content_health_sheet.dart';
 import 'package:it_feels_music/features/new_experience/diagnostics/diagnostics_dashboard_screen.dart';
 import 'package:it_feels_music/features/new_experience/player/new_equalizer_sheet.dart';
-import 'package:it_feels_music/services/download_scanner_service.dart';
-import 'package:it_feels_music/core/utils/service_locator.dart';
 import '../theme/new_experience_tokens.dart';
 import '../theme/new_ambient_canvas.dart';
 import '../widgets/new_glass_container.dart';
 import '../theme/content_viewport_insets.dart';
+import '../connected/new_connected_accounts.dart';
 
 class NewSettingsScreen extends ConsumerWidget {
   final VoidCallback? onNavigateHome;
@@ -76,6 +75,17 @@ class NewSettingsScreen extends ConsumerWidget {
                         ],
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  NewGlassContainer(
+                    child: ListTile(
+                      leading: const Icon(Icons.hub_rounded, color: NewExperienceTokens.accentViolet),
+                      title: Text('Connected music', style: NewExperienceTokens.sectionTitle(fontSize: 16)),
+                      subtitle: Text('Your YouTube Music and Spotify playlists, live on Home', style: NewExperienceTokens.bodySmall()),
+                      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.white70),
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NewConnectedAccountsScreen())),
+                    ),
                   ),
                   const SizedBox(height: 20),
 
@@ -568,11 +578,11 @@ class NewSettingsScreen extends ConsumerWidget {
                             ),
                             ElevatedButton.icon(
                               onPressed: () async {
-                                final count = await locator<DownloadScannerService>().scanAllDownloads();
+                                final songs = await ref.read(downloadProvider.notifier).scanAndSync();
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Discovered and verified $count downloaded songs.'),
+                                      content: Text('Discovered and verified ${songs.length} downloaded songs.'),
                                       behavior: SnackBarBehavior.floating,
                                       backgroundColor: NewExperienceTokens.accentViolet,
                                     ),

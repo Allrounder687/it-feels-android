@@ -26,13 +26,22 @@ class ContentViewportInsets {
       return 28.0;
     }
 
+    final systemBottomInset = MediaQuery.paddingOf(context).bottom;
+
+    // Check if current context is on a pushed sub-route (e.g. PlaylistDetail, SeeAll, ArtistDetail).
+    // Pushed sub-routes do not have the persistent mobile bottom nav dock, so we avoid excessive gap.
+    final currentRoute = ModalRoute.of(context);
+    final isPushedRoute = currentRoute != null && !currentRoute.isFirst;
+    if (isPushedRoute) {
+      return systemBottomInset + comfortPadding + 8.0;
+    }
+
     bool hasPlayingSong = false;
     try {
       hasPlayingSong = ref.watch(
         audioPlayerProvider.select((s) => s.currentSong != null),
       );
     } catch (_) {}
-    final systemBottomInset = MediaQuery.paddingOf(context).bottom;
 
     double clearance = mobileNavDockHeight + systemBottomInset + comfortPadding;
     if (hasPlayingSong) {

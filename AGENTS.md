@@ -13,6 +13,52 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Discovery, Long Mixes, and Collection Downloads:**
+  - Added cached, automatically refreshed discovery for empty libraries, public YouTube playlists/long mixes, six diverse catalogue starting points, and Surprise me using the existing discovery engine.
+  - Added audio-only full-mix resolution and creator-chapter fallback with validated real-track matching, explicit unmatched entries, chapter seeking, and stable saved chapter playlists.
+  - Added shared collection downloads with serialized jobs, progress, cancellation, partial failure recovery, fresh-source retries, and saved-file skipping across new-experience collection destinations.
+  - Kept provider-specific metadata in addons and playback in installed resolvers; no engine migration or hardcoded Dart extraction.
+  - Verification: 95 Dart checks and 25 synthetic addon-reader checks passed; full library analysis is clean and the final Windows debug build passed. Live provider/accounts remain unverified. Details: `DISCOVERY_MIXES_AND_DOWNLOADS.md`.
+- **Project Obsidian — Sleek UX Overhaul, Playback Resilience & Clean UI Release (v3.7.1):**
+  - **Core Playback Resilience & Audio Focus Management**:
+    - **AudioSession Interruption & Lifecycle Stabilization**: Configured mobile `AudioSession` with `AudioSessionConfiguration.music()` and explicit `session.setActive(true)`. Added interruption end listeners that restore audio focus and re-activate the audio session cleanly, preventing silent playback dropouts when other apps or notifications take focus.
+    - **CDN Stream Cache Eviction & 2-Hour TTL**: Replaced unbounded stream cache in `MusicRepository` with a 2-hour TTL cache (`_StreamCacheEntry`) and proactive eviction (`evictStreamCache`) on network errors and playback skips. This permanently eliminates 403 Forbidden loops on stale signed CDN URLs that previously forced app force-stops.
+    - **12-Second Network Watchdog**: Wrapped `_player.open(media, play: true)` with an asynchronous timeout watchdog to prevent native `libmpv` from hanging indefinitely on stalled network sockets.
+  - **Complete UI/UX Modernization & Anti-Bloat Across All Screens**:
+    - **Elimination of Clunky Text Boxes**: Removed the permanent, oversized "Filter tracks in playlist..." text input box from `NewPlaylistDetailScreen`. Replaced it with an on-demand, sleek collapsible search toggle that opens cleanly only when requested.
+    - **Spotify-Grade Minimalist Playlist Action Bar**: Replaced the 4 bulky text pills (`Play`, `Shuffle`, `Play Next`, `Add to Queue`) with a unified, high-contrast action bar: minimalist circular glass buttons for Shuffle, Play Next, Add to Queue, and Search, paired with a prominent glowing circular Play FAB.
+    - **Zero Truncated Song Titles Across All Formats**: Enhanced `NewMediaTile` with 2-line dynamic title wrapping, adaptive typography, constrained 32px trailing button hit targets, and streamlined horizontal padding (14px) so long titles and artist names are fully visible without premature truncation.
+    - **Streamlined Library Screen**: Reduced filter chip height to a crisp 36px, compacted the quick actions bar to 32px, and replaced the bulky 104px Liked Songs card with a sleek 56px pinned obsidian card (rendered only on the 'All' tab).
+  - **Automated Verification & Release**:
+    - Static analysis: `dart analyze lib/` $\longrightarrow$ **0 errors, 0 warnings, 0 lints**.
+    - Bumped application version to `3.7.1+103`.
+    - Packaged Windows Inno Setup installer and Android APK release binaries.
+
+- **Connected Music Accounts — automatic remote playlist feed:**
+  - Added account-scoped native browser sign-in, separate install-on-connect metadata addons, OS secure session storage, and automatic remote-playlist shelves in the New Experience Home feed.
+  - Added refresh coalescing, metadata-only startup cache, bounded retries/read concurrency, disconnect generation guards, serialized cache/session operations, and progressive playlist queue continuation that preserves repeated recordings.
+  - Passed 20 account-service, 9 responsive UI/queue, 20 synthetic addon-reader tests, and a Windows native secure-store/cookie/browser smoke test. Windows debug build and application analysis passed. Real-account acceptance is not yet verified; see `CONNECTED_MUSIC_IMPLEMENTATION.md` for limitations and verification commands.
+  - Retained the existing audio engine and delegated all playback resolution to installed audio addons. Added Windows build-local NuGet setup for the WebView2 sign-in plugin.
+
+- **Project Obsidian — Download Management, Anti-Scan Safeguards & New UI Hardening (v3.9.9):**
+  - **One-Click Download Deletion & Storage Management**:
+    - **Direct Delete Actions**: Added dedicated delete button (`Icons.delete_outline_rounded` in `Colors.redAccent`) to `NewMediaTile`, `NewLibraryScreen`, `NeoLibraryScreen`, and `LibraryScreen`.
+    - **Modal Confirmation & Swipe-to-Delete**: Added `_confirmDeleteSong(Song)` with Obsidian dark dialog styling and floating toast feedback; wrapped items in `Dismissible` for swipe-to-delete.
+    - **"Clear All Downloads" Hero Action**: Added batch wiping capability to the "Offline Storage" header card with storage byte calculations automatically updated via Riverpod state listeners.
+    - **Context Menu Clarification**: Replaced ambiguous tile in `SongOptionsSheet` (`"Downloaded (Tap to delete)"`) with an explicit red-accented `"Delete from Downloads"` action.
+  - **Elimination of Startup Auto-Scan & Coverless Track Ingestion**:
+    - **Root Cause Trapped**: `DownloadNotifier._init()` invoked `unawaited(scanAndSync())` automatically on app launch. `DownloadScannerService` traversed external storage paths, encountered loose files lacking `cover.jpg` / `metadata.json`, created fallback song models with empty `coverArt: ''`, and permanently inserted them into SharedPreferences and Isar database, causing blank/corrupted library entries.
+    - **Safeguard Deployed**: Removed `unawaited(scanAndSync())` from `_init()`. Offline downloads now load strictly from verified database records. Storage scanning is strictly user-initiated on demand ("Scan Disk" in Library/Settings).
+  - **Comprehensive New UI Polish & Architecture Hardening**:
+    - **Pushed Screen Viewport Gap**: In `ContentViewportInsets`, added route awareness (`ModalRoute.of(context)?.isFirst == false`) so pushed sub-screens (`NewPlaylistDetailScreen`, `NewAlbumDetailScreen`, `NewArtistDetailScreen`, `NewTrackDetailScreen`, `NewSeeAllScreen`) no longer reserve an empty 162px void for non-existent mobile nav docks.
+    - **Cover Fallback Typography**: Configured `fallbackTitle` across `NewMediaTile`, `NewMiniPlayer`, `NewDesktopPlayerBar`, and `NewLibraryScreen`. Coverless songs now generate personalized obsidian gradients and monogram initials instead of generic grey placeholder boxes.
+    - **Desktop Full Player Stretched Layout**: Wrapped `NewNowPlayingScreen` with `Center` and `ConstrainedBox(constraints: BoxConstraints(maxWidth: 520))` to prevent controls from stretching over 1920px+ on desktop monitors.
+    - **Mobile Nav Dock False Selection**: Fixed index selection in `NewMobileNavDock` (`_currentIndex == 8 ? 4 : (_currentIndex < 4 ? _currentIndex : -1)`), preventing index 4 (Settings) from false-highlighting when navigating to Explore, AI, or Spotify tabs.
+    - **Settings Rescan Synchronization**: Fixed "Rescan Local Downloads" in `NewSettingsScreen` to trigger `ref.read(downloadProvider.notifier).scanAndSync()`, keeping Riverpod state in sync without requiring app restarts.
+  - **Automated Verification**:
+    - Authored unit test suite `test/unit/services/download_deletion_and_no_autoscan_test.dart` verifying no-autoscan on startup, single track removal, and batch clearing (3 / 3 passed).
+    - Static analysis: `dart analyze lib/` $\longrightarrow$ **0 errors, 0 warnings, 0 lints**.
+
 - **Project Obsidian — Anti-Chiptune / Emulation & Search Poisoning Hardening (v3.9.8):**
   - **Eliminated 8-Bit/16-Bit Emulation, Arcade & SEO Title-Stuffed Cover Poisoning in Pop & International**:
     - **Root Cause Trapped**: Third-party sound-alike channels (`Arcade Player`, `8-Bit Arcade`) and cover squatters (`Blue Pink`, `Hafizur Rahman`) upload chiptune emulations and SEO-stuffed tracks (e.g. `Snowchild (16-Bit The Weeknd Emulation)`, `Starboy The Weeknd`) to monetize search queries for top international artists on JioSaavn. Because `TrackValidationEngine` lacked emulation/chiptune keywords, and because `fetchHollywoodSongs` queried a generic string (`Top International Pop Hits 2026`) which pulled from an unverified community tribute playlist, these tracks bypassed confidence scoring with 85/100 and persisted in `DynamicPlaylistService`'s local SharedPreferences cache.

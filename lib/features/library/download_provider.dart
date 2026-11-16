@@ -122,8 +122,8 @@ class DownloadNotifier extends Notifier<DownloadState> {
       }
     } catch (_) {}
     state = state.copyWith(downloadedSongs: songs);
-    // Background scan for any downloads from older/debug/other app builds
-    unawaited(scanAndSync());
+    // Auto-scan disabled on startup to avoid ingesting coverless loose audio files.
+    // Users can manually trigger sync via "Scan Disk" in Library or Settings if needed.
   }
 
   /// Scans file manager directories across all versions/builds and synchronizes state

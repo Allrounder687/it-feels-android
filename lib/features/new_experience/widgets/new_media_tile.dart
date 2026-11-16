@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:it_feels_music/core/widgets/collection_download_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -11,8 +12,11 @@ import 'new_artwork_image.dart';
 class NewMediaTile extends ConsumerStatefulWidget {
   final Song song;
   final int? index;
+  final Widget? leadingBadge;
   final VoidCallback onTap;
   final VoidCallback? onFavoriteToggle;
+  final VoidCallback? onDelete;
+  final String? deleteTooltip;
   final bool showArtwork;
   final bool showIndex;
 
@@ -20,8 +24,11 @@ class NewMediaTile extends ConsumerStatefulWidget {
     super.key,
     required this.song,
     this.index,
+    this.leadingBadge,
     required this.onTap,
     this.onFavoriteToggle,
+    this.onDelete,
+    this.deleteTooltip,
     this.showArtwork = true,
     this.showIndex = true,
   });
@@ -85,8 +92,16 @@ class _NewMediaTileState extends ConsumerState<NewMediaTile> {
             ),
             child: Row(
               children: [
+                // Custom Leading Badge (e.g. Rank Badge in Leaderboards)
+                if (widget.leadingBadge != null) ...[
+                  SizedBox(
+                    width: 32,
+                    child: Center(child: widget.leadingBadge!),
+                  ),
+                  const SizedBox(width: 8),
+                ]
                 // Index or Equalizer
-                if (widget.showIndex && !compact) ...[
+                else if (widget.showIndex && !compact) ...[
                   SizedBox(
                     width: 28,
                     child: Center(
@@ -108,7 +123,7 @@ class _NewMediaTileState extends ConsumerState<NewMediaTile> {
                 ],
 
                 // Artwork Thumbnail
-                if (widget.showArtwork) ...[
+                if (widget.showArtwork && constraints.maxWidth >= 220) ...[
                   Container(
                     width: 44,
                     height: 44,
@@ -122,9 +137,10 @@ class _NewMediaTileState extends ConsumerState<NewMediaTile> {
                       height: 44,
                       borderRadius: BorderRadius.circular(NewExperienceTokens.radiusSmall),
                       iconSize: 20,
+                      fallbackTitle: widget.song.title,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                 ],
 
                 // Song Title & Artists
@@ -135,7 +151,7 @@ class _NewMediaTileState extends ConsumerState<NewMediaTile> {
                     children: [
                       Text(
                         widget.song.title,
-                        maxLines: 1,
+                        maxLines: compact ? 1 : 2,
                         overflow: TextOverflow.ellipsis,
                         style: NewExperienceTokens.bodyMedium(
                           color: isCurrent
@@ -143,6 +159,8 @@ class _NewMediaTileState extends ConsumerState<NewMediaTile> {
                               : NewExperienceTokens.textPrimary,
                         ).copyWith(
                           fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                          fontSize: compact ? 13 : 14,
+                          height: 1.25,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -152,7 +170,7 @@ class _NewMediaTileState extends ConsumerState<NewMediaTile> {
                         overflow: TextOverflow.ellipsis,
                         style: NewExperienceTokens.bodySmall(
                           color: NewExperienceTokens.textSecondary,
-                        ),
+                        ).copyWith(fontSize: 12),
                       ),
                     ],
                   ),
@@ -162,26 +180,43 @@ class _NewMediaTileState extends ConsumerState<NewMediaTile> {
 
                 // Keep core controls reachable in narrow lists and selection mode.
                 if (!compact) ...[
-                Text(
-                  StringUtils.formatDuration(Duration(seconds: widget.song.duration)),
-                  style: NewExperienceTokens.numericTimer(
-                    color: isCurrent
-                        ? NewExperienceTokens.accentViolet
-                        : NewExperienceTokens.textMuted,
+                  Text(
+                    StringUtils.formatDuration(Duration(seconds: widget.song.duration)),
+                    style: NewExperienceTokens.numericTimer(
+                      color: isCurrent
+                          ? NewExperienceTokens.accentViolet
+                          : NewExperienceTokens.textMuted,
+                    ).copyWith(fontSize: 12),
                   ),
-                ),
-
-                const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                 ],
+
+                // Dedicated Delete Action (if enabled, e.g. Downloads or Custom Playlist)
+                CollectionDownloadButton(collectionId: 'track:${widget.song.id}', title: widget.song.title, songs: [widget.song], iconOnly: true),
+                if (widget.onDelete != null)
+                  IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: Colors.redAccent,
+                      size: 19,
+                    ),
+                    splashRadius: 18,
+                    tooltip: widget.deleteTooltip ?? 'Delete',
+                    onPressed: widget.onDelete,
+                  ),
 
                 // Options 3-dot menu
                 IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                   icon: const Icon(
                     Icons.more_vert_rounded,
                     color: NewExperienceTokens.textMuted,
                     size: 18,
                   ),
-                  splashRadius: 20,
+                  splashRadius: 18,
                   onPressed: () {
                     showModalBottomSheet(
                       context: context,

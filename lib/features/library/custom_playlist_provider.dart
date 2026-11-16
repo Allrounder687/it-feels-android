@@ -63,6 +63,17 @@ class CustomPlaylistNotifier extends Notifier<CustomPlaylistState> {
     await _save();
   }
 
+  /// Stable source identity lets a rebuilt chapter playlist update in place.
+  Future<void> upsertPlaylistWithSongs(String id, String title, List<Song> songs) async {
+    final previous = state.playlists.where((p) => p.id == id).firstOrNull;
+    final playlist = CustomPlaylist(id: id, title: title, createdAt: previous?.createdAt ?? DateTime.now(), songs: List.of(songs));
+    final updated = List<CustomPlaylist>.from(state.playlists);
+    final index = updated.indexWhere((p) => p.id == id);
+    if (index < 0) { updated.add(playlist); } else { updated[index] = playlist; }
+    state = state.copyWith(playlists: updated);
+    await _save();
+  }
+
   Future<void> renamePlaylist(String id, String newTitle) async {
     final idx = state.playlists.indexWhere((p) => p.id == id);
     if (idx != -1) {

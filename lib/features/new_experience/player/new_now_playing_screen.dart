@@ -311,49 +311,75 @@ class _NewNowPlayingScreenState extends ConsumerState<NewNowPlayingScreen> {
                                   },
                                 ),
                                 IconButton(
-                      tooltip: isDown
-                          ? 'Downloaded (Click to remove)'
-                          : isDownloading
-                              ? 'Downloading...'
-                              : 'Download for offline playback',
-                      icon: isDownloading
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Icon(
-                              isDown ? Icons.download_done_rounded : Icons.download_rounded,
-                              color: isDown ? NewExperienceTokens.accentCyan : Colors.white70,
-                              size: 25,
-                            ),
-                      onPressed: () async {
-                        HapticFeedback.lightImpact();
-                        if (isDown) {
-                          await ref.read(downloadProvider.notifier).removeDownload(song);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Removed "${song.title}" from downloads')),
-                            );
-                          }
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Downloading "${song.title}"...')),
-                          );
-                          final ok = await ref.read(downloadProvider.notifier).downloadSong(song);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(ok ? 'Downloaded "${song.title}"' : 'Download failed'),
-                              ),
-                            );
-                          }
-                        }
-                      },
-                    ),
+                                  tooltip: isDown
+                                      ? 'Downloaded (Click to remove)'
+                                      : isDownloading
+                                      ? 'Downloading...'
+                                      : 'Download for offline playback',
+                                  icon: isDownloading
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : Icon(
+                                          isDown
+                                              ? Icons.download_done_rounded
+                                              : Icons.download_rounded,
+                                          color: isDown
+                                              ? NewExperienceTokens.accentCyan
+                                              : Colors.white70,
+                                          size: 25,
+                                        ),
+                                  onPressed: () async {
+                                    HapticFeedback.lightImpact();
+                                    if (isDown) {
+                                      await ref
+                                          .read(downloadProvider.notifier)
+                                          .removeDownload(song);
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Removed "${song.title}" from downloads',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    } else {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Downloading "${song.title}"...',
+                                          ),
+                                        ),
+                                      );
+                                      final ok = await ref
+                                          .read(downloadProvider.notifier)
+                                          .downloadSong(song);
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              ok
+                                                  ? 'Downloaded "${song.title}"'
+                                                  : 'Download failed',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
                               ],
                             ),
 

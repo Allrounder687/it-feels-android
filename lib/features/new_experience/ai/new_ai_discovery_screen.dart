@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:it_feels_music/core/widgets/collection_download_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
@@ -10,6 +11,7 @@ import '../theme/new_ambient_canvas.dart';
 import '../widgets/new_action_button.dart';
 import '../widgets/new_media_tile.dart';
 import '../widgets/new_glass_container.dart';
+import '../theme/content_viewport_insets.dart';
 
 class NewAIDiscoveryScreen extends ConsumerStatefulWidget {
   const NewAIDiscoveryScreen({super.key});
@@ -207,10 +209,11 @@ class _NewAIDiscoveryScreenState extends ConsumerState<NewAIDiscoveryScreen> {
                       style: TextButton.styleFrom(
                         foregroundColor: NewExperienceTokens.accentCyan,
                       ),
-                      onPressed: () {
-                        ref
+                      onPressed: () async {
+                        await ref
                             .read(customPlaylistProvider.notifier)
-                            .createPlaylist('AI: $_generatedTitle');
+                            .createPlaylistWithSongs('AI: $_generatedTitle', List.of(_curatedSongs));
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('AI Playlist saved to Your Library'),
@@ -223,14 +226,15 @@ class _NewAIDiscoveryScreenState extends ConsumerState<NewAIDiscoveryScreen> {
                 ),
                 const SizedBox(height: 8),
 
+                CollectionDownloadButton(collectionId: 'generated:$_generatedTitle', title: _generatedTitle, songs: _curatedSongs),
                 ..._curatedSongs.map(
                   (song) => NewMediaTile(
                     song: song,
-                    onTap: () => playerNotifier.playSong(song),
+                    onTap: () => playerNotifier.playSong(song, queue: _curatedSongs, index: _curatedSongs.indexOf(song)),
                   ),
                 ),
-                const SizedBox(height: 80),
               ],
+              ContentViewportInsets.bottomSpacer(context, ref),
             ],
           ),
         ),

@@ -12,7 +12,9 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_core
   firebase_database
   flutter_acrylic
+  flutter_inappwebview_windows
   flutter_js
+  flutter_secure_storage_windows
   hotkey_manager_windows
   isar_flutter_libs
   just_audio_windows

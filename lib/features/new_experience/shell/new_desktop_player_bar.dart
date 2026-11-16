@@ -107,6 +107,7 @@ class _NewDesktopPlayerBarState extends ConsumerState<NewDesktopPlayerBar> {
                     height: 52,
                     borderRadius: BorderRadius.circular(NewExperienceTokens.radiusSmall),
                     iconSize: 24,
+                    fallbackTitle: song.title,
                   ),
                 ),
                 const SizedBox(width: 14),

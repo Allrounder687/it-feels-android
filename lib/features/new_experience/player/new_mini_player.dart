@@ -90,6 +90,7 @@ class NewMiniPlayer extends ConsumerWidget {
                           height: 44,
                           borderRadius: BorderRadius.circular(NewExperienceTokens.radiusSmall),
                           iconSize: 20,
+                          fallbackTitle: song.title,
                         ),
                       ),
                       const SizedBox(width: 12),

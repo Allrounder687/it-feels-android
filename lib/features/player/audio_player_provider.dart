@@ -728,6 +728,7 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   }
 
   Future<void> _recoverOrSkipFailedTrack(Song failedSong, {required String reason}) async {
+    locator<IMusicRepository>().evictStreamCache(failedSong.id);
     state = state.copyWith(isLoading: false);
     engine.cancelLoading();
 
@@ -1387,6 +1388,17 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     if (state.isShuffle) {
       _regenerateShuffleSequence(startingQueueIndex: state.currentIndex);
     }
+    _saveMemory();
+  }
+
+  /// Continuation of a remote playlist: repeated recordings are intentional entries.
+  /// The caller owns page deduplication by entry identity, rather than track ID.
+  void appendPlaylistPage(List<Song> songs) {
+    if (songs.isEmpty) return;
+    final updated = List<Song>.from(state.queue)..addAll(songs);
+    _ensureQueueKeys(updated);
+    state = state.copyWith(queue: updated);
+    if (state.isShuffle) _regenerateShuffleSequence(startingQueueIndex: state.currentIndex);
     _saveMemory();
   }
 

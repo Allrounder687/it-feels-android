@@ -228,6 +228,110 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
     );
   }
 
+  Future<void> _confirmDeleteSong(Song song) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: NewExperienceTokens.midnightSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(NewExperienceTokens.radiusLarge),
+          side: BorderSide(color: NewExperienceTokens.specularBorder),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 24),
+            const SizedBox(width: 10),
+            Text('Delete Download', style: NewExperienceTokens.sectionTitle(fontSize: 18)),
+          ],
+        ),
+        content: Text(
+          'Permanently remove "${song.title}" from offline disk storage?',
+          style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref.read(downloadProvider.notifier).removeDownload(song);
+      await _updateStorageBytes();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deleted "${song.title}" from downloads'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _confirmClearAllDownloads() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: NewExperienceTokens.midnightSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(NewExperienceTokens.radiusLarge),
+          side: BorderSide(color: NewExperienceTokens.specularBorder),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent, size: 24),
+            const SizedBox(width: 10),
+            Text('Clear All Downloads', style: NewExperienceTokens.sectionTitle(fontSize: 18)),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete all downloaded tracks and free up ${_formatBytes(_totalStorageBytes)} of disk space?',
+          style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: NewExperienceTokens.bodySmall(color: NewExperienceTokens.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Clear All', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref.read(downloadProvider.notifier).clearAllDownloads();
+      await _updateStorageBytes();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cleared all downloads from storage'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   void _showSortSheet() {
     showModalBottomSheet(
       context: context,
@@ -383,6 +487,14 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
     final playerState = ref.watch(audioPlayerProvider);
     final playerNotifier = ref.read(audioPlayerProvider.notifier);
 
+    // Keep storage footprint updated dynamically when downloads mutate
+    ref.listen<int>(
+      downloadProvider.select((s) => s.downloadedSongs.length),
+      (prev, next) {
+        if (prev != next) _updateStorageBytes();
+      },
+    );
+
     final rawLikedSongs = playerState.favoriteSongs;
     final rawDownloadedSongs = downloadState.downloadedSongs;
 
@@ -402,7 +514,10 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
     } else if (_activeTab == 'Recently Played') {
       currentActiveSongs = recentlyPlayedSongs;
     } else {
-      currentActiveSongs = [...downloadedSongs, ...likedSongs];
+      final seenIds = <String>{};
+      currentActiveSongs = [...downloadedSongs, ...likedSongs]
+          .where((s) => seenIds.add(s.id))
+          .toList();
     }
 
     return NewAmbientCanvas(
@@ -544,12 +659,12 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                       ),
                     ),
 
-                  // ── Filter Chips ──
+                  // ── Filter Chips (Sleek Compact Navigation) ──
                   SliverToBoxAdapter(
                     child: SizedBox(
-                      height: 44,
+                      height: 36,
                       child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                         scrollDirection: Axis.horizontal,
                         itemCount: _tabs.length,
                         separatorBuilder: (_, _) => const SizedBox(width: 8),
@@ -559,15 +674,15 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
 
                           return InkWell(
                             onTap: () => setState(() => _activeTab = tab),
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: BorderRadius.circular(16),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
                               decoration: BoxDecoration(
                                 color: isSelected
                                     ? NewExperienceTokens.accentViolet
                                     : Colors.white.withValues(alpha: 0.06),
-                                borderRadius: BorderRadius.circular(18),
+                                borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: isSelected ? Colors.transparent : NewExperienceTokens.specularBorder,
                                 ),
@@ -576,7 +691,10 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                                 tab,
                                 style: NewExperienceTokens.bodySmall(
                                   color: isSelected ? Colors.white : NewExperienceTokens.textSecondary,
-                                ).copyWith(fontWeight: isSelected ? FontWeight.bold : FontWeight.w500),
+                                ).copyWith(
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           );
@@ -585,13 +703,13 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                     ),
                   ),
 
-                  const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 10)),
 
-                  // ── Library Quick Actions Bar (Play All, Shuffle, Scan Disk, Sort, Multi-Select) ──
+                  // ── Library Quick Actions Bar (Compact Sleek Bar) ──
                   if (_activeTab != 'Playlists' && currentActiveSongs.isNotEmpty)
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                         child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
@@ -602,16 +720,17 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: NewExperienceTokens.accentViolet,
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                                   elevation: 0,
+                                  minimumSize: const Size(0, 32),
                                 ),
                                 onPressed: () => _playSongs(currentActiveSongs, shuffle: false),
-                                icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                                icon: const Icon(Icons.play_arrow_rounded, size: 18),
                                 label: Text(
                                   'Play (${currentActiveSongs.length})',
                                   style: NewExperienceTokens.bodySmall(color: Colors.white)
-                                      .copyWith(fontWeight: FontWeight.bold),
+                                      .copyWith(fontWeight: FontWeight.bold, fontSize: 12),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -622,15 +741,16 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                                   side: BorderSide(color: NewExperienceTokens.specularBorder),
                                   backgroundColor: Colors.white.withValues(alpha: 0.05),
                                   foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  minimumSize: const Size(0, 32),
                                 ),
                                 onPressed: () => _playSongs(currentActiveSongs, shuffle: true),
-                                icon: const Icon(Icons.shuffle_rounded, size: 18, color: NewExperienceTokens.accentCyan),
+                                icon: const Icon(Icons.shuffle_rounded, size: 16, color: NewExperienceTokens.accentCyan),
                                 label: Text(
                                   'Shuffle',
                                   style: NewExperienceTokens.bodySmall(color: Colors.white)
-                                      .copyWith(fontWeight: FontWeight.w600),
+                                      .copyWith(fontWeight: FontWeight.w600, fontSize: 12),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -642,21 +762,22 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                                     side: BorderSide(color: NewExperienceTokens.specularBorder),
                                     backgroundColor: Colors.white.withValues(alpha: 0.05),
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                    minimumSize: const Size(0, 32),
                                   ),
                                   onPressed: _isScanningDownloads ? null : _handleScanDownloads,
                                   icon: _isScanningDownloads
                                       ? const SizedBox(
-                                          width: 14,
-                                          height: 14,
+                                          width: 12,
+                                          height: 12,
                                           child: CircularProgressIndicator(strokeWidth: 2, color: NewExperienceTokens.accentCyan),
                                         )
-                                      : const Icon(Icons.sync_rounded, size: 18, color: NewExperienceTokens.accentCyan),
+                                      : const Icon(Icons.sync_rounded, size: 16, color: NewExperienceTokens.accentCyan),
                                   label: Text(
                                     _isScanningDownloads ? 'Scanning...' : 'Scan Disk',
                                     style: NewExperienceTokens.bodySmall(color: Colors.white)
-                                        .copyWith(fontWeight: FontWeight.w600),
+                                        .copyWith(fontWeight: FontWeight.w600, fontSize: 12),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -665,23 +786,23 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                               // Sort Dropdown Pill
                               InkWell(
                                 onTap: _showSortSheet,
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(14),
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.04),
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(14),
                                     border: Border.all(color: NewExperienceTokens.specularBorder),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.sort_rounded, size: 16, color: NewExperienceTokens.textSecondary),
-                                      const SizedBox(width: 6),
+                                      const Icon(Icons.sort_rounded, size: 15, color: NewExperienceTokens.textSecondary),
+                                      const SizedBox(width: 5),
                                       Text(
                                         _sortOptionLabel,
                                         style: NewExperienceTokens.captionMuted(color: NewExperienceTokens.textSecondary)
-                                            .copyWith(fontWeight: FontWeight.w600),
+                                            .copyWith(fontWeight: FontWeight.w600, fontSize: 11),
                                       ),
                                     ],
                                   ),
@@ -691,11 +812,13 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
 
                               // Multi-Select Checklist Toggle
                               IconButton(
+                                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                                padding: EdgeInsets.zero,
                                 tooltip: _isSelectionMode ? 'Cancel Selection' : 'Select Multiple',
                                 icon: Icon(
                                   _isSelectionMode ? Icons.check_circle_rounded : Icons.checklist_rounded,
                                   color: _isSelectionMode ? NewExperienceTokens.accentCyan : NewExperienceTokens.textSecondary,
-                                  size: 20,
+                                  size: 19,
                                 ),
                                 onPressed: () {
                                   setState(() {
@@ -711,19 +834,19 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                                 TextButton.icon(
                                   style: TextButton.styleFrom(
                                     foregroundColor: NewExperienceTokens.accentCyan,
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   ),
                                   icon: Icon(
                                     _selectedSongIds.length == currentActiveSongs.length
                                         ? Icons.deselect_rounded
                                         : Icons.select_all_rounded,
-                                    size: 18,
+                                    size: 16,
                                   ),
                                   label: Text(
                                     _selectedSongIds.length == currentActiveSongs.length
                                         ? 'Deselect All'
                                         : 'Select All (${currentActiveSongs.length})',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                                   ),
                                   onPressed: () {
                                     setState(() {
@@ -742,11 +865,11 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                       ),
                     ),
 
-                  // ── Liked Songs Hero Banner (if All or Liked Songs) ──
-                  if (_activeTab == 'All' || _activeTab == 'Liked Songs') ...[
+                  // ── Liked Songs Compact Pinned Card (Only on 'All' Tab) ──
+                  if (_activeTab == 'All' && rawLikedSongs.isNotEmpty) ...[
                     SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         child: InkWell(
                           onTap: () {
                             final playlist = Playlist(
@@ -765,66 +888,68 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                               ),
                             );
                           },
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           child: Container(
-                            height: 104,
-                            padding: const EdgeInsets.all(18),
+                            height: 56,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFF4C1D95), Color(0xFF1E1B4B)],
+                                colors: [Color(0xFF3B1877), Color(0xFF1E1035)],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF4C1D95).withValues(alpha: 0.35),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
+                                  color: const Color(0xFF4C1D95).withValues(alpha: 0.25),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Liked Songs',
-                                      style: NewExperienceTokens.sectionTitle(fontSize: 22),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${rawLikedSongs.length} Favorite Tracks',
-                                      style: NewExperienceTokens.bodySmall(
-                                        color: Colors.white.withValues(alpha: 0.8),
-                                      ),
-                                    ),
-                                  ],
-                                ),
                                 Container(
-                                  width: 50,
-                                  height: 50,
+                                  width: 40,
+                                  height: 40,
                                   decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(10),
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFF7C3AED), Color(0xFFC026D3)],
+                                    ),
                                   ),
-                                  child: const Icon(
-                                    Icons.favorite_rounded,
-                                    color: NewExperienceTokens.accentRose,
-                                    size: 26,
+                                  child: const Center(
+                                    child: Icon(Icons.favorite_rounded, color: Colors.white, size: 20),
                                   ),
                                 ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Liked Songs',
+                                        style: NewExperienceTokens.sectionTitle(fontSize: 15),
+                                      ),
+                                      Text(
+                                        '${rawLikedSongs.length} Favorite Tracks',
+                                        style: NewExperienceTokens.bodySmall(
+                                          color: Colors.white.withValues(alpha: 0.7),
+                                        ).copyWith(fontSize: 11),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white38, size: 14),
                               ],
                             ),
                           ),
                         ),
                       ),
                     ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                    const SliverToBoxAdapter(child: SizedBox(height: 8)),
                   ],
 
                   // ── Liked Songs Tracklist (When in Liked Songs tab) ──
@@ -843,7 +968,7 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                             final isSelected = _selectedSongIds.contains(song.id);
 
                             return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
                               child: Row(
                                 children: [
                                   if (_isSelectionMode)
@@ -967,6 +1092,12 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                               Row(
                                 children: [
                                   IconButton(
+                                    tooltip: 'Clear All Downloads',
+                                    icon: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent, size: 22),
+                                    onPressed: _confirmClearAllDownloads,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  IconButton(
                                     tooltip: 'Shuffle Offline',
                                     icon: const Icon(Icons.shuffle_rounded, color: NewExperienceTokens.accentCyan, size: 24),
                                     onPressed: () => _playSongs(downloadedSongs, shuffle: true),
@@ -1014,7 +1145,7 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                           final isSelected = _selectedSongIds.contains(song.id);
 
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
                             child: Row(
                               children: [
                                 if (_isSelectionMode)
@@ -1032,25 +1163,63 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                                     },
                                   ),
                                 Expanded(
-                                  child: NewMediaTile(
-                                    song: song,
-                                    index: index,
-                                    onTap: _isSelectionMode
-                                        ? () {
-                                            setState(() {
-                                              if (isSelected) {
-                                                _selectedSongIds.remove(song.id);
-                                              } else {
-                                                _selectedSongIds.add(song.id);
-                                              }
-                                            });
-                                          }
-                                        : () => playerNotifier.playSong(
+                                  child: _activeTab == 'Downloads' && !_isSelectionMode
+                                      ? Dismissible(
+                                          key: ValueKey('dismiss_download_${song.id}'),
+                                          direction: DismissDirection.endToStart,
+                                          background: Container(
+                                            alignment: Alignment.centerRight,
+                                            padding: const EdgeInsets.only(right: 20),
+                                            decoration: BoxDecoration(
+                                              color: Colors.redAccent.withValues(alpha: 0.8),
+                                              borderRadius: BorderRadius.circular(NewExperienceTokens.radiusMedium),
+                                            ),
+                                            child: const Row(
+                                              mainAxisAlignment: MainAxisAlignment.end,
+                                              children: [
+                                                Text('Delete', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                                SizedBox(width: 8),
+                                                Icon(Icons.delete_outline_rounded, color: Colors.white, size: 22),
+                                              ],
+                                            ),
+                                          ),
+                                          confirmDismiss: (_) async {
+                                            await _confirmDeleteSong(song);
+                                            return false;
+                                          },
+                                          child: NewMediaTile(
+                                            song: song,
+                                            index: index,
+                                            onDelete: () => _confirmDeleteSong(song),
+                                            deleteTooltip: 'Delete from Storage',
+                                            onTap: () => playerNotifier.playSong(
                                               song,
                                               queue: downloadedSongs,
                                               index: index,
                                             ),
-                                  ),
+                                          ),
+                                        )
+                                      : NewMediaTile(
+                                          song: song,
+                                          index: index,
+                                          onDelete: _activeTab == 'Downloads' ? () => _confirmDeleteSong(song) : null,
+                                          deleteTooltip: 'Delete from Storage',
+                                          onTap: _isSelectionMode
+                                              ? () {
+                                                  setState(() {
+                                                    if (isSelected) {
+                                                      _selectedSongIds.remove(song.id);
+                                                    } else {
+                                                      _selectedSongIds.add(song.id);
+                                                    }
+                                                  });
+                                                }
+                                              : () => playerNotifier.playSong(
+                                                    song,
+                                                    queue: downloadedSongs,
+                                                    index: index,
+                                                  ),
+                                        ),
                                 ),
                               ],
                             ),
@@ -1089,7 +1258,7 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                         (context, index) {
                           final song = onRepeatSongs[index];
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
                             child: NewMediaTile(
                               song: song,
                               index: index,
@@ -1134,7 +1303,7 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                         (context, index) {
                           final song = recentlyPlayedSongs[index];
                           return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
                             child: NewMediaTile(
                               song: song,
                               index: index,
@@ -1240,6 +1409,7 @@ class _NewLibraryScreenState extends ConsumerState<NewLibraryScreen> {
                                                 height: 48,
                                                 borderRadius: BorderRadius.circular(10),
                                                 iconSize: 22,
+                                                fallbackTitle: pl.title,
                                               )
                                             : const Icon(
                                                 Icons.music_note_rounded,

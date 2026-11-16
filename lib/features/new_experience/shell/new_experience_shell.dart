@@ -11,7 +11,7 @@ import '../hits/new_hits_screen.dart';
 import '../dna/new_music_dna_screen.dart';
 import '../explore/new_explore_screen.dart';
 import '../ai/new_ai_discovery_screen.dart';
-import '../import/new_spotify_import_screen.dart';
+import '../connected/new_connected_accounts.dart';
 import '../player/new_mini_player.dart';
 import '../player/new_now_playing_screen.dart';
 import 'new_desktop_sidebar.dart';
@@ -216,7 +216,7 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
                       onTap: _openNowPlaying,
                     ),
                   NewMobileNavDock(
-                    selectedIndex: _currentIndex.clamp(0, 4),
+                    selectedIndex: _currentIndex == 8 ? 4 : (_currentIndex < 4 ? _currentIndex : -1),
                     onDestinationSelected: (idx) {
                       if (idx == 4) {
                         _onSelectTab(8); // Map dock settings to settings screen
@@ -251,7 +251,7 @@ class _NewExperienceShellState extends ConsumerState<NewExperienceShell> {
       case 6:
         return const NewAIDiscoveryScreen();
       case 7:
-        return const NewSpotifyImportScreen();
+        return const NewConnectedAccountsScreen();
       case 8:
       default:
         return NewSettingsScreen(onNavigateHome: () => _onSelectTab(0));

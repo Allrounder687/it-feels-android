@@ -578,20 +578,53 @@ class _NeoLibraryScreenState extends ConsumerState<NeoLibraryScreen> {
                     color: Colors.white.withValues(alpha: 0.60),
                   ),
                 ),
-                trailing: IconButton(
-                  icon: Icon(
-                    Icons.more_vert_rounded,
-                    color: Colors.white.withValues(alpha: 0.60),
-                    size: 20,
-                  ),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => SongOptionsSheet(song: song),
-                    );
-                  },
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_activeDrawerIndex == 1)
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                        tooltip: 'Delete Download',
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Delete Download'),
+                              content: Text('Permanently delete "${song.title}" from device storage?'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Delete', style: TextStyle(color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            await ref.read(downloadProvider.notifier).removeDownload(song);
+                          }
+                        },
+                      ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.more_vert_rounded,
+                        color: Colors.white.withValues(alpha: 0.60),
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => SongOptionsSheet(song: song),
+                        );
+                      },
+                    ),
+                  ],
                 ),
                 onTap: () {
                   ref.read(audioPlayerProvider.notifier).playSong(

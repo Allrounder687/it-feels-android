@@ -15,7 +15,9 @@
 #include <firebase_core/firebase_core_plugin_c_api.h>
 #include <firebase_database/firebase_database_plugin_c_api.h>
 #include <flutter_acrylic/flutter_acrylic_plugin.h>
+#include <flutter_inappwebview_windows/flutter_inappwebview_windows_plugin_c_api.h>
 #include <flutter_js/flutter_js_plugin.h>
+#include <flutter_secure_storage_windows/flutter_secure_storage_windows_plugin.h>
 #include <hotkey_manager_windows/hotkey_manager_windows_plugin_c_api.h>
 #include <isar_flutter_libs/isar_flutter_libs_plugin.h>
 #include <just_audio_windows/just_audio_windows_plugin.h>
@@ -52,8 +54,12 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("FirebaseDatabasePluginCApi"));
   FlutterAcrylicPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FlutterAcrylicPlugin"));
+  FlutterInappwebviewWindowsPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("FlutterInappwebviewWindowsPluginCApi"));
   FlutterJsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FlutterJsPlugin"));
+  FlutterSecureStorageWindowsPluginRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("FlutterSecureStorageWindowsPlugin"));
   HotkeyManagerWindowsPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("HotkeyManagerWindowsPluginCApi"));
   IsarFlutterLibsPluginRegisterWithRegistrar(

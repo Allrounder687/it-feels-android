@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:it_feels_music/core/widgets/collection_download_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/intelligence/playlists/listening_collection_service.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart';
@@ -339,6 +340,7 @@ class _NewListeningStationScreenState
                               icon: const Icon(Icons.shuffle),
                               label: const Text('Shuffle'),
                             ),
+                            CollectionDownloadButton(collectionId: widget.collection.id, title: widget.collection.title, songs: _songs),
                           ],
                         ),
                       if (_loading)
