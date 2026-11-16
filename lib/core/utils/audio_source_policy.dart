@@ -24,10 +24,7 @@ class AudioSourcePolicy {
     final mime = uri.queryParameters['mime']?.toLowerCase();
     if (mime != null) {
       if (mime.startsWith('audio/')) return true;
-      if (uri.queryParameters['videoOnly'] == 'true' ||
-          uri.queryParameters['video_only'] == '1') {
-        return false;
-      }
+      if (mime.startsWith('video/')) return false;
     }
     if (RegExp(
       r'\.(mp3|m4a|aac|flac|opus|ogg|wav)$',
@@ -47,29 +44,30 @@ class AudioSourcePolicy {
     if (audio is String && audio.isNotEmpty && declaredAudio(audio) != false) {
       return audio;
     }
-    // 1. Prioritize pure audio streams
+    // 1. Audio-only streams
     for (final item
         in data['streams'] is List ? data['streams'] as List : const []) {
       if (item is! Map || item['url'] is! String) continue;
       final mime = item['mimeType']?.toString().toLowerCase() ?? '';
       if ((item['quality'] == 'audio' || mime.startsWith('audio/')) &&
           !mime.startsWith('video/') &&
-          item['videoOnly'] != true &&
           declaredAudio(item['url'] as String) != false) {
         return item['url'] as String;
       }
     }
-    // 2. Fall back to muxed audio+video streams (e.g. 360p / LBRY MP4 containing audio track)
+    // 2. Playable muxed streams with explicit audio (videoOnly is explicitly false, e.g. 360p / LBRY playback)
     for (final item
         in data['streams'] is List ? data['streams'] as List : const []) {
       if (item is! Map || item['url'] is! String) continue;
-      if (item['videoOnly'] != true &&
-          declaredAudio(item['url'] as String) != false) {
-        return item['url'] as String;
+      if (item['videoOnly'] == false) {
+        final url = item['url'] as String;
+        if (!url.toLowerCase().endsWith('.mkv')) {
+          return url;
+        }
       }
     }
     final mime = data['mimeType']?.toString().toLowerCase() ?? '';
-    if (mime.startsWith('video/') && data['videoOnly'] == true) return null;
+    if (mime.startsWith('video/')) return null;
     final legacy = data['streamUrl'] ?? data['url'];
     return legacy is String &&
             legacy.isNotEmpty &&
@@ -78,7 +76,8 @@ class AudioSourcePolicy {
         : null;
   }
 
-  /// A full mix or track is probed to confirm the source returns audio or audio-compatible content.
+  /// A full mix is downloaded only when the addon exposes an audio container.
+  /// Unknown and video containers fall back to chapter-track matching.
   static Future<bool> probe(String value, {http.Client? client}) async {
     final declared = declaredAudio(value);
     if (declared != null) return declared;
@@ -94,9 +93,7 @@ class AudioSourcePolicy {
       await subscription.cancel();
       return response.statusCode >= 200 &&
           response.statusCode < 300 &&
-          (type.startsWith('audio/') ||
-              type == 'video/mp4' ||
-              type == 'application/octet-stream');
+          type.startsWith('audio/');
     } catch (_) {
       return false;
     } finally {
