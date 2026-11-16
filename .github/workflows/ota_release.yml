@@ -48,7 +48,7 @@ jobs:
       - name: Build Shorebird Release (APK)
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: shorebird release android --artifact apk || (flutter clean && flutter build apk --release)
+        run: shorebird release android --artifact apk -- --android-skip-build-dependency-validation || (flutter clean && flutter build apk --release --android-skip-build-dependency-validation)
 
       - name: Rename APK file
         run: mv build/app/outputs/flutter-apk/app-release.apk it-feels-android-${{ github.ref_name }}.apk

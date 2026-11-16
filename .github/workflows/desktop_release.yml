@@ -49,7 +49,7 @@ jobs:
       - name: Build Inno Setup Installer
         run: |
           mkdir -p build/windows/x64/installer
-          iscc /DMyAppVersion="${{ steps.version.outputs.SEMVER }}" windows/packaging/installer.iss
+          iscc /DMyAppVersion="${{ steps.version.outputs.SEMVER }}" /DOutputBaseFilename="ITFeelsMusic_Installer" windows/packaging/installer.iss
 
       - name: Copy Unsigned EXE for Dev Artifact
         shell: powershell
