@@ -29,6 +29,8 @@ commands = [
      "test/unit/services/discovery_and_mix_test.dart",
      "test/unit/services/collection_download_queue_test.dart",
      "test/unit/services/audio_source_policy_test.dart",
+     "test/unit/services/connected_audio_recovery_test.dart",
+     "test/unit/services/connected_playlist_file_cache_test.dart",
      "test/unit/widgets/discovery_mix_ui_test.dart"],
 ]
 for command in commands:

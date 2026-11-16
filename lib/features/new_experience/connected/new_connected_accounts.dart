@@ -641,9 +641,10 @@ class NewConnectedPlaylistScreen extends ConsumerWidget {
                           alignment: WrapAlignment.center,
                           children: [
                             TextButton(
-                              onPressed: () => ref.invalidate(
-                                remotePlaylistProvider(playlist),
-                              ),
+                              onPressed: () {
+                                service.invalidatePlaylist(playlist);
+                                ref.invalidate(remotePlaylistProvider(playlist));
+                              },
                               child: const Text('Retry'),
                             ),
                             TextButton(

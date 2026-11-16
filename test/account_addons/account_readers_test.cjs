@@ -14,13 +14,13 @@ function create(provider, options = {}) {
   const context = {
     location: { origin, href: origin + '/' }, document, URL, Headers, TextEncoder,
     crypto: webcrypto, setTimeout: (fn) => setTimeout(fn, 0), clearTimeout,
-    ytcfg: { get: (key) => ({ LOGGED_IN: options.authenticated !== false,
+    ytcfg: options.noConfig ? null : { get: (key) => ({ LOGGED_IN: options.authenticated !== false,
       INNERTUBE_CONTEXT: { client: { clientName: 'WEB_REMIX', clientVersion: 'test' } }, SESSION_INDEX: 0 })[key] },
     fetch: async (url, init) => {
       calls.push({ url, init });
       const result = await options.fetch(url, init, calls.length);
       return { ok: !result.status || result.status < 400, status: result.status || 200,
-        json: async () => result.body, clone() { return this; } };
+        json: async () => result.body, text: async () => result.text, clone() { return this; } };
     },
   };
   context.window = context;
@@ -263,3 +263,27 @@ test('mixes without real chapter metadata do not receive invented song lists', a
   addon.start({ mode: 'mix', videoId: 'mix123' }); const result = await finish(addon);
   assert.equal(result.tracks.length, 1); assert.deepEqual(result.chapters, []);
 });
+
+ test('lightweight reader bootstraps JSON config without running page scripts', async () => {
+ const fixture = create('youtube', {noConfig:true,authenticated:false,fetch:async (url) => url === '/' ? {text: '<script>ytcfg.set('+JSON.stringify({INNERTUBE_CONTEXT:{client:{clientName:'WEB_REMIX',clientVersion:'test'}},LOGGED_IN:false})+');</script><script>throw new Error("must not execute");</script>'} : {body:{}} });
+ fixture.addon.start({mode:'discover'});
+ const result=await finish(fixture.addon);
+ assert.equal(result.complete,true); assert.equal(result.error,undefined);
+ assert.equal(fixture.calls.filter(c => c.url === '/').length,1);
+ });
+ test('lightweight reader reports missing configuration without loading a music SPA', async () => {
+ const fixture=create('youtube',{noConfig:true,fetch:async()=>({text:'<html>Unavailable</html>'})});
+ fixture.addon.start({mode:'discover'});
+ assert.equal((await finish(fixture.addon)).error,'service_changed');
+ assert.equal(fixture.calls.length,1);
+ });
+
+ test('session audio chooses only direct audio formats, preserving the video identity', async () => {
+ const fixture=create('youtube',{fetch:async(url,init)=>{const request=JSON.parse(init.body);assert.equal(request.videoId,'abcdefghijk');return {body:{streamingData:{adaptiveFormats:[{url:'https://cdn.example/video',mimeType:'video/mp4',bitrate:999999},{url:'https://cdn.example/audio.m4a',mimeType:'audio/mp4',bitrate:128000},{signatureCipher:'not-decoded',mimeType:'audio/mp4',bitrate:256000}]}}};}});
+ fixture.addon.start({mode:'audio',videoId:'abcdefghijk'});
+ const result=await finish(fixture.addon);assert.equal(result.audioUrl,'https://cdn.example/audio.m4a');assert.equal(result.complete,true);assert.equal(result.tracks.length,0);
+ });
+ test('blocked or cipher-only session audio produces no invented URL', async () => {
+ const fixture=create('youtube',{fetch:async()=>({body:{playabilityStatus:{status:'LOGIN_REQUIRED'},streamingData:{adaptiveFormats:[{signatureCipher:'blocked',mimeType:'audio/mp4'}]}}})});
+ fixture.addon.start({mode:'audio',videoId:'abcdefghijk'});assert.equal((await finish(fixture.addon)).audioUrl,null);
+ });

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:it_feels_music/core/providers/riverpod_bridge.dart'
     show audioPlayerProvider;
 import 'package:it_feels_music/data/models/song_model.dart';
+import 'package:it_feels_music/data/services/addon_manager.dart';
+import 'package:it_feels_music/core/utils/audio_source_policy.dart';
 import 'account_browser_gateway.dart';
 import 'connected_music_models.dart';
 import 'connected_music_service.dart';
@@ -17,12 +19,38 @@ final connectedMusicProvider = ChangeNotifierProvider<ConnectedMusicService>((
     store: PreferencesAccountStore(),
     gateway: ref.watch(accountBrowserGatewayProvider),
   );
-  unawaited(service.initialize().then((_) => service.refreshAll(force: true)));
+  final gateway = ref.read(accountBrowserGatewayProvider);
+  AddonManager().registerSessionAudioResolver('connected_music', (song) async {
+    if (!song.id.startsWith('youtube:')) return null;
+    await for (final page
+        in gateway
+            .read(accountAddons.first, audioId: song.id.substring(8))
+            .timeout(const Duration(seconds: 12))) {
+      if (page.error != null) return null;
+      if (page.complete) {
+        final url = page.audioUrl;
+        return url != null &&
+                await AudioSourcePolicy.probe(url, verifyNetwork: true)
+            ? url
+            : null;
+      }
+    }
+    return null;
+  });
+  ref.onDispose(
+    () => AddonManager().unregisterSessionAudioResolver('connected_music'),
+  );
+  unawaited(service.initialize());
+  final startup = Timer(
+    const Duration(seconds: 4),
+    () => unawaited(service.refreshAll()),
+  );
   final timer = Timer.periodic(
     const Duration(minutes: 15),
     (_) => unawaited(service.refreshAll()),
   );
   ref.onDispose(timer.cancel);
+  ref.onDispose(startup.cancel);
   return service;
 });
 

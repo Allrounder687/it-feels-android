@@ -9,6 +9,10 @@ abstract interface class AccountStore {
   Future<void> delete(String key);
 }
 
+abstract interface class AccountPlaylistCacheStore {
+  Future<void> clearPlaylistCache(String provider);
+}
+
 abstract interface class AccountGateway {
   Future<void> install(AccountAddon addon);
   Stream<AccountSnapshot> read(AccountAddon addon, {RemotePlaylist? playlist});
@@ -32,6 +36,8 @@ class ConnectedMusicService extends ChangeNotifier {
   final Map<String, Timer> _retries = {};
   final Map<String, int> _failures = {};
   final Map<String, AccountSnapshot> _playlistMemoryCache = {};
+  final Map<String, DateTime> _playlistCachedAt = {};
+  final Map<String, _SharedPlaylistRead> _playlistReads = {};
   Future<void>? _initialization;
   bool _disposed = false;
   ConnectedMusicService({
@@ -60,6 +66,16 @@ class ConnectedMusicService extends ChangeNotifier {
 
   String _cacheKey(String id) => 'connected_music.v1.$id';
   String _playlistCacheKey(String key) => 'connected_music.v1.playlist.$key';
+
+  void _rememberPlaylist(String key, AccountSnapshot snapshot) {
+    _playlistMemoryCache.remove(key);
+    if (_playlistMemoryCache.length >= 8) {
+      final oldest = _playlistMemoryCache.keys.first;
+      _playlistMemoryCache.remove(oldest);
+      _playlistCachedAt.remove(oldest);
+    }
+    _playlistMemoryCache[key] = snapshot;
+  }
 
   Future<void> initialize() => _initialization ??= _initialize();
   Future<void> _initialize() async {
@@ -219,15 +235,37 @@ class ConnectedMusicService extends ChangeNotifier {
       throw const AccountAccessException(needsLogin: true);
     }
     _epochs[addon.id] = (_epochs[addon.id] ?? 0) + 1;
+    final epoch = generation(addon.id);
+    _playlistMemoryCache.removeWhere(
+      (key, _) => key.startsWith('${addon.id}:'),
+    );
+    _playlistCachedAt.removeWhere((key, _) => key.startsWith('${addon.id}:'));
     _retries.remove(addon.id)?.cancel();
     _failures.remove(addon.id);
     _refreshes.remove(addon.id);
+    if (store is AccountPlaylistCacheStore) {
+      try {
+        await _storage(
+          addon.id,
+          () =>
+              (store as AccountPlaylistCacheStore).clearPlaylistCache(addon.id),
+        );
+      } catch (_) {
+        if (!_disposed && generation(addon.id) == epoch) {
+          _accounts[addon.id] = const AccountConnection(
+            message: 'Could not prepare this account cache. Please reconnect.',
+          );
+          _notify();
+        }
+        return;
+      }
+      if (_disposed || generation(addon.id) != epoch) return;
+    }
     _accounts[addon.id] = AccountConnection(
       status: ConnectionStatus.connected,
       name: verified.accountName,
     );
     _notify();
-    final epoch = generation(addon.id);
     try {
       await _storage(addon.id, () async {
         if (generation(addon.id) != epoch || _disposed) return;
@@ -247,18 +285,38 @@ class ConnectedMusicService extends ChangeNotifier {
     await refresh(addon, force: true);
   }
 
-  Stream<AccountSnapshot> playlist(RemotePlaylist playlist) async* {
+  void invalidatePlaylist(RemotePlaylist playlist) {
+    _playlistCachedAt.remove(playlist.key);
+  }
+
+  Stream<AccountSnapshot> playlist(RemotePlaylist playlist) => _playlistReads
+      .putIfAbsent(
+        playlist.key,
+        () => _SharedPlaylistRead(
+          () => _readPlaylist(playlist),
+          () => _playlistReads.remove(playlist.key),
+        ),
+      )
+      .stream;
+
+  Stream<AccountSnapshot> _readPlaylist(RemotePlaylist playlist) async* {
     final addon = accountAddons.firstWhere((a) => a.id == playlist.providerId);
     final epoch = _epochs[addon.id] ?? 0;
     final entries = <String, RemoteTrack>{};
 
     // 1. Yield in-memory cache immediately if available
     final mem = _playlistMemoryCache[playlist.key];
-    if (mem != null && mem.tracks.isNotEmpty) {
+    if (mem != null) {
       for (final t in mem.tracks) {
         entries[t.entryId] = t;
       }
       yield mem;
+      final cachedAt = _playlistCachedAt[playlist.key];
+      if (mem.complete &&
+          cachedAt != null &&
+          now().difference(cachedAt) < const Duration(minutes: 15)) {
+        return;
+      }
     } else {
       // 2. Yield persistent disk cache if available
       try {
@@ -267,24 +325,40 @@ class ConnectedMusicService extends ChangeNotifier {
             raw.isNotEmpty &&
             !_disposed &&
             (_epochs[addon.id] ?? 0) == epoch) {
-          final j = jsonDecode(raw) as Map<String, dynamic>;
-          final cachedSnapshot = AccountSnapshot.fromJson(playlist.providerId, j);
-          if (cachedSnapshot.tracks.isNotEmpty) {
+          final cachedSnapshot = await decodeAccountSnapshot(
+            playlist.providerId,
+            raw,
+          );
+          if (_disposed || (_epochs[addon.id] ?? 0) != epoch) return;
+          if (cachedSnapshot.complete || cachedSnapshot.tracks.isNotEmpty) {
             for (final t in cachedSnapshot.tracks) {
               entries[t.entryId] = t;
             }
-            _playlistMemoryCache[playlist.key] = cachedSnapshot;
+            _rememberPlaylist(playlist.key, cachedSnapshot);
             yield cachedSnapshot;
+            final cachedAt = cachedSnapshot.cachedAt;
+            if (cachedSnapshot.complete &&
+                cachedAt != null &&
+                now().difference(cachedAt) < const Duration(minutes: 15)) {
+              _playlistCachedAt[playlist.key] = cachedAt;
+              return;
+            }
           }
         }
       } catch (_) {}
     }
 
     // 3. Stream live/updated pages from gateway
+    var firstLivePage = true;
     await for (final page in gateway.read(addon, playlist: playlist)) {
       if (_disposed || (_epochs[addon.id] ?? 0) != epoch) return;
       if (page.error == 'login_required') {
         throw const AccountAccessException(needsLogin: true);
+      }
+      if (firstLivePage) {
+        entries
+            .clear(); // A fresh curator snapshot replaces deleted/reordered cached entries.
+        firstLivePage = false;
       }
       for (final t in page.tracks) {
         entries[t.entryId] = t;
@@ -294,39 +368,25 @@ class ConnectedMusicService extends ChangeNotifier {
         complete: page.complete,
         tracks: entries.values.toList(),
         error: page.error,
-        chapters: page.chapters ?? mem?.chapters ?? const [],
+        chapters: page.chapters,
       );
-      _playlistMemoryCache[playlist.key] = snapshot;
-      yield snapshot;
+      _rememberPlaylist(playlist.key, snapshot);
 
       // 4. Save to persistent store upon complete page resolution
-      if (page.complete && page.error == null && entries.isNotEmpty) {
+      if (page.complete && page.error == null) {
+        _playlistCachedAt[playlist.key] = now();
         unawaited(
           _storage(addon.id, () async {
             if (_disposed || (_epochs[addon.id] ?? 0) != epoch) return;
-            await store.write(
-              _playlistCacheKey(playlist.key),
-              jsonEncode({
-                'authenticated': true,
-                'complete': true,
-                'tracks': entries.values
-                    .map((t) => {
-                          'entryId': t.entryId,
-                          'id': t.song.id
-                              .replaceFirst(RegExp(r'^(youtube|spotify):'), ''),
-                          'title': t.song.title,
-                          'artist': t.song.artist,
-                          'album': t.song.album,
-                          'duration': t.song.duration,
-                          'artwork': t.song.coverArt,
-                        })
-                    .toList(),
-                'chapters': page.chapters.map((c) => c.toJson()).toList(),
-              }),
-            );
+            final encoded = await encodePlaylistSnapshot(snapshot, now());
+            if (_disposed || (_epochs[addon.id] ?? 0) != epoch) return;
+            await store.write(_playlistCacheKey(playlist.key), encoded);
+          }).catchError((Object _) {
+            /* A disposable cache write must not crash playback. */
           }),
         );
       }
+      yield snapshot;
     }
   }
 
@@ -337,9 +397,17 @@ class ConnectedMusicService extends ChangeNotifier {
     _refreshes.remove(addon.id);
     _accounts.remove(addon.id);
     _playlistMemoryCache.removeWhere((k, _) => k.startsWith('${addon.id}:'));
+    _playlistCachedAt.removeWhere((k, _) => k.startsWith('${addon.id}:'));
     _notify();
     try {
       await _storage(addon.id, () => store.delete(_cacheKey(addon.id)));
+      if (store is AccountPlaylistCacheStore) {
+        await _storage(
+          addon.id,
+          () =>
+              (store as AccountPlaylistCacheStore).clearPlaylistCache(addon.id),
+        );
+      }
       await gateway.disconnect(addon);
     } catch (_) {
       if (!_disposed) {
@@ -363,4 +431,54 @@ class ConnectedMusicService extends ChangeNotifier {
     gateway.dispose();
     super.dispose();
   }
+}
+
+/// All consumers of one playlist share a reader, including a download started
+/// while its detail screen is loading. Late subscribers receive the latest page.
+class _SharedPlaylistRead {
+  final Stream<AccountSnapshot> Function() source;
+  final void Function() release;
+  final Set<MultiStreamController<AccountSnapshot>> _listeners = {};
+  StreamSubscription<AccountSnapshot>? _subscription;
+  AccountSnapshot? _latest;
+  bool _closed = false;
+  _SharedPlaylistRead(this.source, this.release);
+  late final Stream<AccountSnapshot> stream = Stream.multi((listener) {
+    if (_latest != null) listener.add(_latest!);
+    if (_closed) {
+      listener.close();
+      return;
+    }
+    _listeners.add(listener);
+    listener.onCancel = () {
+      _listeners.remove(listener);
+      if (_listeners.isEmpty && !_closed) {
+        _closed = true;
+        release();
+        unawaited(_subscription?.cancel());
+      }
+    };
+    _subscription ??= source().listen(
+      (page) {
+        _latest = page;
+        for (final l in _listeners.toList()) {
+          l.add(page);
+        }
+      },
+      onError: (Object error, StackTrace stack) {
+        for (final l in _listeners.toList()) {
+          l.addError(error, stack);
+        }
+      },
+      onDone: () {
+        if (_closed) return;
+        _closed = true;
+        release();
+        for (final l in _listeners.toList()) {
+          l.close();
+        }
+        _listeners.clear();
+      },
+    );
+  }, isBroadcast: true);
 }

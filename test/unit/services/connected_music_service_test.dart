@@ -74,6 +74,20 @@ AccountSnapshot snapshot(
 Future<void> flush() => Future<void>.delayed(Duration.zero);
 
 void main() {
+  test(
+    'ephemeral session audio never enters the persistent playlist snapshot',
+    () async {
+      final encoded = await encodePlaylistSnapshot(
+        const AccountSnapshot(
+          complete: true,
+          audioUrl: 'https://cdn.example/audio?secret=signed',
+        ),
+        DateTime(2026),
+      );
+      expect(encoded, isNot(contains('secret')));
+      expect(encoded, isNot(contains('audioUrl')));
+    },
+  );
   late MemoryStore store;
   late FakeGateway gateway;
   late ConnectedMusicService service;
@@ -359,4 +373,91 @@ void main() {
             as Map<String, dynamic>;
     expect(RemotePlaylist.fromJson(youtube.id, data).key, '${youtube.id}:one');
   });
+  test(
+    'viewing and downloading share a reader and replay its latest page',
+    () async {
+      final seen = <AccountSnapshot>[], downloaded = <AccountSnapshot>[];
+      final view = service.playlist(playlist('shared')).listen(seen.add);
+      await flush();
+      final first = AccountSnapshot(
+        tracks: [
+          RemoteTrack.fromJson(youtube.id, {
+            'id': 'one',
+            'title': 'Song',
+            'entryId': 'entry1',
+          }),
+        ],
+      );
+      gateway.latest(youtube.id).add(first);
+      await flush();
+      final download = service
+          .playlist(playlist('shared'))
+          .listen(downloaded.add);
+      await flush();
+      expect(gateway.requests[youtube.id], hasLength(1));
+      expect(downloaded.single.tracks.single.song.id, 'youtube:one');
+      gateway.latest(youtube.id).add(const AccountSnapshot(complete: true));
+      await gateway.latest(youtube.id).close();
+      await flush();
+      expect(seen.last.tracks, hasLength(1));
+      expect(downloaded.last.complete, true);
+      await view.cancel();
+      await download.cancel();
+      final cached = await service.playlist(playlist('shared')).toList();
+      expect(cached.single.tracks, hasLength(1));
+      expect(gateway.requests[youtube.id], hasLength(1));
+    },
+  );
+  test('a refreshed playlist removes deleted cached entries', () async {
+    final first = service.playlist(playlist('updates')).toList();
+    await flush();
+    gateway
+        .latest(youtube.id)
+        .add(
+          AccountSnapshot(
+            complete: true,
+            tracks: [
+              RemoteTrack.fromJson(youtube.id, {'id': 'old', 'title': 'Old'}),
+            ],
+          ),
+        );
+    await gateway.latest(youtube.id).close();
+    await first;
+    service.invalidatePlaylist(playlist('updates'));
+    final next = service.playlist(playlist('updates')).toList();
+    await flush();
+    gateway
+        .latest(youtube.id)
+        .add(
+          AccountSnapshot(
+            complete: true,
+            tracks: [
+              RemoteTrack.fromJson(youtube.id, {'id': 'new', 'title': 'New'}),
+            ],
+          ),
+        );
+    await gateway.latest(youtube.id).close();
+    expect((await next).last.tracks.map((t) => t.song.id), ['youtube:new']);
+  });
+  test(
+    'large playlist cache encoding and decoding preserves repeated entries',
+    () async {
+      final tracks = List.generate(
+        5000,
+        (i) => RemoteTrack.fromJson(youtube.id, {
+          'id': 'same',
+          'title': 'Song',
+          'entryId': 'entry$i',
+        }),
+      );
+      final encoded = await encodePlaylistSnapshot(
+        AccountSnapshot(complete: true, tracks: tracks),
+        DateTime(2026),
+      );
+      final decoded = await decodeAccountSnapshot(youtube.id, encoded);
+      expect(decoded.tracks, hasLength(5000));
+      expect(decoded.tracks.last.entryId, 'entry4999');
+      expect(decoded.cachedAt, DateTime(2026));
+    },
+  );
 }

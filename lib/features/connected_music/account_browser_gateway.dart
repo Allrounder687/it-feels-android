@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -11,12 +12,55 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'connected_music_models.dart';
 import 'connected_music_service.dart';
 
-class PreferencesAccountStore implements AccountStore {
+class PreferencesAccountStore
+    implements AccountStore, AccountPlaylistCacheStore {
+  static const _playlistPrefix = 'connected_music.v1.playlist.';
+  final Directory? playlistDirectory;
+  Future<Directory>? _directory;
+  PreferencesAccountStore({this.playlistDirectory});
+
+  Future<File> _playlistFile(String key) async {
+    final directory = await (_directory ??= () async {
+      final root =
+          playlistDirectory ??
+          Directory(
+            '${(await getApplicationSupportDirectory()).path}/connected_playlist_cache',
+          );
+      await root.create(recursive: true);
+      return root;
+    }());
+    final provider = key
+        .substring(_playlistPrefix.length)
+        .split(':')
+        .first
+        .replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    return File(
+      '${directory.path}/${provider}_${sha256.convert(utf8.encode(key))}.json',
+    );
+  }
+
   @override
-  Future<String?> read(String key) async =>
-      (await SharedPreferences.getInstance()).getString(key);
+  Future<String?> read(String key) async {
+    if (!key.startsWith(_playlistPrefix)) {
+      return (await SharedPreferences.getInstance()).getString(key);
+    }
+    final file = await _playlistFile(key);
+    if (await file.exists()) return compute(_readPlaylistFile, file.path);
+    final legacy = (await SharedPreferences.getInstance()).getString(key);
+    if (legacy != null) await write(key, legacy);
+    return legacy;
+  }
+
   @override
   Future<void> write(String key, String value) async {
+    if (key.startsWith(_playlistPrefix)) {
+      final file = await _playlistFile(key);
+      await compute(_writePlaylistFile, (file.path, value));
+      final preferences = await SharedPreferences.getInstance();
+      if (preferences.containsKey(key)) await preferences.remove(key);
+      await _prune(file);
+      return;
+    }
     if (!await (await SharedPreferences.getInstance()).setString(key, value)) {
       throw const AccountAccessException();
     }
@@ -24,7 +68,67 @@ class PreferencesAccountStore implements AccountStore {
 
   @override
   Future<void> delete(String key) async {
+    if (key.startsWith(_playlistPrefix)) {
+      final file = await _playlistFile(key);
+      if (await file.exists()) await file.delete();
+    }
     await (await SharedPreferences.getInstance()).remove(key);
+  }
+
+  Future<void> _prune(File protected) async {
+    try {
+      if ((await protected.stat()).size > 32 * 1024 * 1024) {
+        await protected.delete();
+        return;
+      }
+      final files = <(File, FileStat)>[];
+      await for (final entry in protected.parent.list()) {
+        if (entry is File && entry.path.endsWith('.json')) {
+          files.add((entry, await entry.stat()));
+        }
+      }
+      files.sort((a, b) => a.$2.modified.compareTo(b.$2.modified));
+      var count = files.length,
+          bytes = files.fold<int>(0, (sum, f) => sum + f.$2.size);
+      for (final (file, stat) in files) {
+        if (count <= 32 && bytes <= 32 * 1024 * 1024) break;
+        if (file.path == protected.path) continue;
+        await file.delete();
+        count--;
+        bytes -= stat.size;
+      }
+    } catch (_) {
+      /* Cache pruning must not interrupt an active playlist. */
+    }
+  }
+
+  @override
+  Future<void> clearPlaylistCache(String provider) async {
+    final file = await _playlistFile('$_playlistPrefix$provider:_clear');
+    final safeProvider = provider.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    await for (final entry in file.parent.list()) {
+      if (entry is File &&
+          entry.uri.pathSegments.last.startsWith('${safeProvider}_')) {
+        await entry.delete();
+      }
+    }
+    final preferences = await SharedPreferences.getInstance();
+    for (final key in preferences.getKeys().where(
+      (k) => k.startsWith('$_playlistPrefix$provider:'),
+    )) {
+      await preferences.remove(key);
+    }
+  }
+}
+
+Future<String> _readPlaylistFile(String path) => File(path).readAsString();
+Future<void> _writePlaylistFile((String, String) input) async {
+  final temporary = File('${input.$1}.tmp');
+  try {
+    await temporary.writeAsString(input.$2, flush: true);
+    await temporary.rename(input.$1);
+  } finally {
+    if (await temporary.exists()) await temporary.delete();
   }
 }
 
@@ -45,14 +149,18 @@ class AccountBrowserGateway implements AccountGateway, PublicPlaylistGateway {
   });
   int _activeReads = 0;
   final Queue<Completer<void>> _waitingReads = Queue();
-  Future<void> _acquire() async {
+  Future<void> _acquire({bool foreground = false}) async {
     if (_disposed) throw const AccountAccessException();
-    if (_activeReads < 2) {
+    if (_activeReads < 1) {
       _activeReads++;
       return;
     }
     final waiter = Completer<void>();
-    _waitingReads.add(waiter);
+    if (foreground) {
+      _waitingReads.addFirst(waiter);
+    } else {
+      _waitingReads.add(waiter);
+    }
     await waiter.future;
   }
 
@@ -147,19 +255,31 @@ class AccountBrowserGateway implements AccountGateway, PublicPlaylistGateway {
 
   Future<AccountSnapshot?> snapshot(
     AccountAddon addon,
-    InAppWebViewController controller,
-  ) async {
+    InAppWebViewController controller, {
+    bool incremental = false,
+  }) async {
     final url = await controller.getUrl();
     if (url == null || !addon.ownsPage(url)) return null;
     final raw = await controller.evaluateJavascript(
-      source:
-          'window.itFeelsAccount ? JSON.stringify(window.itFeelsAccount.snapshot()) : null',
+      source: incremental
+          ? '''
+        (() => {
+          if (!window.itFeelsAccount) return null;
+          const state = window.itFeelsAccount.snapshot();
+          const revision = [state.authenticated, state.complete, state.error,
+            state.accountName, state.playlists.length, state.tracks.length,
+            (state.chapters || []).length].join(':');
+          if (window.__itFeelsRevision === revision) return null;
+          window.__itFeelsRevision = revision;
+          const offset = window.__itFeelsTrackOffset || 0;
+          window.__itFeelsTrackOffset = state.tracks.length;
+          return JSON.stringify(Object.assign({}, state, {tracks: state.tracks.slice(offset)}));
+        })()
+      '''
+          : 'window.itFeelsAccount ? JSON.stringify(window.itFeelsAccount.snapshot()) : null',
     );
     if (raw is! String || raw.length > 16 * 1024 * 1024) return null;
-    return AccountSnapshot.fromJson(
-      addon.id,
-      Map<String, dynamic>.from(jsonDecode(raw) as Map),
-    );
+    return decodeAccountSnapshot(addon.id, raw);
   }
 
   Future<void> remember(AccountAddon addon) {
@@ -236,30 +356,60 @@ class AccountBrowserGateway implements AccountGateway, PublicPlaylistGateway {
     AccountAddon addon, {
     RemotePlaylist? playlist,
     bool discovery = false,
-  }) async* {
+    String? audioId,
+  }) => Stream.multi((sink) {
+    var canceled = false;
+    sink.onCancel = () {
+      canceled = true;
+    };
     final generation = _generations[addon.id] ?? 0;
-    await _acquire();
-    try {
-      if (!_disposed && (_generations[addon.id] ?? 0) == generation) {
-        yield* _read(addon, playlist: playlist, discovery: discovery);
+    unawaited(() async {
+      var acquired = false;
+      try {
+        await _acquire(foreground: playlist != null || audioId != null);
+        acquired = true;
+        if (!_disposed &&
+            !canceled &&
+            (_generations[addon.id] ?? 0) == generation) {
+          await for (final page in _read(
+            addon,
+            playlist: playlist,
+            discovery: discovery,
+            audioId: audioId,
+            isCanceled: () => canceled,
+          )) {
+            if (!canceled) sink.add(page);
+          }
+        }
+      } catch (error, stack) {
+        if (!canceled) sink.addError(error, stack);
+      } finally {
+        if (acquired) _release();
+        if (!canceled) sink.close();
       }
-    } finally {
-      _release();
-    }
-  }
+    }());
+  });
 
   Stream<AccountSnapshot> _read(
     AccountAddon addon, {
     RemotePlaylist? playlist,
     bool discovery = false,
+    String? audioId,
+    required bool Function() isCanceled,
   }) async* {
     if (_disposed || !supported) throw const AccountAccessException();
     final generation = _generations[addon.id] ?? 0;
     await install(addon);
     await restore(addon);
-    if (_disposed || (_generations[addon.id] ?? 0) != generation) return;
+    if (_disposed ||
+        isCanceled() ||
+        (_generations[addon.id] ?? 0) != generation) {
+      return;
+    }
     final options = jsonEncode({
-      'mode': discovery
+      'mode': audioId != null
+          ? 'audio'
+          : discovery
           ? 'discover'
           : playlist?.videoId != null
           ? 'mix'
@@ -267,24 +417,31 @@ class AccountBrowserGateway implements AccountGateway, PublicPlaylistGateway {
           ? 'feed'
           : 'playlist',
       'id': playlist?.id,
-      'videoId': playlist?.videoId,
+      'videoId': audioId ?? playlist?.videoId,
       'allowAnonymous': playlist?.requiresAccount == false,
     });
     var started = false;
     final browser = HeadlessInAppWebView(
-      initialSize: const Size(1280, 900),
+      initialSize: addon.readerUrl != null
+          ? const Size(1, 1)
+          : const Size(900, 700),
       webViewEnvironment: await environment(addon),
       initialUrlRequest: URLRequest(
         url: WebUri(
-          playlist?.url ?? (discovery ? addon.origin : addon.libraryUrl),
+          addon.readerUrl ??
+              playlist?.url ??
+              (discovery ? addon.origin : addon.libraryUrl),
         ),
       ),
-      initialSettings: settings,
-      initialUserScripts: await scripts(addon),
+      initialSettings: settings..blockNetworkImage = true,
+      initialUserScripts: addon.readerUrl == null ? await scripts(addon) : null,
       shouldOverrideUrlLoading: (c, action) => navigation(addon, action),
       onLoadStop: (c, url) async {
         if (started || url == null || !addon.ownsPage(url)) return;
         started = true;
+        if (addon.readerUrl != null) {
+          await c.evaluateJavascript(source: _sources[addon.id]!);
+        }
         await c.evaluateJavascript(
           source:
               'window.itFeelsAccount && window.itFeelsAccount.start($options)',
@@ -294,12 +451,16 @@ class AccountBrowserGateway implements AccountGateway, PublicPlaylistGateway {
     (_readers[addon.id] ??= {}).add(browser);
     try {
       await browser.run();
-      final deadline = DateTime.now().add(const Duration(minutes: 2));
-      var lastSignature = '';
+      final deadline = DateTime.now().add(
+        audioId != null
+            ? const Duration(seconds: 12)
+            : const Duration(minutes: 2),
+      );
       while (!_disposed &&
+          !isCanceled() &&
           (_generations[addon.id] ?? 0) == generation &&
           DateTime.now().isBefore(deadline)) {
-        await Future<void>.delayed(const Duration(milliseconds: 650));
+        await Future<void>.delayed(const Duration(milliseconds: 1000));
         final controller = browser.webViewController;
         if (controller == null) continue;
         final currentUrl = await controller.getUrl();
@@ -316,14 +477,9 @@ class AccountBrowserGateway implements AccountGateway, PublicPlaylistGateway {
             throw const AccountAccessException(needsLogin: true);
           }
         }
-        final page = await snapshot(addon, controller);
+        final page = await snapshot(addon, controller, incremental: true);
         if (page == null) continue;
-        final signature =
-            '${page.authenticated}:${page.complete}:${page.playlists.length}:${page.tracks.length}:${page.chapters.length}:${page.error}';
-        if (signature != lastSignature) {
-          lastSignature = signature;
-          yield page;
-        }
+        yield page;
         if (page.error != null) {
           if (page.error == 'login_required') {
             throw const AccountAccessException(needsLogin: true);
@@ -331,11 +487,15 @@ class AccountBrowserGateway implements AccountGateway, PublicPlaylistGateway {
           return;
         }
         if (page.complete) {
-          if (page.authenticated && !discovery) await remember(addon);
+          if (page.authenticated && !discovery && audioId == null) {
+            await remember(addon);
+          }
           return;
         }
       }
-      if (!_disposed && (_generations[addon.id] ?? 0) == generation) {
+      if (!_disposed &&
+          !isCanceled() &&
+          (_generations[addon.id] ?? 0) == generation) {
         throw const AccountAccessException();
       }
     } finally {

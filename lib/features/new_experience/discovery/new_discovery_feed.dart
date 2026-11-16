@@ -27,12 +27,17 @@ final discoveryFeedProvider = ChangeNotifierProvider<DiscoveryFeedService>((
       musicRepo: repository,
     ).discoverAndValidate(prompt: prompt, count: 30)).songs,
   );
-  unawaited(service.refresh());
+  unawaited(service.initialize());
+  final startup = Timer(
+    const Duration(seconds: 6),
+    () => unawaited(service.refresh()),
+  );
   final timer = Timer.periodic(
     const Duration(hours: 6),
     (_) => unawaited(service.refresh()),
   );
   ref.onDispose(timer.cancel);
+  ref.onDispose(startup.cancel);
   return service;
 });
 

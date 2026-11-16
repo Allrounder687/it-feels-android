@@ -225,7 +225,7 @@ void main() {
     },
   );
   test(
-    'reopening a remote playlist fetches current curator contents',
+    'reopening a fresh remote playlist uses cache and explicit refresh fetches current contents',
     () async {
       final gateway = _Gateway();
       final service = ConnectedMusicService(
@@ -253,9 +253,18 @@ void main() {
         (_, _) {},
       );
       await container.read(remotePlaylistProvider(playlist).future);
-      expect(gateway.reads, 3);
+      expect(gateway.reads, 2);
       second.close();
       await container.pump();
+      service.invalidatePlaylist(playlist);
+      final third = container.listen(
+        remotePlaylistProvider(playlist),
+        (_, _) {},
+      );
+      await container.read(remotePlaylistProvider(playlist).future);
+      await container.pump();
+      expect(gateway.reads, 3);
+      third.close();
     },
   );
   test(

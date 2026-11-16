@@ -1,5 +1,5 @@
 import 'package:it_feels_music/core/utils/string_utils.dart';
-import 'package:it_feels_music/core/utils/audio_source_policy.dart';
+import 'addon_audio_transport.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
@@ -16,6 +16,9 @@ class AddonManager {
   AddonManager._internal();
 
   final Map<String, JavascriptRuntime> _activeRuntimesMap = {};
+  final Map<String, Future<String?> Function(Song)> _sessionAudioResolvers = {};
+  void registerSessionAudioResolver(String id, Future<String?> Function(Song) resolver) => _sessionAudioResolvers[id] = resolver;
+  void unregisterSessionAudioResolver(String id) => _sessionAudioResolvers.remove(id);
 
   List<JavascriptRuntime> get _activeRuntimes => _activeRuntimesMap.values.toList();
 
@@ -1097,6 +1100,12 @@ function getLyricsUrl(track, artist) {
   }
 
   Future<String?> getStreamUrl(Song song) async {
+    for (final resolver in _sessionAudioResolvers.values.toList()) {
+      try {
+        final url = await resolver(song).timeout(const Duration(seconds: 15));
+        if (url != null) return LocalProxyServer.getProxyUrl(url);
+      } catch (_) { /* Installed URL addons and verified catalogue matching remain available. */ }
+    }
     for (var runtime in _activeRuntimes) {
       try {
         final artistStr = song.artist == 'Unknown Artist' ? '' : song.artist;
@@ -1107,27 +1116,8 @@ function getLyricsUrl(track, artist) {
         final streamApiUrl = jsResult.stringResult.replaceAll('"', '');
         
         if (streamApiUrl != 'null' && streamApiUrl.isNotEmpty) {
-          // Direct CDN / audio link pass-through
-          if ((streamApiUrl.startsWith('http://') || streamApiUrl.startsWith('https://')) && !streamApiUrl.contains('/api/')) {
-            if (AudioSourcePolicy.declaredAudio(streamApiUrl) != false) return streamApiUrl;
-            continue;
-          }
-
-          debugPrint('[AddonManager] Resolving audio through installed addon');
-          final response = await http.get(
-            Uri.parse(streamApiUrl),
-            headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'},
-          ).timeout(const Duration(seconds: 8));
-
-          if (response.statusCode == 200) {
-            final data = jsonDecode(utf8.decode(response.bodyBytes));
-            final resolvedUrl = data is Map<String, dynamic> ? AudioSourcePolicy.select(data) : null;
-            if (data['success'] == true && resolvedUrl != null) {
-              return LocalProxyServer.getProxyUrl(resolvedUrl.toString());
-            }
-          } else {
-            debugPrint('[AddonManager] Stream failed with status: ${response.statusCode} from $streamApiUrl');
-          }
+          final resolvedUrl = await AddonAudioTransport.resolve(streamApiUrl);
+          if (resolvedUrl != null) return LocalProxyServer.getProxyUrl(resolvedUrl);
         }
       } on HandshakeException catch (e) {
         debugPrint('[AddonManager] TLS handshake failed for stream: $e');

@@ -181,13 +181,14 @@ class Song {
     final addedDate = json['addedAt'] != null ? DateTime.tryParse(json['addedAt'].toString()) ?? DateTime.now() : DateTime.now();
 
     return Song(
-      id: (id.startsWith('saavn:') || id.startsWith('youtube:')) ? id : 'saavn:$id',
-      saavnId: saavnId,
+      id: (id.startsWith('saavn:') || id.startsWith('youtube:') || id.startsWith('spotify:')) ? id : 'saavn:$id',
+      saavnId: (id.startsWith('youtube:') || id.startsWith('spotify:')) ? '' : saavnId,
       title: cleanTitle,
       artist: cleanArtist,
       album: cleanAlbum,
       duration: durationSec,
       coverArt: rawImage,
+      streamUrl: json['streamUrl']?.toString().isNotEmpty == true ? json['streamUrl'].toString() : null,
       encryptedMediaUrl: encUrl,
       hasLyrics: hasLrc,
       language: json['language']?.toString() ?? (json['more_info'] != null ? json['more_info']['language']?.toString() : null) ?? 'unknown',

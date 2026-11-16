@@ -4,6 +4,23 @@ import 'package:http/testing.dart';
 import 'package:it_feels_music/core/utils/audio_source_policy.dart';
 
 void main() {
+  test(
+    'session-granted audio is checked on the network even with a declared audio MIME',
+    () async {
+      final denied = MockClient(
+        (_) async =>
+            http.Response('', 403, headers: {'content-type': 'audio/mp4'}),
+      );
+      expect(
+        await AudioSourcePolicy.probe(
+          'https://cdn.example/audio.m4a',
+          client: denied,
+          verifyNetwork: true,
+        ),
+        false,
+      );
+    },
+  );
   test('audio URL takes precedence over a mixed video stream', () {
     expect(
       AudioSourcePolicy.select({

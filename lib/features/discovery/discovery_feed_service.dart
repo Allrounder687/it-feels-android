@@ -205,7 +205,7 @@ class DiscoveryFeedService extends ChangeNotifier {
       }
     }
 
-    await Future.wait([worker(), worker(), publicPicks()]);
+    await Future.wait([worker(), publicPicks()]);
     if (!active()) return;
     loading = false;
     if (fresh.isNotEmpty || bucketSongs.values.any((s) => s.isNotEmpty)) {

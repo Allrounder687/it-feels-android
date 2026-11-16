@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/models/mix_chapter.dart';
 
@@ -13,6 +15,7 @@ enum ConnectionStatus {
 /// The app owns account orchestration; installed addons own service knowledge.
 class AccountAddon {
   final String id, name, asset, origin, loginUrl, libraryUrl;
+  final String? readerUrl;
   final List<String> navigationDomains, cookieDomains;
   final int color;
   const AccountAddon({
@@ -22,6 +25,7 @@ class AccountAddon {
     required this.origin,
     required this.loginUrl,
     required this.libraryUrl,
+    this.readerUrl,
     required this.navigationDomains,
     required this.cookieDomains,
     required this.color,
@@ -44,6 +48,7 @@ const accountAddons = [
     origin: 'https://music.youtube.com',
     loginUrl: 'https://music.youtube.com/library/playlists',
     libraryUrl: 'https://music.youtube.com/library/playlists',
+    readerUrl: 'https://music.youtube.com/robots.txt',
     navigationDomains: [
       'youtube.com',
       'google.com',
@@ -182,6 +187,9 @@ class RemoteTrack {
 }
 
 class AccountSnapshot {
+  /// Ephemeral session-granted audio. Excluded from every metadata cache encoder.
+  final String? audioUrl;
+  final DateTime? cachedAt;
   final List<MixChapter> chapters;
   final bool authenticated, complete;
   final String accountName;
@@ -189,6 +197,8 @@ class AccountSnapshot {
   final List<RemoteTrack> tracks;
   final String? error;
   const AccountSnapshot({
+    this.audioUrl,
+    this.cachedAt,
     this.authenticated = false,
     this.complete = false,
     this.accountName = '',
@@ -232,6 +242,12 @@ class AccountSnapshot {
       }
     }
     return AccountSnapshot(
+      audioUrl:
+          j['audioUrl'] is String &&
+              Uri.tryParse(j['audioUrl'])?.scheme == 'https'
+          ? j['audioUrl'] as String
+          : null,
+      cachedAt: DateTime.tryParse(j['cachedAt']?.toString() ?? ''),
       authenticated: j['authenticated'] == true,
       complete: j['complete'] == true,
       accountName: j['accountName']?.toString() ?? '',
@@ -242,6 +258,41 @@ class AccountSnapshot {
     );
   }
 }
+
+/// Large snapshots are decoded on a worker, never on the UI isolate.
+Future<AccountSnapshot> decodeAccountSnapshot(String provider, String raw) =>
+    compute(_decodeAccountSnapshot, [provider, raw]);
+
+AccountSnapshot _decodeAccountSnapshot(List<String> input) =>
+    AccountSnapshot.fromJson(
+      input[0],
+      Map<String, dynamic>.from(jsonDecode(input[1]) as Map),
+    );
+
+Future<String> encodePlaylistSnapshot(
+  AccountSnapshot snapshot,
+  DateTime time,
+) => compute(_encodePlaylistSnapshot, (snapshot, time.toIso8601String()));
+
+String _encodePlaylistSnapshot((AccountSnapshot, String) input) => jsonEncode({
+  'authenticated': input.$1.authenticated,
+  'complete': true,
+  'cachedAt': input.$2,
+  'tracks': input.$1.tracks
+      .map(
+        (t) => {
+          'entryId': t.entryId,
+          'id': t.song.id.replaceFirst(RegExp(r'^(youtube|spotify):'), ''),
+          'title': t.song.title,
+          'artist': t.song.artist,
+          'album': t.song.album,
+          'duration': t.song.duration,
+          'artwork': t.song.coverArt,
+        },
+      )
+      .toList(),
+  'chapters': input.$1.chapters.map((c) => c.toJson()).toList(),
+});
 
 class AccountConnection {
   final ConnectionStatus status;

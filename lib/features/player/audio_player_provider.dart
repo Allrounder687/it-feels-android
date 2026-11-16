@@ -1112,10 +1112,6 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
     try {
       _currentlyFetchingSongId = song.id;
       streamUrl ??= predefinedStreamUrl ?? await locator<IMusicRepository>().getStreamUrl(song);
-      if (streamUrl == null && retryCount == 0) {
-        debugPrint('[AudioPlayerNotifier] Retrying stream resolution with bypassCache for ${song.title}');
-        streamUrl = await locator<IMusicRepository>().getStreamUrl(song, bypassCache: true);
-      }
     } catch (e) {
       debugPrint('[AudioPlayerNotifier] Error fetching stream for ${song.title}: $e');
     } finally {
@@ -1643,18 +1639,14 @@ class AudioPlayerNotifier extends Notifier<AudioPlayerState> {
   void _preloadQueueLyricsAndMedia() {
     if (state.currentSong != null) {
       _lyricsService.preloadLyrics(state.currentSong!);
-      BackendApiService.preloadVideoStreams(state.currentSong!);
     }
-    if (state.queue.isNotEmpty && state.currentIndex >= 0) {
-      for (int offset = 1; offset <= 3; offset++) {
+    if (state.isPlaying && !state.isLoading && state.queue.isNotEmpty && state.currentIndex >= 0) {
+      for (int offset = 1; offset <= 1; offset++) {
         final idx = state.currentIndex + offset;
         if (idx < state.queue.length) {
           final nextSong = state.queue[idx];
           _lyricsService.preloadLyrics(nextSong);
           apiService.preloadStreamUrl(nextSong);
-          if (offset <= 2) {
-            BackendApiService.preloadVideoStreams(nextSong);
-          }
         }
       }
     }

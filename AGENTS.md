@@ -13,6 +13,13 @@ This file tracks major technical decisions, features implemented, and architectu
 > - **DO NOT HARDCODE APIS**: This repository uses a clean `AddonSystemRepository`. Never hardcode `youtube_explode_dart`, Spotify, or Saavn scraping logic directly into this codebase. All music extraction must be delegated dynamically to user-installed Addons to maintain legal compliance!
 
 ## Latest Agent Iteration
+- **Connected Music — Reader Performance and Real Audio Recovery:**
+  - Replaced full YouTube background SPA loads with a lightweight same-origin reader; serialized readers, staggered cached startup refreshes, transferred changed track deltas, and moved large metadata codecs off the UI isolate.
+  - Shared playlist loads across viewing/downloading; added freshness reuse and corrected curator removals. Removed eager audio-queue video prefetch.
+  - Added session-granted audio negotiation inside the YouTube addon, robust addon result handling, verified catalogue recording fallback, preserved provider stream URLs/identities, and signed-URL cache expiry.
+  - Moved full playlist snapshots out of settings into atomic cache files with 32-entry/32 MB bounds, on-access legacy migration, and per-service cache cleanup.
+  - Final library analysis is clean. Both the normal Windows debug app and final Android ARM64 debug APK compiled successfully; no Android device was connected for physical-device FPS validation.
+  - Verification: 117 Dart checks, 29 addon-reader checks, and two live Windows smoke tests passed. Live discovery continued rendering and an audio endpoint returned HTTP 206 with audio/mp4. Device/provider limits and logs: `CONNECTED_MUSIC_FIX_REPORT.md`.
 - **Discovery, Long Mixes, and Collection Downloads:**
   - Added cached, automatically refreshed discovery for empty libraries, public YouTube playlists/long mixes, six diverse catalogue starting points, and Surprise me using the existing discovery engine.
   - Added audio-only full-mix resolution and creator-chapter fallback with validated real-track matching, explicit unmatched entries, chapter seeking, and stable saved chapter playlists.

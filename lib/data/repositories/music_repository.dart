@@ -2,6 +2,7 @@ import 'package:http/http.dart' as http;
 import 'package:it_feels_music/core/utils/string_utils.dart';
 import 'package:it_feels_music/core/utils/des_decryptor.dart';
 import 'package:it_feels_music/core/utils/track_validation_engine.dart';
+import 'package:it_feels_music/core/utils/audio_source_policy.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -11,6 +12,7 @@ import 'package:it_feels_music/data/models/cache_models.dart';
 import 'package:it_feels_music/data/models/song_model.dart';
 import 'package:it_feels_music/data/datasources/local_cache_data_source.dart';
 import 'package:it_feels_music/data/services/addon_manager.dart';
+import 'package:it_feels_music/data/services/connected_track_audio_resolver.dart';
 import 'package:it_feels_music/services/database_service.dart';
 import 'package:it_feels_music/core/intelligence/charts/chart_aggregation_service.dart';
 import 'package:it_feels_music/core/intelligence/catalogue/catalogue_deduplication_engine.dart';
@@ -76,13 +78,27 @@ abstract class IMusicRepository {
 class _StreamCacheEntry {
   final String url;
   final DateTime cachedAt;
-  _StreamCacheEntry(this.url) : cachedAt = DateTime.now();
-  bool get isExpired => DateTime.now().difference(cachedAt) > const Duration(hours: 2);
+  final Duration ttl;
+  _StreamCacheEntry(this.url, {this.ttl = const Duration(hours: 2)}) : cachedAt = DateTime.now();
+  bool get isExpired {
+    if (DateTime.now().difference(cachedAt) >= ttl) return true;
+    try {
+      final query = AudioSourcePolicy.unwrap(url).queryParameters;
+      final expires = int.tryParse(query['expire'] ?? query['expires'] ?? '');
+      if (expires != null) {
+        final milliseconds = expires > 1000000000000 ? expires : expires * 1000;
+        return DateTime.now().millisecondsSinceEpoch + 15000 >= milliseconds;
+      }
+    } catch (_) { /* Ordinary non-signed sources use their bounded TTL. */ }
+    return false;
+  }
 }
 
 class MusicRepository implements IMusicRepository {
   final LocalCacheDataSource cacheDataSource;
   final Map<String, _StreamCacheEntry> _streamCache = {};
+  final Map<String, Future<String?>> _streamRequests = {};
+  final Future<String?> Function(Song) _addonResolve;
 
   @override
   void evictStreamCache(String songId) {
@@ -92,7 +108,9 @@ class MusicRepository implements IMusicRepository {
 
   MusicRepository({
     LocalCacheDataSource? cacheDataSource,
-  })  : cacheDataSource = cacheDataSource ?? LocalCacheDataSource();
+    Future<String?> Function(Song)? addonResolve,
+  })  : cacheDataSource = cacheDataSource ?? LocalCacheDataSource(),
+        _addonResolve = addonResolve ?? AddonManager().getStreamUrl;
 
   static const List<String> _radioMirrors = [
     'https://de1.api.radio-browser.info/json',
@@ -700,14 +718,28 @@ class MusicRepository implements IMusicRepository {
     if (cached != null && !cached.isExpired) return;
     try {
       final url = await getStreamUrl(song);
-      if (url != null && url.isNotEmpty) {
-        _streamCache[song.id] = _StreamCacheEntry(url);
-      }
+      // getStreamUrl owns cache TTL and signed-URL expiry, including preloads.
+      if (url == null) return;
     } catch (_) {}
   }
 
   @override
   Future<String?> getStreamUrl(Song song, {bool bypassCache = false}) async {
+    return _streamRequests.putIfAbsent(song.id, () async {
+      try {
+        final url = await _resolveStream(song, bypassCache: bypassCache);
+        if (url != null && url.isNotEmpty) {
+          _streamCache[song.id] = _StreamCacheEntry(url,
+            ttl: song.id.startsWith('youtube:') || song.id.startsWith('spotify:') ? const Duration(minutes: 5) : const Duration(hours: 2));
+        }
+        return url;
+      } finally {
+        _streamRequests.remove(song.id);
+      }
+    });
+  }
+
+  Future<String?> _resolveStream(Song song, {bool bypassCache = false, bool allowMatching = true}) async {
     // 0. Cache check with TTL expiration
     if (!bypassCache) {
       final cached = _streamCache[song.id];
@@ -761,7 +793,8 @@ class MusicRepository implements IMusicRepository {
     }
 
     // 4. Client-side resolution for Saavn tracks missing encryptedMediaUrl
-    final saavnId = song.saavnId.isNotEmpty
+    final remote = song.id.startsWith('youtube:') || song.id.startsWith('spotify:');
+    final saavnId = remote ? '' : song.saavnId.isNotEmpty
         ? song.saavnId
         : (song.id.startsWith('saavn:') ? song.id.replaceFirst('saavn:', '') : '');
 
@@ -826,11 +859,16 @@ class MusicRepository implements IMusicRepository {
     }
 
     // 5. Addon Manager resolution
-    final addonManager = AddonManager();
-    final addonStream = await addonManager.getStreamUrl(song);
+    final addonStream = await _addonResolve(song);
     if (addonStream != null && addonStream.isNotEmpty) {
       _streamCache[song.id] = _StreamCacheEntry(addonStream);
       return addonStream;
+    }
+
+    if (remote && allowMatching) {
+      return ConnectedTrackAudioResolver.resolve(song,
+        search: (query) => searchSongs(query, count: 10),
+        resolveCandidate: (candidate) => _resolveStream(candidate, allowMatching: false, bypassCache: bypassCache));
     }
 
     // Strict Legal Compliance: The app relies exclusively on Addons.

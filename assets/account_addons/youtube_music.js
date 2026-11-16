@@ -1,4 +1,5 @@
-/* IT Feels account addon v1. No audio extraction. Runs only on music.youtube.com.
+/* IT Feels account addon v2. Runs only on music.youtube.com.
+ * Metadata and session-granted direct audio only; no cipher or DRM decoding.
  * Original implementation; architecture inspired by Metrolist/InnerTune.
  * Account data is read on-device from the user's authenticated service session.
  */
@@ -20,6 +21,20 @@
     return result;
   }
   function config(key) { return window.ytcfg && window.ytcfg.get ? window.ytcfg.get(key) : null; }
+  // Background readers use a tiny same-origin text document, not the music SPA.
+  // Only configuration JSON is read. Never execute scripts from downloaded HTML.
+  async function bootstrap() {
+    if (config('INNERTUBE_CONTEXT')) return;
+    var response = await fetch('/', { credentials: 'include' });
+    if (!response.ok) throw new Error('unavailable');
+    var html = await response.text(), values = {};
+    var pattern = /ytcfg\.set\(\s*(\{[^<]*?\})\s*\);/g, match;
+    while ((match = pattern.exec(html))) {
+      try { Object.assign(values, JSON.parse(match[1])); } catch (_) { /* Ignore non-JSON scripts. */ }
+    }
+    if (!values.INNERTUBE_CONTEXT) throw new Error('service_changed');
+    window.ytcfg = { get: function (key) { return values[key]; } };
+  }
   function authenticated() { return config('LOGGED_IN') === true || config('SESSION_INDEX') != null && !!config('DELEGATED_SESSION_ID'); }
   async function request(endpoint, body) {
     var context = config('INNERTUBE_CONTEXT');
@@ -143,6 +158,17 @@
     try { next = await request('next', { videoId: id }); } catch (_) { /* Description timestamps remain available. */ }
     state.chapters = chapters(details.shortDescription, next, total);
   }
+  async function readAudio(id) {
+    if (!/^[A-Za-z0-9_-]{11}$/.test(id || '')) throw new Error('invalid_playlist');
+    var response = await request('player', {videoId:id, contentCheckOk:true, racyCheckOk:true});
+    // Accept only direct audio URLs actually granted to this browser session.
+    // Ciphered, DRM, video, and unavailable formats are never guessed or decoded.
+    var formats = response.streamingData && response.streamingData.adaptiveFormats || [];
+    var audio = formats.filter(function (f) {
+      return typeof f.url === 'string' && /^https:\/\//.test(f.url) && /^audio\//.test(f.mimeType || '') && !f.drmFamilies;
+    }).sort(function (a,b) { return (b.bitrate || 0) - (a.bitrate || 0); });
+    state.audioUrl = audio.length ? audio[0].url : null;
+  }
   async function readPages(id, mode, section) {
     var body = { browseId: id }, seen = new Set();
     for (var page = 0; page < 200; page++) {
@@ -170,7 +196,7 @@
       if (running) return;
       running = true;
       (async function () {
-        for (var i = 0; i < 40 && !config('INNERTUBE_CONTEXT'); i++) await new Promise(function (r) { setTimeout(r, 250); });
+        await bootstrap();
         state.authenticated = authenticated();
         publicDiscovery = input.mode === 'discover' || input.allowAnonymous === true;
         if (input.mode === 'discover') {
@@ -179,6 +205,7 @@
           try { mixVideos(await request('search', { query: 'nonstop music mix full playlist' })); } catch (_) { /* Normal playlist discovery still works. */ }
           state.complete = true; return;
         }
+        if (input.mode === 'audio') { await readAudio(input.videoId); state.complete = true; return; }
         if (input.mode === 'mix') { await readMix(input.videoId); state.complete = true; return; }
         if (!state.authenticated && !publicDiscovery) throw new Error('login_required');
         if (input.mode === 'playlist') {

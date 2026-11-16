@@ -5,7 +5,7 @@ Implemented in the clean upstream app. Connect an account from Home, Settings â†
 ## Architecture
 
 - `lib/features/connected_music/`: account models, lifecycle service, native browser gateway, Riverpod bindings, and progressive queue ownership.
-- `assets/account_addons/`: separately installed YouTube Music and Spotify readers. Clicking Connect installs the bundled addon. Service-specific URLs, requests, authentication checks, response parsing, and continuation logic stay in these scripts. They do not extract or decrypt audio.
+- `assets/account_addons/`: separately installed YouTube Music and Spotify readers. Clicking Connect installs the bundled addon. Service-specific URLs, requests, authentication checks, response parsing, and continuation logic stay in these scripts. The YouTube addon can also request session-granted direct audio; it performs no cipher or DRM decoding. See `CONNECTED_MUSIC_FIX_REPORT.md` for the performance and audio recovery update.
 - `lib/features/new_experience/connected/`: responsive account cards, real service sign-in pages, automatic home shelves, and remote playlist detail.
 - Account sessions are scoped to their service and stored with `flutter_secure_storage`. Windows uses a separate WebView2 profile per service. macOS uses the OS Keychain without requiring additional distribution provisioning for Keychain Sharing. iOS retains its existing App Group and adds the corresponding Keychain access group.
 - Only playlist display metadata is cached in SharedPreferences. Cookies, passwords, bearer tokens, and raw service responses are excluded from that cache and from application logs. The WebView also maintains its normal platform cookie store.
@@ -29,7 +29,7 @@ Readers have a two-minute operation deadline and explicit page/item bounds. This
 
 ## Verification
 
-Run `python tool/verify_connected_music.py` for the expanded suite: 95 Dart checks and 25 synthetic addon-reader checks. The helper downloads Google Fonts to the ignored build directory for a readable rendered preview at `build/connected_music_preview.png`; normal Flutter test execution does not require that helper or font downloads. The discovery, long-mix, chapter fallback, and collection-download extension is documented in [DISCOVERY_MIXES_AND_DOWNLOADS.md](DISCOVERY_MIXES_AND_DOWNLOADS.md).
+Run `python tool/verify_connected_music.py` for the expanded suite: 117 Dart checks and 29 synthetic addon-reader checks. The helper downloads Google Fonts to the ignored build directory for a readable rendered preview at `build/connected_music_preview.png`; normal Flutter test execution does not require that helper or font downloads. The discovery, long-mix, chapter fallback, and collection-download extension is documented in [DISCOVERY_MIXES_AND_DOWNLOADS.md](DISCOVERY_MIXES_AND_DOWNLOADS.md).
 
 Coverage includes anonymous login rejection, cached startup, corrupt snapshots, freshness/coalescing, curator changes, partial and failed refreshes, account switching, two-service isolation, disconnect during network work and pending writes, origin validation, repeated recordings, continuation failures, profile verification, Spotify web-page fallback, and 320/768/1440px layouts at 100%/200% text scale.
 

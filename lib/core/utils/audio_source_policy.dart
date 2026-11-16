@@ -39,31 +39,33 @@ class AudioSourcePolicy {
     return null;
   }
 
-  static String? select(Map<String, dynamic> data) {
+  static String? select(Map<String, dynamic> data, {int depth = 0}) {
+    if (data['success'] == false || data['error'] != null) return null;
+    if (depth < 2 && data['data'] is Map<String, dynamic>) {
+      final nested = select(
+        data['data'] as Map<String, dynamic>,
+        depth: depth + 1,
+      );
+      if (nested != null) return nested;
+    }
     final audio = data['audioUrl'];
     if (audio is String && audio.isNotEmpty && declaredAudio(audio) != false) {
       return audio;
     }
     // 1. Audio-only streams
-    for (final item
-        in data['streams'] is List ? data['streams'] as List : const []) {
+    for (final item in [
+      ...?data['audioStreams'] as List?,
+      ...?data['streams'] as List?,
+      ...?data['adaptiveFormats'] as List?,
+    ]) {
       if (item is! Map || item['url'] is! String) continue;
       final mime = item['mimeType']?.toString().toLowerCase() ?? '';
-      if ((item['quality'] == 'audio' || mime.startsWith('audio/')) &&
+      if ((item['quality'] == 'audio' ||
+              mime.startsWith('audio/') ||
+              (item['hasAudio'] == true && item['hasVideo'] == false)) &&
           !mime.startsWith('video/') &&
           declaredAudio(item['url'] as String) != false) {
         return item['url'] as String;
-      }
-    }
-    // 2. Playable muxed streams with explicit audio (videoOnly is explicitly false, e.g. 360p / LBRY playback)
-    for (final item
-        in data['streams'] is List ? data['streams'] as List : const []) {
-      if (item is! Map || item['url'] is! String) continue;
-      if (item['videoOnly'] == false) {
-        final url = item['url'] as String;
-        if (!url.toLowerCase().endsWith('.mkv')) {
-          return url;
-        }
       }
     }
     final mime = data['mimeType']?.toString().toLowerCase() ?? '';
@@ -78,9 +80,15 @@ class AudioSourcePolicy {
 
   /// A full mix is downloaded only when the addon exposes an audio container.
   /// Unknown and video containers fall back to chapter-track matching.
-  static Future<bool> probe(String value, {http.Client? client}) async {
+  static Future<bool> probe(
+    String value, {
+    http.Client? client,
+    bool verifyNetwork = false,
+  }) async {
     final declared = declaredAudio(value);
-    if (declared != null) return declared;
+    if (declared == false || (declared == true && !verifyNetwork)) {
+      return declared!;
+    }
     final transport = client ?? http.Client();
     try {
       final request = http.Request('GET', Uri.parse(value));
